@@ -1,0 +1,247 @@
+/* =========================
+   Design Tokens (OpenAI-like)
+   ========================= */
+:root {
+  --bg-page: #f9fafb;
+  --bg-surface: #ffffff;
+
+  --border-default: #e5e7eb;
+  --border-muted: #f1f5f9;
+
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+
+  --brand-primary: #0ea5e9; /* כחול רגוע */
+  --brand-primary-hover: #0284c7;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+
+  --font-sm: 13px;
+  --font-md: 14px;
+  --font-lg: 18px;
+}
+
+/* =========================
+   Typography
+   ========================= */
+h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+p {
+  font-size: var(--font-md);
+  color: var(--text-secondary);
+}
+
+/* =========================
+   Buttons
+   ========================= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-sm);
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.btn-primary {
+  background: var(--brand-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--brand-primary-hover);
+}
+
+.btn-secondary {
+  border: 1px solid var(--border-default);
+  background: white;
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+  background: #f8fafc;
+}
+
+.btn-danger {
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  background: #fff;
+}
+
+.btn-danger:hover {
+  background: #fef2f2;
+}
+
+/* =========================
+   Forms
+   ========================= */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+label {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+input,
+select,
+textarea {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  font-size: var(--font-md);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+}
+
+/* =========================
+   Tables
+   ========================= */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-sm);
+  background: var(--bg-surface);
+}
+
+.table th {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid var(--border-default);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.table tr:hover td {
+  background: #f8fafc;
+}
+
+/* =========================
+   Cards / Panels
+   ========================= */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+/* =========================
+   Utility
+   ========================= */
+.text-muted {
+  color: var(--text-muted);
+}
+
+.mt-2 {
+  margin-top: 8px;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+
+*{
+    direction: rtl;
+}
+
+
+
+/* =========================
+   Dark Mode
+   ========================= */
+[data-theme="dark"] {
+  --bg-page: #0b0f14;
+  --bg-surface: #111827;
+
+  --border-default: #1f2937;
+  --border-muted: #1e293b;
+
+  --text-primary: #e5e7eb;
+  --text-secondary: #cbd5f5;
+  --text-muted: #94a3b8;
+
+  --brand-primary: #38bdf8;
+  --brand-primary-hover: #0ea5e9;
+}
+
+/* התאמות כלליות */
+[data-theme="dark"] body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .sidebar {
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-default);
+}
+
+[data-theme="dark"] .nav-link {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .nav-link.active {
+  background: #1f2937;
+  color: white;
+}
+
+[data-theme="dark"] .card {
+  background: var(--bg-surface);
+  border-color: var(--border-default);
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: #020617;
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+
+[data-theme="dark"] .table th {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .table tr:hover td {
+  background: #020617;
+}
