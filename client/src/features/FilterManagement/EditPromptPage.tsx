@@ -1,73 +1,120 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../../app/hooks';
-import { promptUpdated } from './FilterManagementSlice';
+import React, { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { promptUpdated } from "./FilterManagementSlice";
+
+type PromptStatus = "active" | "not active";
+
+type Prompt = {
+  id: number;
+  groupId: string;
+  content: string;
+  Status: PromptStatus;
+};
 
 const EditPromptPage = () => {
-    const { id } = useParams();
-    const dispatch = useAppDispatch();
-    const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
-    // שימוש ב-any כדי למנוע אדום
-    const prompt = useAppSelector((state: any) =>
-        state.filterManagement.groupPrompts.find((p: any) => p.id === parseInt(id || "0"))
-    );
+  const prompt = useAppSelector((state) =>
+    state.filterManagement.groupPrompts.find(
+      (p: Prompt) => p.id === Number(id)
+    )
+  ) as Prompt | undefined;
 
-    const [groupId, setGroupId] = useState("");
-    const [content, setContent] = useState("");
-    const [status, setStatus] = useState("active");
+  if (!prompt) return <div>הפרומפט לא נמצא!</div>;
 
-    useEffect(() => {
-        if (prompt) {
-            setGroupId(prompt.groupId);
-            setContent(prompt.content);
-            setStatus(prompt.Status);
-        }
-    }, [prompt]);
+  const handleSave = (updated: Prompt) => {
+    dispatch(promptUpdated(updated));
+    navigate(-1);
+  };
 
-    if (!prompt) return <div>הפרומפט לא נמצא!</div>;
-
-    const handleSubmit = (e: any) => {
-        e.preventDefault();
-
-        const updatedPrompt = {
-            id: prompt.id,
-            groupId,
-            content,
-            Status: status
-        };
-        
-        dispatch(promptUpdated(updatedPrompt as any));
-        navigate(-1);
-    };
-
-    return (
-        <div className="prompt-container" style={{ padding: '20px' }}>
-            <h2>עריכת פרומפט</h2>
-            <form onSubmit={handleSubmit}>
-                <div style={{ marginBottom: '10px' }}>
-                    <label>Group ID: </label>
-                    <input type="text" value={groupId} onChange={(e) => setGroupId(e.target.value)} />
-                </div>
-                <div style={{ marginBottom: '10px' }}>
-                    <label>Content: </label>
-                    <input type="text" value={content} onChange={(e) => setContent(e.target.value)} />
-                </div>
-                <div style={{ marginBottom: '10px' }}>
-                    <label>Status: </label>
-                    <select 
-                        value={status} 
-                        onChange={(e) => setStatus(e.target.value)}
-                    >
-                        <option value="active">פעיל</option>
-                        <option value="not active">לא פעיל</option>
-                    </select>
-                </div>
-                <button type="submit">שמור שינויים</button>
-                <button type="button" onClick={() => navigate(-1)} style={{ marginLeft: '10px' }}>ביטול</button>
-            </form>
-        </div>
-    );
+  return (
+    <EditPromptForm
+      key={prompt.id}
+      prompt={prompt}
+      onCancel={() => navigate(-1)}
+      onSave={handleSave}
+    />
+  );
 };
+
+function EditPromptForm({
+  prompt,
+  onSave,
+  onCancel,
+}: {
+  prompt: Prompt;
+  onSave: (p: Prompt) => void;
+  onCancel: () => void;
+}) {
+  const [groupId, setGroupId] = useState<string>(prompt.groupId);
+  const [content, setContent] = useState<string>(prompt.content);
+  const [status, setStatus] = useState<PromptStatus>(prompt.Status);
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    onSave({
+      id: prompt.id,
+      groupId,
+      content,
+      Status: status,
+    });
+  };
+
+  return (
+    <div className="prompt-container" style={{ padding: "20px" }}>
+      <h2>עריכת פרומפט</h2>
+
+      <form onSubmit={handleSubmit}>
+        <div style={{ marginBottom: "10px" }}>
+          <label>Group ID: </label>
+          <input
+            type="text"
+            value={groupId}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setGroupId(e.target.value)
+            }
+          />
+        </div>
+
+        <div style={{ marginBottom: "10px" }}>
+          <label>Content: </label>
+          <input
+            type="text"
+            value={content}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setContent(e.target.value)
+            }
+          />
+        </div>
+
+        <div style={{ marginBottom: "10px" }}>
+          <label>Status: </label>
+          <select
+            value={status}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+              setStatus(e.target.value as PromptStatus)
+            }
+          >
+            <option value="active">פעיל</option>
+            <option value="not active">לא פעיל</option>
+          </select>
+        </div>
+
+        <button type="submit">שמור שינויים</button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{ marginLeft: "10px" }}
+        >
+          ביטול
+        </button>
+      </form>
+    </div>
+  );
+}
 
 export default EditPromptPage;
