@@ -20,7 +20,9 @@ app.get("/", (req, res) => {
 
 app.post("/api/embed", async (req, res) => {
   try {
+    
     const { text } = req.body;
+    console.log("embed",text);
 
     if (!text) {
       return res.status(400).json({ error: "missing text" });
