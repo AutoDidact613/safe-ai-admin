@@ -1,0 +1,630 @@
+/* ============================================
+   עיצובים כלליים - OpenAI Style
+   ============================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+  background-color: #ffffff;
+  color: #0d0d0d;
+  direction: rtl;
+  line-height: 1.6;
+}
+
+/* ============================================
+   כפתורים - OpenAI Style
+   ============================================ */
+
+button {
+  padding: 10px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #0d0d0d;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  background-color: #f9f9f9;
+  border-color: #9ca3af;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+button:active {
+  background-color: #f3f4f6;
+}
+
+button:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* כפתור ראשי */
+button.primary-btn {
+  background-color: #10a37f;
+  color: white;
+  border-color: #10a37f;
+}
+
+button.primary-btn:hover {
+  background-color: #0d9970;
+  border-color: #0d9970;
+  box-shadow: 0 2px 4px rgba(16, 163, 127, 0.2);
+}
+
+/* כפתור מחיקה */
+button.delete-btn {
+  background-color: #f5f5f5;
+  color: #dc2626;
+  border-color: #e5e7eb;
+}
+
+button.delete-btn:hover {
+  background-color: #fee2e2;
+  border-color: #fecaca;
+}
+
+/* כפתור ביטול */
+button.cancel-btn {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border-color: #d1d5db;
+}
+
+button.cancel-btn:hover {
+  background-color: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+/* כפתור חזור */
+button.back-btn {
+  background-color: #f3f4f6;
+  color: #0d0d0d;
+  border-color: #d1d5db;
+}
+
+button.back-btn:hover {
+  background-color: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+/* ============================================
+   כרטיסים (Cards) - OpenAI Style
+   ============================================ */
+
+.api-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  padding: 16px;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  align-items: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.api-card:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-color: #d1d5db;
+}
+
+.api-card h4 {
+  margin: 0;
+  color: #0d0d0d;
+  font-size: 15px;
+  font-weight: 600;
+  min-width: 120px;
+}
+
+.api-card p {
+  margin: 0;
+  flex: 1;
+  word-break: break-all;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.api-card-buttons {
+  display: flex;
+  gap: 8px;
+  margin-right: auto;
+}
+
+.api-card button {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+/* ============================================
+   מודלים (Modals) - OpenAI Style
+   ============================================ */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #0d0d0d;
+  font-size: 16px;
+  font-weight: 600;
+  border-bottom: none;
+}
+
+.modal-content label {
+  display: block;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #0d0d0d;
+  font-size: 14px;
+}
+
+.modal-content input,
+.modal-content textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+  color: #0d0d0d;
+}
+
+.modal-content input::placeholder,
+.modal-content textarea::placeholder {
+  color: #9ca3af;
+}
+
+.modal-content input:focus,
+.modal-content textarea:focus {
+  outline: none;
+  border-color: #10a37f;
+  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.modal-buttons button {
+  flex: 1;
+  padding: 10px;
+  font-size: 14px;
+}
+
+/* ============================================
+   טפסים (Forms) - OpenAI Style
+   ============================================ */
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #0d0d0d;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  background-color: #ffffff;
+  color: #0d0d0d;
+  transition: all 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #10a37f;
+  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+}
+
+/* ============================================
+   טבלאות - OpenAI Style
+   ============================================ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+table thead {
+  background-color: #f9fafb;
+}
+
+table th {
+  padding: 12px 16px;
+  text-align: right;
+  font-weight: 600;
+  color: #0d0d0d;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #374151;
+  font-size: 14px;
+}
+
+table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+/* ============================================
+   גרפים וגרפיקה - OpenAI Style
+   ============================================ */
+
+.chart-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  height: 300px;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.chart-bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.chart-bar {
+  width: 100%;
+  background-color: #10a37f;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  min-height: 10px;
+  cursor: pointer;
+}
+
+.chart-bar:hover {
+  background-color: #0d9970;
+  box-shadow: 0 2px 4px rgba(16, 163, 127, 0.2);
+}
+
+.chart-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0d0d0d;
+}
+
+.chart-label {
+  font-size: 13px;
+  text-align: center;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+/* ============================================
+   סיכום וכרטיסי מידע - OpenAI Style
+   ============================================ */
+
+.summary-card {
+  margin-top: 20px;
+  padding: 16px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border-left: 3px solid #10a37f;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.summary-card h3 {
+  margin-top: 0;
+  color: #0d0d0d;
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.summary-card p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #374151;
+}
+
+.summary-card strong {
+  color: #0d0d0d;
+  font-weight: 600;
+}
+
+/* ============================================
+   דפים ורשימות - OpenAI Style
+   ============================================ */
+
+.page-container {
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  background-color: #ffffff;
+  min-height: 100vh;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.page-header h1 {
+  margin: 0;
+  color: #0d0d0d;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.page-header button {
+  margin: 0;
+}
+
+/* ============================================
+   ניווט - OpenAI Style
+   ============================================ */
+
+nav {
+  background-color: #ffffff;
+  padding: 16px 0;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+nav a {
+  text-decoration: none;
+  color: #6b7280;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  padding: 0;
+  border-radius: 0;
+}
+
+nav a:hover {
+  color: #0d0d0d;
+  background-color: transparent;
+}
+
+nav a.active {
+  color: #10a37f;
+  border-bottom: 2px solid #10a37f;
+}
+
+/* ============================================
+   רשימות - OpenAI Style
+   ============================================ */
+
+.list-container {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+
+.list-container h2 {
+  margin-top: 0;
+  color: #0d0d0d;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.list-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #9ca3af;
+}
+
+.list-empty p {
+  font-size: 15px;
+  margin: 0;
+}
+
+/* ============================================
+   הודעות ואזהרות - OpenAI Style
+   ============================================ */
+
+.alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-weight: 500;
+  border: 1px solid;
+  font-size: 14px;
+}
+
+.alert-success {
+  background-color: #f0fdf4;
+  color: #166534;
+  border-color: #dcfce7;
+}
+
+.alert-danger {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border-color: #fee2e2;
+}
+
+.alert-warning {
+  background-color: #fffbeb;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.alert-info {
+  background-color: #f0f9ff;
+  color: #0c2d57;
+  border-color: #bae6fd;
+}
+
+/* ============================================
+   קודים וטקסט מעוצב - OpenAI Style
+   ============================================ */
+
+code,
+.code-box {
+  background-color: #f5f5f5;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #374151;
+  word-break: break-all;
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 16px;
+  }
+
+  .api-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .api-card-buttons {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .api-card button {
+    flex: 1;
+  }
+
+  .chart-container {
+    height: 250px;
+  }
+
+  table {
+    font-size: 13px;
+  }
+
+  table th,
+  table td {
+    padding: 10px;
+  }
+
+  .modal-content {
+    max-width: 95%;
+  }
+
+  nav {
+    flex-direction: column;
+    gap: 8px;
+    border-bottom: none;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-container {
+    padding: 12px;
+  }
+
+  button {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .chart-container {
+    gap: 8px;
+  }
+
+  .modal-buttons {
+    flex-direction: column;
+  }
+
+  .modal-buttons button {
+    width: 100%;
+  }
+
+  .page-header h1 {
+    font-size: 20px;
+  }
+}
+
