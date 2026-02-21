@@ -127,13 +127,13 @@
 
 import React, { useState, type ChangeEvent } from "react";
 import { useSelector } from "react-redux";
-// השתקה של שגיאת הייבוא כדי למנוע את הסימון האדום
-// @ts-ignore
+
 import * as XLSX from "xlsx";
-// @ts-ignore
+
 import { saveAs } from "file-saver";
-// הגדרת מבנה הסטייט כדי ש-useSelector לא יצעק
-interface RootState  {
+
+// טיפוס ה־RootState שמייצג את ה־store
+interface RootState {
   table: {
     userTable: Array<{ id: number; name: string; age: number }>;
     groupTable: Array<{ id: number; name: string }>;
@@ -142,50 +142,38 @@ interface RootState  {
 
 const TableView: React.FC = () => {
   // ------------------- נתונים מה-slice -------------------
-  // הגדרת טיפוס state: any ליתר ביטחון אם ה-RootState לא תואם בדיוק
-  const userTable = useSelector((state: any) => state.table.userTable);
-  const groupTable = useSelector((state: any) => state.table.groupTable);
+  const userTable = useSelector((state: RootState) => state.table.userTable);
+  const groupTable = useSelector((state: RootState) => state.table.groupTable);
 
   // ------------------- סטייט לחיפוש -------------------
   const [userSearch, setUserSearch] = useState<string>("");
   const [groupSearch, setGroupSearch] = useState<string>("");
 
   // ------------------- פילטר לפי חיפוש -------------------
-  const filteredUsers = userTable.filter((u: any) =>
+  const filteredUsers = userTable.filter(u =>
     u.name.toLowerCase().includes(userSearch.toLowerCase())
   );
 
-  const filteredGroups = groupTable.filter((g: any) =>
+  const filteredGroups = groupTable.filter(g =>
     g.name.toLowerCase().includes(groupSearch.toLowerCase())
   );
 
-  // ------------------- יצוא אקסל משתמשים -------------------
-  const exportUserTable = (): void => {
-    const worksheet = XLSX.utils.json_to_sheet(filteredUsers);
+  // ------------------- יצוא אקסל -------------------
+  const exportTable = (data: object[], filename: string): void => {
+    const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+    XLSX.utils.book_append_sheet(workbook, worksheet, filename);
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    saveAs(blob, "user-table.xlsx");
-  };
-
-  // ------------------- יצוא אקסל קבוצות -------------------
-  const exportGroupTable = (): void => {
-    const worksheet = XLSX.utils.json_to_sheet(filteredGroups);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Groups");
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    saveAs(blob, "group-table.xlsx");
+    saveAs(blob, `${filename.toLowerCase()}-table.xlsx`);
   };
 
   // ------------------- רינדור -------------------
   return (
     <div style={{ width: "500px", margin: "0 auto", direction: "rtl" }}>
-
-      {/* ------------------- טבלת משתמשים ------------------- */}
+      {/* טבלת משתמשים */}
       <h2>טבלת משתמשים</h2>
-
+      
       <input
         type="text"
         placeholder="חפש משתמש לפי שם"
@@ -203,7 +191,7 @@ const TableView: React.FC = () => {
           </tr>
         </thead>
         <tbody>
-          {filteredUsers.map((u: any) => (
+          {filteredUsers.map(u => (
             <tr key={u.id}>
               <td>{u.id}</td>
               <td>{u.name}</td>
@@ -214,7 +202,7 @@ const TableView: React.FC = () => {
       </table>
 
       <button
-        onClick={exportUserTable}
+        onClick={() => exportTable(filteredUsers, "Users")}
         style={{ marginTop: "10px", padding: "8px 15px", cursor: "pointer" }}
       >
         יצוא משתמשים לאקסל
@@ -222,7 +210,7 @@ const TableView: React.FC = () => {
 
       <hr style={{ margin: "30px 0" }} />
 
-      {/* ------------------- טבלת קבוצות ------------------- */}
+      {/* טבלת קבוצות */}
       <h2>טבלת קבוצות</h2>
 
       <input
@@ -241,7 +229,7 @@ const TableView: React.FC = () => {
           </tr>
         </thead>
         <tbody>
-          {filteredGroups.map((g: any) => (
+          {filteredGroups.map(g => (
             <tr key={g.id}>
               <td>{g.id}</td>
               <td>{g.name}</td>
@@ -251,7 +239,7 @@ const TableView: React.FC = () => {
       </table>
 
       <button
-        onClick={exportGroupTable}
+        onClick={() => exportTable(filteredGroups, "Groups")}
         style={{ marginTop: "10px", padding: "8px 15px", cursor: "pointer" }}
       >
         יצוא קבוצות לאקסל
