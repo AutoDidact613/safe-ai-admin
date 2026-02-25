@@ -1,4 +1,4 @@
-import React, { useState } from "react"; // ייבוא ריאקט וה-useState
+import { useState } from "react"; // ייבוא ריאקט וה-useState
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import type { RootState } from "../../../app/store"; // ייבוא הטיפוס של הסטייט הכללי
