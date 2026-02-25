@@ -48,7 +48,7 @@ const uri  = "mongodb+srv://sh0504128171_db_user:bsdbsdbsd@autodidact-cluster.db
 
 mongoose.connect(`${uri}/filtersdk`)
   .then(() => console.log('Connected to MongoDB...'))
-  .catch(err => console.error('Could not connect to MongoDB:', err));
+  .catch((err:any) => console.error('Could not connect to MongoDB:', err));
 
 
 // מודל אמבדינג
