@@ -11,7 +11,7 @@ const navItems = [
   { to: "/example", label: "Example (Redux)" },
 
   //אני הוספתי :
-  { to: "/promptList", label: "promptCard" },
+  { to: "/promptList", label: "Prompts" },
 ];
 
 export default function Sidebar() {
