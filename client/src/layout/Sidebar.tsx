@@ -9,6 +9,9 @@ const navItems = [
   { to: "/api-keys", label: "API Keys" },
   { to: "/stats", label: "Usage" },
   { to: "/example", label: "Example (Redux)" },
+
+  //אני הוספתי :
+  { to: "/promptList", label: "Prompts" },
 ];
 
 export default function Sidebar() {
