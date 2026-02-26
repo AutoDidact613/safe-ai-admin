@@ -2,10 +2,14 @@ import express, { Request, Response } from "express";
 import mongoose from "mongoose";
 import logger from "./logger";
 // התחברות למונגוס
-// const uri = "mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority";
-// mongoose.connect(`${uri}/filtersdk`)
-//   .then(() => console.log('Connected to MongoDB...'))
-//   .catch((err: any) => console.error('Could not connect to MongoDB:', err));
+
+
+const uri  = "mongodb+srv://sh0504128171_db_user:bsdbsdbsd@autodidact-cluster.dbyvpmf.mongodb.net/?appName=autodidact-cluster";
+
+mongoose.connect(`${uri}/filtersdk`)
+  .then(() => console.log('Connected to MongoDB...'))
+  .catch(err => console.error('Could not connect to MongoDB:', err));
+
 
 // מודל אמבדינג
 const EmbeddingSchema = new mongoose.Schema({
