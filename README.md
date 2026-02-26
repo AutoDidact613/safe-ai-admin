@@ -92,3 +92,6 @@ CI runs on Pull Requests and should include:
 
 ## License
 Add a license file if needed.
+
+
+ cd '/var/www/ai613/console'
