@@ -1,0 +1,94 @@
+### ================================
+### 1️⃣ יצירת Allowed Embeddings
+### ================================
+
+POST http://localhost:3001/filter/create-embedding
+Content-Type: application/json
+
+{
+  "scope": "programming",
+  "type": "allowed",
+  "topic": "react hooks state management context api"
+}
+
+###
+
+POST http://localhost:3001/filter/create-embedding
+Content-Type: application/json
+
+{
+  "scope": "programming",
+  "type": "allowed",
+  "topic": "nodejs express rest api middleware"
+}
+
+###
+
+POST http://localhost:3001/filter/create-embedding
+Content-Type: application/json
+
+{
+  "scope": "programming",
+  "type": "allowed",
+  "topic": "typescript interfaces generics types"
+}
+
+### ================================
+### 2️⃣ יצירת Blocked Embeddings
+### ================================
+
+POST http://localhost:3001/filter/create-embedding
+Content-Type: application/json
+
+{
+  "scope": "programming",
+  "type": "blocked",
+  "topic": "cooking recipes baking food kitchen"
+}
+
+###
+
+POST http://localhost:3001/filter/create-embedding
+Content-Type: application/json
+
+{
+  "scope": "programming",
+  "type": "blocked",
+  "topic": "vacation hotels flights tourism travel"
+}
+
+###
+
+POST http://localhost:3001/filter/create-embedding
+Content-Type: application/json
+
+{
+  "scope": "programming",
+  "type": "blocked",
+  "topic": "fitness gym diet nutrition workout"
+}
+
+### ================================
+### 3️⃣ בדיקת פילטר - אמור להיות TRUE
+### ================================
+
+POST http://localhost:3001/filter/is-allowed
+Content-Type: application/json
+
+{
+  "scope": "programming",
+  "text": "איך יוצרים קומפוננטה עם useState בריאקט?"
+}
+
+### ================================
+### 4️⃣ בדיקת פילטר - אמור להיות FALSE
+### ================================
+
+POST http://localhost:3001/filter/is-allowed
+Content-Type: application/json
+
+{
+  "scope": "programming",
+  "text": "אני מחפשת מתכון לעוגת שוקולד"
+}
+

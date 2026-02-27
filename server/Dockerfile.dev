@@ -1,0 +1,29 @@
+# Development Dockerfile
+
+FROM node:20
+
+# תיקיית עבודה
+WORKDIR /app
+
+
+
+# התקנת תעודות מערכת
+RUN apt-get update && apt-get install -y ca-certificates
+
+# הוספת תעודת נטפרי
+COPY certs/netfree-ca.crt /usr/local/share/ca-certificates/netfree-ca.crt
+RUN update-ca-certificates
+
+
+
+# 👇 קריטי ל-Node
+ENV NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/netfree-ca.crt
+
+# מעתיקים רק package.json כדי להתקין תלויות
+COPY package*.json ./
+
+# מתקינים תלויות
+RUN npm install
+
+# ברירת מחדל להרצה (dev mode)
+CMD ["npm", "run", "dev"]
