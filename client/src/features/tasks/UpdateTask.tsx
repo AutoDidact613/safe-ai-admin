@@ -19,20 +19,11 @@ const UpdateTask: React.FC = () => {
         state.tasks.todos.find(t => t.id === numericId)
     );
 
-    const [title, setTitle] = useState<string>('');
-    const [desc, setDesc] = useState<string>('');
-    const [date, setDate] = useState<string>('');
-    const [img, setImg] = useState<string | null | ArrayBuffer>(null);
-    const [isCompleted, setIsCompleted] = useState<boolean>(false);
-   useEffect(() => {
-if (task && title === '') {
-setTitle(task.title);
-setDesc(task.desc);
-setDate(task.date);
-setImg(task.img);
-setIsCompleted(task.isCompleted);
-}
-}, [task, title]);
+   const [title, setTitle] = useState(task?.title || '');
+const [desc, setDesc] = useState(task?.desc || '');
+const [date, setDate] = useState(task?.date || '');
+const [img, setImg] = useState(task?.img || null);
+const [isCompleted, setIsCompleted] = useState(task?.isCompleted || false);
 
     const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
