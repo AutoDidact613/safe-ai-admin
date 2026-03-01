@@ -1,4 +1,4 @@
-import React, { useState, useEffect, type ChangeEvent } from 'react';
+import React, { useState, type ChangeEvent } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { updateTask, type Task } from './tasksSlice';
