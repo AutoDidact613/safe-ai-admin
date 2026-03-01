@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 
 const navItems = [
   { to: "/", label: "Dashboard" },
+  { to: "/tasks", label: "Tasks Manager" }, // <-- השורה החדשה שהוספנו!
   { to: "/users", label: "Users" },
   { to: "/groups", label: "Groups" },
   { to: "/models", label: "Models" },
