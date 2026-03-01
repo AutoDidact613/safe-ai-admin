@@ -6,11 +6,11 @@ import { useNavigate } from 'react-router-dom';
 const AddTask: React.FC = () => {
     const dispatch = useDispatch(); const navigate = useNavigate();
 
-    const [title, setTitle] = useState(''); const [desc, setDesc] = useState(''); const [date, setDate] = useState(''); const [img, setImg] = useState<any>(null); const [isCompleted, setIsCompleted] = useState(false);
+    const [title, setTitle] = useState(''); const [desc, setDesc] = useState(''); const [date, setDate] = useState(''); const [img, setImg] = useState(null); const [isCompleted] = useState(false);
 
     const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (file) { const reader = new FileReader(); reader.onloadend = () => { setImg(reader.result); }; reader.readAsDataURL(file); } };
 
-    const submit = () => { if (!title || !desc || !date) return alert('Fill all fields'); dispatch(addTask({ title, desc, date, img, isCompleted } as any)); navigate("/tasks"); };
+    const submit = () => { if (!title || !desc || !date) return alert('Fill all fields'); dispatch(addTask({ title, desc, date, img, isCompleted })); navigate("/tasks"); };
 
     return (
 
