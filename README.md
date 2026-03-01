@@ -45,7 +45,7 @@ npm run dev
 ### Server (Express)
 ```bash
 cd server
-npm run dev
+npm start
 ```
 
 > Note: If you want the client to call the server locally, set the API base URL in the client env file (see below).

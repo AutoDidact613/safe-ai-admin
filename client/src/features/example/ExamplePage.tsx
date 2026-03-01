@@ -7,7 +7,7 @@ export default function ExamplePage() {
 
   return (
     <div style={{ padding: 24 }}>
-      <h2>פיצ'ר דוגמה – שימוש ב-REDUX</h2>
+      <h2>פיצ'ר דוגמה – שימוש ב-REDUX  שינוי </h2>
       <p>Counter: {counter}</p>
 
       <button  className="btn btn-primary" onClick={() => dispatch(increment())}>+1</button>

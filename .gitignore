@@ -79,3 +79,21 @@ server/data/
 # (keep yarn.lock)
 # package-lock.json
 # pnpm-lock.yaml
+
+```
+# =========================
+# TypeScript build artifacts in src
+# =========================
+**/*.js
+**/*.d.ts
+**/*.js.map
+**/*.d.ts.map
+!*.config.js
+!ecosystem.config.js
+# =========================
+# TypeScript build artifacts in src
+# =========================
+src/**/*.js
+src/**/*.d.ts
+src/**/*.js.map
+src/**/*.d.ts.map
