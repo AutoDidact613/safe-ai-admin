@@ -1,4 +1,3 @@
-import React from 'react'
 import "./styles/design-system.css";
 import './App.css'
 import AppRouter from './router/AppRouter'
