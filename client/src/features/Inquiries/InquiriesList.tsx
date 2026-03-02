@@ -1,4 +1,4 @@
-import {  useState, useEffect, type FC } from "react";
+import { useState, useMemo, type FC } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { setCurrentInquiry, type Inquiry} from "./inquiriesSlice";
@@ -52,16 +52,18 @@ const InquiriesList: FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
+  // סטייט רק עבור ערכי הסינון
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [searchText, setSearchText] = useState("");
   const [notHandledOnly, setNotHandledOnly] = useState(false);
-  const [displayList, setDisplayList] = useState<Inquiry[]>([]);
+  
+  // משתנה עזר כדי להפעיל את הסינון רק כשלוחצים על הכפתור
+  const [filterTrigger, setFilterTrigger] = useState(0);
 
-  useEffect(() => setDisplayList(inquiries || []), [inquiries]);
-
-  const applyFilter = (): void => {
-    let res = [...inquiries];
+  // חישוב הרשימה להצגה בצורה יעילה (במקום useEffect)
+  const displayList = useMemo(() => {
+    let res = [...(inquiries || [])];
 
     if (notHandledOnly) res = res.filter(i => i.status === "open");
 
@@ -82,13 +84,16 @@ const InquiriesList: FC = () => {
     }
 
     res.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return res;
+  }, [inquiries, filterTrigger]); // יתעדכן רק כשמקור הנתונים משתנה או כשלוחצים "סנן"
 
-    setDisplayList(res);
+  const applyFilter = (): void => {
+    setFilterTrigger(prev => prev + 1);
   };
 
   const resetFilters = (): void => {
     setFromDate(""); setToDate(""); setSearchText(""); setNotHandledOnly(false);
-    setDisplayList(inquiries);
+    setFilterTrigger(prev => prev + 1);
   };
 
   const goToDetails = (inquiry: Inquiry): void => {
@@ -147,4 +152,3 @@ const InquiriesList: FC = () => {
 };
 
 export default InquiriesList;
-
