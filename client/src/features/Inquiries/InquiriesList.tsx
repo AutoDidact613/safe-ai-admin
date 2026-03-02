@@ -61,7 +61,7 @@ const InquiriesList: FC = () => {
   // משתנה עזר כדי להפעיל את הסינון רק כשלוחצים על הכפתור
   const [filterTrigger, setFilterTrigger] = useState(0);
 
-  // חישוב הרשימה להצגה בצורה יעילה (במקום useEffect)
+  // חישוב הרשימה להצגה
   const displayList = useMemo(() => {
     let res = [...(inquiries || [])];
 
@@ -85,8 +85,9 @@ const InquiriesList: FC = () => {
 
     res.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return res;
-  }, [inquiries, filterTrigger]); // יתעדכן רק כשמקור הנתונים משתנה או כשלוחצים "סנן"
-
+    
+    // הוספנו כאן את כל המשתנים שה-Linter ביקש:
+  }, [inquiries, filterTrigger, fromDate, toDate, searchText, notHandledOnly]);
   const applyFilter = (): void => {
     setFilterTrigger(prev => prev + 1);
   };
