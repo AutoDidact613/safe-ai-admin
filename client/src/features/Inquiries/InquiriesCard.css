@@ -1,0 +1,110 @@
+/* Inquiries Card and List Styling - OpenAI-like design tokens */
+
+.inquiries-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  margin-bottom: 14px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.inquiries-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(2,6,23,0.04);
+}
+
+.inquiries-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.inquiries-card-title {
+  font-size: var(--font-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+}
+
+.inquiries-card-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.inquiries-card-sep { color: var(--text-muted); opacity: 0.6 }
+
+.inquiries-card-time { color: var(--text-muted); font-size: var(--font-sm) }
+
+.inquiries-status {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--border-default);
+}
+
+.inquiries-status.open {
+  background: var(--border-muted);
+  color: var(--text-primary);
+}
+
+.inquiries-status.closed {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-default);
+}
+
+
+.inquiries-card-body {
+  margin-bottom: 12px;
+}
+
+.inquiries-card-message {
+  font-size: var(--font-md);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+  word-break: break-word;
+}
+
+.inquiries-card-footer {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-muted);
+}
+
+/* Use global .btn/.btn-primary/.btn-secondary/.btn-danger from design-system.css
+   Add small local adjustments scoped to the inquiries card */
+.inquiries-card .btn { gap: 8px; padding: 8px 12px }
+.inquiries-card .btn svg { height: 16px; width: 16px }
+
+
+/* Compact list item styles (used by InquiriesList) */
+.inquiry-compact {
+  background: var(--bg-surface);
+  border: 1px solid rgba(15,23,42,0.04);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.inquiry-compact-main { display:flex; flex-direction:column; gap:6px }
+
+.inquiry-subject { font-weight:600; color:var(--text-primary) }
+
+.inquiry-status { font-size:12px; font-weight:600 }
+
+.inquiry-time { font-size:12px; color:var(--text-muted) }
+
+.inquiry-actions .btn { padding:6px 10px; border-radius:8px }

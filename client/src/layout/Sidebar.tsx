@@ -9,6 +9,7 @@ const navItems = [
   { to: "/api-keys", label: "API Keys" },
   { to: "/stats", label: "Usage" },
   { to: "/example", label: "Example (Redux)" },
+  { to: "/inquiry-list", label: "Inquiries List" },
 ];
 
 export default function Sidebar() {
