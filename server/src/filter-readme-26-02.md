@@ -234,8 +234,177 @@ SafeAI Manager gives organizations full control over professional AI usage.
 
 
 
-
 #  מה עשיתי היום 07-03
 יצרתי שליחהלבדיקה חכמה במקרה של ספק בינתייים זה נראה שבהרבה מהמקרים הוא שולח לבדיקה החכמה.
 לא נרוא.  יש טבלת מעקב בשם evaluate
 דחפתי לגיטהאב יצרתי פולריקווסט לא מיזגתי שינויים זה בראנצ' מונגו דיבי צריך למזג להעלות לשרת בענן וליצור חבילה.
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+ל לשנות סיסמא במונגו!!!
+!!! ליצור פרופיל כללי  !!!
+!!! ליצור תיעוד מסודר ומבט לעתיד !!!
+!!! לבדוק עם נטפרי האם יש בעיות !!!
+
+# יצרתי SDK - שימוש::
+
+from fastapi import FastAPI, Depends
+from safeai import SafeAI
+
+app = FastAPI()
+
+# יצירת מופע גלובלי
+evaluator = SafeAI(profile_id="69a80a2128be7b3daa47622b")
+
+@app.on_event("startup")
+async def startup_event():
+    # אתחול הפרומפטים מהשרת בזמן עליית ה-FastAPI
+    await evaluator.initialize()
+
+@app.post("/ask")
+async def ask_ai(prompt: str):
+    # שימוש בסינון
+    result = await evaluator.evaluate(prompt)
+    
+    if not result.get("allowed"):
+        return {"status": "blocked", "reason": result.get("reason")}
+    
+    # כאן יבוא הקוד של שליחת הפרומפט למודל השפה שלך (כמו GPT)
+    return {"status": "allowed", "response": "This is a safe answer."}
+
+
+<!-- 
+הנה המבנה המלא והמעודכן של ה-SDK בגרסה אסינכרונית (Async), המותאמת לעבודה עם FastAPI וטוענת את הפרומפטים בזמן היצירה.
+
+מבנה התיקיות המומלץ:
+Plaintext
+safeai_sdk/
+├── setup.py
+└── safeai/
+    ├── __init__.py
+    └── client.py
+1. safeai/client.py
+זהו לב החבילה. השתמשתי ב-httpx כדי להבטיח שהקריאות לא יחסמו את ה-Event Loop של FastAPI.
+
+Python
+import httpx
+import logging
+
+logger = logging.getLogger(__name__)
+
+class SafeAI:
+    def __init__(self, profile_id: str, api_base_url: str = "http://localhost:3001"):
+        self.profile_id = profile_id
+        self.api_base_url = api_base_url
+        self.evaluate_url = f"{api_base_url}/evaluate"
+        self.profile_url = f"{api_base_url}/ai-profiles"
+        
+        # נתונים שיטענו מהשרת
+        self.name = None
+        self.content_prompts = []
+        self.behavior_prompts = []
+        self.knowledge_prompts = []
+        self.is_initialized = False
+
+    async def initialize(self):
+        """
+        טוען את נתוני הפרופיל והפרומפטים מהשרת בצורה אסינכרונית.
+        חובה לקרוא לפונקציה זו לאחר יצירת האובייקט.
+        """
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(self.profile_url)
+                response.raise_for_status()
+                profiles = response.json()
+                
+                # חיפוש הפרופיל המתאים ברשימה
+                profile = next((p for p in profiles if p.get("_id") == self.profile_id), None)
+                
+                if profile:
+                    self.name = profile.get("name")
+                    self.content_prompts = profile.get("contentPrompts", [])
+                    self.behavior_prompts = profile.get("behaviorPrompts", [])
+                    self.knowledge_prompts = profile.get("knowledgePrompts", [])
+                    self.is_initialized = True
+                    logger.info(f"SafeAI: Profile '{self.name}' initialized successfully.")
+                else:
+                    logger.error(f"SafeAI: Profile ID {self.profile_id} not found.")
+            except Exception as e:
+                logger.error(f"SafeAI: Failed to initialize profile: {e}")
+
+    async def evaluate(self, text: str):
+        """
+        שולח טקסט לבדיקה מול השרת.
+        """
+        if not self.is_initialized:
+            logger.warning("SafeAI: Evaluator called before initialization.")
+
+        payload = {
+            "profileId": self.profile_id,
+            "text": text
+        }
+        
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(self.evaluate_url, json=payload, timeout=10.0)
+                response.raise_for_status()
+                return response.json()
+            except httpx.HTTPStatusError as e:
+                return {"allowed": False, "reason": f"API Error: {e.response.status_code}"}
+            except Exception as e:
+                return {"allowed": False, "reason": f"Connection Error: {str(e)}"}
+2. safeai/__init__.py
+קובץ זה מאפשר ייבוא נוח של המחלקה.
+
+Python
+from .client import SafeAI
+
+__all__ = ["SafeAI"]
+3. setup.py
+קובץ ההתקנה של החבילה.
+
+Python
+from setuptools import setup, find_packages
+
+setup(
+    name="safeai-sdk",
+    version="0.1.0",
+    packages=find_packages(),
+    install_requires=[
+        "httpx>=0.23.0",
+    ],
+    description="SDK for SafeAI filtering service",
+    python_requires=">=3.7",
+)
+4. דוגמת שימוש בתוך FastAPI
+כך תשלבי את הכל ביחד בשרת שלך:
+
+Python
+from fastapi import FastAPI, Depends
+from safeai import SafeAI
+
+app = FastAPI()
+
+# יצירת מופע גלובלי
+evaluator = SafeAI(profile_id="69a80a2128be7b3daa47622b")
+
+@app.on_event("startup")
+async def startup_event():
+    # אתחול הפרומפטים מהשרת בזמן עליית ה-FastAPI
+    await evaluator.initialize()
+
+@app.post("/ask")
+async def ask_ai(prompt: str):
+    # שימוש בסינון
+    result = await evaluator.evaluate(prompt)
+    
+    if not result.get("allowed"):
+        return {"status": "blocked", "reason": result.get("reason")}
+    
+    # כאן יבוא הקוד של שליחת הפרומפט למודל השפה שלך (כמו GPT)
+    return {"status": "allowed", "response": "This is a safe answer."}
+הערות חשובות:
+שימוש ב-initialize: בגלל שפייתון לא תומכת ב-await בתוך ה-__init__, הוספתי פונקציית initialize נפרדת. ב-FastAPI הכי נכון לקרוא לה בתוך אירוע ה-startup.
+
+Dependencies: אל תשכחי להתקין את הדרישות: pip install httpx.
+
+תרצי שאסביר איך לארוז את זה לקובץ .whl כדי שתוכלי להתקין את זה בפרויקטים אחרים בקלות? -->

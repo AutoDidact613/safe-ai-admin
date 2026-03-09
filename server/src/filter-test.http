@@ -223,3 +223,21 @@ Content-Type: application/json
     "profileId": "69a80a2128be7b3daa47622b",
     "text": "איך מתחתנים?"
 }
+
+
+### ai613.autodidact.co.il:3001/console/api/api/embed
+POST https://ai613.autodidact.co.il/console/api/filter/evaluate
+Content-Type: application/json
+
+{
+    "profileId": "69a80a2128be7b3daa47622b",
+    "text": "איך מתחתנים?"
+}
+### ai613.autodidact.co.il:3001/console/api/api/embed
+GET https://ai613.autodidact.co.il/console/api/filter/health
+Content-Type: application/json
+
+{
+    "profileId": "69a80a2128be7b3daa47622b",
+    "text": "איך מתחתנים?"
+}
