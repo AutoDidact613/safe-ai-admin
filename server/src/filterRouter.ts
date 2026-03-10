@@ -206,7 +206,7 @@ router.get("/ai-profiles", async (_req, res) => {
 
 router.post("/evaluate", async (req, res) => {
   try {
-    const { profileId, text } = req.body;
+    const { profileId, text, auditDisabled } = req.body;
 
     if (!profileId || !text) {
       return res.status(400).json({
@@ -298,9 +298,11 @@ router.post("/evaluate", async (req, res) => {
 
     // שלב הגיבוי: אם נחסם או שיש ביטחון נמוך - שולחים ל-GPT
     if (!finalAllowed) {
-      logger.info(
-        `Low confidence or blocked by vector. Consulting GPT-4o-mini...`,
-      );
+      if (!auditDisabled) {
+        logger.info(
+          `Low confidence or blocked by vector. Consulting GPT-4o-mini...`,
+        );
+      }
       const isSafeByLLM = await getLLMDecision(
         text,
         profile.name,
@@ -318,14 +320,15 @@ router.post("/evaluate", async (req, res) => {
     }
 
     // שמירה לדאטה-בייס לצורך מעקב ושיפור המערכת בעתיד
-    await EvaluationLog.create({
-      profileId: profile._id,
-      text,
-      vectorScores: { bestAllowed: 0, bestBlocked: 0 },
-      initialDecision: reason,
-      llmFinalDecision: finalAllowed ? "allowed" : "blocked",
-    });
-
+    if (!auditDisabled) {
+      await EvaluationLog.create({
+        profileId: profile._id,
+        text,
+        vectorScores: { bestAllowed: 0, bestBlocked: 0 }, // ערכים אלה צריכים להתעדכן אם ה-embeddings יופעלו
+        initialDecision: reason,
+        llmFinalDecision: finalAllowed ? "allowed" : "blocked",
+      });
+    }
     return res.json({
       allowed: finalAllowed,
       reason: reason,
