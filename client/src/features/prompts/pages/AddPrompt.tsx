@@ -19,8 +19,7 @@ const AddPrompt = () => {
         content: ""
     });
 
-    // פונקציית עדכון שדות - שימי לב להגדרת ה-Event
-    //     מה זה e? זה האובייקט של האירוע (Event).
+    // מה זה event ? זה האובייקט של האירוע (Event).
     // מה זה React.ChangeEvent? זה טיפוס שמגדיר שזהו אירוע של "שינוי".
     // מה זה <HTMLInputElement | HTMLSelectElement>? כאן אנחנו אומרים ל-TypeScript: "האירוע הזה מגיע או מתיבת טקסט (input) או מרשימה נפתחת (select)".
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -33,7 +32,8 @@ const AddPrompt = () => {
         if (newP.profession && newP.purpose && newP.content) {
             dispatch(addPrompt(newP));
             navigate("/promptList");
-        } else {
+        } 
+        else {
             alert("נא למלא את כל השדות");
         }
     };

@@ -7,17 +7,15 @@ const DeleteConfirmation = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
-    // 1. שליפת הפרומפט הנוכחי שסימנו למחיקה
+    // פה אנחנו שולפים את הפרטמפט שלחצנו עליו למחיקה
     const currenP = useSelector((state: RootState) => state.prompts.currentPrompt);
 
-    // 2. בדיקת בטיחות: מוודאים שיש מה למחוק
     if (!currenP) {
         return <p>לא נבחר פרומפט למחיקה</p>;
     }
 
-    const handleDelete = () => {
-        // 3. שליחת ה-ID בלבד לפונקציית המחיקה
-        // TypeScript יודע ש-deletePrompt מצפה למספר (number)
+    //הפונ הזאת שולחת את האיידי של האוביקט לפונקצית שבסלייס
+    const deleteFunc = () => {     
         dispatch(deletePrompt(currenP.id));
         navigate("/promptList");
     };
@@ -25,10 +23,10 @@ const DeleteConfirmation = () => {
     return (
         <div className="delete-conf">
             <h2>האם את בטוחה שברצונך למחוק?</h2>
-            <p>הפרומפט של המקצוע: <strong>{currenP.profession}</strong> יימחק לצמיתות.</p>
+            <p>פרומפט זה ימחק לצמיתות</p>
             
             <div className="bDiv">
-                <button onClick={handleDelete} className="danger-btn">כן, מחק</button>
+                <button onClick={deleteFunc} className="danger-btn">כן, מחק</button>
                 <button onClick={() => navigate(-1)}>ביטול</button>
             </div>
         </div>

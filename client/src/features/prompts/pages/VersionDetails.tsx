@@ -5,10 +5,10 @@ import type { RootState } from "../../../app/store";
 const VersionDetails = () => {
     const navigate = useNavigate();
 
-    // 1. שליפת הגרסה הנוכחית מהסטייט
+    // שליפת הגרסה הנוכחית מהסטייט
     const currenV = useSelector((state: RootState) => state.prompts.currentVersion);
 
-    // 2. בדיקת בטיחות: אם אין גרסה נבחרת (למשל אחרי רענון דף)
+    // בדיקת בטיחות: אם אין גרסה נבחרת (למשל אחרי רענון דף)
     if (!currenV) {
         return (
             <div className="v-details">

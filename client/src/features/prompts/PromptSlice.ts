@@ -34,7 +34,7 @@ const initialState: PromptState = {
         }
     ],
     //מערך של מקצועות
-    professions: [{ id: 1, prof: "תכנות" }],
+    professions: [{ id: 1, prof: "תכנות" },{ id: 2, prof: "אדריכלות" } ],
 
     //null פרומפט נוכחי - כרגע 
     currentPrompt: null,

@@ -11,7 +11,6 @@ const PromptDetails = () => {
     // שליפת הפרומפט הנוכחי מהסטייט
     const currenP = useSelector((state: RootState) => state.prompts.currentPrompt);
 
-    // טיפול במקרה שבו currenP הוא null (למשל אחרי רענון דף)
     if (!currenP) {
         return (
             <div className="prompt-details">

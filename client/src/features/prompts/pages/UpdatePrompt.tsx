@@ -8,29 +8,29 @@ const UpdatePrompt = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    // 1. שליפת הפרומפט הנוכחי שנבחר לעדכון
+    //הפורמפט שנבחר לעדכון 
     const currenP = useSelector((state: RootState) => state.prompts.currentPrompt);
 
-    // 2. סטייט מקומי לניהול השדות בטופס וסיבת השינוי
-    // שימי לב: אנחנו מאתחלים את השדות עם הערכים הקיימים של הפרומפט
+    // משתני סטייט של תוכן הפרומפט וסיבת השינוי
     const [updatedContent, setUpdatedContent] = useState(currenP?.content || "");
     const [reason, setReason] = useState("");
 
-    // 3. בדיקת בטיחות: אם בטעות הגענו לדף ואין פרומפט נבחר
+    //בדיקת בטיחות: אם בטעות הגענו לדף ואין פרומפט נבחר
     if (!currenP) {
         return <p>שגיאה: לא נבחר פרומפט לעדכון</p>;
     }
 
-    const handleSave = () => {
+    const SaveP = () => {
         if (!reason) {
             alert("חובה להזין סיבת שינוי ליצירת גרסה חדשה");
             return;
         }
 
-        // 4. יצירת אובייקט מעודכן המבוסס על הקיים
+        // יצירת אובייקט מעודכן המבוסס על הקיים
         const pToUpdate = { ...currenP, content: updatedContent };
 
-        // 5. שליחה ל-Redux (ה-Payload כולל את האובייקט ואת הסיבה)
+        //שליחה ל-Redux
+        // את הפרומפט ואת הסיבה
         dispatch(updateP({ p: pToUpdate, reason: reason }));
         navigate("/promptList");
     };
@@ -55,7 +55,7 @@ const UpdatePrompt = () => {
                 placeholder="למה החלפת את התוכן?"
             />
 
-            <button onClick={handleSave}>עדכן וצור גרסה</button>
+            <button onClick={SaveP}>עדכן וצור גרסה</button>
         </div>
     );
 };
