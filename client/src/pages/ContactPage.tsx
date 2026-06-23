@@ -9,7 +9,7 @@ export default function ContactPage() {
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
-
+  const [requestType, setRequestType] = useState("כללי"); // ערך ברירת מחדל
   // Check if user is logged in
   const accessToken = localStorage.getItem("accessToken");
   const user = localStorage.getItem("user");
@@ -18,10 +18,10 @@ export default function ContactPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!isLoggedIn) {
-      setMessage("עליך להתחבר כדי לשלוח הודעה");
-      return;
-    }
+     if (!isLoggedIn) {
+       setMessage("עליך להתחבר כדי לשלוח הודעה");
+       return;
+     }
 
     if (!title.trim() || !description.trim()) {
       setMessage("נא למלא את כל השדות");
@@ -40,6 +40,7 @@ export default function ContactPage() {
           body: JSON.stringify({
             title: title.trim(),
             description: description.trim(),
+            requestType: requestType.trim(),
           }),
         }
       );
@@ -133,8 +134,23 @@ export default function ContactPage() {
               required
             />
           </div>
-
           <div className="form-group">
+        <label htmlFor="requestType">סוג הפנייה</label>
+        <select
+          id="requestType"
+          value={requestType}
+          onChange={(e) => setRequestType(e.target.value)}
+          disabled={isSubmitting}
+          required
+        >
+          <option value=""  hidden selected>בחר סוג פנייה</option>
+          <option value="באג">באג</option>
+          <option value="בקשה לפיתוח פיצ'ר">בקשה לפיתוח פיצ'ר</option>
+          <option value="משוב כללי">משוב כללי</option>
+        </select>
+        </div>
+
+              <div className="form-group">
             <label htmlFor="description">תיאור</label>
             <textarea
               id="description"

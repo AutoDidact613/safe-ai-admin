@@ -7,36 +7,41 @@ import logger from "../logger";
  */
 export async function submitContactForm(req: Request, res: Response) {
   try {
-    const { title, description } = req.body;
+    const { title, description, requestType } = req.body;
     const user = (req as any).user; // User from JWT token
 
+
     // Validate input
-    if (!title || !description) {
+    if (!title || !description || !requestType) {
       return res.status(400).json({
         success: false,
         message: "נא למלא את כל השדות",
       });
     }
 
-    if (!title.trim() || !description.trim()) {
+    if (!title.trim() || !description.trim() || !requestType.trim()) {
       return res.status(400).json({
         success: false,
         message: "נא למלא את כל השדות",
       });
     }
-
+  
     // Send contact email
-    await sendContactEmail({
+    const payload: any = {
       userEmail: user.email,
       userName: user.name || user.email,
       title: title.trim(),
       description: description.trim(),
-    });
+      requestType: requestType.trim(),
+    };
+
+    await sendContactEmail(payload);
 
     logger.info("Contact form submitted", {
       userId: user.id,
       userEmail: user.email,
       title: title.trim(),
+      requestType: requestType.trim(),
     });
 
     res.json({
