@@ -22,6 +22,7 @@ router.use(authenticateToken);
 
 // 2. PROTECTED STATIC ROUTES (Must be before dynamic :id routes)
 router.get("/pending", getPendingOrganizationsHandler); // System Admin only
+router.patch("/pending/:id", updateOrganizationHandler); // מעדכן את הסטטוס של הארגון הממתין מול ה-DB
 
 // 3. PROTECTED DYNAMIC ROUTES
 router.post("/", createOrganizationHandler); // Admin only
