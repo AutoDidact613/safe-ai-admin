@@ -14,20 +14,22 @@ import { authenticateToken } from "../middleware/auth";
 
 const router = express.Router();
 
-
+// 1. PUBLIC ROUTES (Must be at the very top, before auth)
 router.get("/", listOrganizationsHandler); // Public
 
-// All routes require authentication
+// All routes below require authentication
 router.use(authenticateToken);
 
-// Organization CRUD
+// 2. PROTECTED STATIC ROUTES (Must be before dynamic :id routes)
+router.get("/pending", getPendingOrganizationsHandler); // System Admin only
+
+// 3. PROTECTED DYNAMIC ROUTES
 router.post("/", createOrganizationHandler); // Admin only
 router.get("/", listOrganizationsHandler); // Admin only
 router.get("/:id", getOrganizationHandler); // Admin or Org Owner
 router.put("/:id", updateOrganizationHandler); // Admin or Org Owner
 router.patch("/:id", updateOrganizationHandler); // Admin or Org Owner
 router.delete("/:id", deleteOrganizationHandler); // Admin only
-router.get("/pending", getPendingOrganizationsHandler); // System Admin only
 
 // Organization Users Management
 router.get("/:id/users", getOrganizationUsersHandler); // Admin or Org Owner
