@@ -235,7 +235,7 @@ export async function removeUserFromOrganizationHandler(
   }
 }
 
-export async function getPendingOrganizations(req: Request, res: Response): Promise<void> {
+export async function getPendingOrganizationsHandler(req: Request, res: Response): Promise<void> {
   try{
     const pendingOrganizations = await getPendingOrganizationsForAdmin();
 
