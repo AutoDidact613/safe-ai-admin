@@ -27,6 +27,6 @@ export async function deleteOrganization(orgId: string) {
   return Organization.findByIdAndDelete(orgId).lean();
 }
 
-export async function setPendingOrganizations() {
+export async function getPendingOrganizations() {
   return Organization.find({ status: "pending" }).populate("ownerId", "email name").lean();
 }
