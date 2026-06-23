@@ -22,6 +22,9 @@ export const API_ENDPOINTS = {
   filter: `${API_BASE_URL}/filter`,
   providerKeys: `${API_BASE_URL}/provider-keys`,
   organizations: `${API_BASE_URL}/organizations`,
+  adminOrganizations: {
+    pending : `${API_BASE_URL}/organizations/pending`,
+  },
   // Proxy key endpoints (user's own proxy key)
   proxyKey: {
     info: `${API_BASE_URL}/proxy-key`,
