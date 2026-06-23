@@ -8,6 +8,7 @@ import {
   getOrganizationUsersHandler,
   addUserToOrganizationHandler,
   removeUserFromOrganizationHandler,
+  getPendingOrganizationsHandler,
 } from "../controllers/organizationController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -26,6 +27,7 @@ router.get("/:id", getOrganizationHandler); // Admin or Org Owner
 router.put("/:id", updateOrganizationHandler); // Admin or Org Owner
 router.patch("/:id", updateOrganizationHandler); // Admin or Org Owner
 router.delete("/:id", deleteOrganizationHandler); // Admin only
+router.get("/pending", getPendingOrganizationsHandler); // System Admin only
 
 // Organization Users Management
 router.get("/:id/users", getOrganizationUsersHandler); // Admin or Org Owner
