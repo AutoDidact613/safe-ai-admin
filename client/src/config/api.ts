@@ -23,7 +23,7 @@ export const API_ENDPOINTS = {
   providerKeys: `${API_BASE_URL}/provider-keys`,
   organizations: `${API_BASE_URL}/organizations`,
   adminOrganizations: {
-    pending : `${API_BASE_URL}/organizations/pending`,
+    pending: `${API_BASE_URL}/organizations/pending`, 
   },
   // Proxy key endpoints (user's own proxy key)
   proxyKey: {

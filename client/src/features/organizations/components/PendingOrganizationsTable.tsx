@@ -1,4 +1,4 @@
-import * as React from "react";
+import React from "react";
 
 interface Organization {
   _id: string;
@@ -12,9 +12,9 @@ interface PendingOrganizationsTableProps {
   organizations: Organization[];
 }
 
-export const PendingOrganizationsTable = ({ organizations }: PendingOrganizationsTableProps) => {
+export const PendingOrganizationsTable: React.FC<PendingOrganizationsTableProps> = ({ organizations }) => {
   if (organizations.length === 0) {
-    return <div className="pending-orgs-empty">אין ארגונים הממתינים לאישור כעת.</div>;
+    return <div className="pending-orgs-empty">כעת אין ארגונים ממתינים לאישור</div>;
   }
 
   return (
@@ -30,14 +30,16 @@ export const PendingOrganizationsTable = ({ organizations }: PendingOrganization
       <tbody>
         {organizations.map((org) => (
           <tr key={org._id}>
-            <td className="pending-orgs-name">{org.name}</td>
+            <td>{org.name}</td>
             <td>{new Date(org.createdAt).toLocaleDateString("he-IL")}</td>
             <td>
-              <span className="status-badge pending">{org.status}</span>
+              <span className={`status-badge ${org.status}`}>
+                {org.status === "pending" ? "ממתין" : org.status}
+              </span>
             </td>
             <td>
-              <button className="btn btn-approve">אשר</button>
-              <button className="btn btn-reject">דחה</button>
+              <button className="btn-approve">אישור</button>
+              <button className="btn-reject">דחייה</button>
             </td>
           </tr>
         ))}
