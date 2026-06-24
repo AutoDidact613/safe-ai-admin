@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { start } from "node:repl";
 
 const UserSchema = new mongoose.Schema(
   {
@@ -90,6 +91,24 @@ const UserSchema = new mongoose.Schema(
       lastResetDate: { type: Date, default: Date.now },
     },
     
+    // --- Subscription / Payment ---
+    subscription: {
+      plan: {
+        type: String,
+        enum: ["free", "course", "subscription"],
+        default: "free",
+      },
+      status: {
+        type: String,
+        enum: ["active", "cancelled", "expired", "none"],
+        default: "none",
+      },
+      transactionId: String,
+      startDate: Date,
+      renawalDate: Date,
+      cancelledAt: Date,
+    },
+
     // --- Free Provider Keys (keys that don't cost money) ---
     freeProviderKeys: [String],
     
