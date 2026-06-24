@@ -25,6 +25,18 @@ export async function submitContactForm(req: Request, res: Response) {
         message: "נא למלא את כל השדות",
       });
     }
+    if (title.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: "נושא ההודעה לא יכול להיות ארוך מ-100 תווים",
+      });
+    }
+    if (description.length > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: "תוכן ההודעה לא יכול להיות ארוך מ-1000 תווים",
+      });
+    }
   
     // Send contact email
     const payload: any = {

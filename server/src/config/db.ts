@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 import logger from "../logger";
 
 const MONGO_URI =
-  process.env.MONGO_URI || "mongodb://localhost:27017/filtersdk";
+process.env.MONGO_URI || "mongodb://localhost:27017/filtersdk";
 
 export async function connectDatabase(): Promise<void> {
   try {
