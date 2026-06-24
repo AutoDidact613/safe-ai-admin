@@ -95,8 +95,13 @@ const UserSchema = new mongoose.Schema(
     subscription: {
       plan: {
         type: String,
-        enum: ["free", "course", "subscription"],
+        enum: ["free", "pro"],
         default: "free",
+      },
+      billingCycle: {
+        type: String,
+        enum: ["monthly", "yearly", null],
+        default: null,
       },
       status: {
         type: String,
@@ -105,7 +110,7 @@ const UserSchema = new mongoose.Schema(
       },
       transactionId: String,
       startDate: Date,
-      renawalDate: Date,
+      renewalDate: Date,
       cancelledAt: Date,
     },
 
