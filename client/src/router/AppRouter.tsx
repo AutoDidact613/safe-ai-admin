@@ -6,6 +6,9 @@ import OrganizationUsersPage from "../pages/OrganizationUsersPage";
 import AdminOrganizationsPage from "../pages/AdminOrganizationsPage";
 import ContactPage from "../pages/ContactPage";
 import DocsPage from "../pages/DocsPage";
+import ArticlesPage from "../pages/ArticlesPage";
+import ArticlePage from "../pages/ArticlePage";
+import AdminArticlesPage from "../pages/AdminArticlesPage";
 import RecommendedGuidesPage from "../pages/RecommendedGuidesPage";
 import CoursesPage from "../pages/CoursesPage";
 import ActivityLogPage from "../pages/ActivityLogPage";
@@ -19,6 +22,7 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
+import ErrorBoundary from "../components/ErrorBoundary";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -47,9 +51,11 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+const ROUTER_BASE = import.meta.env.VITE_BASE_PATH?.replace(/\/$/, "") || "";
+
 export default function AppRouter() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={ROUTER_BASE}>
       {/* Global Top Navigation */}
       <TopNavigation />
       
@@ -104,16 +110,20 @@ export default function AppRouter() {
           path="/api-key-display"
           element={
             <ProtectedRoute>
-              <ApiKeyDisplay />
+              <ErrorBoundary>
+                <ApiKeyDisplay />
+              </ErrorBoundary>
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/safeai-ui"
           element={
             <ProtectedRoute>
-              <SafeAIUIPage />
+              <ErrorBoundary>
+                <SafeAIUIPage />
+              </ErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -123,7 +133,9 @@ export default function AppRouter() {
           path="/organization/users"
           element={
             <ProtectedRoute>
-              <OrganizationUsersPage />
+              <ErrorBoundary>
+                <OrganizationUsersPage />
+              </ErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -132,7 +144,20 @@ export default function AppRouter() {
           path="/admin/organizations"
           element={
             <ProtectedRoute>
-              <AdminOrganizationsPage />
+              <ErrorBoundary>
+                <AdminOrganizationsPage />
+              </ErrorBoundary>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/articles"
+          element={
+            <ProtectedRoute>
+              <ErrorBoundary>
+                <AdminArticlesPage />
+              </ErrorBoundary>
             </ProtectedRoute>
           }
         />
@@ -140,7 +165,9 @@ export default function AppRouter() {
         {/* New Pages Routes */}
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
-        <Route path="/docs" element={<DocsPage />} />
+        <Route path="/docs" element={<ArticlesPage />} />
+        <Route path="/docs/:slug" element={<ArticlePage />} />
+        <Route path="/docs-old" element={<DocsPage />} />
         <Route path="/recommended-guides" element={<RecommendedGuidesPage />} />
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/activity-log" element={<ActivityLogPage />} />

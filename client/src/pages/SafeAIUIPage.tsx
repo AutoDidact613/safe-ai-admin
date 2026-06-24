@@ -7,6 +7,8 @@ import UserDashboard from "../features/safeai-ui/UserDashboard";
 import Statistics from "../features/safeai-ui/Statistics";
 import UserApiKeysPage from "../features/safeai-ui/UserApiKeysPage";
 import AdminOrganizationsPage from "./AdminOrganizationsPage";
+import BillingPage from "../features/safeai-ui/BillingPage";
+import { useAuth } from "../context/AuthContext";
 
 type Section =
   | "profiles"
@@ -14,47 +16,15 @@ type Section =
   | "dashboard"
   | "statistics"
   | "apikeys"
-  | "organizations";
-
-interface UserData {
-  email: string;
-  name: string;
-  _id?: string;
-}
+  | "organizations"
+  | "billing";
 
 export default function SafeAIUIPage() {
   const navigate = useNavigate();
+  const { user: currentUser, userRole } = useAuth();
 
-  // Initialize state from localStorage
-  const getInitialState = () => {
-    const storedUser = localStorage.getItem("user");
-    const storedRole = localStorage.getItem("userRole");
-
-    if (storedUser && storedRole) {
-      const parsedUser = JSON.parse(storedUser);
-      return {
-        user: parsedUser,
-        role: storedRole as "admin" | "user",
-        section: "statistics" as Section,
-      };
-    }
-
-    return {
-      user: null,
-      role: null,
-      section: "dashboard" as Section,
-    };
-  };
-
-  const initialState = getInitialState();
   const [activeSection, setActiveSection] = useState<Section>(
-    initialState.section,
-  );
-  const [userRole] = useState<"admin" | "user" | null>(
-    initialState.role,
-  );
-  const [currentUser] = useState<UserData | null>(
-    initialState.user,
+    userRole === "admin" ? "statistics" : "dashboard",
   );
 
   // Redirect to landing page if not authenticated
@@ -78,6 +48,8 @@ export default function SafeAIUIPage() {
         return <UserApiKeysPage />;
       case "organizations":
         return <AdminOrganizationsPage />;
+      case "billing":
+        return <BillingPage />;
       default:
         return <UserDashboard user={currentUser} />;
     }
@@ -169,6 +141,24 @@ export default function SafeAIUIPage() {
               <>
                 <button
                   className={
+                    activeSection === "dashboard"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
+                  onClick={() => setActiveSection("dashboard")}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path
+                      d="M8 8a3 3 0 100-6 3 3 0 000 6zM2 14c0-2.21 2.686-4 6-4s6 1.79 6 4"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  פרופיל
+                </button>
+                <button
+                  className={
                     activeSection === "statistics"
                       ? "sub-nav-btn active"
                       : "sub-nav-btn"
@@ -206,30 +196,39 @@ export default function SafeAIUIPage() {
                       cy="8"
                       r="2"
                       stroke="currentColor"
-                      stroke-width="1.5"
+                      strokeWidth="1.5"
                     />
-
                     <path
                       d="M6 8H13"
                       stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
                     />
-
                     <path
                       d="M10 8V10"
                       stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
                     />
                     <path
                       d="M12 8V10"
                       stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
                     />
                   </svg>
                   מפתחות API
+                </button>
+                <button
+                  className={activeSection === "billing" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  onClick={() => setActiveSection("billing")}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <rect x="1" y="4" width="14" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M1 7h14" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M4 10.5h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                  חיובים
                 </button>
               </>
             )}

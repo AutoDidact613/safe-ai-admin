@@ -1,4 +1,4 @@
-import "dotenv/config";
+﻿import "dotenv/config";
 
 import express from "express";
 import cors from "cors";
@@ -14,6 +14,7 @@ import proxyKeyRouter from "./routes/proxyKeyRouter";
 import promptRouter from "./routes/promptRouter";
 import organizationRouter from "./routes/organizationRouter";
 import contactRouter from "./routes/contactRouter";
+import articlesRouter from "./routes/articlesRouter";
 
 import { requestLogger } from "./middleware/requestLogger";
 import { errorHandler } from "./middleware/errorHandler";
@@ -26,14 +27,15 @@ const PORT = process.env.PORT || 3001;
 const app = express();
 
 // Enable CORS for all routes
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map(o => o.trim()) ?? [];
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:3000"],
+  origin: allowedOrigins,
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
-// הגדרה ל-50 מגה-בייט כדי להיות בטוחים
+// ×”×’×“×¨×” ×œ-50 ×ž×’×”-×‘×™×™×˜ ×›×“×™ ×œ×”×™×•×ª ×‘×˜×•×—×™×
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
@@ -63,7 +65,8 @@ app.use("/proxy-key", proxyKeyRouter); // User's own proxy key management
 app.use("/admin/stats", adminStatsRouter); // Admin stats already has auth middleware
 app.use("/prompts", authenticateToken, promptRouter); // Prompt management (admin routes protected in router)
 app.use("/organizations", organizationRouter); // Organization management (auth middleware in router)
-app.use("/contact", contactRouter); // Contact form (requires authentication)
+app.use("/contact", contactRouter);
+app.use("/articles", articlesRouter); // Contact form (requires authentication)
 
 
 // ===== Public routes for filter evaluation =====
@@ -92,3 +95,5 @@ async function start() {
 }
 
 start();
+
+

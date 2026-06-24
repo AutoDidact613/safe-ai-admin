@@ -31,6 +31,19 @@ export async function createOrganizationHandler(req: Request, res: Response) {
 }
 
 /**
+ * List organizations publicly (for registration form — no auth required)
+ */
+export async function listOrganizationsPublicHandler(req: Request, res: Response) {
+  try {
+    const organizations = await listOrganizations();
+    res.json(organizations);
+  } catch (error) {
+    logger.error("Failed to list organizations (public)", { error: (error as Error).message, stack: (error as Error).stack });
+    res.status(500).json({ error: "Failed to fetch organizations", detail: (error as Error).message });
+  }
+}
+
+/**
  * List all organizations (Admin only)
  */
 export async function listOrganizationsHandler(req: Request, res: Response) {
@@ -44,8 +57,8 @@ export async function listOrganizationsHandler(req: Request, res: Response) {
     const organizations = await listOrganizations();
     res.json(organizations);
   } catch (error) {
-    logger.error("Failed to list organizations", { error });
-    res.status(500).json({ error: "Failed to fetch organizations" });
+    logger.error("Failed to list organizations", { error: (error as Error).message, stack: (error as Error).stack });
+    res.status(500).json({ error: "Failed to fetch organizations", detail: (error as Error).message });
   }
 }
 

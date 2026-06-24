@@ -2,6 +2,7 @@ import express from "express";
 import {
   createOrganizationHandler,
   listOrganizationsHandler,
+  listOrganizationsPublicHandler,
   getOrganizationHandler,
   updateOrganizationHandler,
   deleteOrganizationHandler,
@@ -14,7 +15,7 @@ import { authenticateToken } from "../middleware/auth";
 const router = express.Router();
 
 
-router.get("/", listOrganizationsHandler); // Public
+router.get("/", listOrganizationsPublicHandler); // Public — for registration form
 
 // All routes require authentication
 router.use(authenticateToken);
