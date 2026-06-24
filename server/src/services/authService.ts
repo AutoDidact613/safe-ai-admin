@@ -19,6 +19,7 @@ import {
 } from "../utils/crypto";
 import axios from "axios";
 import logger from "../logger";
+import { nonnegative } from "zod";
 
 const SALT_ROUNDS = 10;
 
@@ -53,29 +54,36 @@ export async function register(data: {
   const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
   try {
-    // Register with LiteLLM
-    const response = await axios.post(
-      `${process.env.LITELLM_PROXY_URL}/key/generate`,
-      {
-        models: ["*"],
-        user_id: data.email,
-        duration: "30d",
-        metadata: {
-          source: "SafeAI_Registration",
-          user_email: data.email,
-        },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.LITELLM_MASTER_KEY}`,
-          "Content-Type": "application/json",
-        },
-        timeout: 5000,
-      },
-    );
+  //   // Register with LiteLLM
+  //   const response = await axios.post(
+  //     `${process.env.LITELLM_PROXY_URL}/key/generate`,
+  //     {
+  //       models: ["*"],
+  //       user_id: data.email,
+  //       duration: "30d",
+  //       metadata: {
+  //         source: "SafeAI_Registration",
+  //         user_email: data.email,
+  //       },
+  //     },
+  //     {
+  //       headers: {
+  //         Authorization: `Bearer ${process.env.LITELLM_MASTER_KEY}`,
+  //         "Content-Type": "application/json",
+  //       },
+  //       timeout: 5000,
+  //     },
+    // );
 
-    const { key, token, key_name } = response.data;
-    const litellmKeyEncrypted = encryptSecret(key);
+    // const { key, token, key_name } = response.data;
+    // const litellmKeyEncrypted = encryptSecret(key);
+
+    //למלא מחרוזות סתם
+
+    const key="dd"
+    const token="ee"
+    const key_name="vv"
+    const litellmKeyEncrypted ="l"
 
     // Create user in database
     const user = await User.create({

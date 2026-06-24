@@ -131,6 +131,9 @@ export default function TopNavigation() {
               <Link to="/courses" className="top-nav-link">
                 קורסים
               </Link>
+               <Link to="/forum" className="top-nav-link">
+              פורום
+              </Link>
               <Link to="/docs" className="top-nav-link">
                 מדריך SafeAI
               </Link>

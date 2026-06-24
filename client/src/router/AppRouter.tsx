@@ -19,8 +19,8 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
-
-// Protected Route Component
+import ForumPage  from '../features/forum/ForumPage';
+import { PostThreadPage } from '../features/forum/PostThreadPage';
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const accessToken = localStorage.getItem("accessToken");
   const user = localStorage.getItem("user");
@@ -118,6 +118,15 @@ export default function AppRouter() {
           }
         />
 
+          <Route
+          path="/forum"
+          element={
+            <ProtectedRoute>
+              <ForumPage />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Organization Routes */}
         <Route
           path="/organization/users"
@@ -137,6 +146,8 @@ export default function AppRouter() {
           }
         />
 
+
+
         {/* New Pages Routes */}
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
@@ -144,6 +155,7 @@ export default function AppRouter() {
         <Route path="/recommended-guides" element={<RecommendedGuidesPage />} />
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/activity-log" element={<ActivityLogPage />} />
+        <Route path="/forum/post/:id" element={<ProtectedRoute><PostThreadPage /></ProtectedRoute>} />
 
         {/* Catch all - 404 */}
         <Route path="*" element={<NotFound />} />
