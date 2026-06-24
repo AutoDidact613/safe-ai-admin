@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { sendContactEmail } from "../utils/email";
 import logger from "../logger";
+import { saveMessage } from "../services/contactMessageService";
 
 /**
  * Handle contact form submission
@@ -37,6 +38,12 @@ export async function submitContactForm(req: Request, res: Response) {
         message: "תוכן ההודעה לא יכול להיות ארוך מ-1000 תווים",
       });
     }
+
+    await saveMessage({
+      title: title.trim(),
+      description: description.trim(),
+      requestType: requestType.trim()
+    }, user.id);
   
     // Send contact email
     const payload: any = {
