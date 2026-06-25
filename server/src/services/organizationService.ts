@@ -129,3 +129,12 @@ export async function removeUserFromOrganization(userId: string) {
     throw error;
   }
 }
+
+export async function addUserOrganizationByEmail(orgId: string, email: string) {
+  const user = await userRepo.findUserByEmail(email.toLowerCase().trim());
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  return addUserOrganizationByEmail(orgId, user._id.toString());
+}
