@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import CreatableSelect from 'react-select/creatable'; // שדרוג: מאפשר יצירת תגיות חדשות על המקום
 
 interface AddPostModalProps {
   isOpen: boolean;
@@ -10,12 +12,32 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
   const [formData, setFormData] = useState({ title: '', category: 'פיתוח', tags: '', content: '' });
   const [similarPosts, setSimilarPosts] = useState([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // ניהול מצב שליחה חכם למניעת כפל הגשות
   
-  // יצירת רפרנס (Ref) לשדה בחירת הקבצים הנסתר
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+  const [allTags, setAllTags] = useState<{ value: string; label: string }[]>([]);
+  // מחזיק את המושגים הספציפיים שהמשתמש בחר כרגע בריבועים
+  const [selectedTags, setSelectedTags] = useState<{ value: string; label: string }[]>([]);
+  // סטייט חדש שעוקב אחרי מה שהמשתמש מקליד ברגע זה בתוך שדה התגיות
+  const [tagInputValue, setTagInputValue] = useState('');
 
-  // פיצ'ר: הצעת פוסטים דומים בזמן אמת בזמן הקלדת הכותרת
+  // פונקציה ייעודית למשיכת התגיות מהשרת כדי שנוכל לקרוא לה גם בזמן יצירת תגית חדשה
+  const loadTagsFromServer = () => {
+    fetch('http://localhost:5000/api/tags')
+      .then((res) => res.json())
+      .then((data) => {
+        // הגנה למקרה שהשרת מחזיר שגיאה: מוודאים שזה מערך לפני ה-map
+        const formatted = Array.isArray(data) ? data.map((tag: any) => ({
+          value: tag._id || tag.name,
+          label: tag.name
+        })) : [];
+        setAllTags(formatted);
+      })
+      .catch((err) => console.error('Error fetching tags:', err));
+  };
+
+  // פיצ'ר: הצעת פוסטים דומים בזמן אמת בזמן הקלדת הכותרת (נשמר במלואו)
   useEffect(() => {
     if (formData.title.length >= 3) {
       const timer = setTimeout(() => {
@@ -23,56 +45,81 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
           .then((res) => res.json())
           .then((data) => setSimilarPosts(data))
           .catch((err) => console.error('Error fetching similar posts:', err));
-      }, 500); // Debounce: מחכה חצי שנייה אחרי סיום ההקלדה כדי לא להעמיס על השרת
+      }, 500); // Debounce
       return () => clearTimeout(timer);
     } else {
       setSimilarPosts([]);
     }
   }, [formData.title]);
 
+  // משיכת התגיות הקיימות מהשרת בטעינה ראשונית
+  useEffect(() => {
+    loadTagsFromServer();
+  }, []);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
+    e.preventDefault();
+    
+    // הגנה ראשונית: אם כבר נשלח, מונע הגשה כפולה
+    if (isSubmitting) return;
 
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
+    // הפעלת מצב טעינה (הכפתור יינעל מיד)
+    setIsSubmitting(true);
 
-  // יצירת אובייקט FormData מיוחד לשליחת קבצים
-  const formDataToSend = new FormData();
-  formDataToSend.append('title', formData.title);
-  formDataToSend.append('content', formData.content);
-  formDataToSend.append('category', formData.category);
-  formDataToSend.append('tags', formData.tags);
-  formDataToSend.append('userId', user?._id || '');
+    const { title, content, category } = formData;
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
 
-  // אם המשתמש בחר קובץ מהמחשב - מצרפים אותו לבקשה
-  if (selectedFile) {
-    formDataToSend.append('file', selectedFile);
-  }
+    // בניית ה-FormData להעלאת קבצים (נשמר במלואו)
+    const formDataToSend = new FormData();
+    formDataToSend.append('title', title);
+    formDataToSend.append('content', content);
+    formDataToSend.append('category', category);
+    
+    // התאמה ל-CreatableSelect: שולח מערך מסודר של אובייקטים המכילים ID קיים או שם של תגית חדשה
+    const tagsPayload = selectedTags.map(t => ({ id: t.value, name: t.label }));
+    formDataToSend.append('tags', JSON.stringify(tagsPayload));    
+    
+    formDataToSend.append('userId', user?._id || '');
+    if (selectedFile) formDataToSend.append('file', selectedFile);
 
-  try {
-    const response = await fetch('http://localhost:5000/api/posts', {
-      method: 'POST',
-      // שימי לב: כששולחים FormData *לא* כותבים Content-Type ב-headers, הדפדפן עושה זאת לבד!
-      body: formDataToSend 
-    });
+    try {
+      const response = await fetch('http://localhost:5000/api/posts', {
+        method: 'POST',
+        body: formDataToSend,
+      });
 
-    if (response.ok) {
-      onPostCreated();
-      onClose();
-      setFormData({ title: '', category: 'פיתוח', tags: '', content: '' });
-      setSelectedFile(null);
+      if (response.ok) {
+        // איפוס טופס וקובץ נבחר
+        setFormData({ title: '', category: 'פיתוח', tags: '', content: '' });
+        setSelectedTags([]);
+        setSelectedFile(null);
+        setTagInputValue('');
+        
+        // שדרוג: רענון מאגר התגיות הכללי מיד לאחר יצירת הפוסט כדי לשמור על תגיות חדשות בזמן אמת
+        loadTagsFromServer();
+
+        // סגירת המודאל
+        onClose(); 
+        
+        // רענון רשימת הפוסטים בעמוד הראשי
+        if (onPostCreated) onPostCreated();
+
+        // ניווט חזרה לרשימת הפוסטים הכללית
+        navigate('/forum');
+      } else {
+        console.error('Failed to create post');
+      }
+    } catch (error) {
+      console.error('Error creating post:', error);
+    } finally {
+      // כיבוי מצב טעינה בשחרור הבקשה
+      setIsSubmitting(false);
     }
-  } catch (err) {
-    console.error('Error saving post:', err);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
-  // פונקציה שמדמה לחיצה על ה-input הנסתר של הקבצים
   const handleClipClick = () => {
     fileInputRef.current?.click();
   };
@@ -84,10 +131,10 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
         
         <form onSubmit={handleSubmit}>
           {/* שורה ראשונה: קטגוריה, כותרת, תגיות */}
-          <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', alignItems: 'flex-start' }}>
             
             {/* קטגוריה */}
-            <div style={{ flex: 1 }}>
+            <div style={{ width: '160px' }}>
               <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#064e3b' }}>קטגוריה/מקדם</label>
               <select 
                 value={formData.category} 
@@ -101,7 +148,7 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
             </div>
 
             {/* כותרת + תיבת הצעות פוסטים דומים */}
-            <div style={{ flex: 2, position: 'relative' }}>
+            <div style={{ flex: 1, position: 'relative' }}>
               <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#064e3b' }}>כותרת</label>
               <input 
                 type="text" 
@@ -111,7 +158,7 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
                 placeholder="רשמי כותרת נושא..."
                 required 
               />
-              {/* תיבת הצעות פוסטים דומים (האתר מביא למשתמש) */}
+              {/* תיבת הצעות פוסטים דומים */}
               {similarPosts.length > 0 && (
                 <div style={{ position: 'absolute', top: '100%', right: 0, left: 0, background: '#f0fdf4', padding: '12px', marginTop: '5px', borderRadius: '6px', border: '1px solid #10b981', zIndex: 10 }}>
                   <small style={{ color: '#065f46', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>
@@ -127,15 +174,67 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
                 </div>
               )}
             </div>
-            <div style={{ flex: 1 }}>
-            <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#064e3b' }}>תגיות (הפרידי בפסיק)</label>
-            <input 
-                type="text" 
-                value={formData.tags}
-                onChange={(e) => setFormData({...formData, tags: e.target.value})}
-                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}
-                placeholder="למשל: פיתוח, שגיאה, react"
-            />
+
+            {/* תגיות נושא בעיצוב פרוג - עם הגבלת 3 אותיות חכמה */}
+            <div style={{ flex: 1, minWidth: '250px', direction: 'rtl' }}>
+              <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#064e3b' }}>תגיות נושא</label>
+              <CreatableSelect
+                isMulti
+                options={allTags}
+                value={selectedTags}
+                onChange={(newValue: any) => setSelectedTags(newValue || [])}
+                inputValue={tagInputValue} // שליטה בטקסט המוקלד
+                onInputChange={(val) => setTagInputValue(val)} // עדכון הטקסט המוקלד בזמן אמת
+                placeholder="הקלידי לפחות 3 אותיות..."
+                formatCreateLabel={(inputValue) => `צור תגית חדשה: "${inputValue}"`}
+                
+                // 1. הגדרת ההודעה הדינמית: אם הוקלדו פחות מ-3 אותיות, נבקש להמשיך להקליד
+                noOptionsMessage={() => 
+                  tagInputValue.length < 3 
+                    ? "נא להקליד לפחות 3 אותיות..." 
+                    : "לא נמצאה תגית מתאימה"
+                }
+                
+                // 2. פונקציית הסינון החכמה: רשימת האפשרויות תישאר ריקה לחלוטין כל עוד אין 3 אותיות ומעלה
+                filterOption={(option, rawInput) => {
+                  if (rawInput.length < 3) return false; // מסתיר את כל הרשימה הכללית מראש
+                  return option.label.toLowerCase().includes(rawInput.toLowerCase()); // מציג רק תגיות מתאימות מהאות השלישית
+                }}
+                
+                isSearchable
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    borderColor: '#ddd',
+                    borderRadius: '6px',
+                    padding: '2px',
+                    textAlign: 'right',
+                    boxShadow: 'none',
+                    '&:hover': { borderColor: '#10b981' }
+                  }),
+                  multiValue: (base) => ({
+                    ...base,
+                    backgroundColor: '#ecfdf5',
+                    borderRadius: '4px',
+                    border: '1px solid #a7f3d0'
+                  }),
+                  multiValueLabel: (base) => ({
+                    ...base,
+                    color: '#065f46',
+                    fontWeight: 'bold',
+                    paddingRight: '6px',
+                    paddingLeft: '6px',
+                  }),
+                  multiValueRemove: (base) => ({
+                    ...base,
+                    color: '#10b981',
+                    ':hover': {
+                      backgroundColor: '#fee2e2',
+                      color: '#ef4444',
+                    },
+                  }),
+                }}
+              />
             </div>
           </div>
 
@@ -150,7 +249,6 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
               required
             />
             
-            {/* שדה קובץ נסתר של הדפדפן */}
             <input 
               type="file" 
               ref={fileInputRef} 
@@ -158,7 +256,6 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
               onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
             />
             
-            {/* לחצן הצירוף המעוצב (לפי הסקיצה ממוקם בתוך התוכן משמאל) */}
             <button 
               type="button" 
               onClick={handleClipClick}
@@ -170,11 +267,20 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
           </div>
 
           {/* כפתורי שליטה */}
-          <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '10px' }}>
-            <button type="submit" disabled={loading} style={{ padding: '10px 40px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px' }}>
-              {loading ? 'מעלה פוסט...' : 'הוסף'}
+          <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '10px', alignItems: 'center' }}>
+            <button 
+              type="submit" 
+              disabled={isSubmitting} 
+              style={{ padding: '10px 40px', background: isSubmitting ? '#a7f3d0' : '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: isSubmitting ? 'not-allowed' : 'pointer', fontSize: '16px' }}
+            >
+              {isSubmitting ? 'מפרסם פוסט...' : 'הוסף'}
             </button>
-            <button type="button" onClick={onClose} style={{ padding: '10px 20px', background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}>
+            <button 
+              type="button" 
+              disabled={isSubmitting}
+              onClick={onClose} 
+              style={{ padding: '10px 20px', background: 'none', border: 'none', color: '#666', cursor: isSubmitting ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+            >
               ביטול
             </button>
           </div>
@@ -183,3 +289,5 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
     </div>
   );
 };
+
+export default AddPostModal;

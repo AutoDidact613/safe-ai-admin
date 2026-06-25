@@ -22,6 +22,7 @@ import { authenticateToken, requireAdmin } from "./middleware/auth";
 import postRoutes from './routes/postRoutes';
 import logger from "./logger";
 import path from 'path';
+import tagRoutes from './routes/tagRoutes';
 
 const PORT = process.env.PORT || 3001;
 
@@ -80,6 +81,7 @@ app.use("/v1", openaiRouter); // Uses proxyAuth middleware in the router
 app.use(errorHandler);
 app.use('/api/posts', postRoutes);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/api/tags', tagRoutes);
 
 async function start() {
   try {

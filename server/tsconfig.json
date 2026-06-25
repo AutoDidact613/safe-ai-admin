@@ -27,6 +27,6 @@
     "moduleDetection": "force"  ,
   },
 
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/seedTags.ts"],
   "exclude": ["node_modules", "dist"]
 }

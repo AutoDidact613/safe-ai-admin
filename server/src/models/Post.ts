@@ -4,8 +4,7 @@ export interface IPost extends Document {
   title: string;
   content: string;
   category: string;
-  tags: string[];
-  attachments: string[]; // מערך של נתיבי קבצים או קישורים
+  tags: Array<{ _id: string; name: string } | mongoose.Types.ObjectId>;  attachments: string[]; // מערך של נתיבי קבצים או קישורים
   viewsCount: number;
   rating: number;
   similarLinks: string[]; // לינקים לפוסטים דומים
@@ -17,7 +16,7 @@ const PostSchema: Schema = new Schema({
   title: { type: String, required: true },
   content: { type: String, required: true },
   category: { type: String, required: true, default: 'כללי' },
-  tags: [{ type: String }],
+  tags: [{ type: Schema.Types.ObjectId, ref: 'tag' }],
   attachments: [{ type: String }],
   viewsCount: { type: Number, default: 0 },
   rating: { type: Number, default: 5 }, // דירוג התחלתי דיפולטיבי
