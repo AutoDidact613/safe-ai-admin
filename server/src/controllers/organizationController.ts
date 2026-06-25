@@ -195,7 +195,7 @@ export async function removeUserFromOrganizationHandler(
   try {
     const user = (req as any).user;
     const { userId } = req.params;
-    
+
     if (user.role !== "admin" && user.role !== "org_owner") {
       return res.status(403).json({ error: "Access denied" });
     }
