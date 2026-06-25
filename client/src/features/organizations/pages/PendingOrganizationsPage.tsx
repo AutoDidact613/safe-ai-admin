@@ -27,8 +27,8 @@ export const PendingOrganizationsPage = () => {
         } else {
           setOrganizations(response || []);
         }
-      } catch (err: any) {
-        setError(err.message || "נכשלה טעינת הארגונים הממתינים");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "נכשלה טעינת הארגונים הממתינים");
       } finally {
         setLoading(false);
       }
@@ -36,29 +36,25 @@ export const PendingOrganizationsPage = () => {
     fetchOrganizations();
   }, []);
 
-  // פונקציית טיפול אמיתית שמעדכנת את מונגו ל-approved
   const handleApprove = async (id: string) => {
     try {
       await updateOrganizationStatus(id, "approved");
-      // מסננים החוצה מה-State כדי שייעלם מיידית מהמסך
       setOrganizations((prev) => prev.filter((org) => org._id !== id));
       alert("הארגון אושר בהצלחה בבסיס הנתונים!");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      alert(`שגיאה בעדכון הארגון: ${err.message || "נכשלה הפעולה"}`);
+      alert(`שגיאה בעדכון הארגון: ${err instanceof Error ? err.message : "נכשלה הפעולה"}`);
     }
   };
 
-  // פונקציית טיפול אמיתית שמעדכנת את מונגו ל-rejected
   const handleReject = async (id: string) => {
     try {
       await updateOrganizationStatus(id, "rejected");
-      // מסננים החוצה מה-State כדי שייעלם מיידית מהמסך
       setOrganizations((prev) => prev.filter((org) => org._id !== id));
       alert("הארגון נדחה בהצלחה בבסיס הנתונים!");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      alert(`שגיאה בעדכון הארגון: ${err.message || "נכשלה הפעולה"}`);
+      alert(`שגיאה בעדכון הארגון: ${err instanceof Error ? err.message : "נכשלה הפעולה"}`);
     }
   };
 

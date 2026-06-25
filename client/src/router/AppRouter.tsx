@@ -3,7 +3,6 @@ import LandingPage from "../pages/LandingPage";
 import SafeAIUIPage from "../pages/SafeAIUIPage";
 import NotFound from "../pages/NotFound";
 import OrganizationUsersPage from "../pages/OrganizationUsersPage";
-import AdminOrganizationsPage from "../pages/AdminOrganizationsPage";
 import ContactPage from "../pages/ContactPage";
 import DocsPage from "../pages/DocsPage";
 import RecommendedGuidesPage from "../pages/RecommendedGuidesPage";
