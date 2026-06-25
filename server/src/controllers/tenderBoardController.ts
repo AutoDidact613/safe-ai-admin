@@ -1,0 +1,138 @@
+import { Request, Response } from "express";
+import {
+  createTender,
+  listTenders,
+  getTenderById,
+  updateTender,
+  deleteTender,
+  applyToTender,
+  getFieldsList,
+} from "../services/tenderBoardService";
+import logger from "../logger";
+
+/**
+ * GET all static fields
+ */
+export async function listFieldsHandler(req: Request, res: Response) {
+  try {
+    const fields = await getFieldsList();
+    res.json(fields);
+  } catch (error) {
+    logger.error("List fields failed", { error });
+    res.status(500).json({ error: "Failed to fetch fields" });
+  }
+}
+
+/**
+ * CREATE Tender
+ */
+export async function createTenderHandler(req: Request, res: Response) {
+  try {
+    const tender = await createTender(req.body);
+    res.status(201).json({ success: true, tender });
+  } catch (error) {
+    logger.error("Create tender failed", { error });
+    res.status(500).json({ error: "Failed to create tender" });
+  }
+}
+
+/**
+ * GET all Tenders
+ */
+export async function listTendersHandler(req: Request, res: Response) {
+  try {
+    const tenders = await listTenders();
+    res.json(tenders);
+  } catch (error) {
+    logger.error("List tenders failed", { error });
+    res.status(500).json({ error: "Failed to fetch tenders" });
+  }
+}
+
+/**
+ * GET Tender by ID
+ */
+export async function getTenderHandler(req: Request<{ id: string }>, res: Response) {
+  try {
+    const tender = await getTenderById(req.params.id);
+
+    if (!tender) {
+      return res.status(404).json({ error: "Tender not found" });
+    }
+
+    res.json(tender);
+  } catch (error) {
+    logger.error("Get tender failed", { error });
+    res.status(500).json({ error: "Failed to fetch tender" });
+  }
+}
+
+/**
+ * UPDATE Tender
+ */
+export async function updateTenderHandler(req: Request<{ id: string }>, res: Response) {
+  try {
+    const tender = await updateTender(req.params.id, req.body);
+
+    if (!tender) {
+      return res.status(404).json({ error: "Tender not found" });
+    }
+
+    res.json({ success: true, tender });
+  } catch (error) {
+    logger.error("Update tender failed", { error });
+    res.status(500).json({ error: "Failed to update tender" });
+  }
+}
+
+/**
+ * DELETE Tender
+ */
+export async function deleteTenderHandler(req: Request<{ id: string }>, res: Response) {
+  try {
+    await deleteTender(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error("Delete tender failed", { error });
+    res.status(500).json({ error: "Failed to delete tender" });
+  }
+}
+/**
+ * Apply to a tender
+ * POST /tender-board/:id/apply
+ * Body: { name, email, details, proposal?, contactMethod? }
+ */
+export async function applyToTenderHandler(req: Request, res: Response) {
+  try {
+    const tenderId = req.params.id as string;
+
+    if (!tenderId || !tenderId.trim()) {
+      return res.status(400).json({
+        error: "Tender ID is required",
+      });
+    }
+
+    const applicant = {
+      name: req.body.name,
+      email: req.body.email,
+      details: req.body.details,
+      proposal: req.body.proposal,
+      contactMethod: req.body.contactMethod,
+    };
+
+    const result = await applyToTender(tenderId, applicant);
+
+    res.status(200).json({
+      success: true,
+      tender: result,
+    });
+  } catch (error: any) {
+    logger.error("Apply to tender failed", { 
+      error: error.message, 
+      tenderId: req.params.id 
+    });
+    res.status(400).json({
+      error: error.message || "Failed to apply to tender",
+    });
+  }
+}

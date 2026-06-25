@@ -14,6 +14,7 @@ import proxyKeyRouter from "./routes/proxyKeyRouter";
 import promptRouter from "./routes/promptRouter";
 import organizationRouter from "./routes/organizationRouter";
 import contactRouter from "./routes/contactRouter";
+import tenderBoardRouter from "./routes/tenderBoardRouter";
 
 import { requestLogger } from "./middleware/requestLogger";
 import { errorHandler } from "./middleware/errorHandler";
@@ -68,6 +69,7 @@ app.use("/contact", contactRouter); // Contact form (requires authentication)
 
 // ===== Public routes for filter evaluation =====
 app.use("/filter", filterRouter);
+app.use("/tender-board", tenderBoardRouter);
 
 
 // ===== Proxy API Key Protected Routes (LiteLLM Proxy) =====

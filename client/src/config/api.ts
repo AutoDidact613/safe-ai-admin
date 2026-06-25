@@ -1,6 +1,6 @@
 // API Configuration
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3000";
+  import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -45,6 +45,15 @@ export const API_ENDPOINTS = {
   },
   // Contact form endpoint
   contact: `${API_BASE_URL}/contact`,
+  // Tender board endpoints
+  tenders: {
+    list: `${API_BASE_URL}/tender-board`,
+    create: `${API_BASE_URL}/tender-board`,
+    getFields: `${API_BASE_URL}/tender-board/fields`, 
+    update: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
+    delete: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
+    apply: (id: string) => `${API_BASE_URL}/tender-board/${id}/apply`,
+  },
 } as const;
 
 // Helper function for API calls
