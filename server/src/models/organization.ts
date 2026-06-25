@@ -21,6 +21,10 @@ const OrganizationSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    walletBalance: {
+      type: Number,
+      default: 0,
+    },
     settings: {
       // הגדרות ארגוניות כלליות
       maxUsers: {
