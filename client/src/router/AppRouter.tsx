@@ -19,6 +19,9 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
+import PaymentPage from "../pages/PaymentPage";
+import PaymentSuccessPage from "../pages/PaymentSuccessPage";
+import PaymentFailPage from "../pages/PaymentFailPage";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -52,14 +55,14 @@ export default function AppRouter() {
     <BrowserRouter>
       {/* Global Top Navigation */}
       <TopNavigation />
-      
+
       {/* Beta Banner */}
       <BetaBanner />
-      
+
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
-        
+
         <Route
           path="/login"
           element={
@@ -68,7 +71,7 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
-        
+
         <Route
           path="/register"
           element={
@@ -85,9 +88,9 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
-        
+
         <Route path="/verify-email/:token" element={<EmailVerification />} />
-        
+
         <Route
           path="/forgot-password"
           element={
@@ -96,9 +99,9 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
-        
+
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-        
+
         {/* Protected Routes */}
         <Route
           path="/api-key-display"
@@ -108,7 +111,7 @@ export default function AppRouter() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/safeai-ui"
           element={
@@ -144,6 +147,11 @@ export default function AppRouter() {
         <Route path="/recommended-guides" element={<RecommendedGuidesPage />} />
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/activity-log" element={<ActivityLogPage />} />
+
+        {/* Payment Routes */}
+        <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
+        <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccessPage /></ProtectedRoute>} />
+        <Route path="/payment/fail" element={<ProtectedRoute><PaymentFailPage /></ProtectedRoute>} />
 
         {/* Catch all - 404 */}
         <Route path="*" element={<NotFound />} />
