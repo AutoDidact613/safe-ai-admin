@@ -1,4 +1,3 @@
-import * as React from "react";
 import { useEffect, useState } from "react";
 import { getPendingOrganizations, updateOrganizationStatus } from "../api/organizationApi";
 import { PendingOrganizationsTable } from "../components/PendingOrganizationsTable";
@@ -22,10 +21,10 @@ export const PendingOrganizationsPage = () => {
       try {
         setLoading(true);
         const response = await getPendingOrganizations();
-        if (response && response.data) {
-          setOrganizations(response.data);
+        if (response && Array.isArray(response.data)) {
+          setOrganizations(response.data as Organization[]);
         } else {
-          setOrganizations(response || []);
+          setOrganizations([]);
         }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "נכשלה טעינת הארגונים הממתינים");
