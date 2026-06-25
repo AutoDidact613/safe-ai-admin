@@ -1,0 +1,61 @@
+.wallet-card {
+    flex: 1;
+    min-width: 300px;
+    padding: 20px;
+    background-color: #fff;
+    border: 2px solid #2196F3;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  
+  .wallet-title {
+    margin: 0 0 10px 0;
+    color: #2196F3;
+  }
+  
+  .wallet-balance {
+    font-size: 24px;
+    margin: 10px 0;
+  }
+  
+  .wallet-balance-amount {
+    color: #4CAF50;
+  }
+  
+  .simulation-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin: 15px 0;
+    border: 1px solid #ffeeba;
+  }
+  
+  .topup-form {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .topup-input {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+  }
+  
+  .topup-button {
+    padding: 8px 16px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  
+  .topup-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
