@@ -4,21 +4,24 @@
   margin: 0 auto;
 }
 
+/* ===== HERO — רקע לבן, גבול ירוק עדין ===== */
 .hero-section {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
   align-items: center;
   gap: 32px;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  background: #ffffff;
   border-radius: 28px;
-  color: #ffffff;
+  border: 1.5px solid #a7f3d0;
+  box-shadow: 0 8px 40px rgba(16, 163, 127, 0.08);
+  color: var(--text-primary);
   padding: 64px;
 }
 
 .hero-copy .eyebrow {
   display: inline-block;
   margin-bottom: 18px;
-  color: #93c5fd;
+  color: #059669;
   font-size: 0.85rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -28,6 +31,7 @@
   margin: 0 0 20px;
   font-size: clamp(2.25rem, 4vw, 3.4rem);
   line-height: 1.05;
+  color: var(--text-primary);
 }
 
 .hero-copy p {
@@ -35,7 +39,7 @@
   font-size: 1rem;
   line-height: 1.8;
   margin-bottom: 32px;
-  color: #cbd5e1;
+  color: var(--text-secondary);
 }
 
 .hero-actions {
@@ -66,7 +70,7 @@
 .card-btn:hover,
 .secondary-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 18px 40px rgba(16, 163, 127, 0.18);
+  box-shadow: 0 18px 40px rgba(16, 163, 127, 0.22);
 }
 
 .secondary-btn {
@@ -75,6 +79,11 @@
   border: 1px solid var(--border-default);
 }
 
+.secondary-btn:hover {
+  background: #f0fdf4;
+}
+
+/* ===== HERO PREVIEW CARD ===== */
 .hero-preview {
   display: flex;
   justify-content: center;
@@ -83,11 +92,11 @@
 .preview-card {
   width: 100%;
   min-width: 280px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid var(--border-default);
+  background: #f0fdf4;
+  border: 1.5px solid #a7f3d0;
   border-radius: 24px;
   padding: 28px;
-  box-shadow: 0 32px 80px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 8px 32px rgba(16, 163, 127, 0.08);
 }
 
 .preview-label {
@@ -97,7 +106,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #10a37f;
+  color: #059669;
 }
 
 .preview-list {
@@ -109,13 +118,14 @@
 
 .preview-list li {
   padding: 12px 0;
-  border-bottom: 1px solid rgba(203, 213, 225, 0.08);
+  border-bottom: 1px solid #d1fae5;
 }
 
 .preview-list li:last-child {
   border-bottom: none;
 }
 
+/* ===== SECTION HEADERS ===== */
 .section-header {
   margin-bottom: 40px;
 }
@@ -134,6 +144,7 @@
   margin: 0 0 14px;
   font-size: clamp(1.8rem, 2.5vw, 2.8rem);
   line-height: 1.05;
+  color: var(--text-primary);
 }
 
 .section-header p {
@@ -143,12 +154,35 @@
   line-height: 1.75;
 }
 
+/* ===== CARDS GRID ===== */
 .download-cards,
 .guide-grid,
 .pricing-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 24px;
+}
+
+/* כרטיסי OS — 2 עמודות קבועות, ממורכזות */
+.download-os-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 420px));
+  gap: 24px;
+  justify-content: center;
+}
+
+/* העידכון: מרכוס תוכן כרטיסי ה-OS והכפתורים שבתוכם */
+.download-os-cards .download-card {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.os-icon {
+  font-size: 2.4rem;
+  margin-bottom: 14px;
+  line-height: 1;
 }
 
 .download-card,
@@ -198,6 +232,7 @@
   color: var(--text-primary);
 }
 
+/* ===== FEATURED PRICING CARD ===== */
 .featured-card {
   background: #10a37f;
   color: #ffffff;
@@ -208,13 +243,24 @@
 .featured-card p,
 .featured-card ul,
 .featured-card li {
-  color: inherit;
+  color: #ffffff;
+}
+
+/* כפתור בכרטיס featured — כהה כדי לבלוט על הירוק */
+.featured-card .card-btn {
+  background: #064e3b;
+  color: #ffffff;
+}
+
+.featured-card .card-btn:hover {
+  background: #065f46;
 }
 
 .pricing-card ul {
   padding-left: 20px;
 }
 
+/* ===== CARD BUTTON ===== */
 .card-btn {
   width: fit-content;
   color: #ffffff;
@@ -225,10 +271,15 @@
   background: #0d8f6f;
 }
 
+/* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
   .hero-section {
     grid-template-columns: 1fr;
     padding: 48px 24px;
+  }
+
+  .download-os-cards {
+    grid-template-columns: 1fr;
   }
 }
 
