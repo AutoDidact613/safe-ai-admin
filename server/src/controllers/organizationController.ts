@@ -18,11 +18,9 @@ import logger from "../logger";
 export async function createOrganizationHandler(req: Request, res: Response) {
   try {
     const adminUser = (req as any).user;
-
     if (adminUser.role !== "admin") {
       return res.status(403).json({ error: "Admin access required" });
     }
-
     const organization = await createOrganization(req.body);
     res.status(201).json({ success: true, organization });
   } catch (error) {
@@ -37,11 +35,9 @@ export async function createOrganizationHandler(req: Request, res: Response) {
 export async function listOrganizationsHandler(req: Request, res: Response) {
   try {
     const adminUser = (req as any).user;
-
     if (adminUser.role !== "admin") {
       return res.status(403).json({ error: "Admin access required" });
     }
-
     const organizations = await listOrganizations();
     res.json(organizations);
   } catch (error) {
@@ -60,13 +56,10 @@ export async function getOrganizationHandler(
   try {
     const user = (req as any).user;
     const orgId = req.params.id;
-
     const organization = await getOrganizationById(orgId);
-
     if (!organization) {
       return res.status(404).json({ error: "Organization not found" });
     }
-
     // Check permissions: admin or owner of this organization
     if (
       user.role !== "admin" &&
@@ -74,7 +67,6 @@ export async function getOrganizationHandler(
     ) {
       return res.status(403).json({ error: "Access denied" });
     }
-
     res.json(organization);
   } catch (error) {
     logger.error("Failed to get organization", { error });
@@ -92,13 +84,10 @@ export async function updateOrganizationHandler(
   try {
     const user = (req as any).user;
     const orgId = req.params.id;
-
     const organization = await getOrganizationById(orgId);
-
     if (!organization) {
       return res.status(404).json({ error: "Organization not found" });
     }
-
     // Check permissions
     if (
       user.role !== "admin" &&
@@ -106,7 +95,6 @@ export async function updateOrganizationHandler(
     ) {
       return res.status(403).json({ error: "Access denied" });
     }
-
     const updated = await updateOrganization(orgId, req.body);
     res.json({ success: true, organization: updated });
   } catch (error) {
@@ -124,11 +112,9 @@ export async function deleteOrganizationHandler(
 ) {
   try {
     const adminUser = (req as any).user;
-
     if (adminUser.role !== "admin") {
       return res.status(403).json({ error: "Admin access required" });
     }
-
     await deleteOrganization(req.params.id);
     res.json({ success: true });
   } catch (error) {
@@ -147,13 +133,10 @@ export async function getOrganizationUsersHandler(
   try {
     const user = (req as any).user;
     const orgId = req.params.id;
-
     const organization = await getOrganizationById(orgId);
-
     if (!organization) {
       return res.status(404).json({ error: "Organization not found" });
     }
-
     // Check permissions: admin or owner of this organization
     if (
       user.role !== "admin" &&
@@ -161,7 +144,6 @@ export async function getOrganizationUsersHandler(
     ) {
       return res.status(403).json({ error: "Access denied" });
     }
-
     const users = await getOrganizationUsers(orgId);
     res.json(users);
   } catch (error) {
@@ -181,17 +163,13 @@ export async function addUserToOrganizationHandler(
     const user = (req as any).user;
     const orgId = req.params.id;
     const { userId } = req.body;
-
     if (!userId) {
       return res.status(400).json({ error: "userId is required" });
     }
-
     const organization = await getOrganizationById(orgId);
-
     if (!organization) {
       return res.status(404).json({ error: "Organization not found" });
     }
-
     // Check permissions
     if (
       user.role !== "admin" &&
@@ -199,7 +177,6 @@ export async function addUserToOrganizationHandler(
     ) {
       return res.status(403).json({ error: "Access denied" });
     }
-
     const updatedUser = await addUserToOrganization(orgId, userId);
     res.json({ success: true, user: updatedUser });
   } catch (error) {
@@ -218,15 +195,10 @@ export async function removeUserFromOrganizationHandler(
   try {
     const user = (req as any).user;
     const { userId } = req.params;
-
-    // Get the user to check their organization
-    const targetUser = await getOrganizationUsers(user.organizationId);
     
-    // Check permissions: admin or owner of the user's organization
     if (user.role !== "admin" && user.role !== "org_owner") {
       return res.status(403).json({ error: "Access denied" });
     }
-
     const updatedUser = await removeUserFromOrganization(userId);
     res.json({ success: true, user: updatedUser });
   } catch (error) {
@@ -243,35 +215,29 @@ export async function topUpOrganizationWalletHandler(
   res: Response
 ) {
   try {
-    const user = ( req as any).user;
+    const user = (req as any).user;
     const orgId = req.params.id;
     const { amount } = req.body;
-
     if (amount === undefined || typeof amount !== "number" || amount <= 0) {
       return res.status(400).json({ error: "A valid positive amount is required" });
     }
-
     const organization = await getOrganizationById(orgId);
     if (!organization) {
       return res.status(404).json({ error: "Organization not found" });
     }
-
     if (
       user.role !== "admin" &&
       organization.ownerId.toString() !== user.userId
     ) {
       return res.status(403).json({ error: "Access denied" });
     }
-
     const updateOrg = await topUpOrganizationWallet(orgId, amount);
-
     res.json({
       success: true,
       message: "Wallet topped up successfully (Mock)",
       organization: updateOrg
     });
-  }
-  catch (error) {
+  } catch (error) {
     logger.error("Failed to top up organization wallet", { error });
     res.status(500).json({ error: "Failed to top up organization wallet" });
   }
