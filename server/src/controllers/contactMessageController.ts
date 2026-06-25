@@ -57,3 +57,23 @@ export const closeRequestById = async (req: any, res: Response) => {
     res.status(500).json({ message: "שגיאה בסגירת הפנייה" });
   }
 };
+
+export const addReply = async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+    const userId = req.user?.userId || req.user?.id;
+    // נניח שכרגע המשתמש שולח כתגובה מסוג 'user'
+    const senderRole = 'user'; 
+
+    if (!userId) return res.status(401).json({ message: "משתמש לא מזוהה" });
+
+    const request = await contactMessageService.addReplyToRequest(id, userId, text, senderRole);
+
+    if (!request) return res.status(404).json({ message: "פנייה לא נמצאה" });
+
+    res.status(200).json({ success: true, message: "התגובה נוספה בהצלחה", request });
+  } catch (error) {
+    res.status(500).json({ message: "שגיאה בהוספת התגובה" });
+  }
+};

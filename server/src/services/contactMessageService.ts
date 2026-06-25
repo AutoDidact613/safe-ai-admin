@@ -23,3 +23,14 @@ export const closeRequestById = async (id: string, userId: string) => {
   return await repository.updateStatus(id, userId, "closed");
 };
 
+export const addReplyToRequest = async (id: string, senderId: string, text: string, senderRole: 'user' | 'admin') => {
+  const reply = {
+    senderId: new mongoose.Types.ObjectId(senderId),
+    text,
+    senderRole,
+    createdAt: new Date()
+  };
+  
+  return await repository.addReplyToRequest(id, reply);
+};
+

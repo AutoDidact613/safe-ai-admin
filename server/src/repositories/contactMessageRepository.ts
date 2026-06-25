@@ -21,3 +21,12 @@ export const updateStatus = async (id: string, userId: string, status: string) =
     { new: true }
   );
 };
+
+  export const addReplyToRequest = async (id: string, replyData: any) => {
+  const objectId = new Types.ObjectId(id);
+  return await ContactMessage.findByIdAndUpdate(
+    objectId,
+    { $push: { replies: replyData } },
+    { new: true }
+  );
+};

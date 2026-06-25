@@ -39,36 +39,38 @@ export default function MyRequestsList({ activeSection }: MyRequestsListProps) {
   if (error) return <div className="error">{error}</div>;
 
   return (
-    <div className="my-requests-list">
-      <h3>הפניות שלי</h3>
-      {requests.length === 0 ? (
-        <p>אין לך פניות פעילות כרגע.</p>
-      ) : (
-        <table className="requests-table">
-          <thead>
-            <tr>
-
-              <th>נושא</th>
-              <th>סוג הפנייה</th>
-              <th>תאריך</th>
-            </tr>
-          </thead>
-          <tbody>
-              {requests.filter((req) => req.status !== 'closed')
-              .map((req) => (
-                <tr 
-                  key={req._id} 
-                  onClick={() => navigate(`/request/${req._id}`)} 
+    <div className="requests-wrapper">
+      <div className="my-requests-list requests-table-container">
+        <h3>הפניות שלי</h3>
+        {requests.length === 0 ? (
+          <p>אין לך פניות פעילות כרגע.</p>
+        ) : (
+          <table className="requests-table">
+            <thead>
+              <tr>
+                <th>נושא</th>
+                <th>סוג הפנייה</th>
+                <th>תאריך</th>
+              </tr>
+            </thead>
+            <tbody>
+              {requests.filter((req) => req.status !== 'closed').map((req) => (
+                <tr
+                  key={req._id}
+                  onClick={() => navigate(`/request/${req._id}`)}
                   style={{ cursor: 'pointer' }}
                 >
                   <td>{req.title || "ללא נושא"}</td>
-                  <td>{req.requestType || req.status || "לא ידוע"}</td>
+                  <td>
+                    <span className="request-type-badge">{req.requestType || req.status || "לא ידוע"}</span>
+                  </td>
                   <td>{new Date(req.createdAt).toLocaleDateString("he-IL")}</td>
                 </tr>
               ))}
             </tbody>
-        </table>
-      )}
+          </table>
+        )}
+      </div>
     </div>
   );
 }

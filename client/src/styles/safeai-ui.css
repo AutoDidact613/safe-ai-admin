@@ -471,3 +471,79 @@
   font-size: 0.8rem;
   font-weight: 500;
 }
+
+/* Request Details Page */
+.request-details-container {
+  max-width: 980px;
+  margin: 28px auto;
+  padding: 16px;
+}
+
+.request-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(9,30,66,0.06);
+  border: 1px solid #edf6f4;
+}
+
+.request-card h3 {
+  margin: 0 0 8px 0;
+  color: #073f36;
+  font-size: 1.3rem;
+}
+
+.request-card p {
+  margin: 8px 0;
+  color: #24343a;
+}
+
+.close-btn {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #0b6b5b;
+  color: #fff;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+.close-btn:hover { background: #095a4d; }
+
+.replies-list { margin-top: 18px; display:flex; flex-direction:column; gap:12px; }
+.reply-bubble {
+  max-width: 78%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  box-shadow: 0 6px 18px rgba(9,30,66,0.04);
+}
+.reply-bubble.user { background: #f1f8f7; align-self: flex-end; color: #033; }
+.reply-bubble.admin { background: #e9f6f3; align-self: flex-start; color: #033; }
+
+.reply-section { margin-top: 14px; display:flex; gap:10px; align-items:flex-start; }
+.reply-section textarea {
+  flex:1;
+  min-height:80px;
+  border-radius:8px;
+  border:1px solid #e3efec;
+  padding:10px;
+  resize:vertical;
+}
+.reply-section button {
+  padding:10px 14px;
+  border-radius:8px;
+  background:#0b6b5b;
+  color:#fff;
+  border:none;
+  font-weight:600;
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .request-details-container { padding: 12px; }
+  .reply-bubble { max-width: 100%; }
+}
+
