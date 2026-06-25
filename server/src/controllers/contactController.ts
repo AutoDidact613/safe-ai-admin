@@ -10,7 +10,14 @@ export async function submitContactForm(req: Request, res: Response) {
   try {
     const { title, description, requestType } = req.body;
     const user = (req as any).user; // User from JWT token
+    const userId = user?.userId || user?.id;
 
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "משתמש לא מזוהה. התחבר שוב בבקשה.",
+      });
+    }
 
     // Validate input
     if (!title || !description || !requestType) {
@@ -39,12 +46,15 @@ export async function submitContactForm(req: Request, res: Response) {
       });
     }
 
-    await saveMessage({
-      title: title.trim(),
-      description: description.trim(),
-      requestType: requestType.trim()
-    }, user.id);
-  
+    await saveMessage(
+      {
+        title: title.trim(),
+        description: description.trim(),
+        requestType: requestType.trim(),
+      },
+      userId,
+    );
+
     // Send contact email
     const payload: any = {
       userEmail: user.email,
@@ -57,7 +67,7 @@ export async function submitContactForm(req: Request, res: Response) {
     await sendContactEmail(payload);
 
     logger.info("Contact form submitted", {
-      userId: user.id,
+      userId,
       userEmail: user.email,
       title: title.trim(),
       requestType: requestType.trim(),

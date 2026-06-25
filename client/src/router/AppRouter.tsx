@@ -19,6 +19,7 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
+import RequestDetails from "../features/safeai-ui/RequestDetails";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -114,6 +115,15 @@ export default function AppRouter() {
           element={
             <ProtectedRoute>
               <SafeAIUIPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/request/:id"
+          element={
+            <ProtectedRoute>
+              <RequestDetails />
             </ProtectedRoute>
           }
         />

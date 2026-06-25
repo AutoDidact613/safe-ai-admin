@@ -7,6 +7,7 @@ import UserDashboard from "../features/safeai-ui/UserDashboard";
 import Statistics from "../features/safeai-ui/Statistics";
 import UserApiKeysPage from "../features/safeai-ui/UserApiKeysPage";
 import AdminOrganizationsPage from "./AdminOrganizationsPage";
+import MyRequestsList from "../features/safeai-ui/MyRequestsList";
 
 type Section =
   | "profiles"
@@ -14,7 +15,8 @@ type Section =
   | "dashboard"
   | "statistics"
   | "apikeys"
-  | "organizations";
+  | "organizations"
+  | "requests";
 
 interface UserData {
   email: string;
@@ -78,6 +80,8 @@ export default function SafeAIUIPage() {
         return <UserApiKeysPage />;
       case "organizations":
         return <AdminOrganizationsPage />;
+      case "requests":
+        return <MyRequestsList activeSection={activeSection} />;
       default:
         return <UserDashboard user={currentUser} />;
     }
@@ -206,30 +210,39 @@ export default function SafeAIUIPage() {
                       cy="8"
                       r="2"
                       stroke="currentColor"
-                      stroke-width="1.5"
+                      strokeWidth="1.5"
                     />
 
                     <path
                       d="M6 8H13"
                       stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
                     />
 
                     <path
                       d="M10 8V10"
                       stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
                     />
                     <path
                       d="M12 8V10"
                       stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
                     />
                   </svg>
                   מפתחות API
+                </button>
+                <button
+                    className={activeSection === "requests" ? "sub-nav-btn active" : "sub-nav-btn"}
+                    onClick={() => setActiveSection("requests")}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M2 4h12v8H2zM2 4l6 4 6-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    הפניות שלי
                 </button>
               </>
             )}

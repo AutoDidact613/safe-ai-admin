@@ -16,4 +16,4 @@ const contactMessageSchema = new Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-export const ContactMessage = model<IContactMessage>('ContactMessage', contactMessageSchema);
+export const ContactMessage = model<IContactMessage>('ContactMessage', contactMessageSchema, 'contactmessages');
