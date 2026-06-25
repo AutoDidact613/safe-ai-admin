@@ -25,7 +25,6 @@ export const getMyRequests = async (req: any, res: Response) => {
 export const getRequestById = async (req: any, res: Response) => {
   try {
     const { id } = req.params;
-    // כאן אנחנו קוראים לפונקציה בשירות שצריך להוסיף
     const request = await contactMessageService.getRequestById(id);
     
     if (!request) {
@@ -35,5 +34,26 @@ export const getRequestById = async (req: any, res: Response) => {
     res.status(200).json(request);
   } catch (error) {
     res.status(500).json({ message: "שגיאה בטעינת פרטי הפנייה" });
+  }
+};
+
+export const closeRequestById = async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.userId || req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: "משתמש לא מזוהה" });
+    }
+
+    const request = await contactMessageService.closeRequestById(id, userId);
+
+    if (!request) {
+      return res.status(404).json({ message: "פנייה לא נמצאה או שאין לך גישה לסגור אותה" });
+    }
+
+    res.status(200).json({ success: true, message: "הפנייה נסגרה בהצלחה", request });
+  } catch (error) {
+    res.status(500).json({ message: "שגיאה בסגירת הפנייה" });
   }
 };

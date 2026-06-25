@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { submitContactForm } from "../controllers/contactController";
-import { getMyRequests, getRequestById } from "../controllers/contactMessageController";
+import { getMyRequests, getRequestById, closeRequestById } from "../controllers/contactMessageController";
 import { authenticateToken } from "../middleware/auth";
 
 const router = Router();
@@ -12,5 +12,7 @@ router.get("/my-requests", authenticateToken, getMyRequests);
 router.post("/", authenticateToken, submitContactForm);
 
 router.get("/my-requests/:id", authenticateToken, getRequestById);
+
+router.patch("/my-requests/:id/close", authenticateToken, closeRequestById);
 
 export default router;

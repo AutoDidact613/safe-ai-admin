@@ -19,3 +19,7 @@ export const getRequestById = async (id: string) => {
   return await ContactMessage.findById(id);
 };
 
+export const closeRequestById = async (id: string, userId: string) => {
+  return await repository.updateStatus(id, userId, "closed");
+};
+

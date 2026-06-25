@@ -6,6 +6,7 @@ export interface IContactMessage extends Document {
   requestType: string;
   userId: Schema.Types.ObjectId;
   createdAt: Date;
+  status: 'open' | 'closed';
 }
 
 const contactMessageSchema = new Schema({
@@ -13,7 +14,8 @@ const contactMessageSchema = new Schema({
   description: { type: String, required: true },
   requestType: { type: String, required: true },
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  status: { type: String, enum: ['open', 'closed'], default: 'open' }
 });
 
 export const ContactMessage = model<IContactMessage>('ContactMessage', contactMessageSchema, 'contactmessages');

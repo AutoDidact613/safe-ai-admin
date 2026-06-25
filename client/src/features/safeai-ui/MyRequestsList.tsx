@@ -54,7 +54,8 @@ export default function MyRequestsList({ activeSection }: MyRequestsListProps) {
             </tr>
           </thead>
           <tbody>
-              {requests.map((req) => (
+              {requests.filter((req) => req.status !== 'closed')
+              .map((req) => (
                 <tr 
                   key={req._id} 
                   onClick={() => navigate(`/request/${req._id}`)} 
