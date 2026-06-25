@@ -166,7 +166,7 @@ export default function SafeAIUIPage() {
             )}
   
             {/* מנהל ארגון */}
-            {userRole === "org_owner" && (
+            {userRole === "org-admin" && (
               <>
                 <button
                   className={activeSection === "org-statistics" ? "sub-nav-btn active" : "sub-nav-btn"}
