@@ -8,6 +8,7 @@ import {
   getOrganizationUsers,
   addUserToOrganization,
   removeUserFromOrganization,
+  topUpOrganizationWallet,
 } from "../services/organizationService";
 import logger from "../logger";
 
@@ -231,5 +232,47 @@ export async function removeUserFromOrganizationHandler(
   } catch (error) {
     logger.error("Failed to remove user from organization", { error });
     res.status(500).json({ error: "Failed to remove user from organization" });
+  }
+}
+
+/**
+ * Top up organization wallet (Admin or Org Owner) - Mock Only
+ */
+export async function topUpOrganizationWalletHandler(
+  req: Request<{ id: string }>,
+  res: Response
+) {
+  try {
+    const user = ( req as any).user;
+    const orgId = req.params.id;
+    const { amount } = req.body;
+
+    if (amount === undefined || typeof amount !== "number" || amount <= 0) {
+      return res.status(400).json({ error: "A valid positive amount is required" });
+    }
+
+    const organization = await getOrganizationById(orgId);
+    if (!organization) {
+      return res.status(404).json({ error: "Organization not found" });
+    }
+
+    if (
+      user.role !== "admin" &&
+      organization.ownerId.toString() !== user.userId
+    ) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const updateOrg = await topUpOrganizationWallet(orgId, amount);
+
+    res.json({
+      success: true,
+      message: "Wallet topped up successfully (Mock)",
+      organization: updateOrg
+    });
+  }
+  catch (error) {
+    logger.error("Failed to top up organization wallet", { error });
+    res.status(500).json({ error: "Failed to top up organization wallet" });
   }
 }
