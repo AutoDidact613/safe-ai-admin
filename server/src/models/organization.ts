@@ -21,6 +21,11 @@ const OrganizationSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
     settings: {
       // הגדרות ארגוניות כלליות
       maxUsers: {
