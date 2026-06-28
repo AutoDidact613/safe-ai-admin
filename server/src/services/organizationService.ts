@@ -129,3 +129,7 @@ export async function removeUserFromOrganization(userId: string) {
     throw error;
   }
 }
+
+export async function getPendingOrganizationsForAdmin() {
+  return repo.getPendingOrganizations();
+}

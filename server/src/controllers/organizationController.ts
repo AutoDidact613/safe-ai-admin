@@ -8,6 +8,7 @@ import {
   getOrganizationUsers,
   addUserToOrganization,
   removeUserFromOrganization,
+  getPendingOrganizationsForAdmin
 } from "../services/organizationService";
 import logger from "../logger";
 
@@ -231,5 +232,23 @@ export async function removeUserFromOrganizationHandler(
   } catch (error) {
     logger.error("Failed to remove user from organization", { error });
     res.status(500).json({ error: "Failed to remove user from organization" });
+  }
+}
+
+export async function getPendingOrganizationsHandler(req: Request, res: Response): Promise<void> {
+  try{
+    const pendingOrganizations = await getPendingOrganizationsForAdmin();
+
+    res.status(200).json({
+      success: true,
+      data: pendingOrganizations,
+    });
+  }
+  catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "שגיאה בשרת בעת שליפת ארגונים ממתינים",
+      error: error.message,
+    });
   }
 }
