@@ -236,7 +236,6 @@ export async function removeUserFromOrganizationHandler(
   }
 }
 
-<<<<<<< HEAD
 /**
  * Add user to organization by email (#54)
  */
@@ -276,7 +275,6 @@ export async function addUserByEmailToOrganizationHandler(
     res.status(500).json({ error: "Failed to add user to organization" });
   }
 }
-=======
 export async function getPendingOrganizationsHandler(req: Request, res: Response): Promise<void> {
   try{
     const pendingOrganizations = await getPendingOrganizationsForAdmin();
@@ -294,4 +292,3 @@ export async function getPendingOrganizationsHandler(req: Request, res: Response
     });
   }
 }
->>>>>>> e2c896c2fcc7c6fb0da61a8d9f9cd12c93579411
