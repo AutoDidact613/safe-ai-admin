@@ -28,6 +28,12 @@ export default function MyRequestsList({ activeSection }: MyRequestsListProps) {
     }
   };
 
+  const hasNewAdminReply = (req: any) => {
+    const replies = req.replies || [];
+    if (replies.length === 0) return false;
+    return replies[replies.length - 1].senderRole === 'admin';
+  };
+
   // הקוד ירוץ מחדש בכל פעם שה-activeSection משתנה ל-"requests"
   useEffect(() => {
     if (activeSection === "requests") {
@@ -48,6 +54,7 @@ export default function MyRequestsList({ activeSection }: MyRequestsListProps) {
           <table className="requests-table">
             <thead>
               <tr>
+                <th></th>
                 <th>נושא</th>
                 <th>סוג הפנייה</th>
                 <th>תאריך</th>
@@ -60,6 +67,9 @@ export default function MyRequestsList({ activeSection }: MyRequestsListProps) {
                   onClick={() => navigate(`/request/${req._id}`)}
                   style={{ cursor: 'pointer' }}
                 >
+                  <td>
+                    {hasNewAdminReply(req) && <span className="request-new-badge request-new-icon">תגובה חדשה</span>}
+                  </td>
                   <td>{req.title || "ללא נושא"}</td>
                   <td>
                     <span className="request-type-badge">{req.requestType || req.status || "לא ידוע"}</span>

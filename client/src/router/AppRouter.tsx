@@ -20,6 +20,7 @@ import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
 import RequestDetails from "../features/safeai-ui/RequestDetails";
+import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -124,6 +125,15 @@ export default function AppRouter() {
           element={
             <ProtectedRoute>
               <RequestDetails />
+            </ProtectedRoute>
+          }
+        />
+        
+                <Route
+          path="/admin/all-requests"
+          element={
+            <ProtectedRoute>
+              <AdminRequestsList />
             </ProtectedRoute>
           }
         />

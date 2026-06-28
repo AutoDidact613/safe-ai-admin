@@ -19,8 +19,12 @@ export const getRequestById = async (id: string) => {
   return await ContactMessage.findById(id);
 };
 
-export const closeRequestById = async (id: string, userId: string) => {
-  return await repository.updateStatus(id, userId, "closed");
+export const closeRequestById = async (id: string, userId: string, isAdmin = false) => {
+  return await repository.updateStatus(id, userId, "closed", isAdmin);
+};
+
+export const deleteRequestById = async (id: string) => {
+  return await repository.deleteRequestById(id);
 };
 
 export const addReplyToRequest = async (id: string, senderId: string, text: string, senderRole: 'user' | 'admin') => {

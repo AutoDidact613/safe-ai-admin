@@ -8,6 +8,8 @@ import Statistics from "../features/safeai-ui/Statistics";
 import UserApiKeysPage from "../features/safeai-ui/UserApiKeysPage";
 import AdminOrganizationsPage from "./AdminOrganizationsPage";
 import MyRequestsList from "../features/safeai-ui/MyRequestsList";
+import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
+import { apiCall, API_ENDPOINTS } from "../config/api";
 
 type Section =
   | "profiles"
@@ -16,13 +18,14 @@ type Section =
   | "statistics"
   | "apikeys"
   | "organizations"
-  | "requests";
+  | "requests"
+  | "adminRequests";
 
-interface UserData {
+type UserData = {
   email: string;
   name: string;
   _id?: string;
-}
+};
 
 export default function SafeAIUIPage() {
   const navigate = useNavigate();
@@ -58,6 +61,7 @@ export default function SafeAIUIPage() {
   const [currentUser] = useState<UserData | null>(
     initialState.user,
   );
+  const [newRequestCount, setNewRequestCount] = useState(0);
 
   // Redirect to landing page if not authenticated
   useEffect(() => {
@@ -65,6 +69,26 @@ export default function SafeAIUIPage() {
       navigate("/");
     }
   }, [userRole, navigate]);
+
+  useEffect(() => {
+    const fetchNewRequestCount = async () => {
+      if (userRole !== "admin") return;
+
+      try {
+        const requests = await apiCall<any[]>(API_ENDPOINTS.allRequests, { method: "GET" });
+        const count = requests.filter((req) => {
+          const hasAdminReply = req.replies?.some((reply: any) => reply.senderRole === "admin");
+          return req.status === "open" && !hasAdminReply;
+        }).length;
+
+        setNewRequestCount(count);
+      } catch (err) {
+        console.error("שגיאה בטעינת מספר הפניות החדשות:", err);
+      }
+    };
+
+    fetchNewRequestCount();
+  }, [userRole]);
 
   const renderSection = () => {
     switch (activeSection) {
@@ -82,6 +106,8 @@ export default function SafeAIUIPage() {
         return <AdminOrganizationsPage />;
       case "requests":
         return <MyRequestsList activeSection={activeSection} />;
+      case "adminRequests":
+        return <AdminRequestsList />;
       default:
         return <UserDashboard user={currentUser} />;
     }
@@ -166,6 +192,28 @@ export default function SafeAIUIPage() {
                     />
                   </svg>
                   ניהול ארגונים
+                </button>
+                <button
+                  className={
+                    activeSection === "adminRequests"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
+                  onClick={() => setActiveSection("adminRequests")}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path
+                      d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h12v2H2v-2z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  כל הפניות
+                  {newRequestCount > 0 && (
+                    <span className="sub-nav-badge">({newRequestCount})</span>
+                  )}
                 </button>
               </>
             )}

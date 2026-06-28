@@ -11,12 +11,14 @@ export const findByUserId = async (userId: string) => {
   return await ContactMessage.find({ userId: objectId as any }).sort({ createdAt: -1 });
 };
 
-export const updateStatus = async (id: string, userId: string, status: string) => {
+export const updateStatus = async (id: string, userId: string, status: string, isAdmin = false) => {
   const objectId = new Types.ObjectId(id);
-  const userObjectId = new Types.ObjectId(userId);
-  
+  const filter = isAdmin
+    ? { _id: objectId }
+    : { _id: objectId, userId: new Types.ObjectId(userId) };
+
   return await ContactMessage.findOneAndUpdate(
-    { _id: objectId, userId: userObjectId },
+    filter,
     { status: status },
     { new: true }
   );
@@ -29,4 +31,9 @@ export const updateStatus = async (id: string, userId: string, status: string) =
     { $push: { replies: replyData } },
     { new: true }
   );
+};
+
+export const deleteRequestById = async (id: string) => {
+  const objectId = new Types.ObjectId(id);
+  return await ContactMessage.findByIdAndDelete(objectId);
 };

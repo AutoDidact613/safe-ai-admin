@@ -47,6 +47,7 @@ export const API_ENDPOINTS = {
   contact: `${API_BASE_URL}/contact`,
   contactTypes: `${API_BASE_URL}/contact-types`,
   myRequests: `${API_BASE_URL}/contact/my-requests`,
+  allRequests: `${API_BASE_URL}/contact/all`,
 } as const;
 
 // Helper function for API calls

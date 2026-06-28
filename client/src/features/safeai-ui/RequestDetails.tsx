@@ -43,9 +43,8 @@ export default function RequestDetails() {
             // עדכון ה-UI עם המידע החדש מהשרת
             setRequest(data.request);
             setReplyText("");
-            alert("התגובה נשלחה בהצלחה!");
         } catch (err) {
-            alert("שגיאה בשליחת התגובה.");
+            console.error("שגיאה בשליחת התגובה:", err);
         } finally {
             setIsSubmitting(false);
         }
