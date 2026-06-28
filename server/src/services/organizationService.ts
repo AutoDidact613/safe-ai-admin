@@ -138,6 +138,34 @@ export async function addUserToOrganizationByEmail(orgId: string, email: string)
 
   return addUserToOrganization(orgId, user._id.toString());
 }
+
+export async function topUpOrganizationWallet(orgId: string, amount: number) {
+  try {
+    const organization = await repo.getOrganizationById(orgId);
+    if (!organization) {
+      throw new Error("Organization not found");
+    }
+
+    const currentBalance = (organization as any).walletBalance || 0;
+    const newBalance = currentBalance + amount;
+
+    const updateOrg = await repo.updateOrganization(orgId, {
+      walletBalance: newBalance,
+    });
+
+    logger.info("Organization wallet topped up successfully (Mock)", {
+      orgId,
+      amount,
+      newBalance,
+    });
+
+    return updateOrg;
+  } catch (error) {
+    logger.error("Failed to top up organization wallet", { error });
+    throw error;
+  }
+}
+
 export async function getPendingOrganizationsForAdmin() {
   return repo.getPendingOrganizations();
 }
