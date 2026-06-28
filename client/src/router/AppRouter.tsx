@@ -3,7 +3,6 @@ import LandingPage from "../pages/LandingPage";
 import SafeAIUIPage from "../pages/SafeAIUIPage";
 import NotFound from "../pages/NotFound";
 import OrganizationUsersPage from "../pages/OrganizationUsersPage";
-import AdminOrganizationsPage from "../pages/AdminOrganizationsPage";
 import ContactPage from "../pages/ContactPage";
 import DocsPage from "../pages/DocsPage";
 import RecommendedGuidesPage from "../pages/RecommendedGuidesPage";
@@ -19,6 +18,7 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
+import { PendingOrganizationsPage } from "../features/organizations/pages/PendingOrganizationsPage";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -132,7 +132,7 @@ export default function AppRouter() {
           path="/admin/organizations"
           element={
             <ProtectedRoute>
-              <AdminOrganizationsPage />
+              <PendingOrganizationsPage />
             </ProtectedRoute>
           }
         />

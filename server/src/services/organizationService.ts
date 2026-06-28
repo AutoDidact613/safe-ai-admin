@@ -150,9 +150,13 @@ export async function topUpOrganizationWallet(orgId: string, amount: number) {
       newBalance,
     });
 
-    return updatedOrg;
+    return updateOrg;
   } catch (error) {
     logger.error("Failed to top up organization wallet", { error });
     throw error;
   }
+}
+
+export async function getPendingOrganizationsForAdmin() {
+  return repo.getPendingOrganizations();
 }

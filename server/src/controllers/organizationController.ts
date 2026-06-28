@@ -9,6 +9,7 @@ import {
   addUserToOrganization,
   removeUserFromOrganization,
   topUpOrganizationWallet,
+  getPendingOrganizationsForAdmin
 } from "../services/organizationService";
 import logger from "../logger";
 
@@ -221,24 +222,4 @@ export async function topUpOrganizationWalletHandler(
     if (amount === undefined || typeof amount !== "number" || amount <= 0) {
       return res.status(400).json({ error: "A valid positive amount is required" });
     }
-    const organization = await getOrganizationById(orgId);
-    if (!organization) {
-      return res.status(404).json({ error: "Organization not found" });
-    }
-    if (
-      user.role !== "admin" &&
-      organization.ownerId.toString() !== user.userId
-    ) {
-      return res.status(403).json({ error: "Access denied" });
-    }
-    const updateOrg = await topUpOrganizationWallet(orgId, amount);
-    res.json({
-      success: true,
-      message: "Wallet topped up successfully (Mock)",
-      organization: updateOrg
-    });
-  } catch (error) {
-    logger.error("Failed to top up organization wallet", { error });
-    res.status(500).json({ error: "Failed to top up organization wallet" });
-  }
-}
+    const organization =
