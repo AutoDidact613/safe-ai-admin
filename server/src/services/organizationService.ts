@@ -138,3 +138,6 @@ export async function addUserToOrganizationByEmail(orgId: string, email: string)
 
   return addUserToOrganization(orgId, user._id.toString());
 }
+export async function getPendingOrganizationsForAdmin() {
+  return repo.getPendingOrganizations();
+}

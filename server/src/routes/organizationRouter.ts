@@ -9,18 +9,23 @@ import {
   addUserToOrganizationHandler,
   removeUserFromOrganizationHandler,
   addUserByEmailToOrganizationHandler,
+  getPendingOrganizationsHandler,
 } from "../controllers/organizationController";
 import { authenticateToken } from "../middleware/auth";
 
 const router = express.Router();
 
-
+// 1. PUBLIC ROUTES (Must be at the very top, before auth)
 router.get("/", listOrganizationsHandler); // Public
 
-// All routes require authentication
+// All routes below require authentication
 router.use(authenticateToken);
 
-// Organization CRUD
+// 2. PROTECTED STATIC ROUTES (Must be before dynamic :id routes)
+router.get("/pending", getPendingOrganizationsHandler); // System Admin only
+router.patch("/pending/:id", updateOrganizationHandler); // מעדכן את הסטטוס של הארגון הממתין מול ה-DB
+
+// 3. PROTECTED DYNAMIC ROUTES
 router.post("/", createOrganizationHandler); // Admin only
 router.get("/", listOrganizationsHandler); // Admin only
 router.get("/:id", getOrganizationHandler); // Admin or Org Owner
