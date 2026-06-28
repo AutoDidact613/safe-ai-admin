@@ -8,6 +8,7 @@ import {
   getOrganizationUsers,
   addUserToOrganization,
   removeUserFromOrganization,
+  addUserToOrganizationByEmail,
   topUpOrganizationWallet,
   getPendingOrganizationsForAdmin
 } from "../services/organizationService";
@@ -209,6 +210,67 @@ export async function removeUserFromOrganizationHandler(
 }
 
 /**
+ * Add user to organization by email
+ */
+export async function addUserByEmailToOrganizationHandler(
+  req: Request<{ id: string }>,
+  res: Response
+) {
+  try {
+    const user = (req as any).user;
+    const orgId = req.params.id;
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const organization = await getOrganizationById(orgId);
+    if (!organization) {
+      return res.status(404).json({ error: "Organization not found" });
+    }
+
+    if (
+      user.role !== "admin" &&
+      organization.ownerId.toString() !== user.userId
+    ) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const updateUser = await addUserToOrganizationByEmail(orgId, email);
+    res.json({ success: true, user: updateUser });
+  }
+  catch (error: any) {
+    if (error.message === "User not found") {
+      return res.status(404).json({ error: "User not found with this email" });
+    }
+    logger.error("Failed to add user to organization by email", { error });
+    res.status(500).json({ error: "Failed to add user to organization" });
+  }
+}
+
+/**
+ * Get pending organizations (System Admin only)
+ */
+export async function getPendingOrganizationsHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const pendingOrganizations = await getPendingOrganizationsForAdmin();
+
+    res.status(200).json({
+      success: true,
+      data: pendingOrganizations,
+    });
+  }
+  catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "שגיאה בשרת בעת שליפת ארגונים ממתינים",
+      error: error.message,
+    });
+  }
+}
+
+/**
  * Top up organization wallet (Admin or Org Owner) - Mock Only
  */
 export async function topUpOrganizationWalletHandler(
@@ -219,7 +281,27 @@ export async function topUpOrganizationWalletHandler(
     const user = (req as any).user;
     const orgId = req.params.id;
     const { amount } = req.body;
+
     if (amount === undefined || typeof amount !== "number" || amount <= 0) {
       return res.status(400).json({ error: "A valid positive amount is required" });
     }
-    const organization =
+
+    const organization = await getOrganizationById(orgId);
+    if (!organization) {
+      return res.status(404).json({ error: "Organization not found" });
+    }
+
+    if (
+      user.role !== "admin" &&
+      organization.ownerId.toString() !== user.userId
+    ) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const updatedOrg = await topUpOrganizationWallet(orgId, amount);
+    res.json({ success: true, organization: updatedOrg });
+  } catch (error) {
+    logger.error("Failed to top up organization wallet", { error });
+    res.status(500).json({ error: "Failed to top up organization wallet" });
+  }
+}
