@@ -8,6 +8,7 @@ import {
   getOrganizationUsersHandler,
   addUserToOrganizationHandler,
   removeUserFromOrganizationHandler,
+  addUserByEmailToOrganizationHandler,
   getPendingOrganizationsHandler,
 } from "../controllers/organizationController";
 import { authenticateToken } from "../middleware/auth";
@@ -36,5 +37,6 @@ router.delete("/:id", deleteOrganizationHandler); // Admin only
 router.get("/:id/users", getOrganizationUsersHandler); // Admin or Org Owner
 router.post("/:id/users", addUserToOrganizationHandler); // Admin or Org Owner
 router.delete("/users/:userId", removeUserFromOrganizationHandler); // Admin or Org Owner
+router.post("/:id/users/by-email", addUserByEmailToOrganizationHandler); // Admin or Org Owner
 
 export default router;
