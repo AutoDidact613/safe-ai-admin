@@ -173,10 +173,8 @@ export default function Statistics({ user }: StatisticsProps) {
   const avgRequestsPerDay = usageData.length ? totalRequests / usageData.length : 0;
   const blockRate = totalRequests > 0 ? ((totalBlocked / totalRequests) * 100).toFixed(1) : "0";
 
-  const pageTitle = isAdmin
-    ? "סטטיסטיקות מערכת – מנהל"
-    : isOrgOwner
-    ? "סטטיסטיקות מערכת – מנהל ארגון"
+  const pageTitle = isAdmin || isOrgOwner
+    ? "סטטיסטיקות מערכת"
     : "סטטיסטיקות שימוש";
 
   if (loading) {
