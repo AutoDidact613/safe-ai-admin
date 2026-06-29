@@ -5,7 +5,8 @@ interface TenderCardProps {
   shortDescription?: string
   timeRequired?: string
   budget?: string
-  domains?: string[]
+  productType?: string
+  aiApplicationType?: string
   wantsEmails?: boolean
   applicantsCount?: number
   onView: () => void
@@ -17,19 +18,32 @@ export default function Card({
   shortDescription,
   timeRequired,
   budget,
-  domains = [],
+  productType,
+  aiApplicationType,
   applicantsCount = 0,
   onView,
 }: TenderCardProps) {
   return (
-    <article className="tender-card" aria-labelledby={`tender-${id}`}>
+    <article 
+      className="tender-card" 
+      aria-labelledby={`tender-${id}`} 
+      style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+    >
       <div className="tender-card__header">
         <div>
           <h3 id={`tender-${id}`}>{title}</h3>
         </div>
       </div>
 
-      {shortDescription && <p className="tender-card__summary">{shortDescription}</p>}
+      {/* תיבת טקסט מוגבלת בגובה עם גלילה פנימית עבור תיאורים ארוכים */}
+      {shortDescription && (
+        <div 
+          className="tender-card__summary-wrapper" 
+          style={{ maxHeight: '120px', overflowY: 'auto', marginBottom: '12px', paddingLeft: '4px' }}
+        >
+          <p className="tender-card__summary" style={{ margin: 0 }}>{shortDescription}</p>
+        </div>
+      )}
 
       <div className="tender-card__meta">
         <div>
@@ -50,19 +64,24 @@ export default function Card({
         </div>
       </div>
 
-      {domains.length > 0 && (
-        <div className="tender-card__tags">
-          {domains.slice(0, 7).map((d) => (
-            <span key={d} className="domain-pill">
-              {d}
+      {(productType || aiApplicationType) && (
+        <div className="tender-card__tags" style={{ marginTop: 'auto', paddingTop: '10px' }}>
+          {productType && (
+            <span className="domain-pill" style={{ backgroundColor: '#f1f5f9', color: '#334155', borderColor: '#cbd5e1' }}>
+              {productType}
             </span>
-          ))}
+          )}
+          {aiApplicationType && (
+            <span className="domain-pill">
+              {aiApplicationType}
+            </span>
+          )}
         </div>
       )}
 
-      <div className="tender-card__actions">
+      <div className="tender-card__actions" style={{ marginTop: '12px' }}>
         <button type="button" className="details-button" onClick={onView}>
-          View details
+          פרטים
         </button>
       </div>
     </article>

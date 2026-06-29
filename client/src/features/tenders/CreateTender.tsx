@@ -5,7 +5,9 @@ interface TenderFormData {
   tenderName: string
   explanation: string
   agents: string[]
-  selectedDomains: string[]
+  productType: string
+  aiApplicationType: string
+  isActive: boolean
   duration: string
   budget: string
   additionalDetails: string
@@ -16,13 +18,14 @@ interface CreateTenderProps {
   onSuccess: () => void
 }
 
-
 export default function CreateTender({ onSuccess }: CreateTenderProps) {
   const [formData, setFormData] = useState<TenderFormData>({
     tenderName: '',
     explanation: '',
     agents: ['', ''],
-    selectedDomains: [],
+    productType: '',
+    aiApplicationType: '',
+    isActive: true,
     duration: '',
     budget: '',
     additionalDetails: '',
@@ -31,20 +34,46 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
 
   const [formMessage, setFormMessage] = useState<string>('')
   const [errorMessage, setErrorMessage] = useState<string>('')
-  const [domainOptions , setDomainOptions] = useState<string[]>([])
+  
+  const [productTypeOptions, setProductTypeOptions] = useState<string[]>([])
+  const [aiApplicationOptions, setAiApplicationOptions] = useState<string[]>([])
 
   useEffect(() => {
-    const fetchDomains = async () => {
+    const fetchFilterOptions = async () => {
       try {
-        const domains = await apiCall<string[]>(API_ENDPOINTS.tenders.getFields)
-        setDomainOptions(domains)
+        apiCall<string[]>(API_ENDPOINTS.tenders.getProductTypes)
+          .then((types) => {
+            if (types) setProductTypeOptions(types)
+          })
+          .catch((err) => console.error('Failed to load product types', err))
+
+        apiCall<string[]>(API_ENDPOINTS.tenders.getAIApplicationTypes)
+          .then((apps) => {
+            if (apps) setAiApplicationOptions(apps)
+          })
+          .catch((err) => console.error('Failed to load AI application types', err))
       } catch (error) {
-        console.error('Failed to load domains', error)
+        console.error('Failed to load filter options', error)
       }
     }
 
-    fetchDomains()
+    fetchFilterOptions()
   }, [])
+
+  useEffect(() => {
+    if (formData.aiApplicationType === 'אייגנט') {
+      setFormData((current) => ({
+        ...current,
+        agents: current.agents.length > 0 ? [current.agents[0]] : [''],
+      }))
+    } else if (formData.aiApplicationType === 'מולטי אייגנט') {
+      setFormData((current) => {
+        const nextAgents = [...current.agents]
+        while (nextAgents.length < 2) nextAgents.push('')
+        return { ...current, agents: nextAgents.slice(0, 2) }
+      })
+    }
+  }, [formData.aiApplicationType])
 
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
@@ -78,36 +107,41 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
     }))
   }
 
-  const toggleDomain = (domain: string) => {
-    setFormData((current) => {
-      const alreadySelected = current.selectedDomains.includes(domain)
-      const nextSelected = alreadySelected
-        ? current.selectedDomains.filter((item) => item !== domain)
-        : current.selectedDomains.length < 7
-        ? [...current.selectedDomains, domain]
-        : current.selectedDomains
-      return { ...current, selectedDomains: nextSelected }
-    })
+  const handleProductTypeSelect = (type: string) => {
+    setFormData((current) => ({
+      ...current,
+      productType: current.productType === type ? '' : type,
+    }))
+  }
+
+  const handleAiApplicationSelect = (appType: string) => {
+    setFormData((current) => ({
+      ...current,
+      aiApplicationType: current.aiApplicationType === appType ? '' : appType,
+    }))
   }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setFormMessage('')
     setErrorMessage('')
-    await clicledAddTender()
+    await clickedAddTender()
   }
 
-  const clicledAddTender = async () => {
+  const clickedAddTender = async () => {
     const payload = {
       title: formData.tenderName,
       shortDescription: formData.explanation,
       publisherUserCode: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!)._id : '000',
-      domains: formData.selectedDomains,
+      productType: formData.productType,
+      aiApplicationType: formData.aiApplicationType,
+      isActive: formData.isActive,
       timeRequired: formData.duration,
       budget: formData.budget,
-      agentsRequired: formData.agents
-        .map((agent) => agent.trim())
-        .filter((agent) => agent.length > 0),
+      agentsRequired: 
+        (formData.aiApplicationType === 'אייגנט' || formData.aiApplicationType === 'מולטי אייגנט')
+          ? formData.agents.map((agent) => agent.trim()).filter((agent) => agent.length > 0)
+          : [],
       wantsEmails: formData.wantsEmails,
       additionalDetails: formData.additionalDetails,
     }
@@ -123,7 +157,9 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
         tenderName: '',
         explanation: '',
         agents: ['', ''],
-        selectedDomains: [],
+        productType: '',
+        aiApplicationType: '',
+        isActive: true,
         duration: '',
         budget: '',
         additionalDetails: '',
@@ -139,6 +175,8 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
     }
   }
 
+  const showAgentsSection = formData.aiApplicationType === 'אייגנט' || formData.aiApplicationType === 'מולטי אייגנט'
+
   return (
     <div className="page-shell" dir="rtl">
       <form className="tender-form" onSubmit={handleSubmit}>
@@ -153,26 +191,77 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
               onChange={handleInputChange}
               placeholder="הכנס שם המכרז"
               className="input"
+              maxLength={100}
               required
             />
           </div>
         </header>
 
-        <div className="form-grid">
-          <section className="main-panel">
-            <div className="form-group">
-              <label htmlFor="explanation">הסבר / תאור</label>
-              <textarea
-                id="explanation"
-                name="explanation"
-                value={formData.explanation}
-                onChange={handleInputChange}
-                placeholder="תיאור המכרז"
-                className="textarea"
-                rows={5}
-              />
+        {/* זרימה לינארית נקייה ללא שימוש ב-form-grid הצידי הישן */}
+        <div className="form-linear-flow" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          {/* 1. הסבר / תיאור בראש הדף */}
+          <div className="form-group">
+            <label htmlFor="explanation">הסבר / תאור</label>
+            <textarea
+              id="explanation"
+              name="explanation"
+              value={formData.explanation}
+              onChange={handleInputChange}
+              placeholder="תיאור המכרז"
+              className="textarea"
+              rows={5}
+              maxLength={1000}
+            />
+          </div>
+
+          {/* 2. שורת התחומים (סוג מוצר וצורת שימוש ב-AI זה לצד זה או בשורה מעוצבת) */}
+          <div className="selection-cards-row" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+            {/* תיבה א': סוג מוצר */}
+            <div className="sidebar-card" style={{ flex: '1', minWidth: '280px' }}>
+              <h2>סוג המוצר</h2>
+              <p className="helper-text">בחירת סוג מוצר אחד</p>
+              <div className="domain-list">
+                {productTypeOptions.map((type) => {
+                  const selected = formData.productType === type
+                  return (
+                    <button
+                      type="button"
+                      key={type}
+                      className={`domain-chip ${selected ? 'selected' : ''}`}
+                      onClick={() => handleProductTypeSelect(type)}
+                    >
+                      {type}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
+            {/* תיבה ב': צורת שימוש ב-AI */}
+            <div className="sidebar-card" style={{ flex: '1', minWidth: '280px' }}>
+              <h2>צורת שימוש ב-AI</h2>
+              <p className="helper-text">בחירת צורת שימוש אחת</p>
+              <div className="domain-list">
+                {aiApplicationOptions.map((appType) => {
+                  const selected = formData.aiApplicationType === appType
+                  return (
+                    <button
+                      type="button"
+                      key={appType}
+                      className={`domain-chip ${selected ? 'selected' : ''}`}
+                      onClick={() => handleAiApplicationSelect(appType)}
+                    >
+                      {appType}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* 3. שדות האג'נטים - מופיעים רק לאחר מכן במידה ונבחרו */}
+          {showAgentsSection && (
             <div className="form-section">
               <div className="section-title">הסבר על אג'נט</div>
               <div className="agent-list">
@@ -187,6 +276,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
                         placeholder={`רשום תיאור לאג'נט ${index + 1}`}
                         className="textarea textarea-small"
                         rows={3}
+                        maxLength={300}
                       />
                       {formData.agents.length > 1 && (
                         <button
@@ -201,39 +291,16 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
                   </div>
                 ))}
               </div>
-              <button type="button" className="button-green" onClick={addAgent}>
-                הוספת אג'נט +
-              </button>
+              {formData.aiApplicationType === 'מולטי אייגנט' && (
+                <button type="button" className="button-green" onClick={addAgent}>
+                  הוספת אג'נט +
+                </button>
+              )}
             </div>
-          </section>
-
-          <aside className="sidebar-panel">
-            <div className="sidebar-card">
-              <h2>תחומים</h2>
-              <p className="helper-text">בחירה עד 7 מתוך מערך קיים</p>
-              <div className="domain-list">
-                {domainOptions.map((domain) => {
-                  const selected = formData.selectedDomains.includes(domain)
-                  const disabled =
-                    !selected && formData.selectedDomains.length >= 7
-                  return (
-                    <button
-                      type="button"
-                      key={domain}
-                      className={`domain-chip ${selected ? 'selected' : ''}`}
-                      onClick={() => toggleDomain(domain)}
-                      disabled={disabled}
-                    >
-                      {domain}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </aside>
+          )}
         </div>
 
-        <div className="bottom-row">
+        <div className="bottom-row" style={{ marginTop: '24px' }}>
           <div className="bottom-field">
             <label htmlFor="duration">כמה זמן ניתן לביצוע המשימה</label>
             <input 
@@ -243,6 +310,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
               onChange={handleInputChange}
               className="input"
               placeholder="בחר זמן"
+              maxLength={50}
             />
           </div>
 
@@ -256,6 +324,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
               type="text"
               placeholder="הזן סכום"
               className="input"
+              maxLength={50}
             />
           </div>
         </div>
@@ -271,6 +340,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
               placeholder="הזן פרטים נוספים"
               className="textarea"
               rows={4}
+              maxLength={500}
             />
           </div>
 

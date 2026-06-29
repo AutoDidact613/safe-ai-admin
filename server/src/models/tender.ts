@@ -12,7 +12,11 @@ const TenderSchema = new Schema(
 
     budget: { type: String },
 
-    domains: { type: [String], default: [] },
+    productType: { type:String },
+
+    aiApplicationType: { type:String },
+
+    isActive: { type: Boolean, default: true },
 
     agentsRequired: { type: [String], default: [] },
 

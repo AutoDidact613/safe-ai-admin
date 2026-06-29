@@ -6,23 +6,34 @@ import {
   updateTender,
   deleteTender,
   applyToTender,
-  getFieldsList,
+  getProductTypeList,
+  getAIApplicationTypeList,
 } from "../services/tenderBoardService";
 import logger from "../logger";
 
 /**
- * GET all static fields
+ * GET all static product types
  */
-export async function listFieldsHandler(req: Request, res: Response) {
+export async function listProductTypes(req: Request, res: Response) {
   try {
-    const fields = await getFieldsList();
+    const fields = await getProductTypeList();
     res.json(fields);
   } catch (error) {
-    logger.error("List fields failed", { error });
-    res.status(500).json({ error: "Failed to fetch fields" });
+    logger.error("List product types failed", { error });
+    res.status(500).json({ error: "Failed to fetch product types" });
   }
 }
 
+//Get all AI application types
+export async function listAIApplicationTypes(req: Request, res: Response) {
+  try {
+    const fields = await getAIApplicationTypeList();
+    res.json(fields);
+  } catch (error) {
+    logger.error("List AI application types failed", { error });
+    res.status(500).json({ error: "Failed to fetch AI application types" });
+  }
+}
 /**
  * CREATE Tender
  */

@@ -2,23 +2,29 @@ import * as repo from "../repositories/tenderBoardRepository";
 import logger from "../logger";
 
 // הרשימה הסטטית של התחומים 
-const STATIC_FIELDS = [
-  'AI',
-  'Security',
-  'Healthcare',
-  'Finance',
-  'Logistics',
-  'Design',
-  'Data',
-  'Web',
-  'Mobile',
-  'DevOps',
-  'ML Ops',
-  'Robotics'
+const Static_ProductType_List = [
+  'אפליקציה',
+  'אתר',
+  'תוכנת desktop',
+  'הטמעה של פיצר במערכת קיימת',
+  'ייעוץ',
+  'הקמת תשתית לאייגנט',
+  'אחר'
 ];
 
-export async function getFieldsList() {
-  return STATIC_FIELDS;
+const AI_ApplicationType_List = [
+  'התממשקות פשוטה',
+  'צאטבוט',
+  'אייגנט',
+  'מולטי אייגנט'
+];
+
+export async function getProductTypeList() {
+  return Static_ProductType_List;
+}
+
+export async function getAIApplicationTypeList() {
+  return AI_ApplicationType_List;
 }
 
 export async function createTender(data: any) {

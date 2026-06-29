@@ -113,7 +113,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 type="text"
                 value={contactMethod}
                 onChange={(e) => setContactMethod(e.target.value)}
-                placeholder="טלפון / ווטסאפ / אימייל"
+                placeholder="טלפון / אימייל"
               />
             </label>
           </div>

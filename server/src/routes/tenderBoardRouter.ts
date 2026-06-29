@@ -6,7 +6,8 @@ import {
   updateTenderHandler,
   deleteTenderHandler,
   applyToTenderHandler,
-  listFieldsHandler,
+  listAIApplicationTypes,
+  listProductTypes,
 } from "../controllers/tenderBoardController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -15,7 +16,8 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Static data endpoints
-router.get("/fields", listFieldsHandler);
+router.get("/product-types", listProductTypes);
+router.get("/ai-application-types", listAIApplicationTypes);
 
 // CRUD
 router.post("/", createTenderHandler);
