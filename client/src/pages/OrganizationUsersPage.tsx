@@ -66,6 +66,7 @@ export default function OrganizationUsersPage() {
       }
 
       const currentUserId = user.userId || user._id || user.id;
+
       let userOrg = orgResponse.data.find(
         (org: Organization) => (org.ownerId?._id || org.ownerId) === currentUserId
       );
@@ -87,21 +88,32 @@ export default function OrganizationUsersPage() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setUsers(usersResponse.data);
-    } catch (err: any) {
-      console.error("Error fetching organization users:", err);
-      
-      let serverError = "Failed to fetch organization users";
-      if (err.response?.data) {
-        serverError = typeof err.response.data === 'string' 
-          ? err.response.data 
-          : (err.response.data.error || err.response.data.message || JSON.stringify(err.response.data));
-      } else if (err.message) {
-        serverError = err.message;
-      }
 
-      const failedUrl = err.config?.url ? ` (נתיב: ${err.config.url})` : "";
-      setError(`${serverError}${failedUrl}`);
+      setUsers(usersResponse.data);
+    } catch (err: unknown) {
+      console.error("Error fetching organization users:", err);
+
+      let serverError = "Failed to fetch organization users";
+
+      if (axios.isAxiosError(err)) {
+        if (err.response?.data) {
+          serverError =
+            typeof err.response.data === "string"
+              ? err.response.data
+              : err.response.data.error ||
+              err.response.data.message ||
+              JSON.stringify(err.response.data);
+        } else if (err.message) {
+          serverError = err.message;
+        }
+
+        const failedUrl = err.config?.url ? ` (נתיב: ${err.config.url})` : "";
+        setError(`${serverError}${failedUrl}`);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError(serverError);
+      }
     } finally {
       setLoading(false);
     }
@@ -109,10 +121,12 @@ export default function OrganizationUsersPage() {
 
   const handleTopUp = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!organization || !topUpAmount || topUpAmount <= 0) return;
 
     try {
       setIsSubmitting(true);
+
       const token = localStorage.getItem("accessToken");
 
       const response = await axios.post(
@@ -122,14 +136,28 @@ export default function OrganizationUsersPage() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      
-      alert(`הארנק נטען בהצלחה! יתרה חדשה: $${response.data.organization.walletBalance}`);
+
+      alert(
+        `הארנק נטען בהצלחה! יתרה חדשה: $${response.data.organization.walletBalance}`
+      );
+
       setOrganization(response.data.organization);
       setTopUpAmount("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error topping up wallet:", err);
-      const errorMsg = err.response?.data?.error || err.response?.data?.message || "נכשל הטעינה לארנק";
-      alert(errorMsg);
+
+      if (axios.isAxiosError(err)) {
+        const errorMsg =
+          err.response?.data?.error ||
+          err.response?.data?.message ||
+          "נכשל הטעינה לארנק";
+
+        alert(errorMsg);
+      } else if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert("נכשל הטעינה לארנק");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -160,7 +188,7 @@ export default function OrganizationUsersPage() {
   return (
     <div className="organization-page">
       <h1>לוח ארגון</h1>
-      
+
       {organization && (
         <div className="organization-grid">
           <div className="organization-info-card">
