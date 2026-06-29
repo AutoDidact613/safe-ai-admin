@@ -48,6 +48,8 @@ export const API_ENDPOINTS = {
   },
   // Contact form endpoint
   contact: `${API_BASE_URL}/contact`,
+  // AI News endpoints
+  news: `${API_BASE_URL}/api/news`,
 } as const;
 
 // Helper function for API calls

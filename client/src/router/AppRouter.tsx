@@ -19,6 +19,7 @@ import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
 import { PendingOrganizationsPage } from "../features/organizations/pages/PendingOrganizationsPage";
+import AiNewsPage from "../pages/AiNewsPage";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -115,6 +116,15 @@ export default function AppRouter() {
             <ProtectedRoute>
               <SafeAIUIPage />
             </ProtectedRoute>
+          }
+        />
+
+         <Route
+          path="/ai-news"
+          element={
+           <ProtectedRoute>
+             <AiNewsPage />
+           </ProtectedRoute>
           }
         />
 

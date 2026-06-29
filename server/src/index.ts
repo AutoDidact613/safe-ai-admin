@@ -14,6 +14,8 @@ import proxyKeyRouter from "./routes/proxyKeyRouter";
 import promptRouter from "./routes/promptRouter";
 import organizationRouter from "./routes/organizationRouter";
 import contactRouter from "./routes/contactRouter";
+import newsRouter from "./routes/newsRouter";
+
 
 import { requestLogger } from "./middleware/requestLogger";
 import { errorHandler } from "./middleware/errorHandler";
@@ -69,6 +71,8 @@ app.use("/contact", contactRouter); // Contact form (requires authentication)
 // ===== Public routes for filter evaluation =====
 app.use("/filter", filterRouter);
 
+// ===== Public AI News Routes =====
+app.use("/api/news", newsRouter); // News routes are public
 
 // ===== Proxy API Key Protected Routes (LiteLLM Proxy) =====
 app.use("/v1", openaiRouter); // Uses proxyAuth middleware in the router
