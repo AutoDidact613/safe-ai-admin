@@ -5,8 +5,12 @@ export async function createTender(data: any) {
   return Tender.create(data);
 }
 
-export async function getTenders() {
-  return Tender.find().lean();
+/**
+ * GET Tenders
+ * מעודכן לקבלת אובייקט סינון אופציונלי עבור החיפוש החכם של ה-AI
+ */
+export async function getTenders(filter: any = {}) {
+  return Tender.find(filter).lean();
 }
 
 export async function getTenderById(id: string) {

@@ -49,6 +49,8 @@ export const API_ENDPOINTS = {
   tenders: {
     list: `${API_BASE_URL}/tender-board`,
     create: `${API_BASE_URL}/tender-board`,
+    smartCreate: `${API_BASE_URL}/tender-board/smart-create`, 
+    smartSearch: `${API_BASE_URL}/tender-board/smart-search`,
     getAIApplicationTypes: `${API_BASE_URL}/tender-board/ai-application-types`,
     getProductTypes: `${API_BASE_URL}/tender-board/product-types`,
     update: (id: string) => `${API_BASE_URL}/tender-board/${id}`,

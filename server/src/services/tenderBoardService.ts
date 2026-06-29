@@ -1,5 +1,8 @@
 import * as repo from "../repositories/tenderBoardRepository";
 import logger from "../logger";
+import { AIService } from "./tenderBoardAIService"; // ייבוא של שירות ה-AI החדש
+
+const aiService = new AIService(); // אתחול שירות ה-AI
 
 // הרשימה הסטטית של התחומים 
 const Static_ProductType_List = [
@@ -120,4 +123,55 @@ export async function applyToTender(
   ];
 
   return repo.updateTenderApplicants(tenderId, updatedApplicants);
+}
+
+/**
+ * ========================================================
+ * פונקציות שירות חדשות - שילוב ה-AI במערכת
+ * ========================================================
+ */
+
+/**
+ * יצירת מכרז חכם בעזרת AI
+ * מקבל את הטקסט הגולמי, מפרסר ל-JSON ושומר דרך ה-Repository
+ */
+export async function createSmartTender(text: string) {
+  try {
+    // קריאה ל-Gemini דרך ה-AIService כדי לקבל את אובייקט המכרז המובנה
+    const aiTenderData = await AIService.generateTenderData(text);
+    
+    // בניית האובייקט המלא עם ערכי ברירת מחדל של המערכת שלך
+    const fullTenderData = {
+      ...aiTenderData,
+      isActive: true,
+      applicants: []
+    };
+
+    // שמירה בבסיס הנתונים באמצעות פונקציית ה-createTender הקיימת שלך (כדי לשמור על הלוגים וכו')
+    return await createTender(fullTenderData);
+  } catch (error) {
+    logger.error("Failed to process createSmartTender", { error });
+    throw error;
+  }
+}
+
+/**
+ * חיפוש חכם בעזרת AI (הגרסה הפשוטה)
+ * מתרגם את מחרוזת החיפוש לשאילתת מונגו ושולף את המכרזים המתאימים
+ */
+export async function smartSearchTenders(searchText: string) {
+  try {
+    console.log("Received search text for smart search:", searchText);
+    // פנייה ל-AI לקבלת אובייקט שאילתת הסינון של MongoDB
+    const mongoQuery = await AIService.generateSearchQuery(searchText);
+    
+    logger.info("Executing smart search with query", { query: JSON.stringify(mongoQuery) });
+
+    // שליחת השאילתה ישירות ל-Repository של מונגו
+    // *שימי לב:* ודאי שפונקציית getTenders ב-Repository שלך יודעת לקבל אובייקט filter, או השתמשי בפונקציית סינון ייעודית אם קיימת ב-Repository
+    return await repo.getTenders(mongoQuery);
+  } catch (error) {
+    logger.error("Failed to process smartSearchTenders", { error });
+    throw error;
+  }
 }

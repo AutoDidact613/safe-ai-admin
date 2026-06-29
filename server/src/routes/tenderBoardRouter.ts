@@ -8,6 +8,8 @@ import {
   applyToTenderHandler,
   listAIApplicationTypes,
   listProductTypes,
+  createSmartTenderHandler,
+  smartSearchTendersHandler,
 } from "../controllers/tenderBoardController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -20,6 +22,11 @@ router.get("/product-types", listProductTypes);
 router.get("/ai-application-types", listAIApplicationTypes);
 
 // CRUD
+
+//AI
+router.post("/smart-create", createSmartTenderHandler);
+router.get("/smart-search", smartSearchTendersHandler);
+
 router.post("/", createTenderHandler);
 router.get("/", listTendersHandler);
 router.get("/:id", getTenderHandler);

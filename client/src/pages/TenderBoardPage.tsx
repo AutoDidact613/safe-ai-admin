@@ -86,6 +86,12 @@ export default function TenderBoardPage() {
   const [minBudget, setMinBudget] = useState<string>('')
   const [maxTimeDays, setMaxTimeDays] = useState<string>('')
 
+  // State עבור חיפוש חכם עם AI
+  const [isSmartSearchOpen, setIsSmartSearchOpen] = useState(false)
+  const [smartSearchQuery, setSmartSearchQuery] = useState('')
+  const [smartSearchResults, setSmartSearchResults] = useState<Tender[] | null>(null)
+  const [isSmartSearching, setIsSmartSearching] = useState(false)
+
   const [selectedTender, setSelectedTender] = useState<Tender | null>(null)
   const [applyingTender, setApplyingTender] = useState<Tender | null>(null)
   const [successMessage, setSuccessMessage] = useState('')
@@ -172,9 +178,38 @@ export default function TenderBoardPage() {
     }
   }, [])
 
-  // סינון משולב לפי סוג מוצר, יישום AI, סטטוס פעיל, תקציב וזמן
+  // פונקציה לביצוע חיפוש חכם מול השרת
+  const handleSmartSearch = async () => {
+    if (!smartSearchQuery.trim()) return
+    try {
+      setIsSmartSearching(true)
+      setErrorMessage('')
+      // קריאה לשרת עם ה-Query Parameter q כמבוקש
+      debugger
+      const endpoint = `${API_ENDPOINTS.tenders.smartSearch}?q=${encodeURIComponent(smartSearchQuery)}`
+      const results = await apiCall<any[]>(endpoint)
+      setSmartSearchResults(results.map(normalizeTender))
+      // console.log(results.map(normalizeTender))
+    } catch (error) {
+      console.error('Failed to execute smart search', error)
+      setErrorMessage('החיפוש החכם נכשל. אנא נסה שנית.')
+    } finally {
+      setIsSmartSearching(false)
+    }
+  }
+
+  // ניקוי החיפוש החכם וחזרה לרשימה המלאה
+  const handleClearSmartSearch = () => {
+    setSmartSearchQuery('')
+    setSmartSearchResults(null)
+  }
+
+  // סינון משולב לפי סוג מוצר, יישום AI, סטטוס פעיל, תקציב, זמן וחיפוש חכם
   const visibleTenders = useMemo(() => {
-    return tenders.filter((t) => {
+    // אם יש תוצאות מחיפוש חכם, נסנן אותן. אחרת, נסנן את כל המכרזים
+    const baseTenders = smartSearchResults !== null ? smartSearchResults : tenders
+
+    return baseTenders.filter((t) => {
       if (t.isActive === false) return false
       
       const matchProduct = !selectedProductType || t.productType === selectedProductType
@@ -198,14 +233,20 @@ export default function TenderBoardPage() {
 
       return matchProduct && matchAi && matchBudget && matchTime
     })
-  }, [tenders, selectedProductType, selectedAiApplication, minBudget, maxTimeDays])
+  }, [tenders, smartSearchResults, selectedProductType, selectedAiApplication, minBudget, maxTimeDays])
 
   const handleUpdateTender = (updatedTender: Tender) => {
     setTenders((prevTenders) => prevTenders.map((tender) => (tender.id === updatedTender.id ? updatedTender : tender)))
+    if (smartSearchResults) {
+      setSmartSearchResults((prev) => prev ? prev.map((tender) => (tender.id === updatedTender.id ? updatedTender : tender)) : null)
+    }
   }
 
   const handleDeleteTender = (deletedTenderId: string) => {
     setTenders((prevTenders) => prevTenders.filter((tender) => tender.id !== deletedTenderId))
+    if (smartSearchResults) {
+      setSmartSearchResults((prev) => prev ? prev.filter((tender) => tender.id !== deletedTenderId) : null)
+    }
   }
 
   const chooseProductType = (type: string | null) => {
@@ -243,7 +284,7 @@ export default function TenderBoardPage() {
         },
       )
 
-      setTenders((prevTenders) =>
+      const updateList = (prevTenders: Tender[]) =>
         prevTenders.map((tender) =>
           tender.id === applyingTender.id
             ? {
@@ -251,8 +292,12 @@ export default function TenderBoardPage() {
                 applicants: updatedTender.tender?.applicants ?? [...(tender.applicants ?? []), applicantWithId],
               }
             : tender,
-        ),
-      )
+        )
+
+      setTenders((prev) => updateList(prev))
+      if (smartSearchResults) {
+        setSmartSearchResults((prev) => prev ? updateList(prev) : null)
+      }
       setApplyingTender(null)
       setSuccessMessage('הגשת מועמדות בוצעה בהצלחה')
     } catch (error) {
@@ -281,6 +326,9 @@ export default function TenderBoardPage() {
         {loading && (
           <div className="loading-banner">טוען מכרזים מהשרת...</div>
         )}
+        {isSmartSearching && (
+          <div className="loading-banner">מבצע חיפוש חכם באמצעות AI...</div>
+        )}
         {errorMessage && (
           <div className="error-banner">{errorMessage}</div>
         )}
@@ -296,9 +344,44 @@ export default function TenderBoardPage() {
           </div>
         </section>
 
-        {/* חלק הסינונים המעודכן - כולל סוג מוצר, יישום AI, תקציב וזמן */}
-        <section className="filters-section">
-          <div className="filters-row" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', flexDirection: 'row', justifyContent: 'center' }}>
+        {/* חלק הסינונים המעודכן - כולל חיפוש חכם עם AI, סוג מוצר, יישום AI, תקציב וזמן */}
+        <section className="filters-section" style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
+          
+          {/* תיבת חיפוש חכם עם AI */}
+          <div className="smart-search-container" style={{ width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+            <button 
+              type="button" 
+              className="tab-button"
+              onClick={() => setIsSmartSearchOpen(!isSmartSearchOpen)}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              <span>✨</span>
+              <span>חיפוש חכם</span>
+            </button>
+
+            {isSmartSearchOpen && (
+              <div style={{ display: 'flex', gap: '10px', width: '100%', justifyContent: 'center' }}>
+                <input
+                  type="text"
+                  value={smartSearchQuery}
+                  onChange={(e) => setSmartSearchQuery(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSmartSearch() }}
+                  placeholder='הקלד חיפוש חופשי'
+                  style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', flex: 1, maxWidth: '400px' }}
+                />
+                <button type="button" className="tab-button" onClick={handleSmartSearch} style={{ backgroundColor: '#f1f5f9' }}>
+                  חפש
+                </button>
+                {smartSearchResults !== null && (
+                  <button type="button" className="tab-button" onClick={handleClearSmartSearch}>
+                    הצג הכל
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="filters-row" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', flexDirection: 'row', justifyContent: 'center', width: '100%' }}>
             
             {/* תיבה 1: סוג מוצר */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

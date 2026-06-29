@@ -8,7 +8,10 @@ import {
   applyToTender,
   getProductTypeList,
   getAIApplicationTypeList,
+  // createSmartTender,  // נעקוף את פונקציית המעבר הבעייתית
+  smartSearchTenders,     
 } from "../services/tenderBoardService";
+import { AIService } from "../services/tenderBoardAIService"; // יבוא ישיר של שירות ה-AI הסטטי החסון
 import logger from "../logger";
 
 /**
@@ -34,6 +37,7 @@ export async function listAIApplicationTypes(req: Request, res: Response) {
     res.status(500).json({ error: "Failed to fetch AI application types" });
   }
 }
+
 /**
  * CREATE Tender
  */
@@ -108,6 +112,7 @@ export async function deleteTenderHandler(req: Request<{ id: string }>, res: Res
     res.status(500).json({ error: "Failed to delete tender" });
   }
 }
+
 /**
  * Apply to a tender
  * POST /tender-board/:id/apply
@@ -145,5 +150,62 @@ export async function applyToTenderHandler(req: Request, res: Response) {
     res.status(400).json({
       error: error.message || "Failed to apply to tender",
     });
+  }
+}
+
+/**
+ * ========================================================
+ * נקודות קצה חדשות - התממשקות ל-AI
+ * ========================================================
+ */
+
+/**
+ * CREATE Tender via AI (Smart Creation)
+ * POST /tender-board/smart-create
+ * Body: { text: "מחפש מישהו שיבנה לי אתר למכירת מוצרים..." }
+ */
+export async function createSmartTenderHandler(req: Request, res: Response) {
+  try {
+    debugger
+    const { text } = req.body;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: "Text description is required for AI generation" });
+    }
+
+    // קריאה ישירה לפונקציה הסטטית המאובטחת שתיקנו ב-AIService
+    const parsedAiData = await AIService.generateTenderData(text);
+    
+    // יצירת המכרז בבסיס הנתונים באמצעות הפונקציה הקיימת שלך עם האובייקט המפורסר מה-AI
+    const tender = await createTender(parsedAiData);
+    
+    res.status(201).json({ success: true, tender });
+  } catch (error: any) {
+    logger.error("Smart create tender failed", { error: error.message });
+    res.status(500).json({ error: error.message || "Failed to generate tender using AI" });
+  }
+}
+
+/**
+ * SMART SEARCH Tenders via AI
+ * GET /tender-board/smart-search?q=מכרזים של אפליקציות בצפון
+ */
+export async function smartSearchTendersHandler(req: Request, res: Response) {
+  try {
+    debugger
+    console.log(req.query.q as string)
+    const searchText = req.query.q as string;
+
+    if (!searchText || !searchText.trim()) {
+      return res.status(400).json({ error: "Search query param 'q' is required" });
+    }
+
+    // קריאה לפונקציית השירות שתמיר את הטקסט לשאילתת מונגו ותשלוף מה-DB
+    const tenders = await smartSearchTenders(searchText);
+    
+    res.json(tenders);
+  } catch (error: any) {
+    logger.error("Smart search tenders failed", { error: error.message });
+    res.status(500).json({ error: "Failed to perform smart search" });
   }
 }

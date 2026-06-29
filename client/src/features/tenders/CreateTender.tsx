@@ -38,6 +38,11 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
   const [productTypeOptions, setProductTypeOptions] = useState<string[]>([])
   const [aiApplicationOptions, setAiApplicationOptions] = useState<string[]>([])
 
+  // מצבים חדשים עבור יצירת מכרז חכמה
+  const [isSmartOpen, setIsSmartOpen] = useState<boolean>(false)
+  const [smartText, setSmartText] = useState<string>('')
+  const [isSmartLoading, setIsSmartLoading] = useState<boolean>(false)
+
   useEffect(() => {
     const fetchFilterOptions = async () => {
       try {
@@ -121,6 +126,42 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
     }))
   }
 
+  // פונקציה חדשה לשליחת הטקסט ל-AI ומילוי הטופס
+  const handleSmartCreateSubmit = async () => {
+    if (!smartText.trim()) return
+    setIsSmartLoading(true)
+    setErrorMessage('')
+    try {
+      // פנייה לשרת (נניח שנקודת הקצה קיימת תחת API_ENDPOINTS.tenders.smartCreate)
+      const response = await apiCall<Partial<TenderFormData>>(API_ENDPOINTS.tenders.smartCreate, {
+        method: 'POST',
+        body: JSON.stringify({ text: smartText }),
+      })
+
+      if (response) {
+        setFormData((current) => ({
+          ...current,
+          tenderName: response.tenderName || current.tenderName,
+          explanation: response.explanation || current.explanation,
+          productType: response.productType || current.productType,
+          aiApplicationType: response.aiApplicationType || current.aiApplicationType,
+          budget: response.budget || current.budget,
+          duration: response.duration || current.duration,
+          additionalDetails: response.additionalDetails || current.additionalDetails,
+          agents: response.agents || current.agents,
+        }))
+        setFormMessage('הנתונים הופקו בהצלחה מהטקסט!')
+        setIsSmartOpen(false)
+        setSmartText('')
+      }
+    } catch (error) {
+      console.error('Failed to create smart tender', error)
+      setErrorMessage('נכשל ניתוח המכרז החכם, אנא נסה שוב או מלא ידנית.')
+    } finally {
+      setIsSmartLoading(false)
+    }
+  }
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setFormMessage('')
@@ -181,8 +222,58 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
     <div className="page-shell" dir="rtl">
       <form className="tender-form" onSubmit={handleSubmit}>
         <header className="form-header">
-          <h1>פתיחת מכרז</h1>
-          <div className="form-group">
+          <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '16px' }}>
+            <h1>פתיחת מכרז</h1>
+            
+            {/* כפתור יצירת מכרז חכמה */}
+            <button
+              type="button"
+              className="smart-create-btn"
+              onClick={() => setIsSmartOpen(!isSmartOpen)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '10px 16px',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+              }}
+            >
+              <span>✨</span>
+              יצירת מכרז חכמה
+            </button>
+          </div>
+
+          {/* תיבת הטקסט החכמה שנפתחת בלחיצה */}
+          {isSmartOpen && (
+            <div className="smart-create-box" style={{ width: '100%', marginTop: '16px', padding: '16px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
+              <label htmlFor="smartText" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>תאר את המכרז שברצונך לפתוח (ה-AI ימלא את השדות עבורך):</label>
+              <textarea
+                id="smartText"
+                value={smartText}
+                onChange={(e) => setSmartText(e.target.value)}
+                placeholder="לדוגמה: מחפש מישהו שיבנה לי אתר למכירת מוצרים עם תקציב של 5000 שקלים למשך חודש..."
+                className="textarea"
+                rows={4}
+              />
+              <button
+                type="button"
+                className="button-green"
+                onClick={handleSmartCreateSubmit}
+                disabled={isSmartLoading}
+                style={{ marginTop: '12px' }}
+              >
+                {isSmartLoading ? 'מנתח נתונים...' : 'ייצר מכרז באופן אוטומטי'}
+              </button>
+            </div>
+          )}
+
+          <div className="form-group" style={{ marginTop: '16px' }}>
             <label htmlFor="tenderName">שם המכרז</label>
             <input
               id="tenderName"
