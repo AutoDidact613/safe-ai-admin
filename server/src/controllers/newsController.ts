@@ -9,7 +9,10 @@ export const newsController = {
   // GET /api/news
   async getAllNews(req: Request, res: Response) {
     try {
-      const news = await newsService.getAllNews();
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.max(1, Number(req.query.limit) || 10);
+
+      const news = await newsService.getAllNews(page, limit);
       return res.status(200).json(news);
     } catch (error: any) {
       return res.status(500).json({

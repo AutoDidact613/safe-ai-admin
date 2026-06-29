@@ -1,12 +1,15 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { API_ENDPOINTS, apiCall } from "../config/api";
 import "../styles/news-page.css";
+
 
 interface NewsItem {
   _id: string;
   title: string;
   content: string;
   source?: string;
+  tags?: string[];
   createdAt?: string;
 }
 
@@ -14,12 +17,14 @@ interface NewsFormState {
   title: string;
   content: string;
   source: string;
+  tags: string;
 }
 
 const initialFormState: NewsFormState = {
   title: "",
   content: "",
   source: "",
+  tags: "",
 };
 
 export default function AiNewsPage() {
@@ -32,20 +37,27 @@ export default function AiNewsPage() {
   const [formData, setFormData] = useState<NewsFormState>(initialFormState);
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<NewsItem | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_LIMIT = 10;
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const isAdmin = user?.role === "admin";
 
   useEffect(() => {
-    void loadNews();
-  }, []);
+    void loadNews(page);
+  }, [page]);
 
-  const loadNews = async () => {
+  const loadNews = async (pageNumber = 1) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await apiCall<NewsItem[]>(API_ENDPOINTS.news);
-      setNews(data);
+      const data = await apiCall<NewsItem[]>(
+        `${API_ENDPOINTS.news}?page=${pageNumber}&limit=${PAGE_LIMIT}`,
+      );
+
+      setNews((prev) => (pageNumber === 1 ? data : [...prev, ...data]));
+      setHasMore(data.length === PAGE_LIMIT);
     } catch (err) {
       setError(err instanceof Error ? err.message : "שגיאה בטעינת החדשות");
     } finally {
@@ -78,6 +90,11 @@ export default function AiNewsPage() {
       setSubmitting(true);
       setError(null);
 
+      const tagsArray = formData.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+
       if (editingId) {
         await apiCall(`${API_ENDPOINTS.news}/${editingId}`, {
           method: "PUT",
@@ -85,6 +102,7 @@ export default function AiNewsPage() {
             title: formData.title.trim(),
             content: formData.content.trim(),
             source: formData.source.trim() || "User",
+            tags: tagsArray,
           }),
         });
       } else {
@@ -94,6 +112,7 @@ export default function AiNewsPage() {
             title: formData.title.trim(),
             content: formData.content.trim(),
             source: formData.source.trim() || "User",
+            tags: tagsArray,
           }),
         });
       }
@@ -113,6 +132,7 @@ export default function AiNewsPage() {
       title: item.title,
       content: item.content,
       source: item.source || "",
+      tags: item.tags?.join(", ") || "",
     });
     setShowForm(true);
     setError(null);
@@ -238,6 +258,14 @@ export default function AiNewsPage() {
                 className="news-input-field"
               />
 
+              <input
+                type="text"
+                placeholder="תגיות (מופרדות בפסיק)"
+                value={formData.tags}
+                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                className="news-input-field"
+              />
+
               <div className="news-form-buttons">
                 <button
                   type="submit"
@@ -259,49 +287,93 @@ export default function AiNewsPage() {
         )}
 
         {!showForm && (
-          filteredNews.length === 0 ? (
-            <p className="news-empty-message">
-              {news.length === 0 ? "אין חדשות כרגע." : "אין חדשות מתאימות."}
-            </p>
-          ) : (
-            <div className="news-grid">
-              {filteredNews.map((item) => (
-                <article
-                  key={item._id}
-                  className="news-article-card"
+          news.length === 0 ? (
+            <div className="news-empty">
+              <h3>אין חדשות עדיין</h3>
+              <p>ברגע שיתווספו חדשות הן יופיעו כאן</p>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={handleStartCreate}
+                  className="btn-add-news"
                 >
-                  <div className="news-article-header">
-                    <div>
-                      <h3 className="news-article-title">{item.title}</h3>
-                      <small className="news-article-source">
-                        {item.source ? `מקור: ${item.source}` : "מקור: User"}
-                      </small>
-                    </div>
-                    <div className="news-article-actions">
-                        {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => handleEdit(item)}
-                        className="btn-edit"
-                      >
-                        ערוך
-                      </button>)}
-                        {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => openDeleteModal(item)}
-                        className="btn-delete"
-                      >
-                        מחק
-                      </button>)}
-                    </div>
-                  </div>
-                  <p className="news-article-content">
-                    {item.content}
-                  </p>
-                </article>
-              ))}
+                  צור חדשות ראשונה
+                </button>
+              )}
             </div>
+          ) : filteredNews.length === 0 ? (
+            <p className="news-empty-message">אין חדשות מתאימות.</p>
+          ) : (
+            <>
+              <div className="news-grid">
+                {filteredNews.map((item) => (
+                  <article
+                    key={item._id}
+                    className="news-article-card"
+                  >
+                    <div className="news-article-header">
+                      <div>
+                        <Link to={`/ai-news/${item._id}`} className="news-article-title">
+                          {item.title}
+                        </Link>
+                        <div className="news-item-meta">
+                          <span className="news-date">
+                            {new Date(item.createdAt || "").toLocaleDateString("he-IL", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            })}
+                          </span>
+                        </div>
+                        {item.tags?.length ? (
+                          <div className="news-tag-list">
+                            {item.tags.map((tag) => (
+                              <span key={tag} className="news-tag">
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="news-article-actions">
+                          {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(item)}
+                          className="btn-edit"
+                        >
+                          ערוך
+                        </button>)}
+                          {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => openDeleteModal(item)}
+                          className="btn-delete"
+                        >
+                          מחק
+                        </button>)}
+                      </div>
+                    </div>
+                    <p className="news-preview">
+                      {item.content.length > 120
+                        ? item.content.slice(0, 120) + "..."
+                        : item.content}
+                    </p>
+                  </article>
+                ))}
+              </div>
+              {hasMore && (
+                <div className="load-more-wrapper">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => p + 1)}
+                    className="load-more-btn"
+                  >
+                    טען עוד
+                  </button>
+                </div>
+              )}
+            </>
           )
         )}
       </div>

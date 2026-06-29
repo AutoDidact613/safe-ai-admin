@@ -2,7 +2,15 @@ import { INews, News } from "../models/news";
 
 export const newsRepository = {
   // Get all news (newest first)
-  async findAll(): Promise<INews[]> {
+  async findAll(page?: number, limit?: number): Promise<INews[]> {
+    if (page && limit) {
+      const skip = (page - 1) * limit;
+      return await News.find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+    }
+
     return await News.find().sort({ createdAt: -1 });
   },
 

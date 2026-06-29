@@ -20,6 +20,7 @@ import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
 import { PendingOrganizationsPage } from "../features/organizations/pages/PendingOrganizationsPage";
 import AiNewsPage from "../pages/AiNewsPage";
+import AiNewsDetailsPage from "../pages/AiNewsDetailsPage";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -124,6 +125,14 @@ export default function AppRouter() {
           element={
            <ProtectedRoute>
              <AiNewsPage />
+           </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ai-news/:id"
+          element={
+           <ProtectedRoute>
+             <AiNewsDetailsPage />
            </ProtectedRoute>
           }
         />

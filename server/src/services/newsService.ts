@@ -3,8 +3,8 @@ import { newsRepository } from "../repositories/newsRepository";
 
 export const newsService = {
   // Get all news
-  async getAllNews(): Promise<INews[]> {
-    return await newsRepository.findAll();
+  async getAllNews(page = 1, limit = 10): Promise<INews[]> {
+    return await newsRepository.findAll(page, limit);
   },
 
   // Get news by ID
@@ -28,7 +28,12 @@ export const newsService = {
       throw new Error("Content is required");
     }
 
-    return await newsRepository.create(data);
+    const createData = {
+      ...data,
+      tags: data.tags || [],
+    };
+
+    return await newsRepository.create(createData);
   },
 
   // Update news
