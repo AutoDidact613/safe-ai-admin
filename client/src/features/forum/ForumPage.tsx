@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AddPostModal } from './AddPostModal';
+import TextStyle from '@tiptap/extension-text-style';
+import Color from '@tiptap/extension-color';
+import Highlight from '@tiptap/extension-highlight';
+import FontFamily from '@tiptap/extension-font-family';
+import TextAlign from '@tiptap/extension-text-align';
 
 interface Post {
   _id: string;
@@ -15,20 +20,74 @@ interface Post {
   createdAt: string;
   tags: { _id: string; name: string }[];
   lastComment: { authorName: string; content: string } | null;
+  isBlocked?: boolean;
+  isLocked?: boolean;
+  ratingCount: number;
+  averageRating: number;
 }
+
+// פונקציית עיבוד הזמן הגנרית והיעילה המשלבת לועזי, עברי וזמנים יחסיים
+const formatForumDate = (dateInput: string | Date | number): string => {
+  const now = new Date();
+  const date = new Date(dateInput);
+  
+  if (isNaN(date.getTime())) return '';
+
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const timeString = date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (diffInMinutes < 60 && diffInMinutes >= 0) {
+    return diffInMinutes === 0 ? 'עכשיו' : `לפני ${diffInMinutes} דקות`;
+  } 
+  
+  if (compareDate.getTime() === today.getTime()) {
+    return `היום ב-${timeString}`;
+  } 
+  
+  if (compareDate.getTime() === yesterday.getTime()) {
+    return `אתמול ב-${timeString}`;
+  }
+
+  const hebrewFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const hebrewDate = hebrewFormatter.format(date);
+  const gregoreanDate = date.toLocaleDateString('he-IL');
+
+  return `בשעה ${timeString} (${hebrewDate} / ${gregoreanDate})`;
+};
 
 export const ForumPage: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(''); 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [expandedPosts, setExpandedPosts] = useState<string[]>([]);
   const navigate = useNavigate();
+
+  const userStr = localStorage.getItem('user');
+  const currentUser = userStr ? JSON.parse(userStr) : null;
+  const isAdmin = currentUser?.role === 'admin';
 
   const fetchPosts = (search: string = '') => {
     setLoading(true);
-    const url = search.trim() 
+    const userRole = currentUser?.role || 'user';
+
+    const baseUrl = search.trim() 
       ? `http://localhost:5000/api/posts/search?query=${search}`
       : 'http://localhost:5000/api/posts';
+    
+    const url = baseUrl.includes('?') 
+      ? `${baseUrl}&userRole=${userRole}` 
+      : `${baseUrl}?userRole=${userRole}`;
 
     fetch(url)
       .then((res) => {
@@ -54,16 +113,49 @@ export const ForumPage: React.FC = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
 
-  // פונקציה חדשה: מאפסת את החיפוש ומחזירה את כל הפוסטים מיד
   const handleClearFilter = () => {
     setSearchQuery('');
-    fetchPosts(''); // מביא את הרשימה המלאה ללא השהיית ה-Debounce
+    fetchPosts(''); 
+  };
+
+  const toggleExpandPost = (e: React.MouseEvent, postId: string) => {
+    e.stopPropagation(); 
+    setExpandedPosts((prev) =>
+      prev.includes(postId) ? prev.filter((id) => id !== postId) : [...prev, postId]
+    );
+  };
+
+  const handleModeratePost = async (e: React.MouseEvent, postId: string, actionType: 'block' | 'unblock' | 'lock' | 'unlock') => {
+    e.stopPropagation(); 
+    
+    if (!currentUser?._id) return alert('משתמש לא מחובר');
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/posts/${postId}/moderation`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser._id,
+          actionType: actionType
+        })
+      });
+
+      if (response.ok) {
+        fetchPosts(searchQuery);
+      } else {
+        const errData = await response.json();
+        alert(errData.message || 'שגיאה בביצוע הפעולה');
+      }
+    } catch (error) {
+      console.error('Error moderating post:', error);
+      alert('שגיאה בתקשורת עם השרת');
+    }
   };
 
   return (
     <div style={{ padding: '20px', direction: 'rtl', maxWidth: '1100px', margin: '0 auto', fontFamily: 'Assistant, sans-serif' }}>
       
-      {/* שורת כפתור הוספה + שדה חיפוש מעוצב */}
+      {/* שורת כפתור הוספה + שדה חיפוש */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', gap: '20px' }}>
         <button 
           onClick={() => setIsModalOpen(true)}
@@ -72,7 +164,6 @@ export const ForumPage: React.FC = () => {
           הוסף תוכן חדש
         </button>
 
-        {/* שדה חיפוש סגנון פרוג */}
         <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
           <input 
             type="text"
@@ -85,19 +176,16 @@ export const ForumPage: React.FC = () => {
         </div>
       </div>
 
-      {/* שורת כותרת דינמית + כפתור חזור לרשימה המלאה */}
+      {/* שורת כותרת דינמית */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '3px solid #10b981', paddingBottom: '10px', marginBottom: '25px' }}>
         <h2 style={{ color: '#064e3b', margin: 0, fontWeight: 'bold', fontSize: '20px' }}>
           {searchQuery ? `תוצאות חיפוש עבור: "${searchQuery}"` : 'פוסטים בפורום'}
         </h2>
         
-        {/* שדרוג: כפתור חזור לרשימה המלאה שמופיע רק כשיש סינון פעיל */}
         {searchQuery && (
           <button
             onClick={handleClearFilter}
-            style={{ backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', transition: '0.2s' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e2e8f0'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+            style={{ backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <i className="fa-solid fa-arrow-rotate-left"></i>
             חזור לרשימה המלאה
@@ -105,124 +193,154 @@ export const ForumPage: React.FC = () => {
         )}
       </div>
 
-      {/* תצוגת טעינה או הגנה על מערך ריק */}
       {loading ? (
         <div style={{ padding: '50px', color: '#10b981', fontWeight: 'bold', textAlign: 'center' }}>מחפש פוסטים...</div>
       ) : !Array.isArray(posts) || posts.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed #cbd5e1', borderRadius: '12px', backgroundColor: '#f8fafc', color: '#64748b' }}>
           <i className="fa-solid fa-folder-open" style={{ fontSize: '50px', color: '#cbd5e1', marginBottom: '15px' }}></i>
           <h3 style={{ margin: '0 0 10px 0', color: '#475569' }}>לא נמצאו פוסטים מתאימים</h3>
-          <p style={{ margin: 0, fontSize: '15px', marginBottom: '15px' }}>נסי לחפש מילת מפתח אחרת או בדקי שאין שגיאות כתיב.</p>
-          
-          {/* שדרוג: גם במסך "לא נמצאו תוצאות" נשים כפתור חזרה מהיר כדי שלא יתקעו */}
-          <button 
-            onClick={handleClearFilter}
-            style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '8px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-          >
+          <button onClick={handleClearFilter} style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '8px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
             הצג את כל הפוסטים
           </button>
         </div>
       ) : (
         /* רשימת הפוסטים */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          {posts.map((post) => (
-            <div 
-              key={post._id} 
-              onClick={() => navigate(`/forum/post/${post._id}`)} 
-              style={{ display: 'flex', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#fff', cursor: 'pointer', overflow: 'hidden', transition: '0.1s', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
-            >
-              {/* סרגל ימני מצומצם ואחיד בגודלו שלא נמרח */}
-              <div style={{ width: '130px', minWidth: '130px', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '15px', borderLeft: '1px solid #e2e8f0', justifyContent: 'center' }}>
-                <div style={{ backgroundColor: '#10b981', color: 'white', padding: '3px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', marginBottom: '10px' }}>
-                  דירוג: {post.rating || 5} ★
-                </div>
-                <div style={{ width: '45px', height: '45px', minWidth: '45px', minHeight: '45px', borderRadius: '50%', backgroundColor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
-                  {post.author?.name?.charAt(0).toUpperCase() || 'U'}
-                </div>
-                <span style={{ fontWeight: 'bold', color: '#064e3b', fontSize: '13px', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{post.author?.name}</span>
-              </div>
+          {posts.map((post) => {
+            const isLongPost = post.content.length > 140;
+            const isExpanded = expandedPosts.includes(post._id);
 
-              {/* גוף הפוסט דחוס ומבוטח מפני התרחבות לצדדים */}
-              <div style={{ flex: 1, minWidth: 0, padding: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', minWidth: 0, flexWrap: 'wrap' }}>
-                      <span style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{post.category}</span>
-                      <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.title}</h3>
+            return (
+              <div 
+                key={post._id} 
+                onClick={() => navigate(`/forum/post/${post._id}`)} 
+                style={{ display: 'flex', border: post.isBlocked ? '1px dashed #ef4444' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: post.isBlocked ? '#fef2f2' : '#fff', cursor: 'pointer', overflow: 'hidden', transition: '0.1s', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+              >
+                {/* סרגל ימני */}
+                <div style={{ width: '130px', minWidth: '130px', backgroundColor: post.isBlocked ? '#fee2e2' : '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '15px', borderLeft: '1px solid #e2e8f0', justifyContent: 'flex-start' }}>
+                  {post.ratingCount > 0 && (
+                    <div style={{ backgroundColor: '#10b981', color: 'white', padding: '3px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', marginBottom: '10px' }}>
+                      דירוג: {post.averageRating} ★
+                    </div>
+                  )}
+                  
+                  <div style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
+                    {post.author?.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <span style={{ fontWeight: 'bold', color: '#064e3b', fontSize: '13px', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{post.author?.name}</span>
+                </div>
+
+                {/* גוף הפוסט */}
+                <div style={{ flex: 1, minWidth: 0, padding: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    
+                    {/* שורת גג עליונה מאוזנת (תאריך בימין, צפיות ותגובות בשמאל) - מופרדת באסתטיות מהכותרת */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '400' }}>
+                        {formatForumDate(post.createdAt)}
+                      </span>
+                      <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '400', whiteSpace: 'nowrap' }}>
+                         צפיות: {post.viewsCount || 0} | תגובות: {post.commentCount || 0}
+                      </span>
+                    </div>
+
+                    {/* שורת הכותרת, הקטגוריה והתגיות */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '8px', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold' }}>{post.category}</span>
                       
-                      {/* תצוגת בועות התגיות של פרוג */}
+                      {post.isBlocked && <span style={{ backgroundColor: '#ef4444', color: 'white', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold' }}>🛑 חסום</span>}
+                      {post.isLocked && <span style={{ backgroundColor: '#f59e0b', color: 'white', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold' }}>🔒 נעול</span>}
+
+                      <h3 style={{ margin: 0, fontSize: '21px', color: '#0f172a', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.title}</h3>
+                      
                       {post.tags && Array.isArray(post.tags) && post.tags.map((tag: any) => {
                         const tagName = typeof tag === 'object' && tag !== null ? tag.name : tag;
                         return (
-                          <span 
-                            key={tag._id || tagName}
-                            onClick={(e) => {
-                              e.stopPropagation(); // מונע כניסה לפוסט בלחיצה על התגית
-                              setSearchQuery(tagName); // מעדכן את שדה החיפוש ומסנן מיד
-                            }}
-                            style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '1px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '500', border: '1px solid #e2e8f0', cursor: 'pointer', transition: '0.2s' }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e2e8f0'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
-                          >
-                            #{tagName}
+                          <span key={tag._id || tagName} onClick={(e) => { e.stopPropagation(); setSearchQuery(tagName); }} style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '1px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '500', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                           {tagName}
                           </span>
                         );
                       })}
                     </div>
-                    <span style={{ fontSize: '12px', color: '#6b7280', whiteSpace: 'nowrap', marginRight: '10px' }}>
-                       צפיות: {post.viewsCount || 0} | תגובות: {post.commentCount || 0}
-                    </span>
-                  </div>
-                  <p style={{ color: '#4b5563', lineHeight: '1.5', fontSize: '14px', margin: '0 0 10px 0' }}>{post.content.substring(0, 140)}...</p>
-                </div>
 
-                {/* תצוגת תגובה אחרונה */}
-                {post.lastComment && (
-                  <div 
-                    onClick={(e) => {
-                      e.stopPropagation(); 
-                      navigate(`/forum/post/${post._id}?scroll=bottom`);
-                    }}
-                    style={{ backgroundColor: '#f1f5f9', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', color: '#334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRight: '3px solid #94a3b8', marginTop: '5px', gap: '15px' }}
-                  >
-                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-                      <strong style={{ color: '#064e3b' }}>{post.lastComment.authorName}: </strong>
-                      {post.lastComment.content.substring(0, 90)}{post.lastComment.content.length > 90 ? '...' : ''}
+                    {/* הצגת התוכן */}
+                    <div style={{ marginBottom: '10px' }}>
+                      <p style={{ color: '#4b5563', lineHeight: '1.5', fontSize: '14px', margin: 0, whiteSpace: 'pre-line' }}>
+                        {isLongPost && !isExpanded 
+                          ? `${post.content.substring(0, 140)}...` 
+                          : post.content}
+                      </p>
+                      
+                      {isLongPost && (
+                        <span 
+                          onClick={(e) => toggleExpandPost(e, post._id)}
+                          style={{ color: '#10b981', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'inline-block', marginTop: '4px', userSelect: 'none' }}
+                          onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                          onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                        >
+                          {isExpanded ? 'הצג פחות ^' : 'הצג עוד...'}
+                        </span>
+                      )}
                     </div>
-                    
+                  </div>
+
+                  {/* תגובה אחרונה */}
+                  {post.lastComment && (
+                    <div onClick={(e) => { e.stopPropagation(); navigate(`/forum/post/${post._id}?scroll=bottom`); }} style={{ backgroundColor: '#f1f5f9', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', color: '#334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRight: '3px solid #94a3b8', marginTop: '5px', gap: '15px' }}>
+                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                        <strong style={{ color: '#064e3b' }}>{post.lastComment.authorName}: </strong>
+                        {(() => {
+                          const stripHtml = (html: string) => {
+                            if (!html) return '';
+                            return html.replace(/<\/?[^>]+(>|$)/g, " ");
+                          };
+                          return stripHtml(post.lastComment.content).substring(0, 90);
+                        })()}
+                      </div>
+                      <span style={{ color: '#16a34a', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', textDecoration: 'none' }}>
+                        לתגובה האחרונה ←
+                      </span>
+                    </div>
+                  )}
+
+                  {/* סרגל תחתון */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '8px', marginTop: '8px' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {isAdmin && (
+                        <>
+                          <button 
+                            onClick={(e) => handleModeratePost(e, post._id, post.isBlocked ? 'unblock' : 'block')}
+                            style={{ backgroundColor: post.isBlocked ? '#10b981' : '#ef4444', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+                          >
+                            {post.isBlocked ? '🔓 ביטל חסימה' : '🛑 חסום פוסט'}
+                          </button>
+
+                          <button 
+                            onClick={(e) => handleModeratePost(e, post._id, post.isLocked ? 'unlock' : 'lock')}
+                            style={{ backgroundColor: '#f59e0b', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+                          >
+                            {post.isLocked ? '🔓 שחרר נעילה' : '🔒 נעל לתגובות'}
+                          </button>
+                        </>
+                      )}
+                    </div>
+
                     <button 
-                      style={{ backgroundColor: '#fff', color: '#16a34a', border: '1px solid #bbf7d0', padding: '2px 8px', borderRadius: '3px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/forum/post/${post._id}`); }} 
+                      style={{ backgroundColor: '#fff', color: '#064e3b', border: '1px solid #cbd5e1', padding: '3px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
                     >
-                      לתגובה האחרונה ←
+                      לכל התגובות
                     </button>
                   </div>
-                )}
 
-                {/* סרגל תחתון */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #f1f5f9', paddingTop: '8px', marginTop: '8px' }}>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/forum/post/${post._id}`);
-                    }} 
-                    style={{ backgroundColor: '#fff', color: '#064e3b', border: '1px solid #cbd5e1', padding: '3px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
-                  >
-                    לכל התגובות
-                  </button>
                 </div>
-
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* מודאל הוספת פוסט */}
-      <AddPostModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onPostCreated={() => fetchPosts(searchQuery)} 
-      />
+      <AddPostModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onPostCreated={() => fetchPosts(searchQuery)} />
     </div>
   );
 };

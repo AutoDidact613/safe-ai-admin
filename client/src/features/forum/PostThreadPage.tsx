@@ -1,12 +1,20 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import { Highlight } from '@tiptap/extension-highlight';
+import { FontFamily } from '@tiptap/extension-font-family';
+import { TextAlign } from '@tiptap/extension-text-align';
+import Placeholder from '@tiptap/extension-placeholder';
 
 interface Comment {
   _id: string;
   content: string;
   author: { name: string };
   createdAt: string;
-  attachments?: string[]; // קבצים מצורפים לתגובה במודל
+  attachments?: string[];
 }
 
 interface Post {
@@ -14,12 +22,55 @@ interface Post {
   title: string;
   content: string;
   category: string;
-  tags: string[];
+  tags: { _id: string; name: string }[];
   attachments: string[];
   viewsCount: number;
   author: { _id: string; name: string };
   createdAt: string;
+  isLocked?: boolean;
+  ratingCount: number;
+  averageRating: number;
+  ratedBy: string[];
 }
+
+// פונקציית עיבוד הזמן הגנרית והיעילה
+const formatForumDate = (dateInput: string | Date | number): string => {
+  const now = new Date();
+  const date = new Date(dateInput);
+  
+  if (isNaN(date.getTime())) return '';
+
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const timeString = date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (diffInMinutes < 60 && diffInMinutes >= 0) {
+    return diffInMinutes === 0 ? 'עכשיו' : `לפני ${diffInMinutes} דקות`;
+  } 
+  
+  if (compareDate.getTime() === today.getTime()) {
+    return `היום ב-${timeString}`;
+  } 
+  
+  if (compareDate.getTime() === yesterday.getTime()) {
+    return `אתמול ב-${timeString}`;
+  }
+
+  const hebrewFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const hebrewDate = hebrewFormatter.format(date);
+  const gregoreanDate = date.toLocaleDateString('he-IL');
+
+  return `בשעה ${timeString} (${hebrewDate} / ${gregoreanDate})`;
+};
 
 export const PostThreadPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,33 +80,59 @@ export const PostThreadPage: React.FC = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   
-  const [newCommentText, setNewCommentText] = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [userRating, setUserRating] = useState<number>(0);
+  const [hoverRating, setHoverRating] = useState<number>(0);
   const commentFileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!id) return;
+  const currentUserStr = localStorage.getItem('user');
+  const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
+  const currentUserInitial = currentUser?.name?.charAt(0).toUpperCase() || 'U';
+  const isAdmin = currentUser?.role === 'admin';
 
-    // שליפת נתוני הפוסט והתגובות שלו מהשרת
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      TextStyle,
+      Color,
+      FontFamily,
+      Highlight.configure({ multicolor: true }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Placeholder.configure({
+        placeholder: 'כתוב תגובה...',
+        emptyEditorClass: 'is-editor-empty',
+      }),
+    ],
+    content: '',
+  });
+
+  const loadPostAndComments = () => {
+    if (!id) return;
     fetch(`http://localhost:5000/api/posts/${id}`)
       .then((res) => res.json())
       .then((data) => {
         setPost(data.post);
         setComments(data.comments || []);
         setLoading(false);
-        
-        const searchParams = new URLSearchParams(location.search);
-        if (searchParams.get('scroll') === 'bottom') {
-          setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
-        }
       })
       .catch((err) => {
         console.error('Error fetching post thread:', err);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    if (!id) return;
+
+    loadPostAndComments();
+
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('scroll') === 'bottom') {
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'auto' }), 300);
+    }
 
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
@@ -76,19 +153,41 @@ export const PostThreadPage: React.FC = () => {
     }
   }, [id, location.search]);
 
-  // שליחת תגובה חדשה כולל תמיכה מלאה בהעלאת קבצים (FormData)
+  const handleDeleteComment = async (commentId: string) => {
+    if (!window.confirm('האם את בטוחה שברצונך למחוק תגובה זו לצמיתות?')) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/posts/comment/${commentId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser?._id })
+      });
+
+      if (response.ok) {
+        setComments((prev) => prev.filter((comment) => comment._id !== commentId));
+      } else {
+        const errData = await response.json();
+        alert(errData.message || 'שגיאה במחיקת התגובה');
+      }
+    } catch (err) {
+      console.error('Error deleting comment:', err);
+      alert('שגיאה בתקשורת עם השרת');
+    }
+  };
+
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCommentText.trim() || commentLoading) return;
+    if (!editor) return;
+
+    const htmlContent = editor.getHTML();
+    if (!htmlContent || htmlContent === '<p></p>' || commentLoading) return;
 
     setCommentLoading(true);
-    const userStr = localStorage.getItem('user');
-    const user = userStr ? JSON.parse(userStr) : null;
 
     const formDataToSend = new FormData();
     formDataToSend.append('postId', id || '');
-    formDataToSend.append('content', newCommentText);
-    formDataToSend.append('userId', user?._id || '');
+    formDataToSend.append('content', htmlContent); 
+    formDataToSend.append('userId', currentUser?._id || '');
     if (selectedFile) {
       formDataToSend.append('file', selectedFile);
     }
@@ -102,9 +201,9 @@ export const PostThreadPage: React.FC = () => {
       if (response.ok) {
         const savedComment = await response.json();
         setComments((prevComments) => [...prevComments, savedComment]);
-        setNewCommentText('');
+        editor.commands.clearContent(); 
         setSelectedFile(null);
-        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        navigate('/forum');
       }
     } catch (err) {
       console.error('Error submitting comment:', err);
@@ -113,12 +212,31 @@ export const PostThreadPage: React.FC = () => {
     }
   };
 
+  const handleStarClick = async (selectedRating: number) => {
+    if (!post) return;
+    setUserRating(selectedRating);
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/posts/${post._id}/rate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser?._id,
+          rating: selectedRating
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPost((prev) => prev ? { ...prev, averageRating: data.averageRating, ratingCount: data.ratingCount } : null);
+      }
+    } catch (error) {
+      console.error('Failed to save rating:', error);
+    }
+  };
+
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: '#10b981', fontWeight: 'bold', direction: 'rtl' }}>טוען שרשור...</div>;
   if (!post) return <div style={{ textAlign: 'center', padding: '50px', direction: 'rtl' }}>הפוסט לא נמצא.</div>;
-
-  const currentUserStr = localStorage.getItem('user');
-  const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
-  const currentUserInitial = currentUser?.name?.charAt(0).toUpperCase() || 'U';
 
   return (
     <div style={{ padding: '20px', direction: 'rtl', maxWidth: '1100px', margin: '0 auto', fontFamily: 'Assistant, sans-serif' }}>
@@ -142,24 +260,38 @@ export const PostThreadPage: React.FC = () => {
           <span style={{ fontWeight: 'bold', color: '#064e3b', fontSize: '14px', textAlign: 'center' }}>
             {post.author?.name || 'משתמש מערכת'}
           </span>
-          <small style={{ color: '#6b7280', fontSize: '11px', marginTop: '3px' }}>
-            {new Date(post.createdAt).toLocaleDateString()}
-          </small>
         </div>
 
         {/* גוף התוכן השמאלי */}
         <div style={{ flex: 1, padding: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold' }}>
-                  {post.category}
-                </span>
-                <h1 style={{ margin: 0, fontSize: '19px', color: '#064e3b', fontWeight: 'bold' }}>{post.title}</h1>
-              </div>
-              <span style={{ fontSize: '12px', color: '#6b7280' }}>
+            
+            {/* שורת גג עליונה (שתי הפינות באותה השורה בדיוק עם מרווח מהתוכן) */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              {/* פינה ימנית עליונה: תאריך באפור עדין ומוקטן */}
+              <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '400' }}>
+                {formatForumDate(post.createdAt)}
+              </span>
+              
+              {/* פינה שמאלית עליונה: צפיות באפור עדין ומוקטן */}
+              <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '400' }}>
                 👁 צפיות: {post.viewsCount}
               </span>
+            </div>
+
+            {/* שורת הכותרת והקטגוריה */}
+            <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginBottom: '10px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', gap: '10px' }}>
+              <span style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold' }}>
+                {post.category}
+              </span>
+              
+              {post.isLocked && (
+                <span style={{ backgroundColor: '#f59e0b', color: 'white', padding: '1px 8px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  🔒 נעול
+                </span>
+              )}
+
+              <h1 style={{ margin: 0, fontSize: '19px', color: '#064e3b', fontWeight: 'bold' }}>{post.title}</h1>
             </div>
 
             <p style={{ color: '#374151', lineHeight: '1.5', fontSize: '15px', whiteSpace: 'pre-line', margin: '5px 0' }}>
@@ -170,11 +302,14 @@ export const PostThreadPage: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
             {post.tags && post.tags.length > 0 && (
               <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                {post.tags.map((tag, idx) => (
-                  <span key={idx} style={{ backgroundColor: '#f0fdf4', color: '#16a34a', padding: '1px 6px', borderRadius: '4px', fontSize: '11px', border: '1px solid #bbf7d0', fontWeight: 'bold' }}>
-                    #{tag}
-                  </span>
-                ))}
+                {post.tags.map((tag: any, idx) => {
+                  const tagName = typeof tag === 'object' && tag !== null ? tag.name : tag;
+                  return (
+                    <span key={idx} style={{ backgroundColor: '#f0fdf4', color: '#16a34a', padding: '1px 6px', borderRadius: '4px', fontSize: '11px', border: '1px solid #bbf7d0', fontWeight: 'bold' }}>
+                      #{tagName}
+                    </span>
+                  );
+                })}
               </div>
             )}
 
@@ -202,7 +337,39 @@ export const PostThreadPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ריבוע מאוחד ודחוס לכל התגובות - עודכנו צבעי האייקונים ונוספו מרווחים נקיים בין השורות */}
+      {/* אזור דירוג פוסט חכם ונקי */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '24px', padding: '12px 0', borderTop: '1px solid #eee' }}>
+        <span style={{ fontSize: '14px', color: '#4b5563', fontWeight: '500' }}>דירוג הפוסט:</span>
+        
+        <div style={{ display: 'flex', gap: '4px' }}>
+          {[1, 2, 3, 4, 5].map((star) => {
+            const isFilled = star <= (hoverRating || userRating);
+            return (
+              <span
+                key={star}
+                onClick={() => handleStarClick(star)}
+                onMouseEnter={() => setHoverRating(star)}
+                onMouseLeave={() => setHoverRating(0)}
+                style={{
+                  fontSize: '26px',
+                  cursor: 'pointer',
+                  color: isFilled ? '#ffbc00' : '#e5e7eb',
+                  transition: 'color 0.1s ease-in-out',
+                  userSelect: 'none'
+                }}
+              >
+                ★
+              </span>
+            );
+          })}
+        </div>
+
+        <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+          ({post.averageRating || 0}/5 מתוך {post.ratingCount || 0} מדרגים)
+        </span>
+      </div>
+
+      {/* רשימת התגובות */}
       {comments.length > 0 && (
         <div style={{ border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', overflow: 'hidden', marginBottom: '20px' }}>
           {comments.map((comment, index) => {
@@ -212,12 +379,13 @@ export const PostThreadPage: React.FC = () => {
                 key={comment._id} 
                 style={{ 
                   display: 'flex',
-                  padding: '16px 15px', // הגדלת הריפוד הפנימי לריווח נעים
+                  padding: '16px 15px', 
                   borderBottom: index === comments.length - 1 ? 'none' : '1px solid #e2e8f0', 
-                  backgroundColor: index % 2 === 0 ? '#fff' : '#f8fafc'
+                  backgroundColor: index % 2 === 0 ? '#fff' : '#f8fafc',
+                  position: 'relative'
                 }}
               >
-                {/* אייקון המשתמש שכתב את התגובה - שונה לצבע הירוק המקורי של האתר */}
+                {/* אייקון המשתמש */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px', marginLeft: '15px' }}>
                   <div style={{ width: '38px', height: '38px', borderRadius: '50%', backgroundColor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', boxShadow: '0 2px 5px rgba(16,185,129,0.1)' }}>
                     {commenterInitial}
@@ -227,15 +395,34 @@ export const PostThreadPage: React.FC = () => {
                   </small>
                 </div>
 
-                {/* תוכן התגובה והקבצים המצורפים אליה */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <div style={{ color: '#9ca3af', fontSize: '10px', marginBottom: '4px' }}>
-                    {new Date(comment.createdAt).toLocaleDateString()}
+                {/* תוכן התגובה */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                    
+                    {/* תצוגת התאריך המורחב החדש עבור התגובות */}
+                    <div style={{ color: '#9ca3af', fontSize: '11px', fontWeight: '400' }}>
+                      {formatForumDate(comment.createdAt)}
+                    </div>
+
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDeleteComment(comment._id)}
+                        title="מחק תגובה זו כעל מנהל"
+                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px', padding: '2px 6px', borderRadius: '4px', transition: '0.2s', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        <i className="fa-solid fa-trash-can"></i>
+                        מחק
+                      </button>
+                    )}
                   </div>
                   
-                  <p style={{ margin: 0, color: '#374151', fontSize: '14px', lineHeight: '1.5' }}>{comment.content}</p>
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: comment.content }} 
+                    style={{ margin: '4px 0 0 0', color: '#374151', fontSize: '14px', lineHeight: '1.5' }} 
+                  />
 
-                  {/* הצגת קבצים מצורפים לתגובה */}
                   {comment.attachments && comment.attachments.length > 0 && (
                     <div style={{ display: 'flex', gap: '5px', marginTop: '8px' }}>
                       {comment.attachments.map((file, idx) => (
@@ -254,41 +441,181 @@ export const PostThreadPage: React.FC = () => {
 
       <div ref={bottomRef} />
 
-      {/* טופס תגובה קומפקטי - מיושר ימינה במדויק לפי הסקיצה (אייקון מימין, תוכן משמאל) */}
-      <div style={{ border: '1px solid #10b981', borderRadius: '4px', padding: '15px', backgroundColor: '#f0fdf4', display: 'flex', gap: '15px', alignItems: 'flex-start' }}>
-        
-        {/* אייקון המשתמש המחובר - ממוקם בצד ימין כדרישת הסקיצה */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px' }}>
-          <div style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold', boxShadow: '0 2px 5px rgba(16,185,129,0.2)' }}>
-            {currentUserInitial}
-          </div>
-          <small style={{ color: '#064e3b', fontWeight: 'bold', marginTop: '3px', fontSize: '11px', textAlign: 'center' }}>
-            {currentUser?.name || 'את/ה'}
-          </small>
+      {/* בדיקה אם הפוסט חסום לנעילה */}
+      {post.isLocked ? (
+        <div style={{ border: '2px dashed #f59e0b', borderRadius: '6px', padding: '20px', backgroundColor: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', color: '#b45309', fontWeight: 'bold', fontSize: '15px', textAlign: 'center' }}>
+          <i className="fa-solid fa-lock" style={{ fontSize: '20px' }}></i>
+          <span>שרשור זה ננעל לתגובות חדשות על ידי מנהל המערכת.</span>
         </div>
-
-        {/* תוכן הטופס - ממוקם בצד שמאל */}
-        <form onSubmit={handleCommentSubmit} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <textarea 
-            value={newCommentText}
-            onChange={(e) => setNewCommentText(e.target.value)}
-            placeholder="כתבי את תגובתך כאן..."
-            required
-            style={{ width: '100%', height: '65px', padding: '8px', borderRadius: '4px', border: '1px solid #d1fae5', fontSize: '13px', outline: 'none', backgroundColor: '#fff' }}
-          />
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <button type="submit" disabled={commentLoading} style={{ backgroundColor: '#10b981', color: 'white', padding: '6px 20px', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>
-              {commentLoading ? 'שומר...' : 'שמור תגובה'}
-            </button>
-            
-            <input type="file" ref={commentFileInputRef} style={{ display: 'none' }} onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
-            <button type="button" onClick={() => commentFileInputRef.current?.click()} style={{ background: 'none', border: 'none', color: '#059669', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <i className="fa-solid fa-paperclip"></i> {selectedFile ? selectedFile.name : 'צרף קובץ לתגובה'}
-            </button>
+      ) : (
+        /* טופס תגובה קומפקטי עשיר ומעוצב */
+        <div style={{ border: '1px solid #10b981', borderRadius: '4px', padding: '15px', backgroundColor: '#f0fdf4', display: 'flex', gap: '15px', alignItems: 'flex-start' }}>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px' }}>
+            <div style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold', boxShadow: '0 2px 5px rgba(16,185,129,0.2)' }}>
+              {currentUserInitial}
+            </div>
+            <small style={{ color: '#064e3b', fontWeight: 'bold', marginTop: '3px', fontSize: '11px', textAlign: 'center' }}>
+              {currentUser?.name || 'את/ה'}
+            </small>
           </div>
-        </form>
 
-      </div>
+          <form 
+            onSubmit={handleCommentSubmit} 
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0px', border: '1px solid #d1fae5', borderRadius: '6px', overflow: 'hidden', backgroundColor: '#fff' }}
+          >
+            {/* סרגל הכלים המלא של TipTap */}
+            {editor && (
+              <div style={{ display: 'flex', gap: '6px', padding: '6px 10px', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb', alignItems: 'center', flexWrap: 'wrap' }}>
+                <select 
+                  onChange={(e) => editor.chain().focus().setFontFamily(e.target.value).run()}
+                  style={{ border: '1px solid #e5e7eb', borderRadius: '4px', padding: '2px 4px', fontSize: '12px', color: '#374151', outline: 'none' }}
+                >
+                  <option value="Arial">Sans Serif (Arial)</option>
+                  <option value="Courier New">Fixed Width</option>
+                  <option value="Times New Roman">Serif</option>
+                </select>
+
+                <select 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'p') editor.chain().focus().setParagraph().run();
+                    else editor.chain().focus().toggleHeading({ level: Number(val) as any }).run();
+                  }}
+                  style={{ border: '1px solid #e5e7eb', borderRadius: '4px', padding: '2px 4px', fontSize: '12px', color: '#374151', outline: 'none' }}
+                >
+                  <option value="p">טקסט רגיל</option>
+                  <option value="3">כותרת קטנה</option>
+                  <option value="2">כותרת בינונית</option>
+                  <option value="1">כותרת גדולה</option>
+                </select>
+
+                <div style={{ width: '1px', height: '16px', backgroundColor: '#e5e7eb', margin: '0 2px' }} />
+
+                <button
+                  type="button"
+                  onClick={() => editor.chain().focus().toggleBold().run()}
+                  style={{ background: editor.isActive('bold') ? '#e5e7eb' : 'none', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', color: '#374151' }}
+                >
+                  B
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editor.chain().focus().toggleItalic().run()}
+                  style={{ background: editor.isActive('italic') ? '#e5e7eb' : 'none', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontStyle: 'italic', color: '#374151' }}
+                >
+                  I
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editor.chain().focus().toggleStrike().run()}
+                  style={{ background: editor.isActive('strike') ? '#e5e7eb' : 'none', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', textDecoration: 'line-through', color: '#374151' }}
+                >
+                  S
+                </button>
+
+                <div style={{ width: '1px', height: '16px', backgroundColor: '#e5e7eb', margin: '0 2px' }} />
+
+                <select 
+                  onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+                  style={{ border: '1px solid #e5e7eb', borderRadius: '4px', padding: '2px 4px', fontSize: '12px', outline: 'none' }}
+                >
+                  <option value="#374151">✒️ שחור</option>
+                  <option value="#10b981">ירוק</option>
+                  <option value="#2563eb">כחול</option>
+                  <option value="#ef4444">אדום</option>
+                </select>
+
+                <select 
+                  onChange={(e) => {
+                    if (e.target.value === 'none') editor.chain().focus().unsetHighlight().run();
+                    else editor.chain().focus().toggleHighlight({ color: e.target.value }).run();
+                  }}
+                  style={{ border: '1px solid #e5e7eb', borderRadius: '4px', padding: '2px 4px', fontSize: '12px', outline: 'none' }}
+                >
+                  <option value="none">⚪ ללא רקע</option>
+                  <option value="#fef08a">צהוב</option>
+                  <option value="#bbf7d0">ירוק בהיר</option>
+                  <option value="#bfdbfe">כחול בהיר</option>
+                </select>
+
+                <div style={{ width: '1px', height: '16px', backgroundColor: '#e5e7eb', margin: '0 2px' }} />
+
+                <button
+                  type="button"
+                  onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                  style={{ background: editor.isActive({ textAlign: 'right' }) ? '#e5e7eb' : 'none', border: 'none', padding: '4px 6px', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  ➡️
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                  style={{ background: editor.isActive({ textAlign: 'center' }) ? '#e5e7eb' : 'none', border: 'none', padding: '4px 6px', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  ↔️
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                  style={{ background: editor.isActive({ textAlign: 'left' }) ? '#e5e7eb' : 'none', border: 'none', padding: '4px 6px', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  ⬅️
+                </button>
+
+                <div style={{ width: '1px', height: '16px', backgroundColor: '#e5e7eb', margin: '0 2px' }} />
+
+                <button
+                  type="button"
+                  onClick={() => editor.chain().focus().toggleBulletList().run()}
+                  style={{ background: editor.isActive('bulletList') ? '#e5e7eb' : 'none', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', color: '#374151' }}
+                >
+                  • רשימה
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                  style={{ background: editor.isActive('orderedList') ? '#e5e7eb' : 'none', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', color: '#374151' }}
+                >
+                  1. רשימה
+                </button>
+              </div>
+            )}
+
+            {/* אזור העריכה הויזואלי הממוזג של TipTap */}
+            <div 
+              onClick={() => editor?.commands.focus()} 
+              style={{ padding: '12px', minHeight: '160px', direction: 'rtl', textAlign: 'right', backgroundColor: '#fff', cursor: 'text' }}
+            >
+              <style>{`
+                .ProseMirror { outline: none !important; min-height: 140px; white-space: pre-wrap !important; }
+                .ProseMirror p { margin: 0 0 8px 0; }
+                .ProseMirror p.is-editor-empty::before {
+                  content: attr(data-placeholder);
+                  float: right;
+                  color: #9ca3af;
+                  font-weight: 300;
+                  font-size: 14px;
+                  pointer-events: none;
+                  height: 0;
+                }
+              `}</style>
+              <EditorContent editor={editor} />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', backgroundColor: '#fafafa', borderTop: '1px solid #f3f4f6' }}>
+              <button type="submit" disabled={commentLoading} style={{ backgroundColor: '#10b981', color: 'white', padding: '6px 20px', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>
+                {commentLoading ? 'שומר...' : 'שמור תגובה'}
+              </button>
+              
+              <input type="file" ref={commentFileInputRef} style={{ display: 'none' }} onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
+              <button type="button" onClick={() => commentFileInputRef.current?.click()} style={{ background: 'none', border: 'none', color: '#059669', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <i className="fa-solid fa-paperclip"></i> {selectedFile ? selectedFile.name : 'צרף קובץ לתגובה'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
     </div>
   );
