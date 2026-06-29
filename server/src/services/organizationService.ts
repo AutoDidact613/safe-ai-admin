@@ -83,7 +83,7 @@ export async function getOrganizationUsers(orgId: string) {
   }
 }
 
-export async function addUserToOrganization(orgId: string, userId: string) {
+export async function addUserToOrganization(orgId: string, userId: string, role: string = "user") {
   try {
     const organization = await repo.getOrganizationById(orgId);
     if (!organization) {
@@ -95,12 +95,13 @@ export async function addUserToOrganization(orgId: string, userId: string) {
       throw new Error("User not found");
     }
 
-    // Update user's organization
+    // Update user's organization and role
     await userRepo.updateUser(userId, {
       organizationId: orgId,
+      role: role,
     });
 
-    logger.info("User added to organization", { userId, orgId });
+    logger.info("User added to organization", { userId, orgId, role });
 
     return user;
   } catch (error) {
@@ -130,13 +131,17 @@ export async function removeUserFromOrganization(userId: string) {
   }
 }
 
-export async function addUserToOrganizationByEmail(orgId: string, email: string) {
+export async function addUserToOrganizationByEmail(
+  orgId: string,
+  email: string,
+  role: string = "user"
+) {
   const user = await userRepo.findUserByEmail(email.toLowerCase().trim());
   if (!user) {
     throw new Error("User not found");
   }
 
-  return addUserToOrganization(orgId, user._id.toString());
+  return addUserToOrganization(orgId, user._id.toString(), role);
 }
 
 export async function topUpOrganizationWallet(orgId: string, amount: number) {

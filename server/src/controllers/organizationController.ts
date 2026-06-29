@@ -209,7 +209,7 @@ export async function addUserToOrganizationHandler(
       return res.status(403).json({ error: "Access denied" });
     }
 
-    await addUserToOrganization(orgId, userId, role || "org_user");
+    await addUserToOrganization(orgId, userId, role || "user");
     res.json({ success: true, message: "User added to organization" });
   } catch (error: any) {
     logger.error("Failed to add user to organization", { error });
@@ -249,7 +249,7 @@ export async function addUserByEmailToOrganizationHandler(
     const updatedOrg = await addUserToOrganizationByEmail(
       orgId,
       email,
-      role || "org_user"
+      role || "user"
     );
     res.json({
       success: true,
