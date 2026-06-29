@@ -43,15 +43,16 @@ export default function OrganizationUsersPage() {
   const fetchOrganizationAndUsers = async () => {
     try {
       setLoading(true);
+      setError("");
+
       const token = localStorage.getItem("accessToken");
       const user = JSON.parse(localStorage.getItem("user") || "{}");
 
       if (!token) {
-        setError("Not authenticated");
+        setError("לא נמצא טוקן גישה. אנא התחברי מחדש.");
         return;
       }
 
-      // Get user's organization
       const orgResponse = await axios.get(
         `${import.meta.env.VITE_API_URL}/organizations`,
         {
@@ -59,10 +60,19 @@ export default function OrganizationUsersPage() {
         }
       );
 
-      // Find the organization where the user is the owner
-      const userOrg = orgResponse.data.find(
-        (org: Organization) => org.ownerId._id === user.userId || org.ownerId === user.userId
+      if (!orgResponse.data || orgResponse.data.length === 0) {
+        setError("לא נמצאו ארגונים במסד הנתונים (No organization found)");
+        return;
+      }
+
+      const currentUserId = user.userId || user._id || user.id;
+      let userOrg = orgResponse.data.find(
+        (org: Organization) => (org.ownerId?._id || org.ownerId) === currentUserId
       );
+
+      if (!userOrg && orgResponse.data.length > 0) {
+        userOrg = orgResponse.data[0];
+      }
 
       if (!userOrg) {
         setError("No organization found");
@@ -71,24 +81,32 @@ export default function OrganizationUsersPage() {
 
       setOrganization(userOrg);
 
-      // Get users in the organization
       const usersResponse = await axios.get(
         `${import.meta.env.VITE_API_URL}/organizations/${userOrg._id}/users`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
       setUsers(usersResponse.data);
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Error fetching organization users:", err);
-      setError((err as { response?: { data?: { error?: string } } }).response?.data?.error || "Failed to fetch organization users");
+      
+      let serverError = "Failed to fetch organization users";
+      if (err.response?.data) {
+        serverError = typeof err.response.data === 'string' 
+          ? err.response.data 
+          : (err.response.data.error || err.response.data.message || JSON.stringify(err.response.data));
+      } else if (err.message) {
+        serverError = err.message;
+      }
+
+      const failedUrl = err.config?.url ? ` (נתיב: ${err.config.url})` : "";
+      setError(`${serverError}${failedUrl}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // פונקציית שליחת בקשת ההטענה (Mock) לשרת
   const handleTopUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!organization || !topUpAmount || topUpAmount <= 0) return;
@@ -104,15 +122,14 @@ export default function OrganizationUsersPage() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
-      alert(`Wallet topped up successfully! New balance: $${response.data.organization.walletBalance}`);
       
-      // עדכון הסטייט המקומי כדי שהיתרה תתעדכן מיד במסך ללא רענון
+      alert(`Wallet topped up successfully! New balance: $${response.data.organization.walletBalance}`);
       setOrganization(response.data.organization);
       setTopUpAmount("");
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Error topping up wallet:", err);
-      alert((err as { response?: { data?: { error?: string } } }).response?.data?.error || "Failed to top up wallet");
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || "Failed to top up wallet";
+      alert(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -121,8 +138,8 @@ export default function OrganizationUsersPage() {
   if (loading) {
     return (
       <div style={{ padding: "20px" }}>
-        <h1>Organization Users</h1>
-        <p>Loading...</p>
+        <h1>Organization Dashboard</h1>
+        <p>טוען נתונים...</p>
       </div>
     );
   }
@@ -130,8 +147,12 @@ export default function OrganizationUsersPage() {
   if (error) {
     return (
       <div style={{ padding: "20px" }}>
-        <h1>Organization Users</h1>
-        <p style={{ color: "red" }}>{error}</p>
+        <h1>Organization Dashboard</h1>
+        <p style={{ color: "red", fontWeight: "bold" }}>שגיאה בטעינת הנתונים:</p>
+        <p style={{ color: "red", direction: "ltr" }}>{error}</p>
+        <button onClick={fetchOrganizationAndUsers} style={{ marginTop: "15px", padding: "8px 16px", cursor: "pointer" }}>
+          ניסיון חוזר
+        </button>
       </div>
     );
   }
@@ -148,21 +169,18 @@ export default function OrganizationUsersPage() {
           flexWrap: "wrap",
           marginBottom: "30px" 
         }}>
-          {/* פרטי הארגון הכלליים */}
           <div style={{ flex: 1, minWidth: "300px", padding: "20px", backgroundColor: "#f5f5f5", borderRadius: "8px" }}>
             <h2>{organization.name}</h2>
             <p>{organization.description || "No description provided."}</p>
             <p><strong>Status:</strong> {organization.isActive ? "Active" : "Inactive"}</p>
           </div>
 
-          {/* כרטיס הארנק וההטענה המעוצב באמצעות CSS חיצוני */}
           <div className="wallet-card">
             <h3 className="wallet-title">💳 Organization Wallet</h3>
             <p className="wallet-balance">
               Current Balance: <strong className="wallet-balance-amount">${organization.walletBalance ?? 0}</strong>
             </p>
 
-            {/* אזהרת סימולציה ברורה בהתאם לקריטריון הקבלה */}
             <div className="simulation-warning">
               ⚠️ <strong>Simulation Environment:</strong> This is a mock system. No real credit card charge will be made.
             </div>
@@ -177,11 +195,7 @@ export default function OrganizationUsersPage() {
                 required
                 className="topup-input"
               />
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="topup-button"
-              >
+              <button type="submit" disabled={isSubmitting} className="topup-button">
                 {isSubmitting ? "Processing..." : "Top Up"}
               </button>
             </form>
