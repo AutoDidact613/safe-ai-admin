@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { API_ENDPOINTS, apiCall } from "../config/api";
+import "../styles/news-page.css";
 
 interface NewsItem {
   _id: string;
@@ -153,59 +154,22 @@ export default function AiNewsPage() {
 
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          background: "#f8fafc",
-          padding: "2rem",
-        }}
-      >
-        <div style={{ textAlign: "center" }}>
-          <div
-            style={{
-              width: 72,
-              height: 72,
-              margin: "0 auto 1rem",
-              border: "8px solid rgba(15, 23, 42, 0.15)",
-              borderTopColor: "#2563eb",
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite",
-            }}
-          />
-          <div style={{ color: "#334155", fontSize: "1rem" }}>טוען חדשות...</div>
-          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      <div className="news-loading-container">
+        <div className="news-loading-content">
+          <div className="news-spinner" />
+          <div className="news-loading-text">טוען חדשות...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: "2rem 1rem", maxWidth: 980, margin: "0 auto", background: "#f8fafc" }}>
-      <div
-        style={{
-          background: "#ffffff",
-          borderRadius: 28,
-          boxShadow: "0 28px 90px rgba(15, 23, 42, 0.12)",
-          padding: "2rem",
-          border: "1px solid #e2e8f0",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "1rem",
-            marginBottom: "1.75rem",
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ minWidth: 0 }}>
-            <h1 style={{ margin: 0, fontSize: "2rem", color: "#111827" }}>AI News</h1>
-            <p style={{ margin: "0.75rem 0 0", color: "#64748b", fontSize: "0.95rem" }}>
+    <div className="news-page-container">
+      <div className="news-card-wrapper">
+        <div className="news-header-section">
+          <div className="news-header-content">
+            <h1 className="news-header-title">AI News</h1>
+            <p className="news-header-subtitle">
               חדשות AI הכי חמות שיש!!!
             </p>
           </div>
@@ -213,63 +177,29 @@ export default function AiNewsPage() {
             <button
               type="button"
               onClick={handleStartCreate}
-              style={{
-                background: "#14b8a6",
-                color: "#ffffff",
-              border: "none",
-              borderRadius: 16,
-              padding: "0.95rem 1.5rem",
-              fontWeight: 700,
-              boxShadow: "0 16px 40px rgba(20, 184, 166, 0.2)",
-              cursor: "pointer",
-            }}
-          >
-            הוספת חדשות
-          </button>)}
+              className="btn-add-news"
+            >
+              הוספת חדשות
+            </button>)}
         </div>
 
         {!showForm && (
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "0.75rem",
-              marginBottom: "1.5rem",
-              alignItems: "center",
-            }}
-          >
+          <div className="news-search-section">
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="חיפוש לפי כותרת"
-              style={{
-                flex: 1,
-                minWidth: 240,
-                padding: "0.95rem 1rem",
-                borderRadius: 16,
-                border: "1px solid #cbd5e1",
-                background: "#f8fafc",
-                color: "#111827",
-              }}
+              className="news-search-input"
             />
-            <div style={{ color: "#64748b", fontSize: "0.95rem" }}>
+            <div className="news-results-count">
               {filteredNews.length} תוצאות
             </div>
           </div>
         )}
 
         {error && (
-          <div
-            style={{
-              marginBottom: "1.5rem",
-              color: "#b91c1c",
-              background: "#fef2f2",
-              border: "1px solid #fecaca",
-              borderRadius: 16,
-              padding: "1rem 1.25rem",
-            }}
-          >
+          <div className="news-error-message">
             {error}
           </div>
         )}
@@ -277,33 +207,19 @@ export default function AiNewsPage() {
         {showForm && (
           <form
             onSubmit={handleSubmit}
-            style={{
-              background: "#f8fafc",
-              border: "1px solid #e2e8f0",
-              borderRadius: 24,
-              padding: "1.75rem",
-              marginBottom: "2rem",
-            }}
+            className="news-form-container"
           >
-            <h3 style={{ marginTop: 0, marginBottom: "1rem", color: "#111827" }}>
+            <h3 className="news-form-title">
               {editingId ? "עריכת חדשות" : "יצירת חדשות"}
             </h3>
 
-            <div style={{ display: "grid", gap: "1rem" }}>
+            <div className="news-form-inputs">
               <input
                 type="text"
                 placeholder="כותרת"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                style={{
-                  padding: "1rem 1rem",
-                  width: "100%",
-                  borderRadius: 16,
-                  border: "1px solid #cbd5e1",
-                  background: "#ffffff",
-                  color: "#111827",
-                  boxSizing: "border-box",
-                }}
+                className="news-input-field"
               />
 
               <textarea
@@ -311,17 +227,7 @@ export default function AiNewsPage() {
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 rows={6}
-                style={{
-                  padding: "1rem 1rem",
-                  width: "100%",
-                  borderRadius: 16,
-                  border: "1px solid #cbd5e1",
-                  background: "#ffffff",
-                  color: "#111827",
-                  resize: "vertical",
-                  minHeight: 160,
-                  boxSizing: "border-box",
-                }}
+                className="news-textarea"
               />
 
               <input
@@ -329,45 +235,21 @@ export default function AiNewsPage() {
                 placeholder="מקור (אופציונלי)"
                 value={formData.source}
                 onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                style={{
-                  padding: "1rem 1rem",
-                  width: "100%",
-                  borderRadius: 16,
-                  border: "1px solid #cbd5e1",
-                  background: "#ffffff",
-                  color: "#111827",
-                  boxSizing: "border-box",
-                }}
+                className="news-input-field"
               />
 
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
+              <div className="news-form-buttons">
                 <button
                   type="submit"
                   disabled={submitting}
-                  style={{
-                    background: "#2563eb",
-                    color: "#ffffff",
-                    border: "none",
-                    borderRadius: 16,
-                    padding: "0.95rem 1.4rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    opacity: submitting ? 0.7 : 1,
-                  }}
+                  className="btn-submit"
                 >
                   {submitting ? "שומר..." : editingId ? "עדכון" : "שמירה"}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
-                  style={{
-                    background: "#ffffff",
-                    color: "#334155",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: 16,
-                    padding: "0.95rem 1.4rem",
-                    cursor: "pointer",
-                  }}
+                  className="btn-reset"
                 >
                   איפוס
                 </button>
@@ -378,50 +260,29 @@ export default function AiNewsPage() {
 
         {!showForm && (
           filteredNews.length === 0 ? (
-            <p style={{ margin: 0, color: "#475569" }}>
+            <p className="news-empty-message">
               {news.length === 0 ? "אין חדשות כרגע." : "אין חדשות מתאימות."}
             </p>
           ) : (
-            <div style={{ display: "grid", gap: "1rem" }}>
+            <div className="news-grid">
               {filteredNews.map((item) => (
                 <article
                   key={item._id}
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 24,
-                    padding: "1.6rem",
-                    boxShadow: "0 18px 48px rgba(15, 23, 42, 0.08)",
-                  }}
+                  className="news-article-card"
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      gap: "1rem",
-                      flexWrap: "wrap",
-                    }}
-                  >
+                  <div className="news-article-header">
                     <div>
-                      <h3 style={{ margin: 0, color: "#111827" }}>{item.title}</h3>
-                      <small style={{ color: "#64748b" }}>
+                      <h3 className="news-article-title">{item.title}</h3>
+                      <small className="news-article-source">
                         {item.source ? `מקור: ${item.source}` : "מקור: User"}
                       </small>
                     </div>
-                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                    <div className="news-article-actions">
                         {isAdmin && (
                       <button
                         type="button"
                         onClick={() => handleEdit(item)}
-                        style={{
-                          background: "#f8fafc",
-                          color: "#0f172a",
-                          border: "1px solid #cbd5e1",
-                          borderRadius: 16,
-                          padding: "0.75rem 1rem",
-                          cursor: "pointer",
-                        }}
+                        className="btn-edit"
                       >
                         ערוך
                       </button>)}
@@ -429,20 +290,13 @@ export default function AiNewsPage() {
                       <button
                         type="button"
                         onClick={() => openDeleteModal(item)}
-                        style={{
-                          background: "#ef4444",
-                          color: "#ffffff",
-                          border: "none",
-                          borderRadius: 16,
-                          padding: "0.75rem 1rem",
-                          cursor: "pointer",
-                        }}
+                        className="btn-delete"
                       >
                         מחק
                       </button>)}
                     </div>
                   </div>
-                  <p style={{ margin: "1rem 0 0", color: "#475569", lineHeight: 1.75 }}>
+                  <p className="news-article-content">
                     {item.content}
                   </p>
                 </article>
@@ -453,44 +307,17 @@ export default function AiNewsPage() {
       </div>
 
       {deleteTarget && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(15, 23, 42, 0.45)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "1rem",
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              background: "#ffffff",
-              borderRadius: 24,
-              padding: "2rem",
-              width: "100%",
-              maxWidth: 440,
-              boxShadow: "0 24px 80px rgba(15, 23, 42, 0.16)",
-            }}
-          >
-            <h2 style={{ margin: 0, color: "#111827", fontSize: "1.3rem" }}>אישור מחיקה</h2>
-            <p style={{ margin: "1rem 0 1.5rem", color: "#475569" }}>
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2 className="modal-title">אישור מחיקה</h2>
+            <p className="modal-message">
               האם אתה בטוח שברצונך למחוק את הפריט "{deleteTarget.title}"?
             </p>
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <div className="modal-buttons">
               <button
                 type="button"
                 onClick={cancelDelete}
-                style={{
-                  background: "#f8fafc",
-                  color: "#0f172a",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: 16,
-                  padding: "0.95rem 1.2rem",
-                  cursor: "pointer",
-                }}
+                className="btn-cancel"
               >
                 לא
               </button>
@@ -498,15 +325,7 @@ export default function AiNewsPage() {
                 type="button"
                 onClick={confirmDelete}
                 disabled={submitting}
-                style={{
-                  background: "#ef4444",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: 16,
-                  padding: "0.95rem 1.2rem",
-                  cursor: "pointer",
-                  opacity: submitting ? 0.7 : 1,
-                }}
+                className="btn-confirm-delete"
               >
                 כן
               </button>
