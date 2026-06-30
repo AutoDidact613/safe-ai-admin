@@ -11,13 +11,13 @@ export async function createOrganization(data: any) {
     }
 
     // Create the organization
-    const organization = await repo.createOrganization(data);
-
-    // Update the owner's role to org_owner (unless they're already admin) and link to organization
-    await userRepo.updateUser(data.ownerId, {
-      role: owner.role === "admin" ? "admin" : "org_owner",
-      organizationId: organization._id,
+    const organization = await repo.createOrganization({
+      ...data,
+      status: "pending",
+      isActive: false,
     });
+
+    // המשתמש יקבל role של org_owner רק לאחר אישור הארגון
 
     logger.info("Organization created", {
       organizationId: organization._id,

@@ -204,7 +204,7 @@ export default function OrganizationUsersPage() {
             </p>
 
             <div className="simulation-warning">
-              ⚠️ <strong>סביבת סימולציה:</strong> זהו מערכת מדומה. לא ייגבו חיובים בכרטיס אשראי אמיתי.
+              ⚠️ <strong>סביבת סימולציה:</strong> זוהי מערכת מדומה. לא ייגבו חיובים בכרטיס אשראי אמיתי.
             </div>
 
             <form onSubmit={handleTopUp} className="topup-form">

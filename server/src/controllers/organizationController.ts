@@ -15,15 +15,17 @@ import {
 import logger from "../logger";
 
 /**
- * Create a new organization (Admin only)
+ * Create a new organization (Authenticated users)
  */
 export async function createOrganizationHandler(req: Request, res: Response) {
   try {
-    const adminUser = (req as any).user;
-    if (adminUser.role !== "admin") {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-    const organization = await createOrganization(req.body);
+    const user = (req as any).user;
+
+    const organization = await createOrganization({
+      ...req.body,
+      ownerId: user.userId,
+    });
+
     res.status(201).json({ success: true, organization });
   } catch (error) {
     logger.error("Failed to create organization", { error });
