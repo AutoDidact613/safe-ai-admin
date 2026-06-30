@@ -8,7 +8,6 @@ import {
   getOrganizationUsers,
   addUserToOrganization,
   removeUserFromOrganization,
-  addUserToOrganizationByEmail,
   getPendingOrganizationsForAdmin
 } from "../services/organizationService";
 import logger from "../logger";
@@ -236,45 +235,6 @@ export async function removeUserFromOrganizationHandler(
   }
 }
 
-/**
- * Add user to organization by email (#54)
- */
-export async function addUserByEmailToOrganizationHandler(
-  req: Request<{ id: string }>,
-  res: Response
-) {
-  try {
-    const user = (req as any).user;
-    const orgId = req.params.id;
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ error: "Email is required" });
-    }
-
-    const organization = await getOrganizationById(orgId);
-    if (!organization) {
-      return res.status(404).json({ error: "Organization not found" });
-    }
-
-    if (
-      user.role !== "admin" &&
-      organization.ownerId.toString() !== user.userId
-    ) {
-      return res.status(403).json({ error: "Access denied" });
-    }
-
-    const updateUser = await addUserToOrganizationByEmail(orgId, email);
-    res.json({ success: true, user: updateUser });
-  }
-  catch (error: any) {
-    if (error.message === "User not found") {
-      return res.status(404).json({ error: "User not found with this email" });
-    }
-    logger.error("Failed to add user to organization by email", { error });
-    res.status(500).json({ error: "Failed to add user to organization" });
-  }
-}
 export async function getPendingOrganizationsHandler(req: Request, res: Response): Promise<void> {
   try{
     const pendingOrganizations = await getPendingOrganizationsForAdmin();
