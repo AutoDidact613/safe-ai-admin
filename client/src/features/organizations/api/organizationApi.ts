@@ -11,8 +11,8 @@ interface CreateOrganizationRequest {
 
 export const createOrganization = async (
   organization: CreateOrganizationRequest
-) => {
-  return apiCall(API_ENDPOINTS.organizations.base, {
+): Promise<OrganizationStatusResponse> => {
+  return apiCall<OrganizationStatusResponse>(API_ENDPOINTS.organizations, {
     method: "POST",
     body: JSON.stringify(organization),
   });
