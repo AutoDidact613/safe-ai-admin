@@ -19,6 +19,7 @@ import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
 import { PendingOrganizationsPage } from "../features/organizations/pages/PendingOrganizationsPage";
+import CreateOrganizationPage from "../features/organizations/pages/CreateOrganizationPage";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -32,14 +33,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Public Route Component (redirect to dashboard if already logged in)
+// Public Route Component
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const accessToken = localStorage.getItem("accessToken");
   const refreshToken = localStorage.getItem("refreshToken");
   const user = localStorage.getItem("user");
 
-  // Only redirect if user has valid tokens AND user data
-  // This prevents redirect during registration when tokens don't exist yet
   if (accessToken && refreshToken && user) {
     return <Navigate to="/safeai-ui" replace />;
   }
@@ -50,94 +49,34 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 export default function AppRouter() {
   return (
     <BrowserRouter>
-      {/* Global Top Navigation */}
       <TopNavigation />
-      
-      {/* Beta Banner */}
       <BetaBanner />
       
       <Routes>
-        {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
         
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <LoginForm />
-            </PublicRoute>
-          }
-        />
-        
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <RegisterForm />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/register-success"
-          element={
-            <PublicRoute>
-              <RegisterFormSuccess />
-            </PublicRoute>
-          }
-        />
-        
+        <Route path="/login" element={<PublicRoute><LoginForm /></PublicRoute>} />
+        <Route path="/register" element={<PublicRoute><RegisterForm /></PublicRoute>} />
+        <Route path="/register-success" element={<PublicRoute><RegisterFormSuccess /></PublicRoute>} />
         <Route path="/verify-email/:token" element={<EmailVerification />} />
-        
-        <Route
-          path="/forgot-password"
-          element={
-            <PublicRoute>
-              <ForgotPassword />
-            </PublicRoute>
-          }
-        />
-        
+        <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         
-        {/* Protected Routes */}
-        <Route
-          path="/api-key-display"
-          element={
-            <ProtectedRoute>
-              <ApiKeyDisplay />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/api-key-display" element={<ProtectedRoute><ApiKeyDisplay /></ProtectedRoute>} />
+        <Route path="/safeai-ui" element={<ProtectedRoute><SafeAIUIPage /></ProtectedRoute>} />
+
+        <Route path="/organization/users" element={<ProtectedRoute><OrganizationUsersPage /></ProtectedRoute>} />
+        <Route path="/admin/organizations" element={<ProtectedRoute><PendingOrganizationsPage /></ProtectedRoute>} />
         
-        <Route
-          path="/safeai-ui"
+        <Route 
+          path="/organizations/create" 
           element={
             <ProtectedRoute>
-              <SafeAIUIPage />
+              <CreateOrganizationPage />
             </ProtectedRoute>
-          }
+          } 
         />
 
-        {/* Organization Routes */}
-        <Route
-          path="/organization/users"
-          element={
-            <ProtectedRoute>
-              <OrganizationUsersPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/organizations"
-          element={
-            <ProtectedRoute>
-              <PendingOrganizationsPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* New Pages Routes */}
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/docs" element={<DocsPage />} />
@@ -145,7 +84,6 @@ export default function AppRouter() {
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/activity-log" element={<ActivityLogPage />} />
 
-        {/* Catch all - 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
