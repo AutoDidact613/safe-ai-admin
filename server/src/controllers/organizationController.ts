@@ -10,7 +10,8 @@ import {
   removeUserFromOrganization,
   addUserToOrganizationByEmail,
   topUpOrganizationWallet,
-  getPendingOrganizationsForAdmin
+  getPendingOrganizationsForAdmin,
+  approveOrganization,
 } from "../services/organizationService";
 import logger from "../logger";
 
@@ -117,7 +118,7 @@ export async function updateOrganizationHandler(
       return res.status(404).json({ error: "Organization not found" });
     }
 
-    // Check permissions (Admin or Organization Owner)
+    // Check permissions
     if (
       user.role !== "admin" &&
       organization.ownerId.toString() !== user.userId
@@ -125,13 +126,27 @@ export async function updateOrganizationHandler(
       return res.status(403).json({ error: "Access denied" });
     }
 
+    if (req.body.status === "approved") {
+      const updatedOrg = await approveOrganization(orgId);
+
+      return res.json({
+        success: true,
+        organization: updatedOrg,
+      });
+    }
+
     const updateData = { ...req.body };
 
     if (updateData.status === "approved") {
       updateData.isActive = true;
     }
+
     const updatedOrg = await updateOrganization(orgId, updateData);
-    res.json({ success: true, organization: updatedOrg });
+
+    res.json({
+      success: true,
+      organization: updatedOrg,
+    });
   } catch (error) {
     logger.error("Failed to update organization", { error });
     res.status(500).json({ error: "Failed to update organization" });

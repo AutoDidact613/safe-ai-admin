@@ -1,6 +1,7 @@
 import * as repo from "../repositories/organizationRepository";
 import * as userRepo from "../repositories/userRepository";
 import logger from "../logger";
+import { updateUser } from "../repositories/userRepository";
 
 export async function createOrganization(data: any) {
   try {
@@ -173,4 +174,22 @@ export async function topUpOrganizationWallet(orgId: string, amount: number) {
 
 export async function getPendingOrganizationsForAdmin() {
   return repo.getPendingOrganizations();
+}
+
+export async function approveOrganization(orgId: string) {
+  const organization = await repo.updateOrganization(orgId, {
+    status: "approved",
+    isActive: true,
+  });
+
+  if (!organization) {
+    throw new Error("Organization not found");
+  }
+
+  await updateUser(organization.ownerId.toString(), {
+    role: "org_owner",
+    organizationId: organization._id,
+  });
+
+  return organization;
 }
