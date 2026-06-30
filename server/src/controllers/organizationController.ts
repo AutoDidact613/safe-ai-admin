@@ -125,7 +125,12 @@ export async function updateOrganizationHandler(
       return res.status(403).json({ error: "Access denied" });
     }
 
-    const updatedOrg = await updateOrganization(orgId, req.body);
+    const updateData = { ...req.body };
+
+    if (updateData.status === "approved") {
+      updateData.isActive = true;
+    }
+    const updatedOrg = await updateOrganization(orgId, updateData);
     res.json({ success: true, organization: updatedOrg });
   } catch (error) {
     logger.error("Failed to update organization", { error });
@@ -157,7 +162,7 @@ export async function deleteOrganizationHandler(
 /**
  * Get users of an organization (Admin or Org Owner)
  */
- export async function getOrganizationUsersHandler(
+export async function getOrganizationUsersHandler(
   req: Request<{ id: string }>,
   res: Response
 ) {
@@ -170,9 +175,9 @@ export async function deleteOrganizationHandler(
       return res.status(404).json({ error: "Organization not found" });
     }
 
-    const orgOwnerId = organization.ownerId?._id 
-        ? organization.ownerId._id.toString() 
-        : organization.ownerId.toString();
+    const orgOwnerId = organization.ownerId?._id
+      ? organization.ownerId._id.toString()
+      : organization.ownerId.toString();
 
     if (user.role !== "admin" && orgOwnerId !== user.userId) {
       return res.status(403).json({ error: "Access denied - You are not the owner" });
