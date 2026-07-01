@@ -1,5 +1,6 @@
 import * as repo from "../repositories/organizationRepository";
 import * as userRepo from "../repositories/userRepository";
+import { UsageLog } from "../models";
 import logger from "../logger";
 
 export async function createOrganization(data: any) {
@@ -173,4 +174,44 @@ export async function topUpOrganizationWallet(orgId: string, amount: number) {
 
 export async function getPendingOrganizationsForAdmin() {
   return repo.getPendingOrganizations();
+}
+
+export async function listAllOrganizationsWithStats() {
+  return repo.getOrganizationsWithUserCount();
+}
+
+export async function setOrganizationActive(orgId: string, isActive: boolean) {
+  const organization = await repo.getOrganizationById(orgId);
+  if (!organization) {
+    throw new Error("Organization not found");
+  }
+
+  const updated = await repo.updateOrganization(orgId, { isActive });
+  logger.info("Organization active state changed", { orgId, isActive });
+  return updated;
+}
+
+export async function getOrganizationUsageSummary(orgId: string) {
+  const users = await getOrganizationUsers(orgId);
+  const userIds = users.map((u: any) => u._id);
+
+  const stats = await UsageLog.aggregate([
+    { $match: { userId: { $in: userIds }, success: true } },
+    {
+      $group: {
+        _id: null,
+        totalRequests: { $sum: 1 },
+        totalTokens: { $sum: "$totalTokens" },
+        totalCost: { $sum: "$cost" },
+      },
+    },
+  ]);
+
+  const summary = stats[0] || { totalRequests: 0, totalTokens: 0, totalCost: 0 };
+  return {
+    userCount: users.length,
+    totalRequests: summary.totalRequests,
+    totalTokens: summary.totalTokens,
+    totalCost: summary.totalCost,
+  };
 }

@@ -6,7 +6,7 @@ import UsersManagement from "../features/safeai-ui/UsersManagement";
 import UserDashboard from "../features/safeai-ui/UserDashboard";
 import Statistics from "../features/safeai-ui/Statistics";
 import UserApiKeysPage from "../features/safeai-ui/UserApiKeysPage";
-import AdminOrganizationsPage from "./AdminOrganizationsPage";
+import { OrganizationsManagement } from "../features/organizations/OrganizationsManagement";
 import OrganizationUsersPage from "../pages/OrganizationUsersPage";
 
 type Section =
@@ -81,7 +81,7 @@ export default function SafeAIUIPage() {
       case "apikeys":
         return <UserApiKeysPage />;
       case "organizations":
-        return <AdminOrganizationsPage />;
+        return <OrganizationsManagement />;
       case "org-statistics":
         return <Statistics user={currentUser} />;
         case "org-users":

@@ -23,7 +23,13 @@ export const API_ENDPOINTS = {
   providerKeys: `${API_BASE_URL}/provider-keys`,
   organizations: `${API_BASE_URL}/organizations`,
   adminOrganizations: {
-    pending: `${API_BASE_URL}/organizations/pending`, 
+    pending: `${API_BASE_URL}/organizations/pending`,
+    all: `${API_BASE_URL}/organizations/admin/all`,
+    detail: (id: string) => `${API_BASE_URL}/organizations/${id}`,
+    users: (id: string) => `${API_BASE_URL}/organizations/${id}/users`,
+    stats: (id: string) => `${API_BASE_URL}/organizations/${id}/stats`,
+    suspend: (id: string) => `${API_BASE_URL}/organizations/${id}/suspend`,
+    activate: (id: string) => `${API_BASE_URL}/organizations/${id}/activate`,
   },
   // Proxy key endpoints (user's own proxy key)
   proxyKey: {
