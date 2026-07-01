@@ -7,15 +7,18 @@ export const create = async (data: any) => {
 
 
 export const findByUserId = async (userId: string) => {
-  const objectId = new Types.ObjectId(userId);
-  return await ContactMessage.find({ userId: objectId as any }).sort({ createdAt: -1 });
+  const query: Record<string, unknown> = { userId: userId };
+  return await ContactMessage.find(query).sort({ createdAt: -1 });
 };
+
+
 
 export const updateStatus = async (id: string, userId: string, status: string, isAdmin = false) => {
   const objectId = new Types.ObjectId(id);
-  const filter = isAdmin
+   const filter: Record<string, any> = isAdmin
     ? { _id: objectId }
     : { _id: objectId, userId: new Types.ObjectId(userId) };
+
 
   return await ContactMessage.findOneAndUpdate(
     filter,
