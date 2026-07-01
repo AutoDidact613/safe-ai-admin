@@ -19,8 +19,6 @@ import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
 import { PendingOrganizationsPage } from "../features/organizations/pages/PendingOrganizationsPage";
-import { AllOrganizationsPage } from "../features/organizations/pages/AllOrganizationsPage";
-import { OrganizationDetailPage } from "../features/organizations/pages/OrganizationDetailPage";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -135,24 +133,6 @@ export default function AppRouter() {
           element={
             <ProtectedRoute>
               <PendingOrganizationsPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/organizations/all"
-          element={
-            <ProtectedRoute>
-              <AllOrganizationsPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/organizations/:id"
-          element={
-            <ProtectedRoute>
-              <OrganizationDetailPage />
             </ProtectedRoute>
           }
         />
