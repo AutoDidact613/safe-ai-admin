@@ -2,37 +2,34 @@ import { useState, useEffect } from "react";
 import { apiCall, API_ENDPOINTS } from "../../config/api";
 import { useNavigate } from "react-router-dom";
 
+type Reply = {
+  senderRole: string;
+};
+
+type RequestUser = {
+  _id?: string;
+  name?: string;
+  email?: string;
+};
+
+type Request = {
+  _id: string;
+  userId?: RequestUser | string;
+  title?: string;
+  status: string;
+  replies?: Reply[];
+};
+
 export default function AdminRequestsList() {
-  const [requests, setRequests] = useState<any[]>([]);
+  const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingRequestId, setDeletingRequestId] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const requestCountByUser = requests.reduce<Record<string, number>>((acc, req) => {
-    const userId = req.userId?._id || req.userId;
-    if (!userId) return acc;
-    acc[userId] = (acc[userId] || 0) + 1;
-    return acc;
-  }, {});
-
-  const requestTitlesByUser = requests.reduce<Record<string, string[]>>((acc, req) => {
-    const userId = req.userId?._id || req.userId;
-    if (!userId) return acc;
-    acc[userId] = acc[userId] || [];
-    acc[userId].push(req.title || "(ללא נושא)");
-    return acc;
-  }, {});
-
-  const isRequestNew = (req: any) => {
-    const hasAdminReply = req.replies?.some((reply: any) => reply.senderRole === "admin");
+  const isRequestNew = (req: Request) => {
+    const hasAdminReply = req.replies?.some((reply: Reply) => reply.senderRole === "admin");
     return req.status === "open" && !hasAdminReply;
-  };
-
-  const hasNewAdminReply = (req: any) => {
-    const replies = req.replies || [];
-    if (replies.length === 0) return false;
-    return replies[replies.length - 1].senderRole === 'admin';
   };
 
   const handleDelete = async (id: string) => {
@@ -55,7 +52,7 @@ export default function AdminRequestsList() {
       try {
         setLoading(true);
         setError(null);
-        const data = await apiCall<any[]>(API_ENDPOINTS.allRequests, { method: "GET" });
+        const data = await apiCall<Request[]>(API_ENDPOINTS.allRequests, { method: "GET" });
         setRequests(data || []);
       } catch (err) {
         console.error("שגיאה בטעינה:", err);
@@ -89,7 +86,7 @@ export default function AdminRequestsList() {
   return (
     <div className="admin-requests-container">
       <h2>כל הפניות במערכת (מצב מנהל)</h2>
-1      {requests.length === 0 ? (
+      {requests.length === 0 ? (
         <p>אין פניות כרגע.</p>
       ) : (
         <table className="requests-table">
@@ -105,9 +102,9 @@ export default function AdminRequestsList() {
           </thead>
           <tbody>
             {requests.map((req) => {
-              const userId = req.userId?._id || req.userId;
               const newBadge = isRequestNew(req);
               const needsAdminAttention = req.status === "open" && (!req.replies || req.replies.length === 0 || req.replies[req.replies.length - 1].senderRole === "user");
+              const userInfo = typeof req.userId === "object" ? req.userId : undefined;
               return (
                 <tr key={req._id}>
                   <td>
@@ -116,10 +113,10 @@ export default function AdminRequestsList() {
                     )}
                   </td>
                   <td onClick={() => navigate(`/request/${req._id}`)} style={{ cursor: "pointer" }}>
-                    {req.userId?.name || "לא ידוע"}
+                    {userInfo?.name || "לא ידוע"}
                   </td>
                   <td onClick={() => navigate(`/request/${req._id}`)} style={{ cursor: "pointer" }}>
-                    {req.userId?.email || "אין"}
+                    {userInfo?.email || "אין"}
                   </td>
                   <td onClick={() => navigate(`/request/${req._id}`)} style={{ cursor: "pointer" }}>
                     {req.title || "ללא נושא"}
