@@ -21,7 +21,7 @@ type Section =
   | "apikeys"
   | "organizations"
   | "requests"
-  | "adminRequests";
+  | "adminRequests"
   | "org-statistics"
   | "org-users";
 
@@ -109,10 +109,14 @@ export default function SafeAIUIPage() {
         return <UserApiKeysPage />;
       case "organizations":
         return <OrganizationsManagement />;
+      case "requests":
+        return <MyRequestsList activeSection={activeSection} />;
+      case "adminRequests":
+        return <AdminRequestsList />;
       case "org-statistics":
         return <Statistics user={currentUser} />;
-        case "org-users":
-          return <OrganizationUsersPage />;
+      case "org-users":
+        return <OrganizationUsersPage />;
       default:
         return <UserDashboard user={currentUser} />;
     }
@@ -123,7 +127,7 @@ export default function SafeAIUIPage() {
       {userRole && (
         <nav className="dashboard-sub-nav">
           <div className="sub-nav-container">
-  
+
             {/* מנהל ראשי */}
             {userRole === "admin" && (
               <>
@@ -187,7 +191,7 @@ export default function SafeAIUIPage() {
                 </button>
               </>
             )}
-  
+
             {/* משתמש רגיל */}
             {userRole === "user" && (
               <>
@@ -252,7 +256,7 @@ export default function SafeAIUIPage() {
                 </button>
               </>
             )}
-  
+
             {/* מנהל ארגון */}
             {userRole === "org_owner" && (
               <>
@@ -276,11 +280,11 @@ export default function SafeAIUIPage() {
                 </button>
               </>
             )}
-  
+
           </div>
         </nav>
       )}
-  
+
       <div className="safeai-content">{renderSection()}</div>
     </div>
   );
