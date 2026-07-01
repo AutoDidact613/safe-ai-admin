@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
 import {
   getOrganizationDetail,
   getOrganizationStats,
@@ -10,10 +9,13 @@ import type {
   OrganizationUsageSummary,
   OrganizationUser,
 } from "../api/organizationApi";
-import "../../../styles/organizations-admin.css";
 
-export const OrganizationDetailPage = () => {
-  const { id } = useParams<{ id: string }>();
+interface OrganizationDetailProps {
+  orgId: string;
+  onBack: () => void;
+}
+
+export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) => {
   const [org, setOrg] = useState<AdminOrganization | null>(null);
   const [stats, setStats] = useState<OrganizationUsageSummary | null>(null);
   const [users, setUsers] = useState<OrganizationUser[]>([]);
@@ -21,14 +23,14 @@ export const OrganizationDetailPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!orgId) return;
     const load = async () => {
       try {
         setLoading(true);
         const [orgData, statsData, usersData] = await Promise.all([
-          getOrganizationDetail(id),
-          getOrganizationStats(id),
-          getOrganizationUsers(id),
+          getOrganizationDetail(orgId),
+          getOrganizationStats(orgId),
+          getOrganizationUsers(orgId),
         ]);
         setOrg(orgData);
         setStats(statsData);
@@ -41,18 +43,25 @@ export const OrganizationDetailPage = () => {
       }
     };
     load();
-  }, [id]);
+  }, [orgId]);
 
   if (loading) return <div className="orgs-loading">טוען פרטי ארגון...</div>;
   if (error) return <div className="orgs-error">שגיאה: {error}</div>;
   if (!org) return <div className="orgs-error">ארגון לא נמצא</div>;
 
   return (
-    <div className="orgs-admin-container">
-      <Link className="org-detail-back" to="/admin/organizations/all">→ חזרה לרשימת הארגונים</Link>
+    <div>
+      <button
+        type="button"
+        className="org-detail-back"
+        onClick={onBack}
+        style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+      >
+        → חזרה לרשימת הארגונים
+      </button>
 
       <div className="orgs-admin-header">
-        <h1 className="orgs-admin-title">{org.name}</h1>
+        <h2 className="orgs-admin-title">{org.name}</h2>
         <span className={`status-badge ${org.isActive ? "active" : "inactive"}`}>
           {org.isActive ? "פעיל" : "מושעה"}
         </span>

@@ -39,6 +39,11 @@
 .orgs-loading { padding: 20px; text-align: center; }
 .orgs-error { padding: 20px; color: #dc3545; }
 
+/* Internal sub-toggle (all / pending) */
+.orgs-subtoggle { display: flex; gap: 8px; margin: 12px 0 20px; border-bottom: 1px solid #e5e7eb; }
+.orgs-subtoggle-btn { padding: 8px 16px; border: none; background: none; cursor: pointer; font-size: 14px; color: #6b7280; border-bottom: 2px solid transparent; }
+.orgs-subtoggle-btn.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
+
 /* Detail page cards */
 .org-detail-back { display: inline-block; margin-bottom: 16px; color: #2563eb; text-decoration: none; }
 .org-detail-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin: 20px 0; }

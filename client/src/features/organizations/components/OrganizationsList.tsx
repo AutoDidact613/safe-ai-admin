@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import {
   getAllOrganizations,
   suspendOrganization,
   activateOrganization,
 } from "../api/organizationApi";
 import type { AdminOrganization } from "../api/organizationApi";
-import { OrganizationsTable } from "../components/OrganizationsTable";
-import "../../../styles/organizations-admin.css";
+import { OrganizationsTable } from "./OrganizationsTable";
 
 type StatusFilter = "all" | "active" | "suspended" | "pending" | "approved" | "rejected";
 
-export const AllOrganizationsPage = () => {
-  const navigate = useNavigate();
+interface OrganizationsListProps {
+  onOpenOrg: (id: string) => void;
+}
+
+export const OrganizationsList = ({ onOpenOrg }: OrganizationsListProps) => {
   const [organizations, setOrganizations] = useState<AdminOrganization[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,11 +78,7 @@ export const AllOrganizationsPage = () => {
   if (error) return <div className="orgs-error">שגיאה: {error}</div>;
 
   return (
-    <div className="orgs-admin-container">
-      <div className="orgs-admin-header">
-        <h1 className="orgs-admin-title">ניהול ארגונים</h1>
-        <Link className="orgs-admin-link" to="/admin/organizations">← ארגונים ממתינים לאישור</Link>
-      </div>
+    <div>
       <p className="orgs-admin-subtitle">רשימת כל הארגונים במערכת. סה"כ: {organizations.length}</p>
 
       <div className="orgs-toolbar">
@@ -108,7 +105,7 @@ export const AllOrganizationsPage = () => {
 
       <OrganizationsTable
         organizations={filtered}
-        onOpen={(id) => navigate(`/admin/organizations/${id}`)}
+        onOpen={onOpenOrg}
         onSuspend={handleSuspend}
         onActivate={handleActivate}
         busyId={busyId}
