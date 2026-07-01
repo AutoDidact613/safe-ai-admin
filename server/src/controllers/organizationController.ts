@@ -17,6 +17,7 @@ import {
   requestOrganization,
   approveOrganization,
   rejectOrganization,
+  getMyOrganization,
 } from "../services/organizationService";
 import logger from "../logger";
 
@@ -463,6 +464,21 @@ export async function requestOrganizationHandler(req: Request, res: Response) {
       return res.status(409).json({ error: "Organization name already exists" });
     }
     res.status(400).json({ error: error.message || "Failed to create organization request" });
+  }
+}
+
+/**
+ * Get the current user's own organization (with status). Accessible to the owner
+ * regardless of approval state, so the frontend can show the right screen.
+ */
+export async function getMyOrganizationHandler(req: Request, res: Response) {
+  try {
+    const user = (req as any).user;
+    const organization = await getMyOrganization(user.userId);
+    res.json({ organization: organization || null });
+  } catch (error: any) {
+    logger.error("Failed to get user's organization", { error });
+    res.status(500).json({ error: "Failed to fetch organization" });
   }
 }
 

@@ -263,6 +263,19 @@ export async function rejectOrganization(orgId: string) {
   return updated;
 }
 
+/**
+ * Return the organization that the given user owns/belongs to (with its status),
+ * or null. Used by the frontend to decide between the pending screen and the
+ * full management screen.
+ */
+export async function getMyOrganization(userId: string) {
+  const user = await userRepo.getUserById(userId);
+  if (!user || !user.organizationId) {
+    return null;
+  }
+  return repo.getOrganizationById(user.organizationId.toString());
+}
+
 export async function listAllOrganizationsWithStats() {
   return repo.getOrganizationsWithUserCount();
 }
