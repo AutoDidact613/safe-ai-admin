@@ -10,7 +10,10 @@ import {
   removeUserFromOrganization,
   addUserToOrganizationByEmail,
   topUpOrganizationWallet,
-  getPendingOrganizationsForAdmin
+  getPendingOrganizationsForAdmin,
+  listAllOrganizationsWithStats,
+  setOrganizationActive,
+  getOrganizationUsageSummary,
 } from "../services/organizationService";
 import logger from "../logger";
 
@@ -348,5 +351,97 @@ export async function topUpOrganizationWalletHandler(
   } catch (error: any) {
     logger.error("Failed to top up organization wallet", { error });
     res.status(500).json({ error: "Failed to top up wallet", details: error.message });
+  }
+}
+
+/**
+ * List ALL organizations with user counts + wallet balance (Admin only)
+ */
+export async function getAllOrganizationsHandler(req: Request, res: Response) {
+  try {
+    const user = (req as any).user;
+    if (user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const organizations = await listAllOrganizationsWithStats();
+    res.status(200).json(organizations);
+  } catch (error: any) {
+    logger.error("Failed to list all organizations", { error });
+    res.status(500).json({ error: "Failed to fetch organizations" });
+  }
+}
+
+/**
+ * Suspend an organization (Admin only) -> isActive: false
+ */
+export async function suspendOrganizationHandler(
+  req: Request<{ id: string }>,
+  res: Response
+) {
+  try {
+    const user = (req as any).user;
+    if (user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const updated = await setOrganizationActive(req.params.id, false);
+    res.json({ success: true, message: "Organization suspended", organization: updated });
+  } catch (error: any) {
+    logger.error("Failed to suspend organization", { error });
+    res.status(400).json({ error: error.message || "Failed to suspend organization" });
+  }
+}
+
+/**
+ * Reactivate a suspended organization (Admin only) -> isActive: true
+ */
+export async function activateOrganizationHandler(
+  req: Request<{ id: string }>,
+  res: Response
+) {
+  try {
+    const user = (req as any).user;
+    if (user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const updated = await setOrganizationActive(req.params.id, true);
+    res.json({ success: true, message: "Organization reactivated", organization: updated });
+  } catch (error: any) {
+    logger.error("Failed to reactivate organization", { error });
+    res.status(400).json({ error: error.message || "Failed to reactivate organization" });
+  }
+}
+
+/**
+ * Get organization usage summary + wallet balance (Admin or Org Owner)
+ */
+export async function getOrganizationStatsHandler(
+  req: Request<{ id: string }>,
+  res: Response
+) {
+  try {
+    const user = (req as any).user;
+    const orgId = req.params.id;
+
+    const organization = await getOrganizationById(orgId);
+    if (!organization) {
+      return res.status(404).json({ error: "Organization not found" });
+    }
+
+    const orgOwnerId = organization.ownerId?._id
+      ? organization.ownerId._id.toString()
+      : organization.ownerId.toString();
+
+    if (user.role !== "admin" && orgOwnerId !== user.userId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const summary = await getOrganizationUsageSummary(orgId);
+    res.json({ ...summary, walletBalance: (organization as any).walletBalance || 0 });
+  } catch (error: any) {
+    logger.error("Failed to get organization stats", { error });
+    res.status(500).json({ error: "Failed to fetch organization stats" });
   }
 }
