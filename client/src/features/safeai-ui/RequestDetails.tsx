@@ -4,7 +4,7 @@ import { apiCall } from "../../config/api";
 
 export default function RequestDetails() {
     const { id } = useParams<{ id: string }>();
-    const [request, setRequest] = useState<any>(null);
+    const [request, setRequest] = useState<Record<string, unknown> | null>(null);
     const navigate = useNavigate();
     const [replyText, setReplyText] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,7 +61,7 @@ export default function RequestDetails() {
                 <button onClick={handleCloseRequest}>סגור פנייה</button>
 
                 <div className="replies-list">
-                    {request.replies?.map((reply: any, index: number) => (
+                    {((request.replies || []) as Record<string, unknown>[]).map((reply, index) => (
                         <div key={index} className={`reply-bubble ${reply.senderRole}`}>
                             <p><strong>{reply.senderRole === 'admin' ? 'אדמין' : 'אני'}:</strong> {reply.text}</p>
                             <small>{new Date(reply.createdAt).toLocaleString("he-IL")}</small>
