@@ -103,67 +103,70 @@ export const searchSimilarPosts = async (req: Request, res: Response) => {
   }
 };
 
-// 5. יצירת פוסט חדש - קליטת מערך ה-IDs והמילים החדשות מ-CreatableSelect
 export const createPost = async (req: Request, res: Response) => {
+  // בתוך פונקציית createPost בשרת:
+const authenticatedUserId = (req as any).user?.userId; // שליפת ה-ID המקורי
   try {
-    const { title, content, category, tags, userId } = req.body;
+    // 1. קליטת הנתונים מתוך ה-body (שימי לב שקיבלנו fileUrl במקום קובץ גולמי)
+    const { title, content, category, tags, fileUrl } = req.body;
     
-    const attachments = req.file ? [req.file.filename] : [];
+    // שליפת ה-userId מתוך ה-Token המוצפן (הוזרק על ידי ה-Middleware של ה-Auth)
+    // אם עדיין לא הגדרת JWT בשרת, תוכלי זמנית להשתמש ב- req.body.userId
+const authenticatedUserId = (req as any).user?.userId || req.body.userId;
+    if (!authenticatedUserId) {
+      return res.status(401).json({ message: "משתמש לא מחובר או לא מאומת" });
+    }
+
     let finalTagIds: string[] = [];
     
-    // פענוח של מערך התגיות המורכב שנשלח מה-React CreatableSelect
-    if (tags) {
-      const parsedTags = typeof tags === 'string' ? JSON.parse(tags) : tags;
-      
-      if (Array.isArray(parsedTags)) {
-        for (const tagItem of parsedTags) {
-          // הגנה חכמה: בודקים האם ה-value/id הוא ID אמיתי של מונגו באורך 24 תווים
-          const hasValidId = tagItem.id && tagItem.id.length === 24;
-          const hasValidValue = tagItem.value && tagItem.value.length === 24;
+    // 2. טיפול בתגיות (הסרנו את ה-JSON.parse המיותר כי המידע מגיע כבר כאובייקט מובנה ב-JSON)
+    if (tags && Array.isArray(tags)) {
+      for (const tagItem of tags) {
+        const hasValidId = tagItem.id && tagItem.id.length === 24;
+        const hasValidValue = tagItem.value && tagItem.value.length === 24;
+        
+        if (hasValidId || hasValidValue) {
+          finalTagIds.push(tagItem.id || tagItem.value);
+        } else {
+          const newTagName = (tagItem.label || tagItem.name || tagItem.value || '').trim();
           
-          if (hasValidId || hasValidValue) {
-            // אם קיים ID תקין, נשתמש בו ישירות
-            finalTagIds.push(tagItem.id || tagItem.value);
-          } else {
-            // אם המשתמש הקליד מילה חדשה, השם של התגית ייקלח מ-label או מ-name
-            const newTagName = (tagItem.label || tagItem.name || tagItem.value || '').trim();
+          if (newTagName) {
+            let existingTag = await Tag.findOne({ name: { $regex: new RegExp(`^${newTagName}$`, 'i') } });
             
-            if (newTagName) {
-              // נחפש במאגר הכללי האם התגית כבר קיימת (ללא תלות באותיות גדולות/קטנות)
-              let existingTag = await Tag.findOne({ name: { $regex: new RegExp(`^${newTagName}$`, 'i') } });
-              
-              if (!existingTag) {
-                // אם היא לא קיימת בכלל באלף המושגים - ניצור אותה אוטומטית!
-                existingTag = await Tag.create({ name: newTagName });
-              }
-              finalTagIds.push(existingTag._id as string);
+            if (!existingTag) {
+              existingTag = await Tag.create({ name: newTagName });
             }
+            finalTagIds.push(existingTag._id as string);
           }
         }
       }
     }
 
-    // יצירת הפוסט החדש בצורה מאובטחת
+    // 3. יצירת הפוסט החדש ושמירת הקישור מ-S3
     const newPost = new Post({
       title,
       content,
       category,
-      tags: finalTagIds, // שומר את מערך ה-IDs הנקי
-      attachments, 
-      author: userId
+      tags: finalTagIds,
+      attachments: fileUrl ? [fileUrl] : [], // שמירת הקישור של S3 בתוך מערך הנספחים
+      author: authenticatedUserId // שיוך למשתמש המאומת
     });
 
     const savedPost = await newPost.save();
     
-    // החזרת פוסט מאוכלס מלא ללקוח
+    // 4. שליפת הפוסט המלא עם ה-Populate
     const populatedPost = await Post.findById(savedPost._id)
       .populate('author', 'name')
       .populate('tags', 'name');
 
-    res.status(201).json(populatedPost);
+    return res.status(201).json(populatedPost);
+
   } catch (error) {
     console.error('Error in createPost controller:', error);
-    res.status(500).json({ message: 'שגיאה פנימית ביצירת הפוסט', error: error instanceof Error ? error.message : error });
+    return res.status(500).json({ 
+      message: 'שגיאה פנימית ביצירת הפוסט', 
+      error: error instanceof Error ? error.message : error 
+    });
   }
 };
 
@@ -245,11 +248,16 @@ export const createComment = async (req: Request, res: Response) => {
     });
 
     const savedComment = await newComment.save();
-    const populatedComment = await Comment.findById(savedComment._id).populate('author', 'name');
+    
+    // שליפה מפורשת ומלאה של כל שדות התגובה כולל הקבצים המצורפים
+    const populatedComment = await Comment.findById(savedComment._id)
+      .select('postId content attachments author createdAt')
+      .populate('author', 'name');
     
     // עדכון שדה הפעילות האחרונה בפוסט לרגע הנוכחי ושמירתו
     post.lastActivity = new Date();
-await post.save({ validateBeforeSave: false });    
+    await post.save({ validateBeforeSave: false });    
+    
     res.status(201).json(populatedComment);
   } catch (error) {
     console.error('Error in createComment:', error);

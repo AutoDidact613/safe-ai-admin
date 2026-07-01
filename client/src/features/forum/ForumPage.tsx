@@ -26,44 +26,6 @@ interface Post {
   averageRating: number;
 }
 
-// פונקציית עיבוד הזמן הגנרית והיעילה המשלבת לועזי, עברי וזמנים יחסיים
-const formatForumDate = (dateInput: string | Date | number): string => {
-  const now = new Date();
-  const date = new Date(dateInput);
-  
-  if (isNaN(date.getTime())) return '';
-
-  const diffInMs = now.getTime() - date.getTime();
-  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-  const timeString = date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-  if (diffInMinutes < 60 && diffInMinutes >= 0) {
-    return diffInMinutes === 0 ? 'עכשיו' : `לפני ${diffInMinutes} דקות`;
-  } 
-  
-  if (compareDate.getTime() === today.getTime()) {
-    return `היום ב-${timeString}`;
-  } 
-  
-  if (compareDate.getTime() === yesterday.getTime()) {
-    return `אתמול ב-${timeString}`;
-  }
-
-  const hebrewFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-  const hebrewDate = hebrewFormatter.format(date);
-  const gregoreanDate = date.toLocaleDateString('he-IL');
-
-  return `בשעה ${timeString} (${hebrewDate} / ${gregoreanDate})`;
-};
 
 export const ForumPage: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -72,7 +34,6 @@ export const ForumPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expandedPosts, setExpandedPosts] = useState<string[]>([]);
   const navigate = useNavigate();
-
   const userStr = localStorage.getItem('user');
   const currentUser = userStr ? JSON.parse(userStr) : null;
   const isAdmin = currentUser?.role === 'admin';
@@ -152,10 +113,92 @@ export const ForumPage: React.FC = () => {
     }
   };
 
+  // ה-Pipe המלא והתקני להמרת כל מספר לגימטריה נקייה
+const convertToGematriaPipe = (num: number): string => {
+  if (num === 15) return 'טו"';
+  if (num === 16) return 'טז"';
+
+  // מאות, עשרות ויחידות - מכסה את כל 22 אותיות הא-ב
+  const hundreds = ['', 'ק', 'ר', 'ש', 'ת'];
+  const tens = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
+  const units = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+
+  let result = '';
+
+  // פירוק מתמטי של המספר לפי מיקומים (מאות, עשרות, יחידות)
+  const h = Math.floor((num % 1000) / 100);
+  const t = Math.floor((num % 100) / 10);
+  const u = num % 10;
+
+  if (h > 0) result += hundreds[h] || '';
+  if (t > 0) result += tens[t] || '';
+  if (u > 0) result += units[u] || '';
+
+  // הוספת גרשיים או מירכאות לפי כללי הדקדוק התקניים
+  if (result.length === 1) {
+    return `${result}'`;
+  } else if (result.length > 1) {
+    return `${result.slice(0, -1)}"${result.slice(-1)}`;
+  }
+  
+  return result;
+};
+const formatForumDate = (dateInput: string | Date | number): string => {
+  const now = new Date();
+  const date = new Date(dateInput);
+  
+  if (isNaN(date.getTime())) return '';
+
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const timeString = date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  // 1. בדיקת זמנים יחסיים
+  if (diffInMinutes < 60 && diffInMinutes >= 0) {
+    return diffInMinutes === 0 ? 'עכשיו' : `לפני ${diffInMinutes} דקות`;
+  } 
+  if (compareDate.getTime() === today.getTime()) return `היום ב-${timeString}`;
+  if (compareDate.getTime() === yesterday.getTime()) return `אתמול ב-${timeString}`;
+
+  // 2. הפעלת ה-Pipe על היום בחודש והשנה
+  const isCurrentYear = date.getFullYear() === now.getFullYear();
+  
+  // שליפת שם החודש העברי בלבד מהדפדפן (זה תמיד טקסט יציב ללא מספרים)
+  const monthFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { month: 'long' });
+  const monthName = monthFormatter.format(date).replace(/[\u0591-\u05C7]/g, ""); // ניקוי ניקוד גורף
+
+  const dayLetters = convertToGematriaPipe(date.getDate());
+  let hebrewDate = `${dayLetters} ב${monthName}`;
+
+  // הוספת שנת הגימטריה רק אם זו לא השנה הנוכחית
+  if (!isCurrentYear) {
+    // חישוב השנה העברית הנוכחית מתוך ה-Timestamp (למשל 5786 עבור תשפ"ו)
+    const jewishYearFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { year: 'numeric' });
+    const yearParts = jewishYearFormatter.format(date).split(' ');
+    let yearLetters = yearParts[yearParts.length - 1]; // שולף את המילה האחרונה
+    
+    if (yearLetters.startsWith('ה')) yearLetters = yearLetters.substring(1); // ניקוי ה' הידיעה
+    hebrewDate += ` ${yearLetters}`;
+  }
+
+  // 3. תאריך לועזי נקי (ללא שנה אם זו השנה הנוכחית)
+  const gregoreanDate = date.toLocaleDateString('he-IL', {
+    day: 'numeric',
+    month: 'numeric',
+    year: isCurrentYear ? undefined : 'numeric'
+  });
+
+  return `${hebrewDate} / ${gregoreanDate}`;
+};
+
   return (
     <div style={{ padding: '20px', direction: 'rtl', maxWidth: '1100px', margin: '0 auto', fontFamily: 'Assistant, sans-serif' }}>
       
-      {/* שורת כפתור הוספה + שדה חיפוש */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', gap: '20px' }}>
         <button 
           onClick={() => setIsModalOpen(true)}
@@ -176,7 +219,6 @@ export const ForumPage: React.FC = () => {
         </div>
       </div>
 
-      {/* שורת כותרת דינמית */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '3px solid #10b981', paddingBottom: '10px', marginBottom: '25px' }}>
         <h2 style={{ color: '#064e3b', margin: 0, fontWeight: 'bold', fontSize: '20px' }}>
           {searchQuery ? `תוצאות חיפוש עבור: "${searchQuery}"` : 'פוסטים בפורום'}
@@ -204,7 +246,6 @@ export const ForumPage: React.FC = () => {
           </button>
         </div>
       ) : (
-        /* רשימת הפוסטים */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           {posts.map((post) => {
             const isLongPost = post.content.length > 140;
@@ -216,7 +257,6 @@ export const ForumPage: React.FC = () => {
                 onClick={() => navigate(`/forum/post/${post._id}`)} 
                 style={{ display: 'flex', border: post.isBlocked ? '1px dashed #ef4444' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: post.isBlocked ? '#fef2f2' : '#fff', cursor: 'pointer', overflow: 'hidden', transition: '0.1s', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
               >
-                {/* סרגל ימני */}
                 <div style={{ width: '130px', minWidth: '130px', backgroundColor: post.isBlocked ? '#fee2e2' : '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '15px', borderLeft: '1px solid #e2e8f0', justifyContent: 'flex-start' }}>
                   {post.ratingCount > 0 && (
                     <div style={{ backgroundColor: '#10b981', color: 'white', padding: '3px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', marginBottom: '10px' }}>
@@ -230,11 +270,8 @@ export const ForumPage: React.FC = () => {
                   <span style={{ fontWeight: 'bold', color: '#064e3b', fontSize: '13px', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{post.author?.name}</span>
                 </div>
 
-                {/* גוף הפוסט */}
                 <div style={{ flex: 1, minWidth: 0, padding: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
-                    
-                    {/* שורת גג עליונה מאוזנת (תאריך בימין, צפיות ותגובות בשמאל) - מופרדת באסתטיות מהכותרת */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                       <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '400' }}>
                         {formatForumDate(post.createdAt)}
@@ -244,7 +281,6 @@ export const ForumPage: React.FC = () => {
                       </span>
                     </div>
 
-                    {/* שורת הכותרת, הקטגוריה והתגיות */}
                     <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '8px', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold' }}>{post.category}</span>
                       
@@ -263,7 +299,6 @@ export const ForumPage: React.FC = () => {
                       })}
                     </div>
 
-                    {/* הצגת התוכן */}
                     <div style={{ marginBottom: '10px' }}>
                       <p style={{ color: '#4b5563', lineHeight: '1.5', fontSize: '14px', margin: 0, whiteSpace: 'pre-line' }}>
                         {isLongPost && !isExpanded 
@@ -284,7 +319,6 @@ export const ForumPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* תגובה אחרונה */}
                   {post.lastComment && (
                     <div onClick={(e) => { e.stopPropagation(); navigate(`/forum/post/${post._id}?scroll=bottom`); }} style={{ backgroundColor: '#f1f5f9', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', color: '#334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRight: '3px solid #94a3b8', marginTop: '5px', gap: '15px' }}>
                       <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
@@ -303,7 +337,6 @@ export const ForumPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* סרגל תחתון */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '8px', marginTop: '8px' }}>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {isAdmin && (

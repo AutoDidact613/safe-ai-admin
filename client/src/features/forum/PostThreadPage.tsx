@@ -33,44 +33,6 @@ interface Post {
   ratedBy: string[];
 }
 
-// פונקציית עיבוד הזמן הגנרית והיעילה
-const formatForumDate = (dateInput: string | Date | number): string => {
-  const now = new Date();
-  const date = new Date(dateInput);
-  
-  if (isNaN(date.getTime())) return '';
-
-  const diffInMs = now.getTime() - date.getTime();
-  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-  const timeString = date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-  if (diffInMinutes < 60 && diffInMinutes >= 0) {
-    return diffInMinutes === 0 ? 'עכשיו' : `לפני ${diffInMinutes} דקות`;
-  } 
-  
-  if (compareDate.getTime() === today.getTime()) {
-    return `היום ב-${timeString}`;
-  } 
-  
-  if (compareDate.getTime() === yesterday.getTime()) {
-    return `אתמול ב-${timeString}`;
-  }
-
-  const hebrewFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-  const hebrewDate = hebrewFormatter.format(date);
-  const gregoreanDate = date.toLocaleDateString('he-IL');
-
-  return `בשעה ${timeString} (${hebrewDate} / ${gregoreanDate})`;
-};
 
 export const PostThreadPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -174,43 +136,75 @@ export const PostThreadPage: React.FC = () => {
       alert('שגיאה בתקשורת עם השרת');
     }
   };
+const handleCommentSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!editor) return;
 
-  const handleCommentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editor) return;
+  const htmlContent = editor.getHTML();
+  if (!htmlContent || htmlContent === '<p></p>' || commentLoading) return;
 
-    const htmlContent = editor.getHTML();
-    if (!htmlContent || htmlContent === '<p></p>' || commentLoading) return;
+  setCommentLoading(true);
+  let finalFileUrl = "";
 
-    setCommentLoading(true);
-
-    const formDataToSend = new FormData();
-    formDataToSend.append('postId', id || '');
-    formDataToSend.append('content', htmlContent); 
-    formDataToSend.append('userId', currentUser?._id || '');
-    if (selectedFile) {
-      formDataToSend.append('file', selectedFile);
-    }
-
+  // --- שלב א': העלאת קובץ התגובה ל-S3 במידה וקיים ---
+  if (selectedFile) {
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/${id}/comment`, {
+      const urlResponse = await fetch('http://localhost:5000/api/upload/get-url', {
         method: 'POST',
-        body: formDataToSend
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: selectedFile.name,
+          fileType: selectedFile.type,
+        }),
       });
 
-      if (response.ok) {
-        const savedComment = await response.json();
-        setComments((prevComments) => [...prevComments, savedComment]);
-        editor.commands.clearContent(); 
-        setSelectedFile(null);
-        navigate('/forum');
-      }
-    } catch (err) {
-      console.error('Error submitting comment:', err);
-    } finally {
+      if (!urlResponse.ok) throw new Error('נכשלה קבלת קישור מאובטח לתגובה');
+      const { uploadUrl, fileUrl } = await urlResponse.json();
+
+      const awsResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': selectedFile.type },
+        body: selectedFile,
+      });
+
+      if (!awsResponse.ok) throw new Error('העלאת קובץ התגובה ל-S3 נכשלה');
+      finalFileUrl = fileUrl;
+
+    } catch (error) {
+      console.error('Error uploading comment file to S3:', error);
+      alert('נכשלה העלאת הקובץ המצורף לתגובה. אנא נסה שוב.');
       setCommentLoading(false);
+      return;
     }
+  }
+
+  // --- שלב ב': שליחת התגובה כ-JSON נקי לשרת ---
+  const commentPayload = {
+    postId: id || '',
+    content: htmlContent,
+    fileUrl: finalFileUrl // הקישור מ-S3 (או ריק אם אין קובץ)
   };
+
+  try {
+    const response = await fetch(`http://localhost:5000/api/posts/${id}/comment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(commentPayload)
+    });
+
+    if (response.ok) {
+      const savedComment = await response.json();
+      setComments((prevComments) => [...prevComments, savedComment]);
+      editor.commands.clearContent(); 
+      setSelectedFile(null);
+      navigate('/forum');
+    }
+  } catch (err) {
+    console.error('Error submitting comment:', err);
+  } finally {
+    setCommentLoading(false);
+  }
+};
 
   const handleStarClick = async (selectedRating: number) => {
     if (!post) return;
@@ -220,6 +214,7 @@ export const PostThreadPage: React.FC = () => {
       const response = await fetch(`http://localhost:5000/api/posts/${post._id}/rate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           userId: currentUser?._id,
           rating: selectedRating
@@ -234,6 +229,89 @@ export const PostThreadPage: React.FC = () => {
       console.error('Failed to save rating:', error);
     }
   };
+  // ה-Pipe המלא והתקני להמרת כל מספר לגימטריה נקייה
+const convertToGematriaPipe = (num: number): string => {
+  if (num === 15) return 'טו"';
+  if (num === 16) return 'טז"';
+
+  // מאות, עשרות ויחידות - מכסה את כל 22 אותיות הא-ב
+  const hundreds = ['', 'ק', 'ר', 'ש', 'ת'];
+  const tens = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
+  const units = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+
+  let result = '';
+
+  // פירוק מתמטי של המספר לפי מיקומים (מאות, עשרות, יחידות)
+  const h = Math.floor((num % 1000) / 100);
+  const t = Math.floor((num % 100) / 10);
+  const u = num % 10;
+
+  if (h > 0) result += hundreds[h] || '';
+  if (t > 0) result += tens[t] || '';
+  if (u > 0) result += units[u] || '';
+
+  // הוספת גרשיים או מירכאות לפי כללי הדקדוק התקניים
+  if (result.length === 1) {
+    return `${result}'`;
+  } else if (result.length > 1) {
+    return `${result.slice(0, -1)}"${result.slice(-1)}`;
+  }
+  
+  return result;
+};
+
+const formatForumDate = (dateInput: string | Date | number): string => {
+  const now = new Date();
+  const date = new Date(dateInput);
+  
+  if (isNaN(date.getTime())) return '';
+
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const timeString = date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  // 1. בדיקת זמנים יחסיים
+  if (diffInMinutes < 60 && diffInMinutes >= 0) {
+    return diffInMinutes === 0 ? 'עכשיו' : `לפני ${diffInMinutes} דקות`;
+  } 
+  if (compareDate.getTime() === today.getTime()) return `היום ב-${timeString}`;
+  if (compareDate.getTime() === yesterday.getTime()) return `אתמול ב-${timeString}`;
+
+  // 2. הפעלת ה-Pipe על היום בחודש והשנה
+  const isCurrentYear = date.getFullYear() === now.getFullYear();
+  
+  // שליפת שם החודש העברי בלבד מהדפדפן (זה תמיד טקסט יציב ללא מספרים)
+  const monthFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { month: 'long' });
+  const monthName = monthFormatter.format(date).replace(/[\u0591-\u05C7]/g, ""); // ניקוי ניקוד גורף
+
+  const dayLetters = convertToGematriaPipe(date.getDate());
+  let hebrewDate = `${dayLetters} ב${monthName}`;
+
+  // הוספת שנת הגימטריה רק אם זו לא השנה הנוכחית
+  if (!isCurrentYear) {
+    // חישוב השנה העברית הנוכחית מתוך ה-Timestamp (למשל 5786 עבור תשפ"ו)
+    const jewishYearFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { year: 'numeric' });
+    const yearParts = jewishYearFormatter.format(date).split(' ');
+    let yearLetters = yearParts[yearParts.length - 1]; // שולף את המילה האחרונה
+    
+    if (yearLetters.startsWith('ה')) yearLetters = yearLetters.substring(1); // ניקוי ה' הידיעה
+    hebrewDate += ` ${yearLetters}`;
+  }
+
+  // 3. תאריך לועזי נקי (ללא שנה אם זו השנה הנוכחית)
+  const gregoreanDate = date.toLocaleDateString('he-IL', {
+    day: 'numeric',
+    month: 'numeric',
+    year: isCurrentYear ? undefined : 'numeric'
+  });
+
+  return `${hebrewDate} / ${gregoreanDate}`;
+};
 
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: '#10b981', fontWeight: 'bold', direction: 'rtl' }}>טוען שרשור...</div>;
   if (!post) return <div style={{ textAlign: 'center', padding: '50px', direction: 'rtl' }}>הפוסט לא נמצא.</div>;
@@ -241,7 +319,6 @@ export const PostThreadPage: React.FC = () => {
   return (
     <div style={{ padding: '20px', direction: 'rtl', maxWidth: '1100px', margin: '0 auto', fontFamily: 'Assistant, sans-serif' }}>
       
-      {/* כפתור חזרה לפורום הראשי */}
       <button 
         onClick={() => navigate('/forum')} 
         style={{ marginBottom: '15px', cursor: 'pointer', background: 'none', border: 'none', color: '#10b981', fontWeight: 'bold', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '5px' }}
@@ -249,10 +326,8 @@ export const PostThreadPage: React.FC = () => {
         ← חזרה לפורום
       </button>
 
-      {/* כרטיסיית הפוסט המלא */}
       <div style={{ display: 'flex', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#fff', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '15px' }}>
         
-        {/* סרגל ימני: פרטי המפרסם */}
         <div style={{ width: '140px', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '15px', borderLeft: '1px solid #e2e8f0' }}>
           <div style={{ width: '50px', height: '50px', borderRadius: '50%', backgroundColor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 'bold', marginBottom: '5px' }}>
             {post.author?.name?.charAt(0).toUpperCase() || 'U'}
@@ -262,24 +337,19 @@ export const PostThreadPage: React.FC = () => {
           </span>
         </div>
 
-        {/* גוף התוכן השמאלי */}
         <div style={{ flex: 1, padding: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
             
-            {/* שורת גג עליונה (שתי הפינות באותה השורה בדיוק עם מרווח מהתוכן) */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              {/* פינה ימנית עליונה: תאריך באפור עדין ומוקטן */}
               <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '400' }}>
                 {formatForumDate(post.createdAt)}
               </span>
               
-              {/* פינה שמאלית עליונה: צפיות באפור עדין ומוקטן */}
               <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '400' }}>
                 👁 צפיות: {post.viewsCount}
               </span>
             </div>
 
-            {/* שורת הכותרת והקטגוריה */}
             <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginBottom: '10px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', gap: '10px' }}>
               <span style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold' }}>
                 {post.category}
@@ -337,7 +407,6 @@ export const PostThreadPage: React.FC = () => {
         </div>
       </div>
 
-      {/* אזור דירוג פוסט חכם ונקי */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '24px', padding: '12px 0', borderTop: '1px solid #eee' }}>
         <span style={{ fontSize: '14px', color: '#4b5563', fontWeight: '500' }}>דירוג הפוסט:</span>
         
@@ -369,7 +438,6 @@ export const PostThreadPage: React.FC = () => {
         </span>
       </div>
 
-      {/* רשימת התגובות */}
       {comments.length > 0 && (
         <div style={{ border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', overflow: 'hidden', marginBottom: '20px' }}>
           {comments.map((comment, index) => {
@@ -385,7 +453,6 @@ export const PostThreadPage: React.FC = () => {
                   position: 'relative'
                 }}
               >
-                {/* אייקון המשתמש */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px', marginLeft: '15px' }}>
                   <div style={{ width: '38px', height: '38px', borderRadius: '50%', backgroundColor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', boxShadow: '0 2px 5px rgba(16,185,129,0.1)' }}>
                     {commenterInitial}
@@ -395,11 +462,9 @@ export const PostThreadPage: React.FC = () => {
                   </small>
                 </div>
 
-                {/* תוכן התגובה */}
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: '10px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
                     
-                    {/* תצוגת התאריך המורחב החדש עבור התגובות */}
                     <div style={{ color: '#9ca3af', fontSize: '11px', fontWeight: '400' }}>
                       {formatForumDate(comment.createdAt)}
                     </div>
@@ -424,12 +489,67 @@ export const PostThreadPage: React.FC = () => {
                   />
 
                   {comment.attachments && comment.attachments.length > 0 && (
-                    <div style={{ display: 'flex', gap: '5px', marginTop: '8px' }}>
-                      {comment.attachments.map((file, idx) => (
-                        <a key={idx} href={`http://localhost:5000/uploads/${file}`} target="_blank" rel="noreferrer" download style={{ textDecoration: 'none', color: '#059669', fontSize: '12px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <i className="fa-solid fa-paperclip"></i> {file}
-                        </a>
-                      ))}
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
+                      {comment.attachments.map((file, idx) => {
+                        const fileUrl = `http://localhost:5000/uploads/${file}`;
+                        const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(file);
+
+                        if (isImage) {
+                          return (
+                            <div 
+                              key={idx}
+                              onClick={() => window.open(fileUrl, '_blank')}
+                              title="לחצי להגדלת התמונה"
+                              style={{ 
+                                width: '55px', 
+                                height: '55px', 
+                                borderRadius: '6px', 
+                                border: '1px solid #e2e8f0', 
+                                overflow: 'hidden', 
+                                cursor: 'pointer',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                                transition: 'transform 0.15s ease'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            >
+                              <img 
+                                src={fileUrl} 
+                                alt={file} 
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                              />
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <a 
+                            key={idx} 
+                            href={fileUrl} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            download 
+                            style={{ 
+                              textDecoration: 'none', 
+                              color: '#059669', 
+                              fontSize: '12px', 
+                              fontWeight: 'bold', 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              gap: '6px',
+                              backgroundColor: '#f0fdf4',
+                              padding: '4px 10px',
+                              borderRadius: '4px',
+                              border: '1px solid #bbf7d0'
+                            }}
+                          >
+                            <i className="fa-solid fa-paperclip" style={{ fontSize: '11px' }}></i> 
+                            <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {file}
+                            </span>
+                          </a>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -441,14 +561,12 @@ export const PostThreadPage: React.FC = () => {
 
       <div ref={bottomRef} />
 
-      {/* בדיקה אם הפוסט חסום לנעילה */}
       {post.isLocked ? (
         <div style={{ border: '2px dashed #f59e0b', borderRadius: '6px', padding: '20px', backgroundColor: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', color: '#b45309', fontWeight: 'bold', fontSize: '15px', textAlign: 'center' }}>
           <i className="fa-solid fa-lock" style={{ fontSize: '20px' }}></i>
           <span>שרשור זה ננעל לתגובות חדשות על ידי מנהל המערכת.</span>
         </div>
       ) : (
-        /* טופס תגובה קומפקטי עשיר ומעוצב */
         <div style={{ border: '1px solid #10b981', borderRadius: '4px', padding: '15px', backgroundColor: '#f0fdf4', display: 'flex', gap: '15px', alignItems: 'flex-start' }}>
           
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px' }}>
@@ -464,7 +582,6 @@ export const PostThreadPage: React.FC = () => {
             onSubmit={handleCommentSubmit} 
             style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0px', border: '1px solid #d1fae5', borderRadius: '6px', overflow: 'hidden', backgroundColor: '#fff' }}
           >
-            {/* סרגל הכלים המלא של TipTap */}
             {editor && (
               <div style={{ display: 'flex', gap: '6px', padding: '6px 10px', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb', alignItems: 'center', flexWrap: 'wrap' }}>
                 <select 
@@ -582,7 +699,15 @@ export const PostThreadPage: React.FC = () => {
               </div>
             )}
 
-            {/* אזור העריכה הויזואלי הממוזג של TipTap */}
+            {/* שדרוג: חיווי ויזואלי ישיר בתוך תיבת הטקסט על הצלחת העלאת הקובץ ללא אלרטים */}
+            {selectedFile && (
+              <div style={{ padding: '6px 12px', backgroundColor: '#f0fdf4', borderBottom: '1px solid #d1fae5', display: 'flex', alignItems: 'center', justifyItems: 'flex-start', gap: '8px', color: '#15803d', fontSize: '13px', fontWeight: '500' }}>
+                <i className="fa-solid fa-circle-check" style={{ fontSize: '14px' }}></i>
+                <span>הקובץ המצורף <strong>{selectedFile.name}</strong> הועלה ומוכן לשמירה!</span>
+                <button type="button" onClick={() => setSelectedFile(null)} style={{ background: 'none', border: 'none', color: '#b91c1c', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', marginRight: 'auto' }}>הסר קובץ</button>
+              </div>
+            )}
+
             <div 
               onClick={() => editor?.commands.focus()} 
               style={{ padding: '12px', minHeight: '160px', direction: 'rtl', textAlign: 'right', backgroundColor: '#fff', cursor: 'text' }}
@@ -610,7 +735,7 @@ export const PostThreadPage: React.FC = () => {
               
               <input type="file" ref={commentFileInputRef} style={{ display: 'none' }} onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
               <button type="button" onClick={() => commentFileInputRef.current?.click()} style={{ background: 'none', border: 'none', color: '#059669', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <i className="fa-solid fa-paperclip"></i> {selectedFile ? selectedFile.name : 'צרף קובץ לתגובה'}
+                <i className="fa-solid fa-paperclip"></i> צרף קובץ לתגובה
               </button>
             </div>
           </form>

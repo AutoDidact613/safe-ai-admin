@@ -54,56 +54,94 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSubmitting) return;
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (isSubmitting) return;
 
-    if (!selectedTags || selectedTags.length === 0) {
-      setValidationError('חובה לבחור או ליצור לפחות תגית אחת עבור הפוסט!');
-      return;
-    }
-    setValidationError(null);
+  if (!selectedTags || selectedTags.length === 0) {
+    setValidationError('חובה לבחור או ליצור לפחות תגית אחת עבור הפוסט!');
+    return;
+  }
+  setValidationError(null);
+  setIsSubmitting(true);
 
-    setIsSubmitting(true);
-    const { title, content, category } = formData;
-    const userStr = localStorage.getItem('user');
-    const user = userStr ? JSON.parse(userStr) : null;
+  const { title, content, category } = formData;
+  let finalFileUrl = ""; 
 
-    const formDataToSend = new FormData();
-    formDataToSend.append('title', title);
-    formDataToSend.append('content', content);
-    formDataToSend.append('category', category);
-    
-    const tagsPayload = selectedTags.map(t => ({ id: t.value, name: t.label }));
-    formDataToSend.append('tags', JSON.stringify(tagsPayload));    
-    
-    formDataToSend.append('userId', user?._id || '');
-    if (selectedFile) formDataToSend.append('file', selectedFile);
-
+  // --- שלב א': העלאת הקובץ ל-S3 ---
+  if (selectedFile) {
     try {
-      const response = await fetch('http://localhost:5000/api/posts', {
+      const urlResponse = await fetch('http://localhost:5000/api/upload/get-url', {
         method: 'POST',
-        body: formDataToSend,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: selectedFile.name,
+          fileType: selectedFile.type,
+        }),
       });
 
-      if (response.ok) {
-        setFormData({ title: '', category: 'כללי', tags: '', content: '' });
-        setSelectedTags([]);
-        setSelectedFile(null);
-        setTagInputValue('');
-        loadTagsFromServer();
-        onClose(); 
-        if (onPostCreated) onPostCreated();
-        navigate('/forum');
-      } else {
-        console.error('Failed to create post');
-      }
+      if (!urlResponse.ok) throw new Error('נכשלה קבלת קישור מאובטח מהשרת');
+      const { uploadUrl, fileUrl } = await urlResponse.json();
+
+      const awsResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': selectedFile.type },
+        body: selectedFile,
+      });
+
+      if (!awsResponse.ok) throw new Error('העלאת הקובץ ל-S3 נכשלה');
+      finalFileUrl = fileUrl;
+
     } catch (error) {
-      console.error('Error creating post:', error);
-    } finally {
+      console.error('Error uploading file to S3:', error);
+      setValidationError('נכשלה העלאת הקובץ המצורף לענן. אנא נסה שוב.');
       setIsSubmitting(false);
+      return;
     }
+  }
+
+  // --- שלב ב': שליחת הפוסט ל-Database ---
+  const tagsPayload = selectedTags.map(t => ({ id: t.value, name: t.label }));
+
+  const postPayload = {
+    title,
+    content,
+    category,
+    tags: tagsPayload,
+    fileUrl: finalFileUrl // אין כאן userId! השרת יקרא אותו לבד מהקוקי
   };
+
+  try {
+const token = localStorage.getItem('token') || localStorage.getItem('accessToken'); 
+
+const response = await fetch('http://localhost:5000/api/posts', {
+  method: 'POST',
+  headers: { 
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}` // <-- הזרקת הטוקן בצורה שהשרת שלך אוהב ומכיר!
+  },
+  body: JSON.stringify(postPayload)
+});
+
+
+    if (response.ok) {
+      setFormData({ title: '', category: 'כללי', tags: '', content: '' });
+      setSelectedTags([]);
+      setSelectedFile(null);
+      setTagInputValue('');
+      loadTagsFromServer();
+      onClose(); 
+      if (onPostCreated) onPostCreated();
+      navigate('/forum');
+    } else {
+      console.error('Failed to create post');
+    }
+  } catch (error) {
+    console.error('Error creating post:', error);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleClipClick = () => {
     fileInputRef.current?.click();

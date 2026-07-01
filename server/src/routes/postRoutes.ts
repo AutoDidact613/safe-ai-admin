@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import { getPosts, getPostById, createPost, incrementView, searchSimilarPosts, searchPosts, createComment,deleteCommentByAdmin, moderatePost,ratePost } from '../controllers/postController';
+import { authenticateToken } from '../middleware/auth';
 const router = Router();
 
 // הגדרת Multer לשמירת קבצים
@@ -19,9 +20,9 @@ const upload = multer({ storage: storage });
 router.get('/', getPosts);
 router.get('/search', searchPosts); 
 router.get('/search-similar', searchSimilarPosts);
+router.post('/', authenticateToken, createPost);
 router.post('/:id/rate', ratePost); // לדירוג פוסט
 router.get('/:id', getPostById);
-router.post('/', upload.single('file'), createPost);
 router.post('/:id/view', incrementView);
 
 // פתרון: הוספת upload.single('file') כדי שהשרת יקלוט קבצים ותוכן שנשלחים מתגובות
