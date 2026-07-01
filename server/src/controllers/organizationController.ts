@@ -357,13 +357,8 @@ export async function topUpOrganizationWalletHandler(
 /**
  * List ALL organizations with user counts + wallet balance (Admin only)
  */
-export async function getAllOrganizationsHandler(req: Request, res: Response) {
+export async function getAllOrganizationsHandler(_req: Request, res: Response) {
   try {
-    const user = (req as any).user;
-    if (user.role !== "admin") {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-
     const organizations = await listAllOrganizationsWithStats();
     res.status(200).json(organizations);
   } catch (error: any) {
@@ -380,11 +375,6 @@ export async function suspendOrganizationHandler(
   res: Response
 ) {
   try {
-    const user = (req as any).user;
-    if (user.role !== "admin") {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-
     const updated = await setOrganizationActive(req.params.id, false);
     res.json({ success: true, message: "Organization suspended", organization: updated });
   } catch (error: any) {
@@ -401,11 +391,6 @@ export async function activateOrganizationHandler(
   res: Response
 ) {
   try {
-    const user = (req as any).user;
-    if (user.role !== "admin") {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-
     const updated = await setOrganizationActive(req.params.id, true);
     res.json({ success: true, message: "Organization reactivated", organization: updated });
   } catch (error: any) {
