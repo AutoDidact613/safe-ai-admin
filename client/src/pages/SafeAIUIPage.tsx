@@ -6,7 +6,8 @@ import UsersManagement from "../features/safeai-ui/UsersManagement";
 import UserDashboard from "../features/safeai-ui/UserDashboard";
 import Statistics from "../features/safeai-ui/Statistics";
 import UserApiKeysPage from "../features/safeai-ui/UserApiKeysPage";
-import AdminOrganizationsPage from "./AdminOrganizationsPage";
+import { OrganizationsManagement } from "../features/organizations/OrganizationsManagement";
+import OrganizationUsersPage from "../pages/OrganizationUsersPage";
 
 type Section =
   | "profiles"
@@ -34,10 +35,10 @@ export default function SafeAIUIPage() {
 
     if (storedUser && storedRole) {
       const parsedUser = JSON.parse(storedUser);
-      const defaultSection: Section = storedRole === "org-admin" ? "org-statistics" : "statistics";
+      const defaultSection: Section = storedRole === "org_owner" ? "org-statistics" : "statistics";
       return {
         user: parsedUser,
-        role: storedRole as "admin" | "user" | "org-admin",
+        role: storedRole as "admin" | "user" | "org_owner",
         section: defaultSection,
       };
     }
@@ -53,7 +54,7 @@ export default function SafeAIUIPage() {
   const [activeSection, setActiveSection] = useState<Section>(
     initialState.section,
   );
-  const [userRole] = useState<"admin" | "user" | "org-admin" | null>(
+  const [userRole] = useState<"admin" | "user" | "org_owner" | null>(
     initialState.role,
   );
   const [currentUser] = useState<UserData | null>(
@@ -80,11 +81,11 @@ export default function SafeAIUIPage() {
       case "apikeys":
         return <UserApiKeysPage />;
       case "organizations":
-        return <AdminOrganizationsPage />;
+        return <OrganizationsManagement />;
       case "org-statistics":
         return <Statistics user={currentUser} />;
-      case "org-users":
-        return <div style={{padding: "2rem", direction: "rtl"}}>🔜 בקרוב — ניהול משתמשי הארגון</div>;
+        case "org-users":
+          return <OrganizationUsersPage />;
       default:
         return <UserDashboard user={currentUser} />;
     }
@@ -166,7 +167,7 @@ export default function SafeAIUIPage() {
             )}
   
             {/* מנהל ארגון */}
-            {userRole === "org-admin" && (
+            {userRole === "org_owner" && (
               <>
                 <button
                   className={activeSection === "org-statistics" ? "sub-nav-btn active" : "sub-nav-btn"}

@@ -9,34 +9,49 @@ import {
   addUserToOrganizationHandler,
   removeUserFromOrganizationHandler,
   addUserByEmailToOrganizationHandler,
+  topUpOrganizationWalletHandler,
   getPendingOrganizationsHandler,
+  getAllOrganizationsHandler,
+  suspendOrganizationHandler,
+  activateOrganizationHandler,
+  getOrganizationStatsHandler,
 } from "../controllers/organizationController";
-import { authenticateToken } from "../middleware/auth";
+import { authenticateToken, requireAdmin } from "../middleware/auth";
 
 const router = express.Router();
 
-// 1. PUBLIC ROUTES (Must be at the very top, before auth)
-router.get("/", listOrganizationsHandler); // Public
-
-// All routes below require authentication
+// 🔒 כל הנתיבים של הארגונים דורשים אימות משתמש מחובר (Token)
 router.use(authenticateToken);
 
-// 2. PROTECTED STATIC ROUTES (Must be before dynamic :id routes)
+// 1. PROTECTED STATIC ROUTES (נתיבים סטטיים תמיד ראשונים)
 router.get("/pending", getPendingOrganizationsHandler); // System Admin only
 router.patch("/pending/:id", updateOrganizationHandler); // מעדכן את הסטטוס של הארגון הממתין מול ה-DB
+router.get("/admin/all", requireAdmin, getAllOrganizationsHandler); // System Admin only - full list with stats
 
-// 3. PROTECTED DYNAMIC ROUTES
+// 2. GENERAL ORGANIZATION ROUTES
 router.post("/", createOrganizationHandler); // Admin only
-router.get("/", listOrganizationsHandler); // Admin only
-router.get("/:id", getOrganizationHandler); // Admin or Org Owner
-router.put("/:id", updateOrganizationHandler); // Admin or Org Owner
+router.get("/", listOrganizationsHandler);    // Admin רואה הכל, Org Owner רואה את שלו
+
+// 3. PROTECTED DYNAMIC ROUTES (נתיבים עם מזהה דינמי תמיד בסוף)
+router.get("/:id", getOrganizationHandler);    // Admin or Org Owner
+router.put("/:id", updateOrganizationHandler);   // Admin or Org Owner
 router.patch("/:id", updateOrganizationHandler); // Admin or Org Owner
 router.delete("/:id", deleteOrganizationHandler); // Admin only
 
-// Organization Users Management
+// Suspend / Reactivate an organization (Admin only)
+router.patch("/:id/suspend", requireAdmin, suspendOrganizationHandler);   // Admin only -> isActive: false
+router.patch("/:id/activate", requireAdmin, activateOrganizationHandler); // Admin only -> isActive: true
+
+// Organization usage summary + wallet balance
+router.get("/:id/stats", getOrganizationStatsHandler);      // Admin or Org Owner
+
+// Management of Users inside Organization
 router.get("/:id/users", getOrganizationUsersHandler); // Admin or Org Owner
 router.post("/:id/users", addUserToOrganizationHandler); // Admin or Org Owner
 router.delete("/users/:userId", removeUserFromOrganizationHandler); // Admin or Org Owner
 router.post("/:id/users/by-email", addUserByEmailToOrganizationHandler); // Admin or Org Owner
+
+// Wallet Management (Mock)
+router.post("/:id/top-up", topUpOrganizationWalletHandler); // Admin or Org Owner
 
 export default router;

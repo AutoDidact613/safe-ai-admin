@@ -18,7 +18,6 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
-import { PendingOrganizationsPage } from "../features/organizations/pages/PendingOrganizationsPage";
 import AiNewsPage from "../pages/AiNewsPage";
 import AiNewsDetailsPage from "../pages/AiNewsDetailsPage";
 
@@ -147,14 +146,7 @@ export default function AppRouter() {
           }
         />
 
-        <Route
-          path="/admin/organizations"
-          element={
-            <ProtectedRoute>
-              <PendingOrganizationsPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/admin/organizations" element={<Navigate to="/safeai-ui" replace />} />
 
         {/* New Pages Routes */}
         <Route path="/about" element={<AboutPage />} />
