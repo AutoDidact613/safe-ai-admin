@@ -22,6 +22,15 @@ export const API_ENDPOINTS = {
   filter: `${API_BASE_URL}/filter`,
   providerKeys: `${API_BASE_URL}/provider-keys`,
   organizations: `${API_BASE_URL}/organizations`,
+  adminOrganizations: {
+    pending: `${API_BASE_URL}/organizations/pending`,
+    all: `${API_BASE_URL}/organizations/admin/all`,
+    detail: (id: string) => `${API_BASE_URL}/organizations/${id}`,
+    users: (id: string) => `${API_BASE_URL}/organizations/${id}/users`,
+    stats: (id: string) => `${API_BASE_URL}/organizations/${id}/stats`,
+    suspend: (id: string) => `${API_BASE_URL}/organizations/${id}/suspend`,
+    activate: (id: string) => `${API_BASE_URL}/organizations/${id}/activate`,
+  },
   // Proxy key endpoints (user's own proxy key)
   proxyKey: {
     info: `${API_BASE_URL}/proxy-key`,
@@ -48,6 +57,8 @@ export const API_ENDPOINTS = {
   contactTypes: `${API_BASE_URL}/contact-types`,
   myRequests: `${API_BASE_URL}/contact/my-requests`,
   allRequests: `${API_BASE_URL}/contact/all`,
+  // AI News endpoints
+  news: `${API_BASE_URL}/api/news`,
 } as const;
 
 // Helper function for API calls

@@ -16,6 +16,7 @@ import organizationRouter from "./routes/organizationRouter";
 import contactRouter from "./routes/contactRouter";
 import contactTypeRoutes from "./routes/contactTypeRoutes"; // הייבוא של הקובץ שיצרת
 
+import newsRouter from "./routes/newsRouter";
 
 
 import { requestLogger } from "./middleware/requestLogger";
@@ -73,6 +74,8 @@ app.use("/contact-types", contactTypeRoutes); // Contact form types
 // ===== Public routes for filter evaluation =====
 app.use("/filter", filterRouter);
 
+// ===== Public AI News Routes =====
+app.use("/api/news", newsRouter); // News routes are public
 
 // ===== Proxy API Key Protected Routes (LiteLLM Proxy) =====
 app.use("/v1", openaiRouter); // Uses proxyAuth middleware in the router

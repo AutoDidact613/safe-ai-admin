@@ -3,7 +3,6 @@ import LandingPage from "../pages/LandingPage";
 import SafeAIUIPage from "../pages/SafeAIUIPage";
 import NotFound from "../pages/NotFound";
 import OrganizationUsersPage from "../pages/OrganizationUsersPage";
-import AdminOrganizationsPage from "../pages/AdminOrganizationsPage";
 import ContactPage from "../pages/ContactPage";
 import DocsPage from "../pages/DocsPage";
 import RecommendedGuidesPage from "../pages/RecommendedGuidesPage";
@@ -21,6 +20,8 @@ import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
 import RequestDetails from "../features/safeai-ui/RequestDetails";
 import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
+import AiNewsPage from "../pages/AiNewsPage";
+import AiNewsDetailsPage from "../pages/AiNewsDetailsPage";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -139,6 +140,24 @@ export default function AppRouter() {
         />
 
         {/* Organization Routes */}
+         <Route
+          path="/ai-news"
+          element={
+           <ProtectedRoute>
+             <AiNewsPage />
+           </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ai-news/:id"
+          element={
+           <ProtectedRoute>
+             <AiNewsDetailsPage />
+           </ProtectedRoute>
+          }
+        />
+
+        {/* Organization Routes */}
         <Route
           path="/organization/users"
           element={
@@ -148,14 +167,7 @@ export default function AppRouter() {
           }
         />
 
-        <Route
-          path="/admin/organizations"
-          element={
-            <ProtectedRoute>
-              <AdminOrganizationsPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/admin/organizations" element={<Navigate to="/safeai-ui" replace />} />
 
         {/* New Pages Routes */}
         <Route path="/about" element={<AboutPage />} />
