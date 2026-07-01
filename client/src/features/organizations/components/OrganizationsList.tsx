@@ -63,6 +63,7 @@ export const OrganizationsList = ({ onOpenOrg }: OrganizationsListProps) => {
   };
 
   const handleActivate = async (id: string) => {
+    if (!window.confirm("להפעיל מחדש את הארגון? משתמשיו יוכלו שוב להשתמש ב-API.")) return;
     try {
       setBusyId(id);
       await activateOrganization(id);
