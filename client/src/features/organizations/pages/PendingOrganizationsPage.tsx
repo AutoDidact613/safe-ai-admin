@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { getPendingOrganizations, updateOrganizationStatus } from "../api/organizationApi";
 import { PendingOrganizationsTable } from "../components/PendingOrganizationsTable";
 import "../../../styles/pending-organizations-page.css";
@@ -62,7 +63,10 @@ export const PendingOrganizationsPage = () => {
 
   return (
     <div className="pending-orgs-container">
-      <h1 className="pending-orgs-title">אישור ארגונים</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1 className="pending-orgs-title">אישור ארגונים</h1>
+        <Link to="/admin/organizations/all" style={{ color: "#2563eb" }}>כל הארגונים ←</Link>
+      </div>
       <p className="pending-orgs-subtitle">לפניך רשימת הארגונים הממתינים לאישור הגישה שלהם.</p>
       
       <PendingOrganizationsTable 
