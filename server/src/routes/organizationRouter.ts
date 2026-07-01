@@ -16,6 +16,8 @@ import {
   activateOrganizationHandler,
   getOrganizationStatsHandler,
   requestOrganizationHandler,
+  approveOrganizationHandler,
+  rejectOrganizationHandler,
 } from "../controllers/organizationController";
 import { authenticateToken, requireAdmin } from "../middleware/auth";
 
@@ -43,6 +45,10 @@ router.delete("/:id", deleteOrganizationHandler); // Admin only
 // Suspend / Reactivate an organization (Admin only)
 router.patch("/:id/suspend", requireAdmin, suspendOrganizationHandler);   // Admin only -> isActive: false
 router.patch("/:id/activate", requireAdmin, activateOrganizationHandler); // Admin only -> isActive: true
+
+// Approve / Reject a pending organization request (Admin only)
+router.patch("/:id/approve", requireAdmin, approveOrganizationHandler); // Admin only -> approved + isActive
+router.patch("/:id/reject", requireAdmin, rejectOrganizationHandler);   // Admin only -> rejected
 
 // Organization usage summary + wallet balance
 router.get("/:id/stats", getOrganizationStatsHandler);      // Admin or Org Owner

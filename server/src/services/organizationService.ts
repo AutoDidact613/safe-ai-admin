@@ -1,7 +1,7 @@
 import * as repo from "../repositories/organizationRepository";
 import * as userRepo from "../repositories/userRepository";
 import { UsageLog } from "../models";
-import { sendOrgApprovalRequestEmail } from "../utils/email";
+import { sendOrgApprovalRequestEmail, sendOrgApprovedEmail } from "../utils/email";
 import logger from "../logger";
 
 export async function createOrganization(data: any) {
@@ -221,6 +221,46 @@ export async function requestOrganization(
   }
 
   return organization;
+}
+
+export async function approveOrganization(orgId: string) {
+  const organization = await repo.getOrganizationById(orgId);
+  if (!organization) {
+    throw new Error("Organization not found");
+  }
+
+  const updated = await repo.updateOrganization(orgId, {
+    status: "approved",
+    isActive: true,
+  });
+
+  // מייל לבעל הארגון (best-effort). ownerId מגיע populated עם email+name
+  try {
+    const owner = organization.ownerId as any;
+    if (owner?.email) {
+      await sendOrgApprovedEmail(owner.email, (organization as any).name, owner.name);
+    }
+  } catch (error) {
+    logger.error("Failed to send org approved email", { error });
+  }
+
+  logger.info("Organization approved", { orgId });
+  return updated;
+}
+
+export async function rejectOrganization(orgId: string) {
+  const organization = await repo.getOrganizationById(orgId);
+  if (!organization) {
+    throw new Error("Organization not found");
+  }
+
+  const updated = await repo.updateOrganization(orgId, {
+    status: "rejected",
+    isActive: false,
+  });
+
+  logger.info("Organization rejected", { orgId });
+  return updated;
 }
 
 export async function listAllOrganizationsWithStats() {

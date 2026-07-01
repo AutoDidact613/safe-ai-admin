@@ -9,10 +9,10 @@ export const getPendingOrganizations = async (): Promise<OrganizationStatusRespo
 }
 
 export const updateOrganizationStatus = async (id: string, status: "approved" | "rejected"): Promise<OrganizationStatusResponse> => {
-    return apiCall<OrganizationStatusResponse>(`${API_ENDPOINTS.adminOrganizations.pending}/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status })
-    });
+    const url = status === "approved"
+        ? API_ENDPOINTS.adminOrganizations.approve(id)
+        : API_ENDPOINTS.adminOrganizations.reject(id);
+    return apiCall<OrganizationStatusResponse>(url, { method: "PATCH" });
 }
 
 export interface OrganizationOwner {

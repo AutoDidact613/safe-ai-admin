@@ -15,6 +15,8 @@ import {
   setOrganizationActive,
   getOrganizationUsageSummary,
   requestOrganization,
+  approveOrganization,
+  rejectOrganization,
 } from "../services/organizationService";
 import logger from "../logger";
 
@@ -461,5 +463,37 @@ export async function requestOrganizationHandler(req: Request, res: Response) {
       return res.status(409).json({ error: "Organization name already exists" });
     }
     res.status(400).json({ error: error.message || "Failed to create organization request" });
+  }
+}
+
+/**
+ * Approve a pending organization (Admin only) -> status=approved, isActive=true, email owner
+ */
+export async function approveOrganizationHandler(
+  req: Request<{ id: string }>,
+  res: Response
+) {
+  try {
+    const updated = await approveOrganization(req.params.id);
+    res.json({ success: true, message: "Organization approved", organization: updated });
+  } catch (error: any) {
+    logger.error("Failed to approve organization", { error });
+    res.status(400).json({ error: error.message || "Failed to approve organization" });
+  }
+}
+
+/**
+ * Reject a pending organization (Admin only) -> status=rejected, isActive=false
+ */
+export async function rejectOrganizationHandler(
+  req: Request<{ id: string }>,
+  res: Response
+) {
+  try {
+    const updated = await rejectOrganization(req.params.id);
+    res.json({ success: true, message: "Organization rejected", organization: updated });
+  } catch (error: any) {
+    logger.error("Failed to reject organization", { error });
+    res.status(400).json({ error: error.message || "Failed to reject organization" });
   }
 }

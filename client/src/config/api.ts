@@ -30,6 +30,9 @@ export const API_ENDPOINTS = {
     stats: (id: string) => `${API_BASE_URL}/organizations/${id}/stats`,
     suspend: (id: string) => `${API_BASE_URL}/organizations/${id}/suspend`,
     activate: (id: string) => `${API_BASE_URL}/organizations/${id}/activate`,
+    approve: (id: string) => `${API_BASE_URL}/organizations/${id}/approve`,
+    reject: (id: string) => `${API_BASE_URL}/organizations/${id}/reject`,
+    request: `${API_BASE_URL}/organizations/request`,
   },
   // Proxy key endpoints (user's own proxy key)
   proxyKey: {
