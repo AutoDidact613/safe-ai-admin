@@ -2,9 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiCall } from "../../config/api";
 
+interface RequestData {
+    title?: unknown; requestType?: unknown; description?: unknown; createdAt?: unknown; replies?: unknown[]; status?: unknown;
+}
+
+
 export default function RequestDetails() {
     const { id } = useParams<{ id: string }>();
-    const [request, setRequest] = useState<Record<string, unknown> | null>(null);
+    const [request, setRequest] = useState<RequestData | null>(null);
     const navigate = useNavigate();
     const [replyText, setReplyText] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,7 +46,7 @@ export default function RequestDetails() {
                 body: JSON.stringify({ text: replyText }),
             });
             // עדכון ה-UI עם המידע החדש מהשרת
-            setRequest(data.request);
+            setRequest((data as unknown as { request: RequestData }).request);
             setReplyText("");
         } catch (err) {
             console.error("שגיאה בשליחת התגובה:", err);
@@ -50,23 +55,26 @@ export default function RequestDetails() {
         }
     };
 
-    return (
+        return (
         <div className="request-details-container">
             <h2>פרטי הפנייה</h2>
             <div className="request-card">
-                <h3>{request.title}</h3>
-                <p><strong>סוג:</strong> {request.requestType}</p>
-                <p><strong>תוכן:</strong> {request.description}</p>
-                <p><strong>תאריך שליחה:</strong> {new Date(request.createdAt).toLocaleDateString("he-IL")}</p>
+                <h3>{String(request.title || "")}</h3>
+                <p><strong>סוג:</strong> {String(request.requestType || "")}</p>
+                <p><strong>תוכן:</strong> {String(request.description || "")}</p>
+                <p><strong>תאריך שליחה:</strong> {request.createdAt ? new Date(request.createdAt as string | number | Date).toLocaleDateString("he-IL") : ""}</p>
                 <button onClick={handleCloseRequest}>סגור פנייה</button>
 
                 <div className="replies-list">
-                    {((request.replies || []) as Record<string, unknown>[]).map((reply, index) => (
-                        <div key={index} className={`reply-bubble ${reply.senderRole}`}>
-                            <p><strong>{reply.senderRole === 'admin' ? 'אדמין' : 'אני'}:</strong> {reply.text}</p>
-                            <small>{new Date(reply.createdAt).toLocaleString("he-IL")}</small>
-                        </div>
-                    ))}
+                    {(request.replies || []).map((replyItem, index: number) => {
+                        const reply = replyItem as Record<string, unknown>;
+                        return (
+                            <div key={index} className={`reply-bubble ${String(reply.senderRole || "")}`}>
+                                <p><strong>{reply.senderRole === 'admin' ? 'אדמין' : 'אני'}:</strong> {String(reply.text || "")}</p>
+                                <small>{reply.createdAt ? new Date(reply.createdAt as string | number | Date).toLocaleString("he-IL") : ""}</small>
+                            </div>
+                        );
+                    })}
                 </div>
 
                 <div className="reply-section">
@@ -82,4 +90,5 @@ export default function RequestDetails() {
             </div>
         </div>
     );
+
 }
