@@ -9,11 +9,14 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const EMAIL_FROM = process.env.EMAIL_FROM || "SafeAI <noreply@safeai.com>";
 
 // Create transporter (configure based on your email provider)
-const createTransporter = () => {
-  // For development, use ethereal.email (fake SMTP)
-  // For production, configure with your actual SMTP settings
-  if (process.env.NODE_ENV === "production") {
-    return nodemailer.createTransport({
+const createTransporter = async () => {
+  const smtpConfigured =
+    !!process.env.SMTP_HOST &&
+    !!process.env.SMTP_USER &&
+    !!process.env.SMTP_PASS;
+
+  if (smtpConfigured) {
+    const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || "587"),
       secure: process.env.SMTP_SECURE === "true",
@@ -22,14 +25,28 @@ const createTransporter = () => {
         pass: process.env.SMTP_PASS,
       },
     });
-  } else {
-    // Development mode - log to console instead of sending
-    return nodemailer.createTransport({
-      streamTransport: true,
-      newline: "unix",
-      buffer: true,
-    });
+
+    await transporter.verify();
+    return transporter;
   }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SMTP configuration is required in production.");
+  }
+
+  const testAccount = await nodemailer.createTestAccount();
+  const transporter = nodemailer.createTransport({
+    host: testAccount.smtp.host,
+    port: testAccount.smtp.port,
+    secure: testAccount.smtp.secure,
+    auth: {
+      user: testAccount.user,
+      pass: testAccount.pass,
+    },
+  });
+
+  await transporter.verify();
+  return transporter;
 };
 
 /**
@@ -42,7 +59,7 @@ export async function sendVerificationEmail(
 ) {
   const verificationUrl = `${FRONTEND_URL}/verify-email/${token}`;
 
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
 
   const mailOptions = {
     from: EMAIL_FROM,
@@ -142,7 +159,7 @@ export async function sendPasswordResetEmail(
 ) {
   const resetUrl = `${FRONTEND_URL}/reset-password/${token}`;
 
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
 
   const mailOptions = {
     from: EMAIL_FROM,
@@ -239,7 +256,7 @@ export async function sendWelcomeEmail(
   name: string,
   proxyApiKey: string,
 ) {
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
 
   const mailOptions = {
     from: EMAIL_FROM,
@@ -303,7 +320,7 @@ export async function sendContactEmail(data: {
   description: string;
 }) {
   const supportEmail = "support@safeai613.com";
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
 
   const mailOptions = {
     from: EMAIL_FROM,

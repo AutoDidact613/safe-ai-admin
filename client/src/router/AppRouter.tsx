@@ -18,6 +18,8 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
+import AiNewsPage from "../pages/AiNewsPage";
+import AiNewsDetailsPage from "../pages/AiNewsDetailsPage";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -114,6 +116,23 @@ export default function AppRouter() {
             <ProtectedRoute>
               <SafeAIUIPage />
             </ProtectedRoute>
+          }
+        />
+
+         <Route
+          path="/ai-news"
+          element={
+           <ProtectedRoute>
+             <AiNewsPage />
+           </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ai-news/:id"
+          element={
+           <ProtectedRoute>
+             <AiNewsDetailsPage />
+           </ProtectedRoute>
           }
         />
 
