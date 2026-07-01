@@ -39,7 +39,7 @@ export const AllOrganizationsPage = () => {
 
   const filtered = useMemo(() => {
     return organizations.filter((org) => {
-      const matchesSearch = org.name.toLowerCase().includes(search.trim().toLowerCase());
+      const matchesSearch = (org.name ?? "").toLowerCase().includes(search.trim().toLowerCase());
       let matchesStatus = true;
       if (statusFilter === "active") matchesStatus = org.isActive === true;
       else if (statusFilter === "suspended") matchesStatus = org.isActive === false;
