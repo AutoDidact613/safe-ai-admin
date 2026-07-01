@@ -27,5 +27,8 @@
   "bugs": {
     "url": "https://github.com/SafeAI613/SafeAI-613/issues"
   },
-  "homepage": "https://github.com/SafeAI613/SafeAI-613#readme"
+  "homepage": "https://github.com/SafeAI613/SafeAI-613#readme",
+  "devDependencies": {
+    "@types/express": "^5.0.6"
+  }
 }

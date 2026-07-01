@@ -318,6 +318,7 @@ export async function sendContactEmail(data: {
   userName: string;
   title: string;
   description: string;
+  requestType: string;
 }) {
   const supportEmail = "support@safeai613.com";
   const transporter = await createTransporter();
@@ -364,6 +365,10 @@ export async function sendContactEmail(data: {
             <div class="info-box">
               <div class="label">תיאור:</div>
               <div class="value" style="white-space: pre-wrap;">${data.description}</div>
+            </div>
+            <div class="info-box">
+              <div class="label">סוג הבקשה:</div>
+              <div class="value">${data.requestType}</div>
             </div>
           </div>
           <div class="footer">

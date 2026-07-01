@@ -18,6 +18,8 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
+import RequestDetails from "../features/safeai-ui/RequestDetails";
+import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
 import AiNewsPage from "../pages/AiNewsPage";
 import AiNewsDetailsPage from "../pages/AiNewsDetailsPage";
 
@@ -119,6 +121,25 @@ export default function AppRouter() {
           }
         />
 
+        <Route
+          path="/request/:id"
+          element={
+            <ProtectedRoute>
+              <RequestDetails />
+            </ProtectedRoute>
+          }
+        />
+        
+                <Route
+          path="/admin/all-requests"
+          element={
+            <ProtectedRoute>
+              <AdminRequestsList />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Organization Routes */}
          <Route
           path="/ai-news"
           element={

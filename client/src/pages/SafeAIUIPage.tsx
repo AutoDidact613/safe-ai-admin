@@ -6,8 +6,20 @@ import UsersManagement from "../features/safeai-ui/UsersManagement";
 import UserDashboard from "../features/safeai-ui/UserDashboard";
 import Statistics from "../features/safeai-ui/Statistics";
 import UserApiKeysPage from "../features/safeai-ui/UserApiKeysPage";
+import MyRequestsList from "../features/safeai-ui/MyRequestsList";
+import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
+import { apiCall, API_ENDPOINTS } from "../config/api";
 import { OrganizationsManagement } from "../features/organizations/OrganizationsManagement";
 import OrganizationUsersPage from "../pages/OrganizationUsersPage";
+
+type Reply = {
+  senderRole: string;
+};
+
+type Request = {
+  status: string;
+  replies?: Reply[];
+};
 
 type Section =
   | "profiles"
@@ -16,14 +28,16 @@ type Section =
   | "statistics"
   | "apikeys"
   | "organizations"
+  | "requests"
+  | "adminRequests"
   | "org-statistics"
   | "org-users";
 
-interface UserData {
+type UserData = {
   email: string;
   name: string;
   _id?: string;
-}
+};
 
 export default function SafeAIUIPage() {
   const navigate = useNavigate();
@@ -60,6 +74,7 @@ export default function SafeAIUIPage() {
   const [currentUser] = useState<UserData | null>(
     initialState.user,
   );
+  const [newRequestCount, setNewRequestCount] = useState(0);
 
   // Redirect to landing page if not authenticated
   useEffect(() => {
@@ -67,6 +82,26 @@ export default function SafeAIUIPage() {
       navigate("/");
     }
   }, [userRole, navigate]);
+
+  useEffect(() => {
+    const fetchNewRequestCount = async () => {
+      if (userRole !== "admin") return;
+
+      try {
+        const requests = await apiCall<Request[]>(API_ENDPOINTS.allRequests, { method: "GET" });
+        const count = requests.filter((req) => {
+          const hasAdminReply = req.replies?.some((reply: Reply) => reply.senderRole === "admin");
+          return req.status === "open" && !hasAdminReply;
+        }).length;
+
+        setNewRequestCount(count);
+      } catch (err) {
+        console.error("שגיאה בטעינת מספר הפניות החדשות:", err);
+      }
+    };
+
+    fetchNewRequestCount();
+  }, [userRole]);
 
   const renderSection = () => {
     switch (activeSection) {
@@ -82,10 +117,14 @@ export default function SafeAIUIPage() {
         return <UserApiKeysPage />;
       case "organizations":
         return <OrganizationsManagement />;
+      case "requests":
+        return <MyRequestsList activeSection={activeSection} />;
+      case "adminRequests":
+        return <AdminRequestsList />;
       case "org-statistics":
         return <Statistics user={currentUser} />;
-        case "org-users":
-          return <OrganizationUsersPage />;
+      case "org-users":
+        return <OrganizationUsersPage />;
       default:
         return <UserDashboard user={currentUser} />;
     }
@@ -96,7 +135,7 @@ export default function SafeAIUIPage() {
       {userRole && (
         <nav className="dashboard-sub-nav">
           <div className="sub-nav-container">
-  
+
             {/* מנהל ראשי */}
             {userRole === "admin" && (
               <>
@@ -136,9 +175,31 @@ export default function SafeAIUIPage() {
                   </svg>
                   ניהול ארגונים
                 </button>
+                <button
+                  className={
+                    activeSection === "adminRequests"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
+                  onClick={() => setActiveSection("adminRequests")}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path
+                      d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h12v2H2v-2z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  כל הפניות
+                  {newRequestCount > 0 && (
+                    <span className="sub-nav-badge">({newRequestCount})</span>
+                  )}
+                </button>
               </>
             )}
-  
+
             {/* משתמש רגיל */}
             {userRole === "user" && (
               <>
@@ -155,17 +216,55 @@ export default function SafeAIUIPage() {
                   className={activeSection === "apikeys" ? "sub-nav-btn active" : "sub-nav-btn"}
                   onClick={() => setActiveSection("apikeys")}
                 >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <circle cx="4" cy="8" r="2" stroke="currentColor" strokeWidth="1.5"/>
-                    <path d="M6 8H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                    <path d="M10 8V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                    <path d="M12 8V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <circle
+                      cx="4"
+                      cy="8"
+                      r="2"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    />
+
+                    <path
+                      d="M6 8H13"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M10 8V10"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M12 8V10"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
                   </svg>
                   מפתחות API
                 </button>
+                <button
+                    className={activeSection === "requests" ? "sub-nav-btn active" : "sub-nav-btn"}
+                    onClick={() => setActiveSection("requests")}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M2 4h12v8H2zM2 4l6 4 6-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    הפניות שלי
+                </button>
               </>
             )}
-  
+
             {/* מנהל ארגון */}
             {userRole === "org_owner" && (
               <>
@@ -189,11 +288,11 @@ export default function SafeAIUIPage() {
                 </button>
               </>
             )}
-  
+
           </div>
         </nav>
       )}
-  
+
       <div className="safeai-content">{renderSection()}</div>
     </div>
   );

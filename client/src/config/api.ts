@@ -54,6 +54,9 @@ export const API_ENDPOINTS = {
   },
   // Contact form endpoint
   contact: `${API_BASE_URL}/contact`,
+  contactTypes: `${API_BASE_URL}/contact-types`,
+  myRequests: `${API_BASE_URL}/contact/my-requests`,
+  allRequests: `${API_BASE_URL}/contact/all`,
   // AI News endpoints
   news: `${API_BASE_URL}/api/news`,
 } as const;
@@ -66,8 +69,13 @@ export async function apiCall<T>(
   // Get access token from localStorage
   const accessToken = localStorage.getItem("accessToken");
 
+  // If a relative endpoint is provided (starts with '/'), prepend the API base URL
+  const resolveUrl = (ep: string) =>
+    ep.startsWith("http") ? ep : `${API_BASE_URL}${ep}`;
+
   const makeRequest = async (token: string | null) => {
-    return fetch(endpoint, {
+    const url = resolveUrl(endpoint);
+    return fetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",
@@ -148,3 +156,4 @@ export async function apiCall<T>(
 
   return response.json();
 }
+

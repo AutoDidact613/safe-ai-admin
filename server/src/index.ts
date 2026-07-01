@@ -14,6 +14,8 @@ import proxyKeyRouter from "./routes/proxyKeyRouter";
 import promptRouter from "./routes/promptRouter";
 import organizationRouter from "./routes/organizationRouter";
 import contactRouter from "./routes/contactRouter";
+import contactTypeRoutes from "./routes/contactTypeRoutes"; // הייבוא של הקובץ שיצרת
+
 import newsRouter from "./routes/newsRouter";
 
 
@@ -66,6 +68,7 @@ app.use("/admin/stats", adminStatsRouter); // Admin stats already has auth middl
 app.use("/prompts", authenticateToken, promptRouter); // Prompt management (admin routes protected in router)
 app.use("/organizations", organizationRouter); // Organization management (auth middleware in router)
 app.use("/contact", contactRouter); // Contact form (requires authentication)
+app.use("/contact-types", contactTypeRoutes); // Contact form types
 
 
 // ===== Public routes for filter evaluation =====
