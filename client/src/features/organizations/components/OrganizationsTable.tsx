@@ -14,7 +14,7 @@ function translateStatus(status: string): string {
     case "approved": return "מאושר";
     case "pending": return "ממתין";
     case "rejected": return "נדחה";
-    default: return status;
+    default: return status || "לא מוגדר";
   }
 }
 
