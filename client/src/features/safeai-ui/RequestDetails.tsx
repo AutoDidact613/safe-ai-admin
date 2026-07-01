@@ -14,12 +14,15 @@ export default function RequestDetails() {
     const [replyText, setReplyText] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    useEffect(() => {
-        // השתמשנו בנתיב המלא כפי שהגדרנו בשרת
+        useEffect(() => {
         apiCall(`/contact/my-requests/${id}`, { method: "GET" })
-            .then((data) => setRequest(data))
+            .then((data) => {
+                const fetchedData = data as unknown as RequestData;
+                setRequest(fetchedData);
+            })
             .catch((err) => console.error("שגיאה בטעינת הפנייה:", err));
     }, [id]);
+
 
     if (!request) return <div>טוען פרטי פנייה...</div>;
 
