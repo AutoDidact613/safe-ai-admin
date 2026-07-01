@@ -397,3 +397,131 @@ ${data.description}
     throw new Error("Failed to send contact email");
   }
 }
+
+/**
+ * Notify a system admin that a new organization is awaiting approval
+ */
+export async function sendOrgApprovalRequestEmail(
+  adminEmail: string,
+  orgName: string,
+  ownerEmail: string,
+) {
+  const dashboardUrl = `${FRONTEND_URL}/safeai-ui`;
+  const transporter = createTransporter();
+
+  const mailOptions = {
+    from: EMAIL_FROM,
+    to: adminEmail,
+    subject: `בקשת ארגון חדשה ממתינה לאישור - ${orgName}`,
+    html: `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head><meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .info-box { background: white; padding: 15px; border-radius: 5px; margin: 15px 0; border-right: 4px solid #667eea; }
+          .button { display: inline-block; padding: 15px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header"><h1>🏢 בקשת ארגון חדשה</h1></div>
+          <div class="content">
+            <p>שלום,</p>
+            <p>התקבלה בקשה חדשה לפתיחת ארגון הממתינה לאישורך:</p>
+            <div class="info-box"><strong>שם הארגון:</strong> ${orgName}</div>
+            <div class="info-box"><strong>יוצר הבקשה:</strong> ${ownerEmail}</div>
+            <p style="text-align: center;">
+              <a href="${dashboardUrl}" class="button">מעבר למסך האישורים</a>
+            </p>
+          </div>
+          <div class="footer"><p>© 2026 SafeAI. כל הזכויות שמורות.</p></div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `בקשת ארגון חדשה ממתינה לאישור.\nשם הארגון: ${orgName}\nיוצר הבקשה: ${ownerEmail}\nלאישור: ${dashboardUrl}\n\n© 2026 SafeAI`,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    if (process.env.NODE_ENV !== "production") {
+      logger.debug("📧 Org Approval Request Email (DEV MODE):");
+      logger.info("To:", adminEmail);
+      logger.info("Org:", orgName);
+    }
+    return info;
+  } catch (error) {
+    logger.error("Failed to send org approval request email:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // best-effort - לא זורקים כדי לא להפיל את יצירת הבקשה
+  }
+}
+
+/**
+ * Notify the org owner that their organization was approved and activated
+ */
+export async function sendOrgApprovedEmail(
+  ownerEmail: string,
+  orgName: string,
+  name?: string,
+) {
+  const dashboardUrl = `${FRONTEND_URL}/safeai-ui`;
+  const transporter = createTransporter();
+
+  const mailOptions = {
+    from: EMAIL_FROM,
+    to: ownerEmail,
+    subject: `הארגון "${orgName}" אושר! 🎉`,
+    html: `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head><meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #10a37f 0%, #0d8f6f 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .button { display: inline-block; padding: 15px 30px; background: #10a37f; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header"><h1>🎉 הארגון שלך אושר!</h1></div>
+          <div class="content">
+            <p>שלום ${name || "מנהל הארגון"},</p>
+            <p>הבקשה לפתיחת הארגון <strong>${orgName}</strong> אושרה, והארגון פעיל כעת.</p>
+            <p>מעכשיו יש לך גישה מלאה למסך ניהול הארגון.</p>
+            <p style="text-align: center;">
+              <a href="${dashboardUrl}" class="button">מעבר לניהול הארגון</a>
+            </p>
+          </div>
+          <div class="footer"><p>© 2026 SafeAI. כל הזכויות שמורות.</p></div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `שלום ${name || "מנהל הארגון"},\nהבקשה לפתיחת הארגון "${orgName}" אושרה והארגון פעיל כעת.\nלניהול הארגון: ${dashboardUrl}\n\n© 2026 SafeAI`,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    if (process.env.NODE_ENV !== "production") {
+      logger.debug("📧 Org Approved Email (DEV MODE):");
+      logger.info("To:", ownerEmail);
+      logger.info("Org:", orgName);
+    }
+    return info;
+  } catch (error) {
+    logger.error("Failed to send org approved email:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // best-effort
+  }
+}

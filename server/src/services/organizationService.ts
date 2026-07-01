@@ -1,6 +1,7 @@
 import * as repo from "../repositories/organizationRepository";
 import * as userRepo from "../repositories/userRepository";
 import { UsageLog } from "../models";
+import { sendOrgApprovalRequestEmail } from "../utils/email";
 import logger from "../logger";
 
 export async function createOrganization(data: any) {
@@ -174,6 +175,52 @@ export async function topUpOrganizationWallet(orgId: string, amount: number) {
 
 export async function getPendingOrganizationsForAdmin() {
   return repo.getPendingOrganizations();
+}
+
+export async function requestOrganization(
+  ownerId: string,
+  data: { name: string; description?: string }
+) {
+  const owner = await userRepo.getUserById(ownerId);
+  if (!owner) {
+    throw new Error("User not found");
+  }
+
+  // יצירת הארגון במצב ממתין ולא פעיל
+  const organization = await repo.createOrganization({
+    name: data.name,
+    description: data.description || "",
+    ownerId,
+    status: "pending",
+    isActive: false,
+  });
+
+  // סימון היוצר כבעל הארגון וקישורו (הגישה נשלטת לפי status)
+  await userRepo.updateUser(ownerId, {
+    role: owner.role === "admin" ? "admin" : "org_owner",
+    organizationId: organization._id,
+  });
+
+  logger.info("Organization request created", {
+    organizationId: organization._id,
+    ownerId,
+    status: "pending",
+  });
+
+  // התראה לכל האדמינים (best-effort)
+  try {
+    const users = await userRepo.getUsers();
+    const admins = users.filter((u: any) => u.role === "admin");
+    await Promise.all(
+      admins.map((admin: any) =>
+        sendOrgApprovalRequestEmail(admin.email, data.name, owner.email)
+      )
+    );
+  } catch (error) {
+    logger.error("Failed to notify admins about org request", { error });
+  }
+
+  return organization;
 }
 
 export async function listAllOrganizationsWithStats() {

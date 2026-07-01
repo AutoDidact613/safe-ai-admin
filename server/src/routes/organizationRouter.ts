@@ -15,6 +15,7 @@ import {
   suspendOrganizationHandler,
   activateOrganizationHandler,
   getOrganizationStatsHandler,
+  requestOrganizationHandler,
 } from "../controllers/organizationController";
 import { authenticateToken, requireAdmin } from "../middleware/auth";
 
@@ -27,6 +28,7 @@ router.use(authenticateToken);
 router.get("/pending", getPendingOrganizationsHandler); // System Admin only
 router.patch("/pending/:id", updateOrganizationHandler); // מעדכן את הסטטוס של הארגון הממתין מול ה-DB
 router.get("/admin/all", requireAdmin, getAllOrganizationsHandler); // System Admin only - full list with stats
+router.post("/request", requestOrganizationHandler); // Any authenticated user - request a new org
 
 // 2. GENERAL ORGANIZATION ROUTES
 router.post("/", createOrganizationHandler); // Admin only
