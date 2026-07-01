@@ -8,8 +8,21 @@ interface MyRequestsListProps {
   activeSection: string;
 }
 
+type Reply = {
+  senderRole: string;
+};
+
+type Request = {
+  _id: string;
+  title?: string;
+  requestType?: string;
+  status: string;
+  createdAt: string;
+  replies?: Reply[];
+};
+
 export default function MyRequestsList({ activeSection }: MyRequestsListProps) {
-  const [requests, setRequests] = useState<any[]>([]);
+  const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -18,7 +31,7 @@ export default function MyRequestsList({ activeSection }: MyRequestsListProps) {
     try {
       setLoading(true);
       setError(null);
-      const data = await apiCall<any[]>(API_ENDPOINTS.myRequests, { method: "GET" });
+      const data = await apiCall<Request[]>(API_ENDPOINTS.myRequests, { method: "GET" });
       setRequests(data || []);
     } catch (err) {
       console.error("Error fetching requests:", err);
@@ -28,7 +41,7 @@ export default function MyRequestsList({ activeSection }: MyRequestsListProps) {
     }
   };
 
-  const hasNewAdminReply = (req: any) => {
+  const hasNewAdminReply = (req: Request) => {
     const replies = req.replies || [];
     if (replies.length === 0) return false;
     return replies[replies.length - 1].senderRole === 'admin';
