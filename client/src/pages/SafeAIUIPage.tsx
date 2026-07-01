@@ -6,12 +6,20 @@ import UsersManagement from "../features/safeai-ui/UsersManagement";
 import UserDashboard from "../features/safeai-ui/UserDashboard";
 import Statistics from "../features/safeai-ui/Statistics";
 import UserApiKeysPage from "../features/safeai-ui/UserApiKeysPage";
-import AdminOrganizationsPage from "./AdminOrganizationsPage";
 import MyRequestsList from "../features/safeai-ui/MyRequestsList";
 import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
 import { apiCall, API_ENDPOINTS } from "../config/api";
 import { OrganizationsManagement } from "../features/organizations/OrganizationsManagement";
 import OrganizationUsersPage from "../pages/OrganizationUsersPage";
+
+type Reply = {
+  senderRole: string;
+};
+
+type Request = {
+  status: string;
+  replies?: Reply[];
+};
 
 type Section =
   | "profiles"
@@ -80,9 +88,9 @@ export default function SafeAIUIPage() {
       if (userRole !== "admin") return;
 
       try {
-        const requests = await apiCall<any[]>(API_ENDPOINTS.allRequests, { method: "GET" });
+        const requests = await apiCall<Request[]>(API_ENDPOINTS.allRequests, { method: "GET" });
         const count = requests.filter((req) => {
-          const hasAdminReply = req.replies?.some((reply: any) => reply.senderRole === "admin");
+          const hasAdminReply = req.replies?.some((reply: Reply) => reply.senderRole === "admin");
           return req.status === "open" && !hasAdminReply;
         }).length;
 
