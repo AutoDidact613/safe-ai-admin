@@ -98,6 +98,15 @@ export async function addUserToOrganization(orgId: string, userId: string, role:
       throw new Error("User not found");
     }
 
+    const alreadyInOrg = (user as any).organizationId?.toString() === orgId;
+    if (!alreadyInOrg) {
+      const maxUsers = (organization as any).settings?.maxUsers ?? 10;
+      const currentUserCount = await userRepo.countUsersByOrganization(orgId);
+      if (currentUserCount >= maxUsers) {
+        throw new Error(`הארגון הגיע למספר המשתמשים המרבי המותר (${maxUsers})`);
+      }
+    }
+
     // Update user's organization and role
     await userRepo.updateUser(userId, {
       organizationId: orgId,
