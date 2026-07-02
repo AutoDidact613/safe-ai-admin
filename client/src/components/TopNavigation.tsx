@@ -61,23 +61,6 @@ export default function TopNavigation() {
     navigate("/");
   };
 
-  // const scrollToSection = (sectionId: string) => {
-  //   if (location.pathname !== "/") {
-  //     navigate("/");
-  //     setTimeout(() => {
-  //       const element = document.getElementById(sectionId);
-  //       if (element) {
-  //         element.scrollIntoView({ behavior: "smooth" });
-  //       }
-  //     }, 100);
-  //   } else {
-  //     const element = document.getElementById(sectionId);
-  //     if (element) {
-  //       element.scrollIntoView({ behavior: "smooth" });
-  //     }
-  //   }
-  // };
-
   return (
     <nav className="top-navigation">
       <div className="top-nav-container">
@@ -194,17 +177,6 @@ export default function TopNavigation() {
                         />
                       </svg>
                       איזור אישי
-                    </Link>
-                    <Link
-                      to="/organization/create"
-                      className="user-menu-item"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M2 3h12v10H2zM2 6h12M6 9h4"
-                          stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      הארגון שלי
                     </Link>
                     <Link
                       to="/api-key-display"
