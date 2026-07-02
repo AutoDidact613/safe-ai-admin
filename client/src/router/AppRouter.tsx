@@ -18,7 +18,6 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
-import { OrganizationGate } from "../features/organizations/OrganizaionGate";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -119,15 +118,6 @@ export default function AppRouter() {
         />
 
         {/* Organization Routes */}
-        <Route
-          path="/organization/create"
-          element={
-            <ProtectedRoute>
-              <OrganizationGate />
-            </ProtectedRoute>
-          }
-        />
-
         <Route
           path="/organization/users"
           element={
