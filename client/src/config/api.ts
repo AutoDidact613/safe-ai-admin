@@ -102,6 +102,8 @@ export async function apiCall<T>(
     });
   };
 
+  const hadToken = !!accessToken;
+
   let response = await makeRequest(accessToken);
 
   // If we get a 401 and have a refresh token, try to refresh
@@ -147,15 +149,17 @@ export async function apiCall<T>(
       .json()
       .catch(() => ({ message: "Unknown error" }));
 
-    if (response.status === 401) {
-      // Token refresh failed or no refresh token - clear everything
+    if (response.status === 401 && hadToken) {
+      // We had a session that the server no longer accepts (expired/invalid token) -
+      // clear it and send the user to log in again. A 401 from an unauthenticated
+      // call (e.g. wrong email/password on /auth/login) must NOT trigger this: there
+      // was no session to expire, and redirecting would just interrupt the login form.
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
       localStorage.removeItem("userRole");
 
-      // Redirect to home page
-      window.location.href = '/';
+      window.location.href = '/login';
     }
 
     const error = new Error(
