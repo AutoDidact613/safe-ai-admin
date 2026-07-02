@@ -14,7 +14,7 @@ import proxyKeyRouter from "./routes/proxyKeyRouter";
 import promptRouter from "./routes/promptRouter";
 import organizationRouter from "./routes/organizationRouter";
 import contactRouter from "./routes/contactRouter";
-import tenderBoardRouter from "./routes/tenderBoardRouter";
+import agentRouter from "./routes/agentRouter";
 
 import { requestLogger } from "./middleware/requestLogger";
 import { errorHandler } from "./middleware/errorHandler";
@@ -66,10 +66,12 @@ app.use("/prompts", authenticateToken, promptRouter); // Prompt management (admi
 app.use("/organizations", organizationRouter); // Organization management (auth middleware in router)
 app.use("/contact", contactRouter); // Contact form (requires authentication)
 
+// ===== Agents Marketplace (Public) =====
+app.use("/agents", agentRouter);
+
 
 // ===== Public routes for filter evaluation =====
 app.use("/filter", filterRouter);
-app.use("/tender-board", tenderBoardRouter);
 
 
 // ===== Proxy API Key Protected Routes (LiteLLM Proxy) =====

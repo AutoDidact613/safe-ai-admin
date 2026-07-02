@@ -1,6 +1,6 @@
 // API Configuration
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3001";
+  import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -22,6 +22,9 @@ export const API_ENDPOINTS = {
   filter: `${API_BASE_URL}/filter`,
   providerKeys: `${API_BASE_URL}/provider-keys`,
   organizations: `${API_BASE_URL}/organizations`,
+  adminOrganizations: {
+    pending: `${API_BASE_URL}/organizations/pending`, 
+  },
   // Proxy key endpoints (user's own proxy key)
   proxyKey: {
     info: `${API_BASE_URL}/proxy-key`,
@@ -45,14 +48,17 @@ export const API_ENDPOINTS = {
   },
   // Contact form endpoint
   contact: `${API_BASE_URL}/contact`,
-  // Tender board endpoints
-  tenders: {
-    list: `${API_BASE_URL}/tender-board`,
-    create: `${API_BASE_URL}/tender-board`,
-    getFields: `${API_BASE_URL}/tender-board/fields`, 
-    update: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
-    delete: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
-    apply: (id: string) => `${API_BASE_URL}/tender-board/${id}/apply`,
+
+  // Agents Marketplace endpoints
+  agents: {
+    list:                `${API_BASE_URL}/agents`,
+    byId:                (id: string) => `${API_BASE_URL}/agents/${id}`,
+    create:              `${API_BASE_URL}/agents`,
+    fetchManifest:       `${API_BASE_URL}/agents/fetch-manifest`,
+    validateDownloadUrl: `${API_BASE_URL}/agents/validate-download-url`,
+    generateIcon:        `${API_BASE_URL}/agents/generate-icon`,
+    recordDownload:      (id: string) => `${API_BASE_URL}/agents/${id}/download`,
+    stats:               `${API_BASE_URL}/agents/stats`,
   },
 } as const;
 

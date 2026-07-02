@@ -3,7 +3,6 @@ import LandingPage from "../pages/LandingPage";
 import SafeAIUIPage from "../pages/SafeAIUIPage";
 import NotFound from "../pages/NotFound";
 import OrganizationUsersPage from "../pages/OrganizationUsersPage";
-import AdminOrganizationsPage from "../pages/AdminOrganizationsPage";
 import ContactPage from "../pages/ContactPage";
 import DocsPage from "../pages/DocsPage";
 import RecommendedGuidesPage from "../pages/RecommendedGuidesPage";
@@ -11,7 +10,6 @@ import CoursesPage from "../pages/CoursesPage";
 import ActivityLogPage from "../pages/ActivityLogPage";
 import AboutPage from "../pages/AboutPage";
 import TenderBoardPage from "../pages/TenderBoardPage";
-import DownloadAgentsPage from "../pages/AgentDownloadsPage";
 import LoginForm from "../features/auth/LoginForm";
 import RegisterForm from "../features/auth/RegisterForm";
 import ApiKeyDisplay from "../features/auth/ApiKeyDisplay";
@@ -21,6 +19,16 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
+// import { PublicOrgOwnerSignup } from "../features/organizations/PublicOrgOwnerSignup";
+// import RequestDetails from "../features/safeai-ui/RequestDetails";
+// import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
+// import AiNewsPage from "../pages/AiNewsPage";
+// import AiNewsDetailsPage from "../pages/AiNewsDetailsPage";
+import AgentsIndexPage from "../features/agents/AgentsIndexPage";
+import AgentsMarketplace from "../features/agents/AgentsMarketplace";
+import AgentDetailPage from "../features/agents/AgentDetailPage";
+import AgentSubmitPage from "../features/agents/AgentSubmitPage";
+import AgentStatsPage from "../features/agents/AgentStatsPage";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -40,8 +48,6 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   const refreshToken = localStorage.getItem("refreshToken");
   const user = localStorage.getItem("user");
 
-  // Only redirect if user has valid tokens AND user data
-  // This prevents redirect during registration when tokens don't exist yet
   if (accessToken && refreshToken && user) {
     return <Navigate to="/safeai-ui" replace />;
   }
@@ -54,14 +60,15 @@ export default function AppRouter() {
     <BrowserRouter>
       {/* Global Top Navigation */}
       <TopNavigation />
-      
+
       {/* Beta Banner */}
       <BetaBanner />
-      
+
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
-        
+        {/* <Route path="/become-org-owner" element={<PublicOrgOwnerSignup />} /> */}
+
         <Route
           path="/login"
           element={
@@ -70,7 +77,7 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
-        
+
         <Route
           path="/register"
           element={
@@ -87,9 +94,9 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
-        
+
         <Route path="/verify-email/:token" element={<EmailVerification />} />
-        
+
         <Route
           path="/forgot-password"
           element={
@@ -98,9 +105,9 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
-        
+
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-        
+
         {/* Protected Routes */}
         <Route
           path="/api-key-display"
@@ -110,7 +117,7 @@ export default function AppRouter() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/safeai-ui"
           element={
@@ -119,6 +126,42 @@ export default function AppRouter() {
             </ProtectedRoute>
           }
         />
+
+        {/* <Route
+          path="/request/:id"
+          element={
+            <ProtectedRoute>
+              <RequestDetails />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/all-requests"
+          element={
+            <ProtectedRoute>
+              <AdminRequestsList />
+            </ProtectedRoute>
+          } 
+        />*/}
+
+        {/* AI News Routes
+        <Route
+          path="/ai-news"
+          element={
+            <ProtectedRoute>
+              <AiNewsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ai-news/:id"
+          element={
+            <ProtectedRoute>
+              <AiNewsDetailsPage />
+            </ProtectedRoute>
+          } 
+        />*/}
 
         {/* Organization Routes */}
         <Route
@@ -130,14 +173,7 @@ export default function AppRouter() {
           }
         />
 
-        <Route
-          path="/admin/organizations"
-          element={
-            <ProtectedRoute>
-              <AdminOrganizationsPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/admin/organizations" element={<Navigate to="/safeai-ui" replace />} />
 
         {/* New Pages Routes */}
         <Route path="/about" element={<AboutPage />} />
@@ -147,7 +183,14 @@ export default function AppRouter() {
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/activity-log" element={<ActivityLogPage />} />
         <Route path="/tender-board" element={<TenderBoardPage />} />
-        <Route path="/download-agents" element={<DownloadAgentsPage />} />
+
+        {/* Agents Marketplace */}
+        <Route path="/download-agents" element={<AgentsIndexPage />}>
+          <Route index element={<AgentsMarketplace />} />
+          <Route path="submit" element={<AgentSubmitPage />} />
+          <Route path="stats" element={<AgentStatsPage />} />
+          <Route path=":id" element={<AgentDetailPage />} />
+        </Route>
 
         {/* Catch all - 404 */}
         <Route path="*" element={<NotFound />} />
