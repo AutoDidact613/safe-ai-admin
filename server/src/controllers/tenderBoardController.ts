@@ -186,7 +186,6 @@ export async function closeTenderHandler(req: Request<{ id: string }>, res: Resp
  */
 export async function createSmartTenderHandler(req: Request, res: Response) {
   try {
-    debugger
     const { text } = req.body;
 
     if (!text || !text.trim()) {
@@ -197,7 +196,7 @@ export async function createSmartTenderHandler(req: Request, res: Response) {
     const parsedAiData = await AIService.generateTenderData(text);
     
     // החזרת האובייקט המפורסר מה-AI ללא יצירת המכרז בבסיס הנתונים
-    res.status(200).json({ success: true, product: parsedAiData });
+    res.status(201).json({ success: true, tender: parsedAiData });
   } catch (error: any) {
     logger.error("Smart create tender failed", { error: error.message });
     res.status(500).json({ error: error.message || "Failed to generate tender using AI" });
