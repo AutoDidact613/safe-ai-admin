@@ -1,6 +1,6 @@
 // API Configuration
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3000";
+  import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -58,6 +58,24 @@ export const API_ENDPOINTS = {
   },
   // Contact form endpoint
   contact: `${API_BASE_URL}/contact`,
+  contactTypes: `${API_BASE_URL}/contact-types`,
+  myRequests: `${API_BASE_URL}/contact/my-requests`,
+  allRequests: `${API_BASE_URL}/contact/all`,
+  // AI News endpoints
+  news: `${API_BASE_URL}/api/news`,
+  // Tender board endpoints
+  tenders: {
+    list: `${API_BASE_URL}/tender-board`,
+    create: `${API_BASE_URL}/tender-board`,
+    smartCreate: `${API_BASE_URL}/tender-board/smart-create`, 
+    smartSearch: `${API_BASE_URL}/tender-board/smart-search`,
+    getAIApplicationTypes: `${API_BASE_URL}/tender-board/ai-application-types`,
+    getProductTypes: `${API_BASE_URL}/tender-board/product-types`,
+    update: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
+    close:  (id: string) => `${API_BASE_URL}/tender-board/${id}/close`,
+    delete: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
+    apply: (id: string) => `${API_BASE_URL}/tender-board/${id}/apply`,
+  },
 } as const;
 
 // Helper function for API calls
@@ -68,8 +86,13 @@ export async function apiCall<T>(
   // Get access token from localStorage
   const accessToken = localStorage.getItem("accessToken");
 
+  // If a relative endpoint is provided (starts with '/'), prepend the API base URL
+  const resolveUrl = (ep: string) =>
+    ep.startsWith("http") ? ep : `${API_BASE_URL}${ep}`;
+
   const makeRequest = async (token: string | null) => {
-    return fetch(endpoint, {
+    const url = resolveUrl(endpoint);
+    return fetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",
@@ -149,4 +172,4 @@ export async function apiCall<T>(
   }
 
   return response.json();
-}
+    

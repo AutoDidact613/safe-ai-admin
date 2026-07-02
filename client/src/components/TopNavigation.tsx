@@ -93,7 +93,6 @@ export default function TopNavigation() {
                 צור קשר
               </Link>
 
-
               {/* Auth Buttons */}
               <Link to="/login" className="top-nav-btn top-nav-btn-secondary">
                 התחברות
@@ -111,6 +110,12 @@ export default function TopNavigation() {
               >
                 איזור אישי
               </Link>
+              <Link
+                to="/ai-news"
+                className={`top-nav-link ${location.pathname === "/ai-news" ? "active" : ""}`}
+              >
+                חדשות
+              </Link>
               <Link to="/courses" className="top-nav-link">
                 קורסים
               </Link>
@@ -122,6 +127,12 @@ export default function TopNavigation() {
               </Link>
               <Link to="/contact" className="top-nav-link">
                 צור קשר
+              </Link>
+              <Link to="/tender-board" className="top-nav-link">
+                לוח פרוייקטים
+              </Link>
+              <Link to="/download-agents" className="top-nav-link">
+                הורדת אג'נטים כDesktop
               </Link>
 
               {/* User Menu */}
