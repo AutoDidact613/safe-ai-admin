@@ -5,6 +5,7 @@ import {
   getTenderById,
   updateTender,
   deleteTender,
+  closeTender,
   applyToTender,
   getProductTypeList,
   getAIApplicationTypeList,
@@ -154,6 +155,25 @@ export async function applyToTenderHandler(req: Request, res: Response) {
 }
 
 /**
+ * CLOSE Tender
+ * PATCH /tender-board/:id/close
+ */
+export async function closeTenderHandler(req: Request<{ id: string }>, res: Response) {
+  try {
+    const tender = await closeTender(req.params.id);
+
+    if (!tender) {
+      return res.status(404).json({ error: "Tender not found" });
+    }
+
+    res.json({ success: true, tender });
+  } catch (error) {
+    logger.error("Close tender failed", { error });
+    res.status(500).json({ error: "Failed to close tender" });
+  }
+}
+
+/**
  * ========================================================
  * נקודות קצה חדשות - התממשקות ל-AI
  * ========================================================
@@ -176,10 +196,8 @@ export async function createSmartTenderHandler(req: Request, res: Response) {
     // קריאה ישירה לפונקציה הסטטית המאובטחת שתיקנו ב-AIService
     const parsedAiData = await AIService.generateTenderData(text);
     
-    // יצירת המכרז בבסיס הנתונים באמצעות הפונקציה הקיימת שלך עם האובייקט המפורסר מה-AI
-    const tender = await createTender(parsedAiData);
-    
-    res.status(201).json({ success: true, tender });
+    // החזרת האובייקט המפורסר מה-AI ללא יצירת המכרז בבסיס הנתונים
+    res.status(200).json({ success: true, product: parsedAiData });
   } catch (error: any) {
     logger.error("Smart create tender failed", { error: error.message });
     res.status(500).json({ error: error.message || "Failed to generate tender using AI" });
@@ -192,8 +210,6 @@ export async function createSmartTenderHandler(req: Request, res: Response) {
  */
 export async function smartSearchTendersHandler(req: Request, res: Response) {
   try {
-    debugger
-    console.log(req.query.q as string)
     const searchText = req.query.q as string;
 
     if (!searchText || !searchText.trim()) {
@@ -202,10 +218,13 @@ export async function smartSearchTendersHandler(req: Request, res: Response) {
 
     // קריאה לפונקציית השירות שתמיר את הטקסט לשאילתת מונגו ותשלוף מה-DB
     const tenders = await smartSearchTenders(searchText);
-    
+
     res.json(tenders);
   } catch (error: any) {
     logger.error("Smart search tenders failed", { error: error.message });
-    res.status(500).json({ error: "Failed to perform smart search" });
+
+    // שימוש ב-statusCode שהוצמד לשגיאה ב-Service (למשל 429), אחרת 500
+    const statusCode = error?.statusCode ?? 500;
+    res.status(statusCode).json({ error: error.message || "Failed to perform smart search" });
   }
 }

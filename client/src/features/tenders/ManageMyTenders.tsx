@@ -66,7 +66,8 @@ export default function ManageMyTenders({ currentUserCode, tenders, onUpdateTend
           <h1>המכרזים שלי</h1>
         </div>
         <div className="manage-summary">
-          <strong>סה"כ מכרזים פעילים:</strong> {publishedTenders.length}
+          {publishedTenders.length}
+          <strong>סה"כ מכרזים פעילים:</strong> 
         </div>
       </div>
 

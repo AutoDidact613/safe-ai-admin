@@ -34,7 +34,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
 
   const [formMessage, setFormMessage] = useState<string>('')
   const [errorMessage, setErrorMessage] = useState<string>('')
-  
+
   const [productTypeOptions, setProductTypeOptions] = useState<string[]>([])
   const [aiApplicationOptions, setAiApplicationOptions] = useState<string[]>([])
 
@@ -139,16 +139,18 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
       })
 
       if (response) {
+        console.log('Smart tender data received:', response)
         setFormData((current) => ({
           ...current,
-          tenderName: response.tenderName || current.tenderName,
-          explanation: response.explanation || current.explanation,
-          productType: response.productType || current.productType,
-          aiApplicationType: response.aiApplicationType || current.aiApplicationType,
-          budget: response.budget || current.budget,
-          duration: response.duration || current.duration,
-          additionalDetails: response.additionalDetails || current.additionalDetails,
-          agents: response.agents || current.agents,
+          tenderName: response.product?.title || current.tenderName,
+          explanation: response.product?.shortDescription || current.explanation,
+          productType: response.product?.productType || current.productType,
+          // השדה הזה לא מופיע בתמונה, נשאר כפי שהיה או שניתן להורידו במידת הצורך
+          aiApplicationType: response.product?.aiApplicationType || current.aiApplicationType,
+          budget: response.product?.budget || current.budget,
+          duration: response.product?.timeRequired || current.duration,
+          additionalDetails: response.product?.additionalDetails || current.additionalDetails,
+          agents: response.product?.agentsRequired || current.agents,
         }))
         setFormMessage('הנתונים הופקו בהצלחה מהטקסט!')
         setIsSmartOpen(false)
@@ -179,7 +181,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
       isActive: formData.isActive,
       timeRequired: formData.duration,
       budget: formData.budget,
-      agentsRequired: 
+      agentsRequired:
         (formData.aiApplicationType === 'אייגנט' || formData.aiApplicationType === 'מולטי אייגנט')
           ? formData.agents.map((agent) => agent.trim()).filter((agent) => agent.length > 0)
           : [],
@@ -206,7 +208,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
         additionalDetails: '',
         wantsEmails: false,
       })
-      
+
       setTimeout(() => {
         onSuccess()
       }, 3000)
@@ -224,7 +226,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
         <header className="form-header">
           <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '16px' }}>
             <h1>פתיחת מכרז</h1>
-            
+
             {/* כפתור יצירת מכרז חכמה */}
             <button
               type="button"
@@ -273,6 +275,9 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
             </div>
           )}
 
+          {formMessage && <div className="success-message">{formMessage}</div>}
+          {errorMessage && <div className="error-message">{errorMessage}</div>}
+
           <div className="form-group" style={{ marginTop: '16px' }}>
             <label htmlFor="tenderName">שם המכרז</label>
             <input
@@ -290,7 +295,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
 
         {/* זרימה לינארית נקייה ללא שימוש ב-form-grid הצידי הישן */}
         <div className="form-linear-flow" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
+
           {/* 1. הסבר / תיאור בראש הדף */}
           <div className="form-group">
             <label htmlFor="explanation">הסבר / תאור</label>
@@ -394,7 +399,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
         <div className="bottom-row" style={{ marginTop: '24px' }}>
           <div className="bottom-field">
             <label htmlFor="duration">כמה זמן ניתן לביצוע המשימה</label>
-            <input 
+            <input
               id="duration"
               name="duration"
               value={formData.duration}
@@ -454,8 +459,6 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
           <button type="submit" className="button-green submit-button">
             שמור ושולח
           </button>
-          {formMessage && <div className="success-message">{formMessage}</div>}
-          {errorMessage && <div className="error-message">{errorMessage}</div>}
         </div>
       </form>
     </div>

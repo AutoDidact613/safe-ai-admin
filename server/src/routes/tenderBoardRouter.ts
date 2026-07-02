@@ -10,6 +10,7 @@ import {
   listProductTypes,
   createSmartTenderHandler,
   smartSearchTendersHandler,
+  closeTenderHandler,
 } from "../controllers/tenderBoardController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -31,7 +32,7 @@ router.post("/", createTenderHandler);
 router.get("/", listTendersHandler);
 router.get("/:id", getTenderHandler);
 router.put("/:id", updateTenderHandler);
-router.patch("/:id", updateTenderHandler);
+router.patch("/:id/close", closeTenderHandler);
 router.delete("/:id", deleteTenderHandler);
 router.post("/:id/apply", applyToTenderHandler);
 

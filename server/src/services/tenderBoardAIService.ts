@@ -1,149 +1,213 @@
-import { OpenAI } from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
-
-// אתחול ה-Client עם הגדרות התאימות עבור Google Gemini
-const openai = new OpenAI({
-  apiKey: process.env.GEMINI_API_KEY, 
-  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/" 
-});
-
-const GEMINI_MODEL = "gemini-1.5-flash"; 
+import mongoose from "mongoose";
+import logger from "../logger";
+import getTenders from "../repositories/tenderBoardRepository";
+import { TenderLog } from "../models/tendersBoardLog";
+import { callAI } from "./aiService"; // ← הפונקציה הגנרית
 
 // ==========================================
-// 1. הגדרת הסכמה עבור יצירת מכרז (Zod Schema)
+// סכמות Zod
 // ==========================================
 const TenderZodSchema = z.object({
-  title: z.string()
-    .describe("כותרת קצרה וקולעת למכרז"),
-    
-  shortDescription: z.string()
-    .describe("תיאור תמציתי של מהות המכרז"),
-    
-  timeRequired: z.string()
-    .describe("לוח הזמנים הנדרש או דדליין, למשל: '3 חודשים' או תאריך מוגדר"),
-    
-  budget: z.string()
-    .describe("התקציב המוערך למכרז במידה וצוין, למשל: '50,000 שח'"),
-    
+  title: z.string().describe("כותרת קצרה וקולעת למכרז"),
+  shortDescription: z.string().describe("תיאור תמציתי של מהות המכרז"),
+  timeRequired: z.string().describe("לוח הזמנים הנדרש או דדליין"),
+  budget: z.string().describe("התקציב המוערך למכרז"),
   productType: z.enum([
-    "אפליקציה", 
-    "אתר", 
-    "תוכנת desktop", 
-    "הטמעה של פיצר במערכת קיימת", 
-    "ייעוץ", 
-    "הקמת תשתית לאייגנט", 
-    "אחר"
-  ]).describe("סוג המוצר או השירות המבוקש מתוך רשימת הenum המוגדרת מראש. אם לא ברור, ניתן לבחור 'אחר' ולהסביר בפרטים נוספים."),
-  
+    "אפליקציה", "אתר", "תוכנת desktop",
+    "הטמעה של פיצר במערכת קיימת", "ייעוץ",
+    "הקמת תשתית לאייגנט", "אחר"
+  ]),
   aiApplicationType: z.enum([
-    "התממשקות פשוטה",
-    "צאטבוט",
-    "אייגנט",
-    "מולטי אייגנט"
-  ]).describe("סוג יישום ה-AI הנדרש במכרז, במידה ורלוונטי מתוך הenum המוגדר מראש"),
-  
-  agentsRequired: z.array(z.string())
-    .describe("רשימת האייגנטים הנדרשים ללקוח - אך ורק אם ב aiApplicationType יש מולטי אייגנט , אם יש אגנט - אז תמלא רק איבר אחד. אם לא רלוונטי, השאר את המערך ריק."),
-    
-  wantsEmails: z.boolean()
-    .describe("האם המשתמש מעוניין לקבל עדכונים במייל (ברירת מחדל true אלא אם נאמר אחרת)"),
-    
-  additionalDetails: z.string()
-    .describe("פרטים נוספים, דגשים מיוחדים או תנאי סף שנכתבו בטקסט")
+    "התממשקות פשוטה", "צאטבוט", "אייגנט", "מולטי אייגנט"
+  ]).describe("ענה בעברית בלבד, בדיוק לפי הenum"),
+  agentsRequired: z.array(z.string()),
+  wantsEmails: z.boolean(),
+  additionalDetails: z.string(),
 });
 
-// ==========================================
-// 2. הגדרת הסכמה עבור שאילתת החיפוש (Zod Schema)
-// ==========================================
+// ✅ הסכמה מצפה ל-{ query: {...} }
 const SearchQueryZodSchema = z.object({
   query: z.record(z.string(), z.any())
-    .describe("אובייקט שאילתת MongoDB (filter) תקני ונקי לחלוטין ללא הסברים")
+    .describe("אובייקט שאילתת MongoDB תקני"),
 });
 
+// ==========================================
+// System Prompts
+// ==========================================
+const TENDER_SYSTEM_PROMPT = `אתה עוזר מקצועי לניהול מכרזים. נתח את הטקסט וחלץ את המידע לשדות ה-JSON.
+החזר JSON בלבד במבנה הבא בדיוק — עברית בלבד בערכי ה-enum:
+{"title":"...","shortDescription":"...","timeRequired":"...","budget":"...","productType":"אפליקציה","aiApplicationType":"צאטבוט","agentsRequired":[],"wantsEmails":true,"additionalDetails":"..."}
+ערכי productType המותרים: "אפליקציה","אתר","תוכנת desktop","הטמעה של פיצר במערכת קיימת","ייעוץ","הקמת תשתית לאייגנט","אחר"
+ערכי aiApplicationType המותרים: "התממשקות פשוטה","צאטבוט","אייגנט","מולטי אייגנט"`;
+
+// ✅ תיקון 1: prompt מפורש עם דוגמאות כדי ש-Gemini יעטוף ב-query
+// ✅ תיקון 3: ערכי enum בעברית מפורשים כדי ש-Gemini לא יחזיר אנגלית
+const SEARCH_SYSTEM_PROMPT = `אתה מומחה MongoDB. תרגם את בקשת החיפוש לשאילתת filter עבור Mongoose.
+
+השדות הזמינים: title, shortDescription, productType, budget, timeRequired, aiApplicationType, additionalDetails.
+
+חוקים:
+1. השתמש ב-$regex עם 'i' לחיפוש טקסט חופשי.
+2. השתמש ב-$or לחיפוש במספר שדות במקביל.
+3. להתאמה ל-enum — השתמש בערך העברי המדויק:
+   ערכי aiApplicationType: "התממשקות פשוטה", "צאטבוט", "אייגנט", "מולטי אייגנט"
+   ערכי productType: "אפליקציה","אתר","תוכנת desktop","הטמעה של פיצר במערכת קיימת","ייעוץ","הקמת תשתית לאייגנט","אחר"
+
+חובה: החזר תמיד JSON במבנה הבא בלבד — עטוף את השאילתה תחת המפתח "query":
+{"query": { ...שאילתת MongoDB... }}
+
+דוגמה לחיפוש "צאטבוטים":
+{"query": {"aiApplicationType": "צאטבוט"}}
+
+דוגמה לחיפוש טקסט חופשי:
+{"query": {"$or": [{"title": {"$regex": "foo", "$options": "i"}}, {"shortDescription": {"$regex": "foo", "$options": "i"}}]}}`;
 
 // ==========================================
-// מחלקת השירות הראשי של ה-AI
+// פונקציית עזר — שמירת לוג
+// ==========================================
+async function saveTenderLog(params: {
+  action: "CREATE" | "UPDATE" | "DELETE" | "APPLY" | "SMART_CREATE" | "SMART_SEARCH";
+  status: "SUCCESS" | "FAILED";
+  tenderId?: string | mongoose.Types.ObjectId;
+  metaData?: any;
+  errorMessage?: string;
+}) {
+  try {
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 60);
+    const validTenderId = params.tenderId && mongoose.Types.ObjectId.isValid(params.tenderId)
+      ? new mongoose.Types.ObjectId(params.tenderId.toString())
+      : undefined;
+    await TenderLog.create({
+      action: params.action,
+      status: params.status,
+      tenderId: validTenderId,
+      metaData: params.metaData,
+      errorMessage: params.errorMessage,
+      timestamp: new Date(),
+      expiresAt,
+    } as any);
+  } catch (logError) {
+    logger.error("Failed to write Tender DB Log", { logError });
+  }
+}
+
+// ==========================================
+// מחלקת השירות — משתמשת ב-callAI
 // ==========================================
 export class AIService {
 
-  /**
-   * נקודת קצה 1: יצירת מכרז חכם מטקסט חופשי (Text to JSON)
-   * שונה ל-static כדי למנוע בעיות של הקשר (Context/this) מה-Controller
-   */
   static async generateTenderData(userDescription: string) {
+    const startTime = Date.now();
     try {
-      // שימוש ישיר ב-openai המאותחל למעלה במקום ב-this
-      const response = await (openai.beta as any).chat.completions.parse({
-        model: GEMINI_MODEL,
-        temperature: 0.2, 
-        messages: [
-          {
-            role: "system",
-            content: "אתה עוזר מקצועי לניהול מכרזים. תפקידך לנתח את הטקסט החופשי שהמשתמש מספק, לחלץ ממנו את המידע הרלוונטי ולמפות אותו בדיוק רב לשדות ה-JSON הנדרשים על פי התיאורים והחוקים המוגדרים בסכמה."
-          },
-          {
-            role: "user",
-            content: userDescription
-          }
-        ],
-        response_format: zodResponseFormat(TenderZodSchema, "tender_generation"),
+      logger.info("Starting AI tender data generation", {
+        descriptionLength: userDescription?.length,
       });
 
-      const parsedData = response.choices[0].message.parsed;
-      
-      if (!parsedData) {
-        throw new Error("ה-AI החזיר תשובה ריקה או לא הצליח לפרסר לפי הסכמה.");
-      }
+      // ← קריאה ל-callAI הגנרי
+      const parsedData = await callAI({
+        userPrompt: userDescription,
+        systemPrompt: TENDER_SYSTEM_PROMPT,
+        schema: TenderZodSchema,
+        temperature: 0.2,
+      });
+
+      logger.info("AI tender data generation completed", {
+        title: parsedData.title,
+        productType: parsedData.productType,
+      });
+
+      await saveTenderLog({
+        action: "SMART_CREATE",
+        status: "SUCCESS",
+        metaData: {
+          textLength: userDescription?.length,
+          responseTime: Date.now() - startTime,
+        },
+      });
 
       return parsedData;
-    } catch (error) {
-      console.error("Error in AIService.generateTenderData:", error);
+
+    } catch (error: any) {
+      logger.error("Error in AIService.generateTenderData", {
+        err: error,
+        descriptionLength: userDescription?.length,
+      });
+      await saveTenderLog({
+        action: "SMART_CREATE",
+        status: "FAILED",
+        errorMessage: error?.message || String(error),
+        metaData: {
+          textLength: userDescription?.length,
+          responseTime: Date.now() - startTime,
+        },
+      });
       throw new Error("נכשלה יצירת המכרז החכמה באמצעות ה-AI");
     }
   }
 
-  /**
-   * נקודת קצה 2: חיפוש חכם (תרגום לשאילתת מונגו)
-   * שונה ל-static כדי להבטיח אחידות ועבודה תקינה בכל ה-Controller
-   */
-  static async generateSearchQuery(userSearchText: string): Promise<object> {
+  static async generateSearchQuery(userSearchText: string): Promise<any> {
+    const startTime = Date.now();
     try {
-      const response = await (openai.beta as any).chat.completions.parse({
-        model: GEMINI_MODEL,
-        temperature: 0.1, 
-        messages: [
-          {
-            role: "system",
-            content: `אתה מומחה לבסיסי נתונים של MongoDB. המטרה שלך היא לתרגם את בקשת החיפוש החופשית של המשתמש לשאילתת סינון (Query/Filter) חוקית עבור MongoDB / Mongoose.
-            
-              השדות הזמינים ב-Collection של המכרזים הם: 
-              title, shortDescription, productType, budget, timeRequired, aiApplicationType, additionalDetails.
+      logger.info("Starting AI search query generation", { searchText: userSearchText });
 
-              חוקים קשיחים לבניית השאילתה:
-              1. השתמש ב-$regex עם האופציה 'i' (case-insensitive) עבור חיפוש טקסט חופשי בשדות כגון title, shortDescription או additionalDetails כדי למצוא התאמות חלקיות.
-              2. אם המשתמש מחפש מונח שיכול להתאים למספר שדות במקביל, השתמש באופרטור $or כדי לחפש בכולם.
-              3. אם המשתמש מציין ערך שמתאים באופן מובהק לאחד מערכי ה-enum של productType או aiApplicationType, בצע התאמה ישירה לשדה זה.`
-          },
-          {
-            role: "user",
-            content: `בקשת החיפוש של המשתמש: "${userSearchText}"`
-          }
-        ],
-        response_format: zodResponseFormat(SearchQueryZodSchema, "search_query_generation"),
+      // ← קריאה ל-callAI הגנרי
+      const raw = await callAI({
+        userPrompt: `בקשת החיפוש: "${userSearchText}"`,
+        systemPrompt: SEARCH_SYSTEM_PROMPT,
+        schema: z.record(z.string(), z.any()), // מקבלים any object — נעשה normalize בעצמנו
+        temperature: 0.1,
       });
 
-      const parsedData = response.choices[0].message.parsed;
-      console.log(parsedData)
+      // ✅ תיקון 2: fallback — אם Gemini לא עטף ב-query, עוטפים בעצמנו
+      const normalized = (raw as any).query !== undefined
+        ? (raw as any)
+        : { query: raw };
 
-      if (!parsedData || !parsedData.query) {
-        return {}; 
+      const parsedData = SearchQueryZodSchema.parse(normalized);
+
+      if (!parsedData?.query || Object.keys(parsedData.query).length === 0) {
+          logger.warn("AI generated empty query, returning all tenders", {
+          searchText: userSearchText,
+        });
+        await saveTenderLog({
+          action: "SMART_SEARCH",
+          status: "SUCCESS",
+          metaData: { searchText: userSearchText, query: {}, responseTime: Date.now() - startTime },
+        });
+        return await getTenders({});
       }
 
-      return parsedData.query;
-    } catch (error) {
-      console.error("Error in AIService.generateSearchQuery:", error);
-      return {}; 
+      logger.info("AI search query generation completed", {
+        query: JSON.stringify(parsedData.query),
+      });
+
+      await saveTenderLog({
+        action: "SMART_SEARCH",
+        status: "SUCCESS",
+        metaData: {
+          searchText: userSearchText,
+          query: parsedData.query,
+          responseTime: Date.now() - startTime,
+        },
+      });
+
+      return await getTenders(parsedData.query);
+
+    } catch (error: any) {
+      logger.error("Error in AIService.generateSearchQuery", {
+        error,
+        searchText: userSearchText,
+      });
+      await saveTenderLog({
+        action: "SMART_SEARCH",
+        status: "FAILED",
+        errorMessage: error?.message || String(error),
+        metaData: { searchText: userSearchText, responseTime: Date.now() - startTime },
+      });
+      if (error?.status === 429) throw new Error("RATE_LIMIT");
+      throw error;
     }
   }
 }

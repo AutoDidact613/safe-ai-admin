@@ -144,14 +144,11 @@ export default function ManageTenderDetails({
     setErrorMessage(null)
     setSuccessMessage(null)
 
-    const updatedTenderData = { ...draftTender, isActive: false }
-
     try {
       const response = await apiCall<{ success: boolean; tender: Tender }>(
-        API_ENDPOINTS.tenders.update(draftTender.id),
+        API_ENDPOINTS.tenders.close(draftTender.id),
         {
-          method: 'PUT',
-          body: JSON.stringify(updatedTenderData),
+          method: 'PATCH',
         },
       )
 

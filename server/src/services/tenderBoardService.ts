@@ -1,8 +1,14 @@
+import mongoose from "mongoose";
 import * as repo from "../repositories/tenderBoardRepository";
 import logger from "../logger";
-import { AIService } from "./tenderBoardAIService"; // ייבוא של שירות ה-AI החדש
+import { AIService } from "./tenderBoardAIService";
+import { TenderLog } from "../models/tendersBoardLog";
+import {
+  sendApplicantRegisteredEmail,
+  sendTenderClosedEmail,
+} from "./emailService"; // ייבוא שירות המיילים
 
-const aiService = new AIService(); // אתחול שירות ה-AI
+const aiService = new AIService();
 
 // הרשימה הסטטית של התחומים 
 const Static_ProductType_List = [
@@ -22,6 +28,56 @@ const AI_ApplicationType_List = [
   'מולטי אייגנט'
 ];
 
+/**
+ * פונקציית עזר פנימית ליצירת לוג בבסיס הנתונים עם חישוב TTL של 60 יום מראש
+ */
+async function saveTenderLog(params: {
+  action: "CREATE" | "UPDATE" | "DELETE" | "APPLY" | "SMART_CREATE" | "SMART_SEARCH";
+  status: "SUCCESS" | "FAILED";
+  tenderId?: string | mongoose.Types.ObjectId;
+  metaData?: any;
+  errorMessage?: string;
+}) {
+  try {
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 60);
+
+    const validTenderId = params.tenderId && mongoose.Types.ObjectId.isValid(params.tenderId)
+      ? new mongoose.Types.ObjectId(params.tenderId.toString())
+      : undefined;
+
+    await TenderLog.create({
+      action: params.action,
+      status: params.status,
+      tenderId: validTenderId,
+      metaData: params.metaData,
+      errorMessage: params.errorMessage,
+      timestamp: new Date(),
+      expiresAt
+    } as any);
+  } catch (logError) {
+    logger.error("Failed to write Tender DB Log", { logError });
+  }
+}
+
+/**
+ * פונקציית עזר פנימית - שליפת המייל של מנהל המכרז מה-DB לפי publisherUserCode
+ * מחזירה את המייל אם נמצא, או null אם לא
+ */
+async function getPublisherEmail(publisherUserCode: string): Promise<string | null> {
+  try {
+    const publisher = await repo.getUserByCode(publisherUserCode);
+    if (!publisher?.email) {
+      logger.warn("Publisher email not found", { publisherUserCode });
+      return null;
+    }
+    return publisher.email;
+  } catch (error) {
+    logger.error("Failed to fetch publisher email", { error, publisherUserCode });
+    return null;
+  }
+}
+
 export async function getProductTypeList() {
   return Static_ProductType_List;
 }
@@ -34,42 +90,166 @@ export async function createTender(data: any) {
   try {
     const tender = await repo.createTender(data);
 
-    logger.info("Tender created", { tenderId: tender._id });
+    logger.info("Tender created successfully", { tenderId: tender._id, title: data.title });
+
+    await saveTenderLog({
+      action: "CREATE",
+      status: "SUCCESS",
+      tenderId: tender._id,
+      metaData: { title: data.title }
+    });
 
     return tender;
-  } catch (error) {
-    logger.error("Failed to create tender", { error });
+  } catch (error: any) {
+    logger.error("Failed to create tender", { error, title: data?.title });
+
+    await saveTenderLog({
+      action: "CREATE",
+      status: "FAILED",
+      errorMessage: error?.message || String(error),
+      metaData: { title: data?.title }
+    });
+
     throw error;
   }
 }
 
 export async function listTenders() {
-  return repo.getTenders();
+  try {
+    const tenders = await repo.getTenders();
+    logger.info("Fetched tenders list", { count: tenders?.length || 0 });
+    return tenders;
+  } catch (error) {
+    logger.error("Failed to list tenders", { error });
+    throw error;
+  }
 }
 
 export async function getTenderById(id: string) {
-  return repo.getTenderById(id);
+  try {
+    const tender = await repo.getTenderById(id);
+    if (!tender) {
+      logger.warn(`Tender with ID ${id} not found`);
+    } else {
+      logger.info("Fetched tender details", { tenderId: id });
+    }
+    return tender;
+  } catch (error) {
+    logger.error("Failed to get tender by ID", { error, tenderId: id });
+    throw error;
+  }
 }
 
 export async function updateTender(id: string, data: any) {
-  return repo.updateTender(id, data);
+  try {
+    const result = await repo.updateTender(id, data);
+    logger.info("Tender updated successfully", { tenderId: id });
+
+    await saveTenderLog({
+      action: "UPDATE",
+      status: "SUCCESS",
+      tenderId: id,
+      metaData: { changes: Object.keys(data || {}) }
+    });
+
+    return result;
+  } catch (error: any) {
+    logger.error("Failed to update tender", { error, tenderId: id });
+
+    await saveTenderLog({
+      action: "UPDATE",
+      status: "FAILED",
+      tenderId: id,
+      errorMessage: error?.message || String(error)
+    });
+
+    throw error;
+  }
+}
+
+/**
+ * סגירת מכרז - מעדכן isActive=false ושולח מייל למנהל המכרז
+ * שולף את המייל של המנהל לפי publisherUserCode השמור במכרז
+ */
+export async function closeTender(id: string) {
+  try {
+    // שליפת המכרז לפני הסגירה כדי לקבל את publisherUserCode והכותרת
+    const tender = await repo.getTenderById(id);
+    if (!tender) {
+      throw new Error("Tender not found");
+    }
+
+    // עדכון isActive=false בבסיס הנתונים
+    const result = await repo.updateTender(id, { isActive: false });
+
+    logger.info("Tender closed successfully", { tenderId: id, title: tender.title });
+
+    await saveTenderLog({
+      action: "UPDATE",
+      status: "SUCCESS",
+      tenderId: id,
+      metaData: { changes: ["isActive"], closedAt: new Date() }
+    });
+
+    // שליחת מייל למנהל המכרז - לא חוסמת את התוצאה
+    if (tender.publisherUserCode && tender.wantsEmails) {
+      const adminEmail = await getPublisherEmail(tender.publisherUserCode);
+      if (adminEmail) {
+        await sendTenderClosedEmail({
+          adminEmail,
+          tenderTitle: tender.title,
+          tenderId: id,
+          totalApplicants: tender.applicants?.length || 0,
+        });
+      }
+    }
+
+    return result;
+  } catch (error: any) {
+    logger.error("Failed to close tender", { error, tenderId: id });
+
+    await saveTenderLog({
+      action: "UPDATE",
+      status: "FAILED",
+      tenderId: id,
+      errorMessage: error?.message || String(error)
+    });
+
+    throw error;
+  }
 }
 
 export async function deleteTender(id: string) {
   try {
     const result = await repo.deleteTender(id);
 
-    logger.info("Tender deleted", { tenderId: id });
+    logger.info("Tender deleted successfully", { tenderId: id });
+
+    await saveTenderLog({
+      action: "DELETE",
+      status: "SUCCESS",
+      tenderId: id
+    });
 
     return result;
-  } catch (error) {
-    logger.error("Failed to delete tender", { error });
+  } catch (error: any) {
+    logger.error("Failed to delete tender", { error, tenderId: id });
+
+    await saveTenderLog({
+      action: "DELETE",
+      status: "FAILED",
+      tenderId: id,
+      errorMessage: error?.message || String(error)
+    });
+
     throw error;
   }
 }
+
 /**
  * Apply to a tender as an applicant
  * Validates that applicant details are provided and prevents duplicate applications
+ * לאחר רישום מוצלח - שולח מייל למנהל המכרז עם פרטי המועמד
  */
 export async function applyToTender(
   tenderId: string,
@@ -81,18 +261,24 @@ export async function applyToTender(
     contactMethod?: string;
   }
 ) {
+  logger.info("Processing application to tender", { tenderId, applicantEmail: applicant?.email });
+
   if (!applicant.name || !applicant.name.trim()) {
+    logger.warn("Validation failed: Applicant name is required", { tenderId });
     throw new Error("Applicant name is required");
   }
   if (!applicant.email || !applicant.email.trim()) {
+    logger.warn("Validation failed: Applicant email is required", { tenderId });
     throw new Error("Applicant email is required");
   }
   if (!applicant.details || !applicant.details.trim()) {
+    logger.warn("Validation failed: Applicant details are required", { tenderId, applicantEmail: applicant.email });
     throw new Error("Applicant details are required");
   }
 
   const tender = await repo.getTenderById(tenderId);
   if (!tender) {
+    logger.error("Tender not found for application", { tenderId });
     throw new Error("Tender not found");
   }
 
@@ -100,12 +286,13 @@ export async function applyToTender(
   const normalizedEmail = applicant.email.trim().toLowerCase();
 
   const alreadyApplied = tender.applicants?.some(
-    (a: any) => 
-      a.name?.trim() === normalizedName && 
+    (a: any) =>
+      a.name?.trim() === normalizedName &&
       a.email?.trim().toLowerCase() === normalizedEmail
   );
 
   if (alreadyApplied) {
+    logger.warn("Duplicate application attempt", { tenderId, applicantEmail: normalizedEmail });
     throw new Error("Applicant already exists");
   }
 
@@ -122,7 +309,44 @@ export async function applyToTender(
     normalizedApplicant,
   ];
 
-  return repo.updateTenderApplicants(tenderId, updatedApplicants);
+  try {
+    const result = await repo.updateTenderApplicants(tenderId, updatedApplicants);
+    logger.info("Applicant registered successfully to tender", { tenderId, applicantEmail: normalizedEmail });
+
+    await saveTenderLog({
+      action: "APPLY",
+      status: "SUCCESS",
+      tenderId: tenderId,
+      metaData: { applicantEmail: normalizedEmail }
+    });
+
+    // שליחת מייל למנהל המכרז לאחר רישום מוצלח - לא חוסמת את התוצאה
+    if (tender.publisherUserCode && tender.wantsEmails) {
+      const adminEmail = await getPublisherEmail(tender.publisherUserCode);
+      if (adminEmail) {
+        await sendApplicantRegisteredEmail({
+          adminEmail,
+          tenderTitle: tender.title,
+          tenderId,
+          applicant: normalizedApplicant,
+        });
+      }
+    }
+
+    return result;
+  } catch (error: any) {
+    logger.error("Failed to update tender applicants", { error, tenderId, applicantEmail: normalizedEmail });
+
+    await saveTenderLog({
+      action: "APPLY",
+      status: "FAILED",
+      tenderId: tenderId,
+      errorMessage: error?.message || String(error),
+      metaData: { applicantEmail: normalizedEmail }
+    });
+
+    throw error;
+  }
 }
 
 /**
@@ -131,47 +355,44 @@ export async function applyToTender(
  * ========================================================
  */
 
-/**
- * יצירת מכרז חכם בעזרת AI
- * מקבל את הטקסט הגולמי, מפרסר ל-JSON ושומר דרך ה-Repository
- */
 export async function createSmartTender(text: string) {
   try {
-    // קריאה ל-Gemini דרך ה-AIService כדי לקבל את אובייקט המכרז המובנה
+    logger.info("Processing createSmartTender requested", { textLength: text?.length });
+
     const aiTenderData = await AIService.generateTenderData(text);
-    
-    // בניית האובייקט המלא עם ערכי ברירת מחדל של המערכת שלך
+
     const fullTenderData = {
       ...aiTenderData,
       isActive: true,
       applicants: []
     };
 
-    // שמירה בבסיס הנתונים באמצעות פונקציית ה-createTender הקיימת שלך (כדי לשמור על הלוגים וכו')
-    return await createTender(fullTenderData);
+    return fullTenderData;
   } catch (error) {
     logger.error("Failed to process createSmartTender", { error });
     throw error;
   }
 }
 
-/**
- * חיפוש חכם בעזרת AI (הגרסה הפשוטה)
- * מתרגם את מחרוזת החיפוש לשאילתת מונגו ושולף את המכרזים המתאימים
- */
 export async function smartSearchTenders(searchText: string) {
   try {
-    console.log("Received search text for smart search:", searchText);
-    // פנייה ל-AI לקבלת אובייקט שאילתת הסינון של MongoDB
-    const mongoQuery = await AIService.generateSearchQuery(searchText);
-    
-    logger.info("Executing smart search with query", { query: JSON.stringify(mongoQuery) });
+    logger.info("Received search text for smart search", { searchText });
 
-    // שליחת השאילתה ישירות ל-Repository של מונגו
-    // *שימי לב:* ודאי שפונקציית getTenders ב-Repository שלך יודעת לקבל אובייקט filter, או השתמשי בפונקציית סינון ייעודית אם קיימת ב-Repository
-    return await repo.getTenders(mongoQuery);
-  } catch (error) {
-    logger.error("Failed to process smartSearchTenders", { error });
+    const mongoFilter = await AIService.generateSearchQuery(searchText);
+
+    const safeFilter = (mongoFilter && typeof mongoFilter === "object" && !Array.isArray(mongoFilter))
+      ? mongoFilter
+      : {};
+
+    logger.info("Executing smart search with filter", { filter: JSON.stringify(safeFilter) });
+
+    return await repo.getTenders(safeFilter);
+  } catch (error: any) {
+    if (error?.message === "RATE_LIMIT") {
+      logger.warn("Rate limit reached on AI search", { searchText });
+      throw Object.assign(new Error("שירות החיפוש החכם עמוס כרגע, נסה שוב בעוד מספר שניות"), { statusCode: 429 });
+    }
+    logger.error("Failed to process smartSearchTenders", { error, searchText });
     throw error;
   }
 }

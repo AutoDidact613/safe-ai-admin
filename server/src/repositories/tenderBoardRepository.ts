@@ -1,10 +1,16 @@
 import mongoose from "mongoose";
 import { Tender } from "../models/tender";
+import { User } from "../models/user";
 
 export async function createTender(data: any) {
   return Tender.create(data);
 }
 
+// tenderBoardRepository.ts
+export async function getUserByCode(publisherUserCode: string) {
+  if (!mongoose.Types.ObjectId.isValid(publisherUserCode)) return null;
+  return await User.findById(publisherUserCode).lean();
+}
 /**
  * GET Tenders
  * מעודכן לקבלת אובייקט סינון אופציונלי עבור החיפוש החכם של ה-AI
@@ -57,3 +63,5 @@ export async function deleteTender(id: string) {
 
   return Tender.findOneAndDelete({ id }).lean();
 }
+
+export default getTenders

@@ -45,7 +45,7 @@ const parseBudgetValue = (budgetStr: string | undefined): number => {
 // פונקציית עזר להמרת מחרוזת זמן לימים (לצורך השוואה מספרית אחידה)
 const parseTimeToDays = (timeStr: string | undefined): number => {
   if (!timeStr) return Infinity; // אם לא הוגדר זמן, לא נסנן אותו החוצה כברירת מחדל
-  
+
   const cleanStr = timeStr.toLowerCase().trim();
   const numberMatch = cleanStr.match(/\d+/);
   const number = numberMatch ? parseInt(numberMatch[0], 10) : 1;
@@ -62,14 +62,14 @@ const parseTimeToDays = (timeStr: string | undefined): number => {
   if (cleanStr.includes('יום') || cleanStr.includes('ימים') || cleanStr.includes('day')) {
     return number;
   }
-  
+
   // אם יש רק מספר ללא יחידה, נתייחס אליו כאל ימים
   return numberMatch ? number : Infinity;
 };
 
 export default function TenderBoardPage() {
   const [tenders, setTenders] = useState<Tender[]>(initialTenders)
-  
+
   // State עבור סינון לפי סוג מוצר
   const [productTypes, setProductTypes] = useState<string[]>([])
   const [selectedProductType, setSelectedProductType] = useState<string | null>(null)
@@ -121,13 +121,13 @@ export default function TenderBoardPage() {
 
     const userString = localStorage.getItem('user');
     const userId = userString ? JSON.parse(userString)._id : '000';
-    setCurrentUserCode(userId);    
+    setCurrentUserCode(userId);
 
     async function loadTenders() {
       try {
         setLoading(true)
         setErrorMessage('')
-        
+
         // טעינת סוגי המוצרים
         apiCall<string[]>(API_ENDPOINTS.tenders.getProductTypes)
           .then((types) => {
@@ -189,7 +189,7 @@ export default function TenderBoardPage() {
       const endpoint = `${API_ENDPOINTS.tenders.smartSearch}?q=${encodeURIComponent(smartSearchQuery)}`
       const results = await apiCall<any[]>(endpoint)
       setSmartSearchResults(results.map(normalizeTender))
-      // console.log(results.map(normalizeTender))
+      console.log(results.map(normalizeTender))
     } catch (error) {
       console.error('Failed to execute smart search', error)
       setErrorMessage('החיפוש החכם נכשל. אנא נסה שנית.')
@@ -211,10 +211,10 @@ export default function TenderBoardPage() {
 
     return baseTenders.filter((t) => {
       if (t.isActive === false) return false
-      
+
       const matchProduct = !selectedProductType || t.productType === selectedProductType
       const matchAi = !selectedAiApplication || t.aiApplicationType === selectedAiApplication
-      
+
       // סינון לפי תקציב מינימלי
       let matchBudget = true
       if (minBudget) {
@@ -288,9 +288,9 @@ export default function TenderBoardPage() {
         prevTenders.map((tender) =>
           tender.id === applyingTender.id
             ? {
-                ...tender,
-                applicants: updatedTender.tender?.applicants ?? [...(tender.applicants ?? []), applicantWithId],
-              }
+              ...tender,
+              applicants: updatedTender.tender?.applicants ?? [...(tender.applicants ?? []), applicantWithId],
+            }
             : tender,
         )
 
@@ -308,7 +308,7 @@ export default function TenderBoardPage() {
 
   const renderScreen = () => {
     if (activeScreen === 'create') {
-      return <CreateTender onSuccess={() => setActiveScreen('dashboard')} />   
+      return <CreateTender onSuccess={() => setActiveScreen('dashboard')} />
     }
     if (activeScreen === 'manage') {
       return (
@@ -326,12 +326,6 @@ export default function TenderBoardPage() {
         {loading && (
           <div className="loading-banner">טוען מכרזים מהשרת...</div>
         )}
-        {isSmartSearching && (
-          <div className="loading-banner">מבצע חיפוש חכם באמצעות AI...</div>
-        )}
-        {errorMessage && (
-          <div className="error-banner">{errorMessage}</div>
-        )}
         <section className="dashboard-hero">
           <div>
             <h1>לוח פרוייקטים</h1>
@@ -344,13 +338,21 @@ export default function TenderBoardPage() {
           </div>
         </section>
 
+        {isSmartSearching && (
+          <div className="loading-banner">מבצע חיפוש חכם באמצעות AI...</div>
+        )}
+        {errorMessage && (
+          <div className="error-banner">{errorMessage}</div>
+        )}
+
+
         {/* חלק הסינונים המעודכן - כולל חיפוש חכם עם AI, סוג מוצר, יישום AI, תקציב וזמן */}
         <section className="filters-section" style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
-          
+
           {/* תיבת חיפוש חכם עם AI */}
           <div className="smart-search-container" style={{ width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="tab-button"
               onClick={() => setIsSmartSearchOpen(!isSmartSearchOpen)}
               style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontWeight: 'bold', cursor: 'pointer' }}
@@ -382,7 +384,7 @@ export default function TenderBoardPage() {
           </div>
 
           <div className="filters-row" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', flexDirection: 'row', justifyContent: 'center', width: '100%' }}>
-            
+
             {/* תיבה 1: סוג מוצר */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <strong>סוג המוצר:</strong>
@@ -488,7 +490,7 @@ export default function TenderBoardPage() {
                 placeholder="לדוגמה: 5000"
                 style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', width: '140px' }}
               />
-            </div>  
+            </div>
 
             {/* תיבה 4: חיפוש לפי זמן מקסימלי (בימים) */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -507,8 +509,8 @@ export default function TenderBoardPage() {
 
         <section className="dashboard-metrics">
           <div className="metric-card">
-            <p>סה"כ מכרזים נמצאו</p>
             <strong>{visibleTenders.length}</strong>
+            <p>סה"כ מכרזים נמצאו:</p>
           </div>
         </section>
 
