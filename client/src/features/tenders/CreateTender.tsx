@@ -14,6 +14,19 @@ interface TenderFormData {
   wantsEmails: boolean
 }
 
+interface SmartCreateResponse {
+  product?: {
+    title?: string
+    shortDescription?: string
+    productType?: string
+    aiApplicationType?: string
+    budget?: string
+    timeRequired?: string
+    additionalDetails?: string
+    agentsRequired?: string[]
+  }
+}
+
 interface CreateTenderProps {
   onSuccess: () => void
 }
@@ -133,7 +146,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
     setErrorMessage('')
     try {
       // פנייה לשרת (נניח שנקודת הקצה קיימת תחת API_ENDPOINTS.tenders.smartCreate)
-      const response = await apiCall<Partial<TenderFormData>>(API_ENDPOINTS.tenders.smartCreate, {
+      const response = await apiCall<SmartCreateResponse>(API_ENDPOINTS.tenders.smartCreate, {
         method: 'POST',
         body: JSON.stringify({ text: smartText }),
       })
