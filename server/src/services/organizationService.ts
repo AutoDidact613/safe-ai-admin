@@ -2,7 +2,7 @@ import * as repo from "../repositories/organizationRepository";
 import * as userRepo from "../repositories/userRepository";
 import { UsageLog } from "../models";
 import { register } from "./authService";
-import { sendOrgApprovalRequestEmail, sendOrgApprovedEmail } from "../utils/email";
+import { sendOrgApprovalRequestEmail, sendOrgApprovedEmail, sendOrgStatusEmail } from "../utils/email";
 import logger from "../logger";
 
 export async function createOrganization(data: any) {
@@ -275,6 +275,9 @@ export async function approveOrganization(orgId: string) {
   if (!organization) {
     throw new Error("Organization not found");
   }
+  if ((organization as any).status !== "pending") {
+    throw new Error(`ניתן לאשר רק ארגון שממתין לאישור (מצב נוכחי: ${(organization as any).status})`);
+  }
 
   const updated = await repo.updateOrganization(orgId, {
     status: "approved",
@@ -300,11 +303,24 @@ export async function rejectOrganization(orgId: string) {
   if (!organization) {
     throw new Error("Organization not found");
   }
+  if ((organization as any).status !== "pending") {
+    throw new Error(`ניתן לדחות רק ארגון שממתין לאישור (מצב נוכחי: ${(organization as any).status})`);
+  }
 
   const updated = await repo.updateOrganization(orgId, {
     status: "rejected",
     isActive: false,
   });
+
+  // מייל לבעל הארגון (best-effort), לעקביות עם approveOrganization
+  try {
+    const owner = organization.ownerId as any;
+    if (owner?.email) {
+      await sendOrgStatusEmail("rejected", owner.email, (organization as any).name, owner.name);
+    }
+  } catch (error) {
+    logger.error("Failed to send org rejected email", { error });
+  }
 
   logger.info("Organization rejected", { orgId });
   return updated;
@@ -332,8 +348,30 @@ export async function setOrganizationActive(orgId: string, isActive: boolean) {
   if (!organization) {
     throw new Error("Organization not found");
   }
+  if ((organization as any).status !== "approved") {
+    throw new Error(`ניתן להשעות או להפעיל מחדש רק ארגון מאושר (מצב נוכחי: ${(organization as any).status})`);
+  }
+  if ((organization as any).isActive === isActive) {
+    throw new Error(isActive ? "הארגון כבר פעיל" : "הארגון כבר מושעה");
+  }
 
   const updated = await repo.updateOrganization(orgId, { isActive });
+
+  // מייל לבעל הארגון (best-effort), לעקביות עם approveOrganization
+  try {
+    const owner = organization.ownerId as any;
+    if (owner?.email) {
+      await sendOrgStatusEmail(
+        isActive ? "reactivated" : "suspended",
+        owner.email,
+        (organization as any).name,
+        owner.name
+      );
+    }
+  } catch (error) {
+    logger.error("Failed to send org active-state email", { error });
+  }
+
   logger.info("Organization active state changed", { orgId, isActive });
   return updated;
 }
