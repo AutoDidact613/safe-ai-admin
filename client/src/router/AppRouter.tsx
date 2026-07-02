@@ -20,6 +20,7 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
+import { PublicOrgOwnerSignup } from "../features/organizations/PublicOrgOwnerSignup";
 import RequestDetails from "../features/safeai-ui/RequestDetails";
 import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
 import AiNewsPage from "../pages/AiNewsPage";
@@ -57,14 +58,15 @@ export default function AppRouter() {
     <BrowserRouter>
       {/* Global Top Navigation */}
       <TopNavigation />
-      
+
       {/* Beta Banner */}
       <BetaBanner />
-      
+
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
-        
+        <Route path="/become-org-owner" element={<PublicOrgOwnerSignup />} />
+
         <Route
           path="/login"
           element={
@@ -73,7 +75,7 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
-        
+
         <Route
           path="/register"
           element={
@@ -90,9 +92,9 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
-        
+
         <Route path="/verify-email/:token" element={<EmailVerification />} />
-        
+
         <Route
           path="/forgot-password"
           element={
@@ -101,9 +103,9 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
-        
+
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-        
+
         {/* Protected Routes */}
         <Route
           path="/api-key-display"
@@ -113,7 +115,7 @@ export default function AppRouter() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/safeai-ui"
           element={

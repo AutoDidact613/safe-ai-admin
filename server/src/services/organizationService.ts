@@ -1,6 +1,8 @@
 import * as repo from "../repositories/organizationRepository";
 import * as userRepo from "../repositories/userRepository";
 import { UsageLog } from "../models";
+import { register } from "./authService";
+import { sendOrgApprovalRequestEmail, sendOrgApprovedEmail } from "../utils/email";
 import logger from "../logger";
 
 export async function createOrganization(data: any) {
@@ -174,6 +176,117 @@ export async function topUpOrganizationWallet(orgId: string, amount: number) {
 
 export async function getPendingOrganizationsForAdmin() {
   return repo.getPendingOrganizations();
+}
+
+/**
+ * Public sign-up flow: creates a brand-new org_owner user account together
+ * with a pending organization, in one step. No prior login/registration
+ * required — this IS the registration for org owners. Called from a public,
+ * unauthenticated endpoint.
+ */
+export async function publicRequestOrganization(data: {
+  ownerName: string;
+  ownerEmail: string;
+  ownerPassword: string;
+  orgName: string;
+  orgDescription?: string;
+}) {
+  // יוצר את חשבון בעל הארגון ישירות במצב מאומת
+  // (אימות המייל מדולג — אישור המנהל הוא השער האמיתי)
+  const { user } = await register({
+    email: data.ownerEmail,
+    password: data.ownerPassword,
+    name: data.ownerName,
+    role: "org_owner",
+    skipEmailVerification: true,
+  });
+
+  // יצירת הארגון במצב ממתין ולא פעיל
+  const organization = await repo.createOrganization({
+    name: data.orgName,
+    description: data.orgDescription || "",
+    ownerId: user._id,
+    status: "pending",
+    isActive: false,
+  });
+
+  // קישור המשתמש לארגון שנוצר
+  await userRepo.updateUser(user._id.toString(), {
+    organizationId: organization._id,
+  });
+
+  logger.info("Public organization request created", {
+    organizationId: organization._id,
+    ownerEmail: data.ownerEmail,
+  });
+
+  // התראה לכל האדמינים (best-effort)
+  try {
+    const users = await userRepo.getUsers();
+    const admins = users.filter((u: any) => u.role === "admin");
+    await Promise.all(
+      admins.map((admin: any) =>
+        sendOrgApprovalRequestEmail(admin.email, data.orgName, data.ownerEmail)
+      )
+    );
+  } catch (error) {
+    logger.error("Failed to notify admins about org request", { error });
+  }
+
+  return organization;
+}
+
+export async function approveOrganization(orgId: string) {
+  const organization = await repo.getOrganizationById(orgId);
+  if (!organization) {
+    throw new Error("Organization not found");
+  }
+
+  const updated = await repo.updateOrganization(orgId, {
+    status: "approved",
+    isActive: true,
+  });
+
+  // מייל לבעל הארגון (best-effort). ownerId מגיע populated עם email+name
+  try {
+    const owner = organization.ownerId as any;
+    if (owner?.email) {
+      await sendOrgApprovedEmail(owner.email, (organization as any).name, owner.name);
+    }
+  } catch (error) {
+    logger.error("Failed to send org approved email", { error });
+  }
+
+  logger.info("Organization approved", { orgId });
+  return updated;
+}
+
+export async function rejectOrganization(orgId: string) {
+  const organization = await repo.getOrganizationById(orgId);
+  if (!organization) {
+    throw new Error("Organization not found");
+  }
+
+  const updated = await repo.updateOrganization(orgId, {
+    status: "rejected",
+    isActive: false,
+  });
+
+  logger.info("Organization rejected", { orgId });
+  return updated;
+}
+
+/**
+ * Return the organization that the given user owns/belongs to (with its status),
+ * or null. Used by the frontend to decide between the pending screen and the
+ * full management screen.
+ */
+export async function getMyOrganization(userId: string) {
+  const user = await userRepo.getUserById(userId);
+  if (!user || !user.organizationId) {
+    return null;
+  }
+  return repo.getOrganizationById(user.organizationId.toString());
 }
 
 export async function listAllOrganizationsWithStats() {

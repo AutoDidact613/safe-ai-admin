@@ -10,6 +10,8 @@ import MyRequestsList from "../features/safeai-ui/MyRequestsList";
 import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
 import { apiCall, API_ENDPOINTS } from "../config/api";
 import { OrganizationsManagement } from "../features/organizations/OrganizationsManagement";
+import { PendingApprovalScreen } from "../features/organizations/PendingApprovalScreen";
+import { getMyOrganization } from "../features/organizations/api/organizationApi";
 import OrganizationUsersPage from "../pages/OrganizationUsersPage";
 
 type Reply = {
@@ -76,12 +78,40 @@ export default function SafeAIUIPage() {
   );
   const [newRequestCount, setNewRequestCount] = useState(0);
 
+  // Gate for org owners: block management until their org is approved
+  const [orgGate, setOrgGate] = useState<{ loading: boolean; pending: boolean; orgName?: string }>({
+    loading: initialState.role === "org_owner",
+    pending: false,
+  });
+
   // Redirect to landing page if not authenticated
   useEffect(() => {
     if (!userRole) {
       navigate("/");
     }
   }, [userRole, navigate]);
+
+// For org owners, check their organization's approval status
+  useEffect(() => {
+    if (userRole !== "org_owner") return;
+    let active = true;
+    getMyOrganization()
+      .then((res) => {
+        if (!active) return;
+        const org = res.organization;
+        setOrgGate({
+          loading: false,
+          pending: !!org && org.status !== "approved",
+          orgName: org?.name,
+        });
+      })
+      .catch(() => {
+        if (active) setOrgGate({ loading: false, pending: false });
+      });
+    return () => {
+      active = false;
+    };
+  }, [userRole]);
 
   useEffect(() => {
     const fetchNewRequestCount = async () => {
@@ -104,6 +134,11 @@ export default function SafeAIUIPage() {
   }, [userRole]);
 
   const renderSection = () => {
+    // Org owners whose org is not yet approved only see the pending screen
+    if (userRole === "org_owner") {
+      if (orgGate.loading) return <div className="orgs-loading">טוען...</div>;
+      if (orgGate.pending) return <PendingApprovalScreen orgName={orgGate.orgName} />;
+    }
     switch (activeSection) {
       case "profiles":
         return <ProfilesManagement />;
