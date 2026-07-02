@@ -185,7 +185,6 @@ export default function TenderBoardPage() {
       setIsSmartSearching(true)
       setErrorMessage('')
       // קריאה לשרת עם ה-Query Parameter q כמבוקש
-      debugger
       const endpoint = `${API_ENDPOINTS.tenders.smartSearch}?q=${encodeURIComponent(smartSearchQuery)}`
       const results = await apiCall<any[]>(endpoint)
       setSmartSearchResults(results.map(normalizeTender))

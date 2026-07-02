@@ -54,7 +54,11 @@ export const API_ENDPOINTS = {
   },
   // Contact form endpoint
   contact: `${API_BASE_URL}/contact`,
-<<<<<<< HEAD
+  contactTypes: `${API_BASE_URL}/contact-types`,
+  myRequests: `${API_BASE_URL}/contact/my-requests`,
+  allRequests: `${API_BASE_URL}/contact/all`,
+  // AI News endpoints
+  news: `${API_BASE_URL}/api/news`,
   // Tender board endpoints
   tenders: {
     list: `${API_BASE_URL}/tender-board`,
@@ -68,13 +72,6 @@ export const API_ENDPOINTS = {
     delete: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
     apply: (id: string) => `${API_BASE_URL}/tender-board/${id}/apply`,
   },
-=======
-  contactTypes: `${API_BASE_URL}/contact-types`,
-  myRequests: `${API_BASE_URL}/contact/my-requests`,
-  allRequests: `${API_BASE_URL}/contact/all`,
-  // AI News endpoints
-  news: `${API_BASE_URL}/api/news`,
->>>>>>> develop
 } as const;
 
 // Helper function for API calls
@@ -171,9 +168,6 @@ export async function apiCall<T>(
   }
 
   return response.json();
-<<<<<<< HEAD
-}
-=======
 }
 
->>>>>>> develop
+
