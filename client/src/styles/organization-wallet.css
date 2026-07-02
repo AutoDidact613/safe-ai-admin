@@ -38,6 +38,42 @@
   line-height: 1.6;
 }
 
+.org-info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.org-edit-button {
+  padding: 6px 14px;
+  background-color: transparent;
+  color: #2196f3;
+  border: 1px solid #2196f3;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.org-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.org-edit-input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #cfd8e2;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.org-edit-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .wallet-title {
   margin: 0 0 10px 0;
   color: #2196f3;

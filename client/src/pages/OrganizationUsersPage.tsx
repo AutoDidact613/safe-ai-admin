@@ -36,6 +36,11 @@ export default function OrganizationUsersPage() {
   const [topUpAmount, setTopUpAmount] = useState<number | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [isEditingOrg, setIsEditingOrg] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [isSavingOrg, setIsSavingOrg] = useState(false);
+
   useEffect(() => {
     fetchOrganizationAndUsers();
   }, []);
@@ -163,6 +168,53 @@ export default function OrganizationUsersPage() {
     }
   };
 
+  const startEditingOrg = () => {
+    if (!organization) return;
+    setEditName(organization.name);
+    setEditDescription(organization.description || "");
+    setIsEditingOrg(true);
+  };
+
+  const handleSaveOrg = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!organization) return;
+
+    try {
+      setIsSavingOrg(true);
+
+      const token = localStorage.getItem("accessToken");
+
+      const response = await axios.put(
+        `${import.meta.env.VITE_API_URL}/organizations/${organization._id}`,
+        { name: editName, description: editDescription },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setOrganization(response.data.organization);
+      setIsEditingOrg(false);
+    } catch (err: unknown) {
+      console.error("Error updating organization:", err);
+
+      if (axios.isAxiosError(err)) {
+        const errorMsg =
+          err.response?.data?.error ||
+          err.response?.data?.message ||
+          "נכשל עדכון פרטי הארגון";
+
+        alert(errorMsg);
+      } else if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert("נכשל עדכון פרטי הארגון");
+      }
+    } finally {
+      setIsSavingOrg(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="organization-page">
@@ -192,9 +244,52 @@ export default function OrganizationUsersPage() {
       {organization && (
         <div className="organization-grid">
           <div className="organization-info-card">
-            <h2>{organization.name}</h2>
-            <p>{organization.description || "אין תיאור זמין."}</p>
-            <p><strong>סטטוס:</strong> {organization.isActive ? "פעיל" : "לא פעיל"}</p>
+            {isEditingOrg ? (
+              <form onSubmit={handleSaveOrg} className="org-edit-form">
+                <input
+                  type="text"
+                  dir="rtl"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  required
+                  className="org-edit-input"
+                  placeholder="שם הארגון"
+                />
+                <textarea
+                  dir="rtl"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="org-edit-input"
+                  placeholder="תיאור הארגון"
+                  rows={3}
+                />
+                <p><strong>סטטוס:</strong> {organization.isActive ? "פעיל" : "לא פעיל"}</p>
+                <div className="org-edit-actions">
+                  <button type="submit" disabled={isSavingOrg} className="topup-button">
+                    {isSavingOrg ? "שומר..." : "שמירה"}
+                  </button>
+                  <button
+                    type="button"
+                    className="retry-button"
+                    disabled={isSavingOrg}
+                    onClick={() => setIsEditingOrg(false)}
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <div className="org-info-header">
+                  <h2>{organization.name}</h2>
+                  <button className="org-edit-button" onClick={startEditingOrg}>
+                    עריכה
+                  </button>
+                </div>
+                <p>{organization.description || "אין תיאור זמין."}</p>
+                <p><strong>סטטוס:</strong> {organization.isActive ? "פעיל" : "לא פעיל"}</p>
+              </>
+            )}
           </div>
 
           <div className="wallet-card">
