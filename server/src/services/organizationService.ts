@@ -199,6 +199,12 @@ export async function publicRequestOrganization(data: {
   orgName: string;
   orgDescription?: string;
 }) {
+  // בדיקה מוקדמת - נמנעת מיצירת משתמש כשברור מראש ששם הארגון תפוס
+  const existingOrg = await repo.findOrganizationByName(data.orgName);
+  if (existingOrg) {
+    throw new Error("שם הארגון כבר תפוס, אנא בחרו שם אחר");
+  }
+
   // יוצר את חשבון בעל הארגון ישירות במצב מאומת
   // (אימות המייל מדולג — אישור המנהל הוא השער האמיתי)
   const { user } = await register({
@@ -209,14 +215,25 @@ export async function publicRequestOrganization(data: {
     skipEmailVerification: true,
   });
 
-  // יצירת הארגון במצב ממתין ולא פעיל
-  const organization = await repo.createOrganization({
-    name: data.orgName,
-    description: data.orgDescription || "",
-    ownerId: user._id,
-    status: "pending",
-    isActive: false,
-  });
+  // יצירת הארגון במצב ממתין ולא פעיל. אם זה נכשל (למשל מרוץ נדיר על אותו שם
+  // ארגון בין הבדיקה המוקדמת לכאן), מבטלים את המשתמש שכבר נוצר כדי לא
+  // להשאיר רשומת משתמש "יתומה" ללא ארגון.
+  let organization;
+  try {
+    organization = await repo.createOrganization({
+      name: data.orgName,
+      description: data.orgDescription || "",
+      ownerId: user._id,
+      status: "pending",
+      isActive: false,
+    });
+  } catch (error: any) {
+    await userRepo.deleteUser(user._id.toString());
+    if (error?.code === 11000) {
+      throw new Error("שם הארגון כבר תפוס, אנא בחרו שם אחר");
+    }
+    throw error;
+  }
 
   // קישור המשתמש לארגון שנוצר
   await userRepo.updateUser(user._id.toString(), {

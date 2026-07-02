@@ -4,6 +4,10 @@ export async function createOrganization(data: any) {
   return Organization.create(data);
 }
 
+export async function findOrganizationByName(name: string) {
+  return Organization.findOne({ name }).lean();
+}
+
 export async function getOrganizations() {
   return Organization.find().populate("ownerId", "email name").lean();
 }
