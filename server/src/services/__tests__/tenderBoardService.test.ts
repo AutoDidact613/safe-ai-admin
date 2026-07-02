@@ -9,7 +9,7 @@ import * as repo from "../../repositories/tenderBoardRepository";
 jest.mock("../tenderBoardService");
 jest.mock("../tenderBoardAIService");
 jest.mock("../../repositories/tenderBoardRepository");
-jest.mock("../logger", () => ({
+jest.mock("../../logger", () => ({
   info: jest.fn(),
   error: jest.fn(),
 }));
