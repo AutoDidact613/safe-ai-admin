@@ -113,6 +113,14 @@ export async function addUserToOrganization(orgId: string, userId: string, role:
   }
 }
 
+export async function getOrganizationForUser(userId: string) {
+  const user = await userRepo.getUserById(userId);
+  if (!user || !(user as any).organizationId) {
+    return null;
+  }
+  return repo.getOrganizationById((user as any).organizationId.toString());
+}
+
 export async function removeUserFromOrganization(userId: string) {
   try {
     const user = await userRepo.getUserById(userId);
