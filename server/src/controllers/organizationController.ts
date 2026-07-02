@@ -14,7 +14,6 @@ import {
   listAllOrganizationsWithStats,
   setOrganizationActive,
   getOrganizationUsageSummary,
-  requestOrganization,
   approveOrganization,
   rejectOrganization,
   getMyOrganization,
@@ -432,38 +431,6 @@ export async function getOrganizationStatsHandler(
   } catch (error: any) {
     logger.error("Failed to get organization stats", { error });
     res.status(500).json({ error: "Failed to fetch organization stats" });
-  }
-}
-
-/**
- * Request to create a new organization (any authenticated user)
- * The organization is created in a pending, inactive state and awaits admin approval.
- */
-export async function requestOrganizationHandler(req: Request, res: Response) {
-  try {
-    const user = (req as any).user;
-    const { name, description } = req.body;
-
-    if (!name || !name.trim()) {
-      return res.status(400).json({ error: "Organization name is required" });
-    }
-
-    const organization = await requestOrganization(user.userId, {
-      name: name.trim(),
-      description,
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Organization request submitted and awaiting approval",
-      organization,
-    });
-  } catch (error: any) {
-    logger.error("Failed to create organization request", { error });
-    if (error?.code === 11000) {
-      return res.status(409).json({ error: "Organization name already exists" });
-    }
-    res.status(400).json({ error: error.message || "Failed to create organization request" });
   }
 }
 

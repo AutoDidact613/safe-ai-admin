@@ -93,9 +93,9 @@ export default function TopNavigation() {
           {!isAuthenticated ? (
             <>
               {/* Public Navigation */}
-          
-       <Link to="/about" className="top-nav-link">
-למה?
+
+              <Link to="/about" className="top-nav-link">
+                למה?
               </Link>
               <Link to="/courses" className="top-nav-link">
                 קורסים
@@ -109,7 +109,7 @@ export default function TopNavigation() {
               <Link to="/contact" className="top-nav-link">
                 צור קשר
               </Link>
-       
+
 
               {/* Auth Buttons */}
               <Link to="/login" className="top-nav-btn top-nav-btn-secondary">
@@ -193,7 +193,18 @@ export default function TopNavigation() {
                           strokeLinecap="round"
                         />
                       </svg>
-                      איזור אישי  
+                      איזור אישי
+                    </Link>
+                    <Link
+                      to="/organization/create"
+                      className="user-menu-item"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M2 3h12v10H2zM2 6h12M6 9h4"
+                          stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      הארגון שלי
                     </Link>
                     <Link
                       to="/api-key-display"

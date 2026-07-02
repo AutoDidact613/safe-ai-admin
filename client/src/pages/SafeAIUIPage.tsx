@@ -7,7 +7,6 @@ import UserDashboard from "../features/safeai-ui/UserDashboard";
 import Statistics from "../features/safeai-ui/Statistics";
 import UserApiKeysPage from "../features/safeai-ui/UserApiKeysPage";
 import { OrganizationsManagement } from "../features/organizations/OrganizationsManagement";
-import { OrganizationRequestForm } from "../features/organizations/OrganizationRequestForm";
 import { PendingApprovalScreen } from "../features/organizations/PendingApprovalScreen";
 import { getMyOrganization } from "../features/organizations/api/organizationApi";
 import OrganizationUsersPage from "../pages/OrganizationUsersPage";
@@ -20,8 +19,7 @@ type Section =
   | "apikeys"
   | "organizations"
   | "org-statistics"
-  | "org-users"
-  | "org-request";
+  | "org-users";
 
 interface UserData {
   email: string;
@@ -117,8 +115,6 @@ export default function SafeAIUIPage() {
         return <Statistics user={currentUser} />;
       case "apikeys":
         return <UserApiKeysPage />;
-      case "org-request":
-        return <OrganizationRequestForm />;
       case "organizations":
         return <OrganizationsManagement />;
       case "org-statistics":
@@ -201,15 +197,6 @@ export default function SafeAIUIPage() {
                     <path d="M12 8V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
                   מפתחות API
-                </button>
-                <button
-                  className={activeSection === "org-request" ? "sub-nav-btn active" : "sub-nav-btn"}
-                  onClick={() => setActiveSection("org-request")}
-                >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M3 3h10v10H3V3zm2 2v6m4-6v6m-4-3h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                  פתיחת ארגון
                 </button>
               </>
             )}

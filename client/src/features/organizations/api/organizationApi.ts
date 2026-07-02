@@ -81,16 +81,6 @@ export const activateOrganization = async (id: string): Promise<{ success: boole
   return apiCall<{ success: boolean }>(API_ENDPOINTS.adminOrganizations.activate(id), { method: "PATCH" });
 };
 
-// בקשת פתיחת ארגון (משתמש מחובר)
-export const requestOrganization = async (
-  data: { name: string; description?: string }
-): Promise<{ success: boolean; message?: string; organization?: AdminOrganization }> => {
-  return apiCall(API_ENDPOINTS.adminOrganizations.request, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-};
-
 // הארגון של המשתמש הנוכחי (בכל סטטוס)
 export const getMyOrganization = async (): Promise<{ organization: AdminOrganization | null }> => {
   return apiCall(API_ENDPOINTS.adminOrganizations.my, { method: "GET" });
