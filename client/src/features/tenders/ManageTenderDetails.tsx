@@ -81,7 +81,7 @@ export default function ManageTenderDetails({
     }
   }, [draftTender.aiApplicationType])
 
-  const handleFieldChange = (field: keyof Tender, value: any) => {
+  const handleFieldChange = <K extends keyof Tender>(field: K, value: Tender[K]) => {
     setDraftTender((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -129,8 +129,8 @@ export default function ManageTenderDetails({
         onUpdateTender(response.tender)
         setTimeout(() => onClose(), 1500)
       }
-    } catch (error: any) {
-      setErrorMessage(error?.message || 'שגיאה בעדכון המכרז')
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'שגיאה בעדכון המכרז')
     } finally {
       setIsLoading(false)
     }
@@ -157,8 +157,8 @@ export default function ManageTenderDetails({
         onDeleteTender(draftTender.id)
         setTimeout(() => onClose(), 1500)
       }
-    } catch (error: any) {
-      setErrorMessage(error?.message || 'שגיאה בסגירת המכרז')
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'שגיאה בסגירת המכרז')
     } finally {
       setIsLoading(false)
     }

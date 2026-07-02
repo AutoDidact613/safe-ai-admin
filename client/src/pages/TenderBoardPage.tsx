@@ -31,6 +31,23 @@ interface Tender {
   applicants?: Applicant[]
 }
 
+interface RawTender {
+  id?: string
+  _id?: string
+  title: string
+  publisherUserCode?: string
+  shortDescription?: string
+  timeRequired?: string
+  budget?: string
+  productType?: string
+  aiApplicationType?: string
+  isActive?: boolean
+  agentsRequired?: string[]
+  wantsEmails?: boolean
+  additionalDetails?: string
+  applicants?: Applicant[]
+}
+
 const initialTenders: Tender[] = []
 
 // פונקציית עזר לחילוץ מספר מתוך מחרוזת תקציב
@@ -100,7 +117,7 @@ export default function TenderBoardPage() {
   const [activeScreen, setActiveScreen] = useState<'dashboard' | 'create' | 'manage'>('dashboard')
   const [currentUserCode, setCurrentUserCode] = useState('tnd-98234')
 
-  const normalizeTender = (tender: any): Tender => ({
+  const normalizeTender = (tender: RawTender): Tender => ({
     id: tender.id ?? tender._id ?? '',
     title: tender.title,
     publisherUserCode: tender.publisherUserCode,
@@ -142,7 +159,7 @@ export default function TenderBoardPage() {
           })
           .catch((err) => console.error('Failed to load AI application types', err));
 
-        const serverTenders = await apiCall<any[]>(API_ENDPOINTS.tenders.list)
+        const serverTenders = await apiCall<RawTender[]>(API_ENDPOINTS.tenders.list)
 
         if (!isMounted) return
 
@@ -160,7 +177,7 @@ export default function TenderBoardPage() {
           ),
         )
 
-        const createdTenders = await apiCall<any[]>(API_ENDPOINTS.tenders.list)
+        const createdTenders = await apiCall<RawTender[]>(API_ENDPOINTS.tenders.list)
         if (!isMounted) return
         setTenders(createdTenders.map(normalizeTender))
       } catch (error) {
@@ -186,7 +203,7 @@ export default function TenderBoardPage() {
       setErrorMessage('')
       // קריאה לשרת עם ה-Query Parameter q כמבוקש
       const endpoint = `${API_ENDPOINTS.tenders.smartSearch}?q=${encodeURIComponent(smartSearchQuery)}`
-      const results = await apiCall<any[]>(endpoint)
+      const results = await apiCall<RawTender[]>(endpoint)
       setSmartSearchResults(results.map(normalizeTender))
       console.log(results.map(normalizeTender))
     } catch (error) {
@@ -275,7 +292,7 @@ export default function TenderBoardPage() {
     const applicantWithId = { ...applicant }
 
     try {
-      const updatedTender = await apiCall<any>(
+      const updatedTender = await apiCall<{ tender?: { applicants?: Applicant[] } }>(
         API_ENDPOINTS.tenders.apply(applyingTender.id),
         {
           method: 'POST',
