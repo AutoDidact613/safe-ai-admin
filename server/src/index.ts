@@ -14,6 +14,7 @@ import proxyKeyRouter from "./routes/proxyKeyRouter";
 import promptRouter from "./routes/promptRouter";
 import organizationRouter from "./routes/organizationRouter";
 import contactRouter from "./routes/contactRouter";
+import tenderBoardRouter from "./routes/tenderBoardRouter";
 import contactTypeRoutes from "./routes/contactTypeRoutes"; // הייבוא של הקובץ שיצרת
 
 import newsRouter from "./routes/newsRouter";
@@ -73,6 +74,7 @@ app.use("/contact-types", contactTypeRoutes); // Contact form types
 
 // ===== Public routes for filter evaluation =====
 app.use("/filter", filterRouter);
+app.use("/tender-board", tenderBoardRouter);
 
 // ===== Public AI News Routes =====
 app.use("/api/news", newsRouter); // News routes are public

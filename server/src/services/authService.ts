@@ -76,16 +76,14 @@ export async function register(data: {
     //   },
     // );
 
+
+
     // const { key, token, key_name } = response.data;
     // const litellmKeyEncrypted = encryptSecret(key);
-
-    //למלא מחרוזות סתם
-
-    const key="dd"
-    const token="ee"
-    const key_name="vv"
-    const litellmKeyEncrypted ="l"
-
+    const key ="try"
+    const token ="try"
+    const key_name ="try"
+    const litellmKeyEncrypted ="try"
     // Create user in database
     const user = await User.create({
       email: data.email.toLowerCase(),

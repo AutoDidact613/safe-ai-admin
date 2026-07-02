@@ -109,6 +109,12 @@ export default function TopNavigation() {
               <Link to="/contact" className="top-nav-link">
                 צור קשר
               </Link>
+              {/* <Link to="/tender-board" className="top-nav-link">
+                לוח פרוייקטים
+              </Link>
+              <Link to="/download-agents" className="top-nav-link">
+                הורדת אג'נטים כDesktop
+              </Link> */}
        
 
               {/* Auth Buttons */}
@@ -145,6 +151,12 @@ export default function TopNavigation() {
               </Link>
               <Link to="/contact" className="top-nav-link">
                 צור קשר
+              </Link>
+              <Link to="/tender-board" className="top-nav-link">
+                לוח פרוייקטים
+              </Link>
+              <Link to="/download-agents" className="top-nav-link">
+                הורדת אג'נטים כDesktop
               </Link>
 
               {/* User Menu */}

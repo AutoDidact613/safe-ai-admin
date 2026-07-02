@@ -9,6 +9,8 @@ import RecommendedGuidesPage from "../pages/RecommendedGuidesPage";
 import CoursesPage from "../pages/CoursesPage";
 import ActivityLogPage from "../pages/ActivityLogPage";
 import AboutPage from "../pages/AboutPage";
+import TenderBoardPage from "../pages/TenderBoardPage";
+import DownloadAgentsPage from "../pages/AgentDownloadsPage";
 import LoginForm from "../features/auth/LoginForm";
 import RegisterForm from "../features/auth/RegisterForm";
 import ApiKeyDisplay from "../features/auth/ApiKeyDisplay";
@@ -176,6 +178,8 @@ export default function AppRouter() {
         <Route path="/recommended-guides" element={<RecommendedGuidesPage />} />
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/activity-log" element={<ActivityLogPage />} />
+        <Route path="/tender-board" element={<TenderBoardPage />} />
+        <Route path="/download-agents" element={<DownloadAgentsPage />} />
 
         {/* Catch all - 404 */}
         <Route path="*" element={<NotFound />} />
