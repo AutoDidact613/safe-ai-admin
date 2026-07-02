@@ -22,6 +22,15 @@ export const API_ENDPOINTS = {
   filter: `${API_BASE_URL}/filter`,
   providerKeys: `${API_BASE_URL}/provider-keys`,
   organizations: `${API_BASE_URL}/organizations`,
+  adminOrganizations: {
+    pending: `${API_BASE_URL}/organizations/pending`,
+    all: `${API_BASE_URL}/organizations/admin/all`,
+    detail: (id: string) => `${API_BASE_URL}/organizations/${id}`,
+    users: (id: string) => `${API_BASE_URL}/organizations/${id}/users`,
+    stats: (id: string) => `${API_BASE_URL}/organizations/${id}/stats`,
+    suspend: (id: string) => `${API_BASE_URL}/organizations/${id}/suspend`,
+    activate: (id: string) => `${API_BASE_URL}/organizations/${id}/activate`,
+  },
   // Proxy key endpoints (user's own proxy key)
   proxyKey: {
     info: `${API_BASE_URL}/proxy-key`,
@@ -45,6 +54,7 @@ export const API_ENDPOINTS = {
   },
   // Contact form endpoint
   contact: `${API_BASE_URL}/contact`,
+<<<<<<< HEAD
   // Tender board endpoints
   tenders: {
     list: `${API_BASE_URL}/tender-board`,
@@ -58,6 +68,13 @@ export const API_ENDPOINTS = {
     delete: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
     apply: (id: string) => `${API_BASE_URL}/tender-board/${id}/apply`,
   },
+=======
+  contactTypes: `${API_BASE_URL}/contact-types`,
+  myRequests: `${API_BASE_URL}/contact/my-requests`,
+  allRequests: `${API_BASE_URL}/contact/all`,
+  // AI News endpoints
+  news: `${API_BASE_URL}/api/news`,
+>>>>>>> develop
 } as const;
 
 // Helper function for API calls
@@ -68,8 +85,13 @@ export async function apiCall<T>(
   // Get access token from localStorage
   const accessToken = localStorage.getItem("accessToken");
 
+  // If a relative endpoint is provided (starts with '/'), prepend the API base URL
+  const resolveUrl = (ep: string) =>
+    ep.startsWith("http") ? ep : `${API_BASE_URL}${ep}`;
+
   const makeRequest = async (token: string | null) => {
-    return fetch(endpoint, {
+    const url = resolveUrl(endpoint);
+    return fetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",
@@ -149,4 +171,9 @@ export async function apiCall<T>(
   }
 
   return response.json();
+<<<<<<< HEAD
 }
+=======
+}
+
+>>>>>>> develop

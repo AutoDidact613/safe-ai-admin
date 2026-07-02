@@ -72,7 +72,7 @@ export const updateUserSchema = z.object({
   organization: z.string().optional(),
   profileId: z.string().optional(),
   mode: z.enum(["BYOK", "MANAGED"]).optional(),
-  role: z.enum(["admin", "user"]).optional(), // Only admins can change this
+  role: z.enum(["admin", "user", "org_owner"]).optional(), // Admins can change user roles, including org_owner
   isActive: z.boolean().optional(), // Only admins can change this
 });
 

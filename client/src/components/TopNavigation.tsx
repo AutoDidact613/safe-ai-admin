@@ -134,6 +134,12 @@ export default function TopNavigation() {
               >
                 איזור אישי
               </Link>
+              <Link
+                to="/ai-news"
+                className={`top-nav-link ${location.pathname === "/ai-news" ? "active" : ""}`}
+              >
+                חדשות
+              </Link>
               <Link to="/courses" className="top-nav-link">
                 קורסים
               </Link>
