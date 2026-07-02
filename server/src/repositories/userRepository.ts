@@ -24,6 +24,10 @@ export async function getUserById(userId: string) {
   return User.findById(userId).lean();
 }
 
+export async function countUsersByOrganization(organizationId: string) {
+  return User.countDocuments({ organizationId });
+}
+
 export async function updateUser(userId: string, data: any) {
   return User.findByIdAndUpdate(userId, data, {
     new: true,
