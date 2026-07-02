@@ -547,3 +547,94 @@ export async function sendOrgApprovedEmail(
     // best-effort
   }
 }
+
+const ORG_STATUS_EMAIL_COPY = {
+  rejected: {
+    subject: (orgName: string) => `הבקשה לפתיחת הארגון "${orgName}" נדחתה`,
+    heading: "הבקשה שלך נדחתה",
+    color: "#d9534f",
+    message: (orgName: string) =>
+      `הבקשה לפתיחת הארגון <strong>${orgName}</strong> נבדקה ולא אושרה על ידי מנהל המערכת.`,
+  },
+  suspended: {
+    subject: (orgName: string) => `הארגון "${orgName}" הושעה`,
+    heading: "הארגון שלך הושעה",
+    color: "#d9534f",
+    message: (orgName: string) =>
+      `הארגון <strong>${orgName}</strong> הושעה על ידי מנהל המערכת, וגישת המשתמשים אליו חסומה זמנית.`,
+  },
+  reactivated: {
+    subject: (orgName: string) => `הארגון "${orgName}" הופעל מחדש`,
+    heading: "הארגון שלך הופעל מחדש",
+    color: "#10a37f",
+    message: (orgName: string) =>
+      `הארגון <strong>${orgName}</strong> הופעל מחדש וחזר לפעילות מלאה.`,
+  },
+} as const;
+
+/**
+ * Notify the org owner about a rejection, suspension, or reactivation.
+ * Shares one template so the three less-common status transitions stay
+ * consistent with each other (and with the approval email above) instead
+ * of only the "approved" path ever notifying the owner.
+ */
+export async function sendOrgStatusEmail(
+  kind: keyof typeof ORG_STATUS_EMAIL_COPY,
+  ownerEmail: string,
+  orgName: string,
+  name?: string,
+) {
+  const copy = ORG_STATUS_EMAIL_COPY[kind];
+  const dashboardUrl = `${FRONTEND_URL}/safeai-ui`;
+  const transporter = await createTransporter();
+
+  const mailOptions = {
+    from: EMAIL_FROM,
+    to: ownerEmail,
+    subject: copy.subject(orgName),
+    html: `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head><meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: ${copy.color}; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .button { display: inline-block; padding: 15px 30px; background: ${copy.color}; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header"><h1>${copy.heading}</h1></div>
+          <div class="content">
+            <p>שלום ${name || "מנהל הארגון"},</p>
+            <p>${copy.message(orgName)}</p>
+            <p style="text-align: center;">
+              <a href="${dashboardUrl}" class="button">מעבר למסך הארגון</a>
+            </p>
+          </div>
+          <div class="footer"><p>© 2026 SafeAI. כל הזכויות שמורות.</p></div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `שלום ${name || "מנהל הארגון"},\n${copy.message(orgName).replace(/<[^>]+>/g, "")}\n${dashboardUrl}\n\n© 2026 SafeAI`,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    if (process.env.NODE_ENV !== "production") {
+      logger.debug(`📧 Org ${kind} Email (DEV MODE):`);
+      logger.info("To:", ownerEmail);
+      logger.info("Org:", orgName);
+    }
+    return info;
+  } catch (error) {
+    logger.error(`Failed to send org ${kind} email:`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // best-effort
+  }
+}
