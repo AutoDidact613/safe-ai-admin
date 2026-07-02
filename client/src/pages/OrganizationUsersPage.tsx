@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { getMyOrganization } from "../features/organizations/api/organizationApi";
 import "../styles/organization-wallet.css";
 
 interface User {
@@ -32,6 +33,7 @@ export default function OrganizationUsersPage() {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [noOrganization, setNoOrganization] = useState(false);
 
   const [topUpAmount, setTopUpAmount] = useState<number | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,46 +51,26 @@ export default function OrganizationUsersPage() {
     try {
       setLoading(true);
       setError("");
+      setNoOrganization(false);
 
       const token = localStorage.getItem("accessToken");
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
 
       if (!token) {
         setError("לא נמצא טוקן גישה. אנא התחברי מחדש.");
         return;
       }
 
-      const orgResponse = await axios.get(
-        `${import.meta.env.VITE_API_URL}/organizations`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const { organization: myOrg } = await getMyOrganization();
 
-      if (!orgResponse.data || orgResponse.data.length === 0) {
-        setError("לא נמצאו ארגונים במסד הנתונים (No organization found)");
+      if (!myOrg) {
+        setNoOrganization(true);
         return;
       }
 
-      const currentUserId = user.userId || user._id || user.id;
-
-      let userOrg = orgResponse.data.find(
-        (org: Organization) => (org.ownerId?._id || org.ownerId) === currentUserId
-      );
-
-      if (!userOrg && orgResponse.data.length > 0) {
-        userOrg = orgResponse.data[0];
-      }
-
-      if (!userOrg) {
-        setError("לא נמצא ארגון");
-        return;
-      }
-
-      setOrganization(userOrg);
+      setOrganization(myOrg as unknown as Organization);
 
       const usersResponse = await axios.get(
-        `${import.meta.env.VITE_API_URL}/organizations/${userOrg._id}/users`,
+        `${import.meta.env.VITE_API_URL}/organizations/${myOrg._id}/users`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -233,6 +215,15 @@ export default function OrganizationUsersPage() {
         <button className="retry-button" onClick={fetchOrganizationAndUsers}>
           ניסיון חוזר
         </button>
+      </div>
+    );
+  }
+
+  if (noOrganization) {
+    return (
+      <div className="organization-page">
+        <h1>לוח ארגון</h1>
+        <p>אין לך ארגון משויך לחשבון זה.</p>
       </div>
     );
   }
