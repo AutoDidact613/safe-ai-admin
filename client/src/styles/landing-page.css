@@ -428,3 +428,15 @@
     font-size: 14px;
   }
 }
+
+.hero-org-owner-link {
+  display: inline-block;
+  margin-top: 16px;
+  color: #fff;
+  text-decoration: underline;
+  font-size: 15px;
+}
+
+.hero-org-owner-link:hover {
+  opacity: 0.85;
+}

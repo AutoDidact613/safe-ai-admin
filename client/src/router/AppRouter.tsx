@@ -18,6 +18,7 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
+import { PublicOrgOwnerSignup } from "../features/organizations/PublicOrgOwnerSignup";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -58,6 +59,7 @@ export default function AppRouter() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/become-org-owner" element={<PublicOrgOwnerSignup />} />
 
         <Route
           path="/login"
