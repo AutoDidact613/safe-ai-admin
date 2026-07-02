@@ -86,10 +86,9 @@ export async function getOrganizationHandler(
       return res.status(404).json({ error: "Organization not found" });
     }
 
-    if (
-      user.role !== "admin" &&
-      organization.ownerId.toString() !== user.userId
-    ) {
+    const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
       return res.status(403).json({ error: "Access denied" });
     }
 
@@ -116,10 +115,9 @@ export async function updateOrganizationHandler(
       return res.status(404).json({ error: "Organization not found" });
     }
 
-    if (
-      user.role !== "admin" &&
-      organization.ownerId.toString() !== user.userId
-    ) {
+    const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
       return res.status(403).json({ error: "Access denied" });
     }
 
@@ -201,10 +199,9 @@ export async function addUserToOrganizationHandler(
       return res.status(404).json({ error: "Organization not found" });
     }
 
-    if (
-      user.role !== "admin" &&
-      organization.ownerId.toString() !== user.userId
-    ) {
+    const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
       return res.status(403).json({ error: "Access denied" });
     }
 
@@ -237,10 +234,9 @@ export async function addUserByEmailToOrganizationHandler(
       return res.status(404).json({ error: "Organization not found" });
     }
 
-    if (
-      user.role !== "admin" &&
-      organization.ownerId.toString() !== user.userId
-    ) {
+    const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
       return res.status(403).json({ error: "Access denied" });
     }
 
@@ -328,10 +324,9 @@ export async function topUpOrganizationWalletHandler(
       return res.status(404).json({ error: "Organization not found" });
     }
 
-    if (
-      user.role !== "admin" &&
-      organization.ownerId.toString() !== user.userId
-    ) {
+    const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
       return res.status(403).json({ error: "Access denied" });
     }
 
