@@ -9,6 +9,7 @@ import {
   addUserToOrganization,
   removeUserFromOrganization,
   addUserToOrganizationByEmail,
+  getOrganizationForUser,
   topUpOrganizationWallet,
   getPendingOrganizationsForAdmin,
   listAllOrganizationsWithStats,
@@ -276,6 +277,17 @@ export async function removeUserFromOrganizationHandler(
   try {
     const user = (req as any).user;
     const targetUserId = req.params.userId;
+
+    const targetOrg = await getOrganizationForUser(targetUserId);
+    if (!targetOrg) {
+      return res.status(404).json({ error: "User not found or not in an organization" });
+    }
+
+    const ownerId = (targetOrg.ownerId as any)?._id ?? targetOrg.ownerId;
+
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
 
     await removeUserFromOrganization(targetUserId);
     res.json({
