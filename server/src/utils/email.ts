@@ -429,7 +429,7 @@ export async function sendOrgApprovalRequestEmail(
   ownerEmail: string,
 ) {
   const dashboardUrl = `${FRONTEND_URL}/safeai-ui`;
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
 
   const mailOptions = {
     from: EMAIL_FROM,
@@ -494,7 +494,7 @@ export async function sendOrgApprovedEmail(
   name?: string,
 ) {
   const dashboardUrl = `${FRONTEND_URL}/safeai-ui`;
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
 
   const mailOptions = {
     from: EMAIL_FROM,
