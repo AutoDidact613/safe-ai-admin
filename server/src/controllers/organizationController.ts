@@ -116,12 +116,20 @@ export async function updateOrganizationHandler(
     }
 
     const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+    const isAdmin = user.role === "admin";
 
-    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
+    if (!isAdmin && ownerId.toString() !== user.userId) {
       return res.status(403).json({ error: "Access denied" });
     }
 
-    const updatedOrg = await updateOrganization(orgId, req.body);
+    // Non-admin owners may only edit their own profile fields - not status,
+    // walletBalance, isActive, ownerId, etc. Those go through their own
+    // dedicated admin-only routes (approve/reject/suspend/activate/top-up).
+    const updateData = isAdmin
+      ? req.body
+      : { name: req.body.name, description: req.body.description };
+
+    const updatedOrg = await updateOrganization(orgId, updateData);
     res.json({ success: true, organization: updatedOrg });
   } catch (error) {
     logger.error("Failed to update organization", { error });
