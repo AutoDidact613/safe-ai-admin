@@ -15,7 +15,7 @@ jest.mock("../../logger", () => ({
 }));
 
 // 2. עקיפת ה-Middleware של האוונטיקציה לצורך בדיקות יחידה מבודדות
-jest.mock("../middleware/auth", () => ({
+jest.mock("../../middleware/auth", () => ({
   authenticateToken: (req: any, res: any, next: any) => next(),
 }));
 
