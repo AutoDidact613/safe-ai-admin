@@ -6,9 +6,9 @@ import { AIService } from "../tenderBoardAIService";
 import * as repo from "../../repositories/tenderBoardRepository";
 
 // 1. הגדרת מוקים (Mocks) לכל השירותים והשכבות החיצוניות כדי למנוע קריאות אמיתיות ל-DB או ל-AI
-jest.mock("../services/tenderBoardService");
-jest.mock("../services/tenderBoardAIService");
-jest.mock("../repositories/tenderBoardRepository");
+jest.mock("../tenderBoardService");
+jest.mock("../tenderBoardAIService");
+jest.mock("../../repositories/tenderBoardRepository");
 jest.mock("../logger", () => ({
   info: jest.fn(),
   error: jest.fn(),
