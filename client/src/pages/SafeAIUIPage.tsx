@@ -132,7 +132,6 @@ export default function SafeAIUIPage() {
 
     fetchNewRequestCount();
   }, [userRole]);
-  }, [userRole]);
 
   const renderSection = () => {
     // Org owners whose org is not yet approved only see the pending screen
