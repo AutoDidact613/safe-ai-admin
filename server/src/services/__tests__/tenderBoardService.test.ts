@@ -13,7 +13,35 @@ jest.mock("../../logger", () => ({
   info: jest.fn(),
   error: jest.fn(),
 }));
-
+jest.mock("../../config/geminiclient", () => ({
+  geminiClient: {
+    chat: {
+      completions: {
+        create: jest.fn(),
+      },
+    },
+  },
+}));
+jest.mock("../emailService", () => ({
+  sendApplicantRegisteredEmail: jest.fn(),
+  sendTenderClosedEmail: jest.fn(),
+}));
+jest.mock("../../models/tendersBoardLog", () => ({
+  TenderLog: {
+    create: jest.fn(),
+  },
+}));
+jest.mock("mongoose", () => ({
+  ...jest.requireActual("mongoose"),
+  Types: {
+    ObjectId: {
+      isValid: jest.fn().mockReturnValue(true),
+    },
+  },
+}));
+jest.mock("../aiService", () => ({
+  callAI: jest.fn(),
+}));
 // 2. עקיפת ה-Middleware של האוונטיקציה לצורך בדיקות יחידה מבודדות
 jest.mock("../../middleware/auth", () => ({
   authenticateToken: (req: any, res: any, next: any) => next(),
