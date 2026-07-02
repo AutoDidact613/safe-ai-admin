@@ -469,8 +469,11 @@ export async function publicRequestOrganizationHandler(req: Request, res: Respon
     });
   } catch (error: any) {
     logger.error("Failed public organization request", { error });
-    if (error?.message?.includes("כבר קיים") || error?.code === 11000) {
-      return res.status(409).json({ error: "כתובת האימייל כבר רשומה במערכת" });
+    // register() ו-publicRequestOrganization() כבר זורקים הודעות עבריות ברורות
+    // ומובחנות עבור התנגשות אימייל לעומת התנגשות שם ארגון - מציגים אותן כמו
+    // שהן במקום למפות כל שגיאה גורפת ל"אימייל כבר רשום".
+    if (error?.message?.includes("אימייל") || error?.message?.includes("שם הארגון")) {
+      return res.status(409).json({ error: error.message });
     }
     res.status(400).json({ error: error.message || "שליחת הבקשה נכשלה" });
   }
