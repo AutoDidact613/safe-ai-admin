@@ -32,7 +32,7 @@ export const API_ENDPOINTS = {
     activate: (id: string) => `${API_BASE_URL}/organizations/${id}/activate`,
     approve: (id: string) => `${API_BASE_URL}/organizations/${id}/approve`,
     reject: (id: string) => `${API_BASE_URL}/organizations/${id}/reject`,
-    request: `${API_BASE_URL}/organizations/request`,
+    publicRequest: `${API_BASE_URL}/organizations/public-request`,
     my: `${API_BASE_URL}/organizations/my`,
   },
   // Proxy key endpoints (user's own proxy key)
@@ -84,7 +84,7 @@ export async function apiCall<T>(
   // If we get a 401 and have a refresh token, try to refresh
   if (response.status === 401 && accessToken) {
     const refreshToken = localStorage.getItem("refreshToken");
-    
+
     if (refreshToken) {
       try {
         // Try to refresh the token
@@ -98,12 +98,12 @@ export async function apiCall<T>(
 
         if (refreshResponse.ok) {
           const refreshData = await refreshResponse.json();
-          
+
           if (refreshData.success && refreshData.accessToken) {
             // Update tokens
             localStorage.setItem('accessToken', refreshData.accessToken);
             localStorage.setItem('refreshToken', refreshData.refreshToken);
-            
+
             // Retry the original request with new token
             response = await makeRequest(refreshData.accessToken);
           }
@@ -130,7 +130,7 @@ export async function apiCall<T>(
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
       localStorage.removeItem("userRole");
-      
+
       // Redirect to home page
       window.location.href = '/';
     }

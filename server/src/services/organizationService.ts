@@ -1,6 +1,7 @@
 import * as repo from "../repositories/organizationRepository";
 import * as userRepo from "../repositories/userRepository";
 import { UsageLog } from "../models";
+import { register } from "./authService";
 import { sendOrgApprovalRequestEmail, sendOrgApprovedEmail } from "../utils/email";
 import logger from "../logger";
 
@@ -175,6 +176,64 @@ export async function topUpOrganizationWallet(orgId: string, amount: number) {
 
 export async function getPendingOrganizationsForAdmin() {
   return repo.getPendingOrganizations();
+}
+
+/**
+ * Public sign-up flow: creates a brand-new org_owner user account together
+ * with a pending organization, in one step. No prior login/registration
+ * required — this IS the registration for org owners. Called from a public,
+ * unauthenticated endpoint.
+ */
+export async function publicRequestOrganization(data: {
+  ownerName: string;
+  ownerEmail: string;
+  ownerPassword: string;
+  orgName: string;
+  orgDescription?: string;
+}) {
+  // יוצר את חשבון בעל הארגון ישירות במצב מאומת
+  // (אימות המייל מדולג — אישור המנהל הוא השער האמיתי)
+  const { user } = await register({
+    email: data.ownerEmail,
+    password: data.ownerPassword,
+    name: data.ownerName,
+    role: "org_owner",
+    skipEmailVerification: true,
+  });
+
+  // יצירת הארגון במצב ממתין ולא פעיל
+  const organization = await repo.createOrganization({
+    name: data.orgName,
+    description: data.orgDescription || "",
+    ownerId: user._id,
+    status: "pending",
+    isActive: false,
+  });
+
+  // קישור המשתמש לארגון שנוצר
+  await userRepo.updateUser(user._id.toString(), {
+    organizationId: organization._id,
+  });
+
+  logger.info("Public organization request created", {
+    organizationId: organization._id,
+    ownerEmail: data.ownerEmail,
+  });
+
+  // התראה לכל האדמינים (best-effort)
+  try {
+    const users = await userRepo.getUsers();
+    const admins = users.filter((u: any) => u.role === "admin");
+    await Promise.all(
+      admins.map((admin: any) =>
+        sendOrgApprovalRequestEmail(admin.email, data.orgName, data.ownerEmail)
+      )
+    );
+  } catch (error) {
+    logger.error("Failed to notify admins about org request", { error });
+  }
+
+  return organization;
 }
 
 export async function approveOrganization(orgId: string) {

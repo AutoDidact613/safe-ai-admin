@@ -15,7 +15,7 @@ import {
   suspendOrganizationHandler,
   activateOrganizationHandler,
   getOrganizationStatsHandler,
-  requestOrganizationHandler,
+  publicRequestOrganizationHandler,
   approveOrganizationHandler,
   rejectOrganizationHandler,
   getMyOrganizationHandler,
@@ -45,7 +45,11 @@ async function requireApprovedOrg(
   }
 }
 
-// 🔒 כל הנתיבים של הארגונים דורשים אימות משתמש מחובר (Token)
+// ===== PUBLIC — no auth required (org owner sign-up) =====
+// חייב להיות לפני router.use(authenticateToken) למטה!
+router.post("/public-request", publicRequestOrganizationHandler);
+
+// 🔒 מכאן ואילך כל הנתיבים דורשים אימות משתמש מחובר (Token)
 router.use(authenticateToken);
 
 // 1. PROTECTED STATIC ROUTES (נתיבים סטטיים תמיד ראשונים)

@@ -81,6 +81,22 @@ export const activateOrganization = async (id: string): Promise<{ success: boole
   return apiCall<{ success: boolean }>(API_ENDPOINTS.adminOrganizations.activate(id), { method: "PATCH" });
 };
 
+// הרשמה ציבורית כמנהל ארגון (יוצר חשבון + ארגון ממתין, בלי צורך בהתחברות מוקדמת)
+export const publicRequestOrganization = async (
+  data: {
+    ownerName: string;
+    ownerEmail: string;
+    ownerPassword: string;
+    orgName: string;
+    orgDescription?: string;
+  }
+): Promise<{ success: boolean; message?: string; organization?: AdminOrganization }> => {
+  return apiCall(API_ENDPOINTS.adminOrganizations.publicRequest, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+};
+
 // הארגון של המשתמש הנוכחי (בכל סטטוס)
 export const getMyOrganization = async (): Promise<{ organization: AdminOrganization | null }> => {
   return apiCall(API_ENDPOINTS.adminOrganizations.my, { method: "GET" });
