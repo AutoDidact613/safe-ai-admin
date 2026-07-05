@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  createOrganizationMember,
   getOrganizationDetail,
   getOrganizationStats,
   getOrganizationUsers,
@@ -21,6 +22,44 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
   const [users, setUsers] = useState<OrganizationUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [memberName, setMemberName] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
+  const [addMemberError, setAddMemberError] = useState<string | null>(null);
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    email: string;
+    password: string;
+  } | null>(null);
+
+  const reloadUsers = async () => {
+    const usersData = await getOrganizationUsers(orgId);
+    setUsers(Array.isArray(usersData) ? usersData : []);
+  };
+
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!memberName.trim() || !memberEmail.trim()) {
+      setAddMemberError("יש למלא שם וכתובת אימייל");
+      return;
+    }
+    try {
+      setAddingMember(true);
+      setAddMemberError(null);
+      const result = await createOrganizationMember(orgId, {
+        name: memberName.trim(),
+        email: memberEmail.trim(),
+      });
+      setCreatedCredentials({ email: result.user.email, password: result.temporaryPassword });
+      setMemberName("");
+      setMemberEmail("");
+      await reloadUsers();
+    } catch (err: unknown) {
+      setAddMemberError(err instanceof Error ? err.message : "הוספת המשתמש נכשלה");
+    } finally {
+      setAddingMember(false);
+    }
+  };
 
   useEffect(() => {
     if (!orgId) return;
@@ -91,6 +130,39 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
           <div className="org-card-value">${(stats?.totalCost ?? 0).toFixed(2)}</div>
         </div>
       </div>
+
+      <h3>הוספת משתמש חדש לארגון</h3>
+      <form onSubmit={handleAddMember} className="org-request-form">
+        <input
+          className="orgs-search"
+          value={memberName}
+          onChange={(e) => setMemberName(e.target.value)}
+          placeholder="שם מלא"
+        />
+        <input
+          type="email"
+          className="orgs-search"
+          value={memberEmail}
+          onChange={(e) => setMemberEmail(e.target.value)}
+          placeholder="כתובת אימייל"
+        />
+        {addMemberError && <div className="orgs-error">{addMemberError}</div>}
+        <button type="submit" className="orgs-btn orgs-btn-activate" disabled={addingMember}>
+          {addingMember ? "מוסיף..." : "הוסף משתמש"}
+        </button>
+      </form>
+
+      {createdCredentials && (
+        <div className="org-pending-card">
+          <p>המשתמש נוצר בהצלחה! פרטי ההתחברות שיש למסור לו:</p>
+          <p>
+            <strong>אימייל:</strong> {createdCredentials.email}
+          </p>
+          <p>
+            <strong>סיסמה זמנית:</strong> {createdCredentials.password}
+          </p>
+        </div>
+      )}
 
       <h3>משתמשי הארגון ({users.length})</h3>
       {users.length === 0 ? (

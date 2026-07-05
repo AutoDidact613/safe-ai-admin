@@ -7,6 +7,7 @@ import {
   deleteOrganizationHandler,
   getOrganizationUsersHandler,
   addUserToOrganizationHandler,
+  createOrganizationMemberHandler,
   removeUserFromOrganizationHandler,
   addUserByEmailToOrganizationHandler,
   topUpOrganizationWalletHandler,
@@ -82,6 +83,7 @@ router.get("/:id/stats", getOrganizationStatsHandler);      // Admin or Org Owne
 // Management of Users inside Organization (blocked until org is approved, admins bypass)
 router.get("/:id/users", requireApprovedOrg, getOrganizationUsersHandler); // Admin or approved Org Owner
 router.post("/:id/users", requireApprovedOrg, addUserToOrganizationHandler); // Admin or approved Org Owner
+router.post("/:id/members", requireApprovedOrg, createOrganizationMemberHandler); // Admin or approved Org Owner - creates a brand-new user + temp password
 router.delete("/users/:userId", removeUserFromOrganizationHandler); // Admin or Org Owner
 router.post("/:id/users/by-email", requireApprovedOrg, addUserByEmailToOrganizationHandler); // Admin or approved Org Owner
 

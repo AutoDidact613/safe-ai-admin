@@ -7,6 +7,7 @@ import {
   deleteOrganization,
   getOrganizationUsers,
   addUserToOrganization,
+  createOrganizationMember,
   removeUserFromOrganization,
   addUserToOrganizationByEmail,
   getOrganizationForUser,
@@ -219,6 +220,51 @@ export async function addUserToOrganizationHandler(
   } catch (error: any) {
     logger.error("Failed to add user to organization", { error });
     res.status(400).json({ error: error.message || "Failed to add user" });
+  }
+}
+
+/**
+ * Create a brand-new user account directly inside an organization,
+ * with a generated temporary password (Admin or Org Owner)
+ */
+export async function createOrganizationMemberHandler(
+  req: Request<{ id: string }>,
+  res: Response
+) {
+  try {
+    const user = (req as any).user;
+    const orgId = req.params.id;
+    const { name, email, role } = req.body;
+
+    if (!name?.trim() || !email?.trim()) {
+      return res.status(400).json({ error: "יש למלא שם וכתובת אימייל" });
+    }
+
+    const organization = await getOrganizationById(orgId);
+    if (!organization) {
+      return res.status(404).json({ error: "Organization not found" });
+    }
+
+    const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const { user: newUser, temporaryPassword } = await createOrganizationMember(orgId, {
+      name: name.trim(),
+      email: email.trim(),
+      role,
+    });
+
+    res.status(201).json({
+      success: true,
+      user: { _id: newUser._id, name: newUser.name, email: newUser.email },
+      temporaryPassword,
+    });
+  } catch (error: any) {
+    logger.error("Failed to create organization member", { error });
+    res.status(400).json({ error: error.message || "Failed to create organization member" });
   }
 }
 
