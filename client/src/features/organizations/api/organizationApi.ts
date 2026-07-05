@@ -41,6 +41,7 @@ export interface OrganizationUser {
   isActive: boolean;
   mode?: string;
   createdAt: string;
+  lastLogin?: string;
 }
 
 export interface OrganizationUsageSummary {
