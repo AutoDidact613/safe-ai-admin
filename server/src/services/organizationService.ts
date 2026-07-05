@@ -191,6 +191,8 @@ export async function getPendingOrganizationsForAdmin() {
  * required — this IS the registration for org owners. Called from a public,
  * unauthenticated endpoint.
  */
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function publicRequestOrganization(data: {
   ownerName: string;
   ownerEmail: string;
@@ -198,6 +200,10 @@ export async function publicRequestOrganization(data: {
   orgName: string;
   orgDescription?: string;
 }) {
+  if (!EMAIL_REGEX.test(data.ownerEmail)) {
+    throw new Error("כתובת האימייל אינה תקינה");
+  }
+
   // בדיקה מוקדמת - נמנעת מיצירת משתמש כשברור מראש ששם הארגון תפוס
   const existingOrg = await repo.findOrganizationByName(data.orgName);
   if (existingOrg) {
