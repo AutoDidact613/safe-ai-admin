@@ -290,25 +290,13 @@ describe("organizationService.createOrganization", () => {
 });
 
 describe("organizationService.deleteOrganization", () => {
-  it("clears organizationId from all members and demotes org_owner to user", async () => {
-    mockedUserRepo.getUsers.mockResolvedValue([
-      { _id: "u1", organizationId: "org1", role: "org_owner" },
-      { _id: "u2", organizationId: "org1", role: "user" },
-      { _id: "u3", organizationId: "otherOrg", role: "org_owner" },
-    ] as any);
+  it("bulk-clears organizationId from all members before deleting the org", async () => {
+    mockedUserRepo.removeUsersFromOrganization.mockResolvedValue(undefined as any);
     mockedRepo.deleteOrganization.mockResolvedValue({} as any);
 
     await organizationService.deleteOrganization("org1");
 
-    expect(mockedUserRepo.updateUser).toHaveBeenCalledTimes(2);
-    expect(mockedUserRepo.updateUser).toHaveBeenCalledWith("u1", {
-      organizationId: null,
-      role: "user",
-    });
-    expect(mockedUserRepo.updateUser).toHaveBeenCalledWith("u2", {
-      organizationId: null,
-      role: "user",
-    });
+    expect(mockedUserRepo.removeUsersFromOrganization).toHaveBeenCalledWith("org1");
     expect(mockedRepo.deleteOrganization).toHaveBeenCalledWith("org1");
   });
 });
@@ -480,10 +468,9 @@ describe("organizationService.getMyOrganization", () => {
 
 describe("organizationService.getOrganizationUsageSummary", () => {
   it("aggregates usage across all organization members", async () => {
-    mockedUserRepo.getUsers.mockResolvedValue([
+    mockedUserRepo.getUsersByOrganization.mockResolvedValue([
       { _id: "u1", organizationId: "org1" },
       { _id: "u2", organizationId: "org1" },
-      { _id: "u3", organizationId: "otherOrg" },
     ] as any);
     mockedUsageLog.aggregate.mockResolvedValue([
       { totalRequests: 5, totalTokens: 1000, totalCost: 2.5 },
@@ -511,7 +498,7 @@ describe("organizationService.getOrganizationUsageSummary", () => {
   });
 
   it("defaults to zeroed stats when there is no usage yet", async () => {
-    mockedUserRepo.getUsers.mockResolvedValue([
+    mockedUserRepo.getUsersByOrganization.mockResolvedValue([
       { _id: "u1", organizationId: "org1" },
     ] as any);
     mockedUsageLog.aggregate.mockResolvedValue([] as any);
@@ -539,29 +526,19 @@ describe("organizationService.updateOrganization", () => {
 });
 
 describe("organizationService.getOrganizationUsers", () => {
-  it("returns only users belonging to the given organization", async () => {
-    mockedUserRepo.getUsers.mockResolvedValue([
+  it("delegates to a targeted repository query for the given organization", async () => {
+    mockedUserRepo.getUsersByOrganization.mockResolvedValue([
       { _id: "u1", organizationId: "org1" },
-      { _id: "u2", organizationId: "otherOrg" },
       { _id: "u3", organizationId: "org1" },
     ] as any);
 
     const result = await organizationService.getOrganizationUsers("org1");
 
+    expect(mockedUserRepo.getUsersByOrganization).toHaveBeenCalledWith("org1");
     expect(result).toEqual([
       { _id: "u1", organizationId: "org1" },
       { _id: "u3", organizationId: "org1" },
     ]);
-  });
-
-  it("excludes users with no organizationId at all", async () => {
-    mockedUserRepo.getUsers.mockResolvedValue([
-      { _id: "u1", organizationId: undefined },
-    ] as any);
-
-    const result = await organizationService.getOrganizationUsers("org1");
-
-    expect(result).toEqual([]);
   });
 });
 
