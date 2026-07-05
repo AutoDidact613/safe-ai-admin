@@ -17,7 +17,8 @@ export interface IPost extends Document {
   ratingSum: number;     // סכום כל הדירוגים שניתנו (למשל: 5 + 4 + 5 = 14)
   averageRating: number; // הציון הממוצע (Sum חלקי Count)
   // עדכון הממשק: מחזיק כעת אובייקטים עם מזהה המשתמש והציון המדויק שהוא נתן
-  ratedBy: Array<{ userId: mongoose.Types.ObjectId; score: number }>; 
+  ratedBy: Array<{ userId: mongoose.Types.ObjectId; score: number }>;
+  titleEmbedding: number[]; // <-- הוספת הטיפוס ב-Interface
   lastActivity: Date; // שדה חדש למעקב אחר פעילות אחרונה (פוסט או תגובה)
 }
 
@@ -46,7 +47,11 @@ const PostSchema: Schema = new Schema({
   }],
   
   // שדה חדש למעקב אחר פעילות אחרונה (פוסט או תגובה)
-  lastActivity: { type: Date, default: Date.now }
+  lastActivity: { type: Date, default: Date.now },
+  titleEmbedding: {
+    type: [Number],
+    default: []
+  },
 });
 
 export default mongoose.model<IPost>('Post', PostSchema);

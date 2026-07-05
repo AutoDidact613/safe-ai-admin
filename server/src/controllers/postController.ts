@@ -1,11 +1,32 @@
 import { Request, Response } from 'express';
 import Post from '../models/Post';
 import Comment from '../models/Comment';
-import Tag from '../models/Tag'; // ייבוא מודל התגיות החדש
+import Tag from '../models/Tag'; 
 import ModerationLog from '../models/ModerationLog';
 import { User } from '../models/User';
+import { OpenAI } from 'openai'; 
 
+/**
+ * פונקציית עזר להפיכת טקסט לוקטור מספרי באמצעות OpenAI
+ */
+async function getEmbedding(text: string): Promise<number[]> {
+  try {
+    // אתחול דינמי שמבטיח קריאה ישירה של המפתח המעודכן ביותר מ-process.env
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+    // הדפסת אבטחה קצרה לטרמינל כדי לוודא סופית איזה מפתח נטען בפועל
+    console.log("OpenAI Key check (first 10 chars):", process.env.OPENAI_API_KEY?.substring(0, 10) + "...");
+
+    const response = await openai.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: text,
+    });
+    return response.data[0].embedding;
+  } catch (error) {
+    console.error('OpenAI Embedding Error:', error);
+    throw new Error('Failed to generate embedding from OpenAI');
+  }
+}
 
 export const getPosts = async (req: Request, res: Response) => {
   try {
@@ -16,7 +37,6 @@ export const getPosts = async (req: Request, res: Response) => {
       filterQuery.isBlocked = { $ne: true };
     }
     
-    // שליפה ומיון לפי הפעילות האחרונה (פוסט חדש או תגובה חדשה)
     const posts = await Post.find(filterQuery)
       .populate('author', 'name')
       .populate('tags', 'name')
@@ -27,7 +47,7 @@ export const getPosts = async (req: Request, res: Response) => {
       
       const lastComment = await Comment.findOne({ postId: post._id })
         .populate('author', 'name')
-        .sort({ createdAt: -1 }); // מביא את התגובה הכי חדשה שנכתבה
+        .sort({ createdAt: -1 }); 
 
       return { 
         ...post.toObject(), 
@@ -46,10 +66,8 @@ export const getPosts = async (req: Request, res: Response) => {
   }
 };
 
-// 2. הבאת פוסט בודד + התגובות שלו (עבור השרשור המלא)
 export const getPostById = async (req: Request, res: Response) => {
   try {
-    // שדרוג: מאכלס את התגיות גם כשנכנסים לפוסט בודד
     const post = await Post.findById(req.params.id)
       .populate('author', 'name')
       .populate('tags', 'name');
@@ -63,7 +81,6 @@ export const getPostById = async (req: Request, res: Response) => {
   }
 };
 
-// 3. עדכון צפיות חכם (מונע כפל צפיות ולא סופר את היוצר)
 export const incrementView = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -85,7 +102,6 @@ export const incrementView = async (req: Request, res: Response) => {
   }
 };
 
-// 4. חיפוש פוסטים דומים בזמן אמת (לפי אותיות שהוקלדו בכותרת)
 export const searchSimilarPosts = async (req: Request, res: Response) => {
   try {
     const { title } = req.query;
@@ -93,33 +109,44 @@ export const searchSimilarPosts = async (req: Request, res: Response) => {
       return res.status(200).json([]);
     }
 
-    const similar = await Post.find({
-      title: { $regex: title as string, $options: 'i' }
-    }).limit(3).select('title _id'); 
+    const searchEmbedding = await getEmbedding(title as string);
+
+    const similar = await Post.aggregate([
+      {
+        $vectorSearch: {
+          index: 'vector_index', 
+          path: 'titleEmbedding',
+          queryVector: searchEmbedding,
+          numCandidates: 10,
+          limit: 3 
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          title: 1
+        }
+      }
+    ]);
 
     res.status(200).json(similar);
   } catch (error) {
+    console.error('Error in semantic searchSimilarPosts:', error);
     res.status(500).json({ message: 'שגיאה בחיפוש פוסטים דומים', error });
   }
 };
 
 export const createPost = async (req: Request, res: Response) => {
-  // בתוך פונקציית createPost בשרת:
-const authenticatedUserId = (req as any).user?.userId; // שליפת ה-ID המקורי
   try {
-    // 1. קליטת הנתונים מתוך ה-body (שימי לב שקיבלנו fileUrl במקום קובץ גולמי)
     const { title, content, category, tags, fileUrl } = req.body;
     
-    // שליפת ה-userId מתוך ה-Token המוצפן (הוזרק על ידי ה-Middleware של ה-Auth)
-    // אם עדיין לא הגדרת JWT בשרת, תוכלי זמנית להשתמש ב- req.body.userId
-const authenticatedUserId = (req as any).user?.userId || req.body.userId;
+    const authenticatedUserId = (req as any).user?.userId || req.body.userId;
     if (!authenticatedUserId) {
       return res.status(401).json({ message: "משתמש לא מחובר או לא מאומת" });
     }
 
     let finalTagIds: string[] = [];
     
-    // 2. טיפול בתגיות (הסרנו את ה-JSON.parse המיותר כי המידע מגיע כבר כאובייקט מובנה ב-JSON)
     if (tags && Array.isArray(tags)) {
       for (const tagItem of tags) {
         const hasValidId = tagItem.id && tagItem.id.length === 24;
@@ -142,19 +169,20 @@ const authenticatedUserId = (req as any).user?.userId || req.body.userId;
       }
     }
 
-    // 3. יצירת הפוסט החדש ושמירת הקישור מ-S3
+    const embedding = await getEmbedding(title);
+
     const newPost = new Post({
       title,
       content,
       category,
       tags: finalTagIds,
-      attachments: fileUrl ? [fileUrl] : [], // שמירת הקישור של S3 בתוך מערך הנספחים
-      author: authenticatedUserId // שיוך למשתמש המאומת
+      attachments: fileUrl ? [fileUrl] : [], 
+      author: authenticatedUserId,
+      titleEmbedding: embedding 
     });
 
     const savedPost = await newPost.save();
     
-    // 4. שליפת הפוסט המלא עם ה-Populate
     const populatedPost = await Post.findById(savedPost._id)
       .populate('author', 'name')
       .populate('tags', 'name');
@@ -194,7 +222,6 @@ export const searchPosts = async (req: Request, res: Response) => {
       searchFilter.isBlocked = { $ne: true };
     }
 
-    // תיקון: הוספת .sort({ lastActivity: -1 }) כדי שגם בחיפוש הסדר יישמר
     const posts = await Post.find(searchFilter)
       .populate('author', 'name')
       .populate('tags', 'name')
@@ -205,7 +232,7 @@ export const searchPosts = async (req: Request, res: Response) => {
       
       const lastComment = await Comment.findOne({ postId: post._id })
         .populate('author', 'name')
-        .sort({ createdAt: -1 }); // תיקון: מיון לפי יצירת התגובה
+        .sort({ createdAt: -1 }); 
 
       return { 
         ...post.toObject(), 
@@ -232,7 +259,6 @@ export const createComment = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'תוכן התגובה אינו יכול להיות ריק' });
     }
 
-    // בדיקה האם הפוסט קיים בכלל לפני שמגיבים לו
     const post = await Post.findById(postId);
     if (!post) {
       return res.status(404).json({ message: 'הפוסט אליו את מנסה להגיב לא נמצא' });
@@ -249,12 +275,10 @@ export const createComment = async (req: Request, res: Response) => {
 
     const savedComment = await newComment.save();
     
-    // שליפה מפורשת ומלאה של כל שדות התגובה כולל הקבצים המצורפים
     const populatedComment = await Comment.findById(savedComment._id)
       .select('postId content attachments author createdAt')
       .populate('author', 'name');
     
-    // עדכון שדה הפעילות האחרונה בפוסט לרגע הנוכחי ושמירתו
     post.lastActivity = new Date();
     await post.save({ validateBeforeSave: false });    
     
@@ -265,26 +289,21 @@ export const createComment = async (req: Request, res: Response) => {
   }
 };
 
-// 8. מחיקת תגובה על ידי מנהל מערכת + רישום פעולה
 export const deleteCommentByAdmin = async (req: Request, res: Response) => {
   try {
     const { commentId } = req.params;
-    const { userId } = req.body; // ה-ID של המשתמש שמנסה למחוק, נשלח מה-Frontend
+    const { userId } = req.body; 
 
-    // אבטחה: בדיקה שהמשתמש קיים והוא אכן אדמין
     const user = await User.findById(userId);
     if (!user || user.role !== 'admin') {
       return res.status(403).json({ message: 'אין לך הרשאה לבצע פעולה זו. מורשה למנהלים בלבד.' });
     }
 
-    // שליפת התגובה כדי לשמור את התוכן שלה בלוג לפני שהיא נעלמת לתמיד
     const comment = await Comment.findById(commentId).populate('author', 'name');
     if (!comment) return res.status(404).json({ message: 'התגובה לא נמצאה' });
 
-    // מחיקה פיזית ממסד הנתונים
     await Comment.findByIdAndDelete(commentId);
 
-    // תיעוד הפעולה בקולקשן הלוגים (עבור קריטריון קבלה: "הפעולה נרשמת")
     await ModerationLog.create({
       action: 'DELETE_COMMENT',
       adminId: user._id,
@@ -299,13 +318,11 @@ export const deleteCommentByAdmin = async (req: Request, res: Response) => {
   }
 };
 
-// 9. ניהול סטטוס פוסט (חסימה, נעילה, שחרור) על ידי מנהל מערכת
 export const moderatePost = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params; // ה-ID של הפוסט
-    const { userId, actionType } = req.body; // actionType יכול להיות: 'block', 'unblock', 'lock', 'unlock'
+    const { id } = req.params; 
+    const { userId, actionType } = req.body; 
 
-    // אבטחה: וידוא הרשאות אדמין
     const user = await User.findById(userId);
     if (!user || user.role !== 'admin') {
       return res.status(403).json({ message: 'פעולה זו מורשית למנהלי מערכת בלבד' });
@@ -317,7 +334,6 @@ export const moderatePost = async (req: Request, res: Response) => {
     let logAction: any;
     let logDetails = '';
 
-    // הפעלת השינוי בהתאם לבקשת האדמין
     if (actionType === 'block') {
       post.isBlocked = true;
       logAction = 'BLOCK_POST';
@@ -340,7 +356,6 @@ export const moderatePost = async (req: Request, res: Response) => {
 
     await post.save();
 
-    // שמירת התיעוד בלוגים
     await ModerationLog.create({
       action: logAction,
       adminId: user._id,
@@ -355,7 +370,6 @@ export const moderatePost = async (req: Request, res: Response) => {
   }
 };
 
-
 export const ratePost = async (req: Request, res: Response) => {
   try {
     const { id } = req.params; 
@@ -369,29 +383,20 @@ export const ratePost = async (req: Request, res: Response) => {
     const post = await Post.findById(id);
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
-    // 1. מחפשים את הדירוג הקודם של המשתמש הספציפי בתוך המערך
     const existingRatingIndex = post.ratedBy.findIndex(
       (r: any) => r.userId.toString() === userId
     );
 
     if (existingRatingIndex !== -1) {
-      // 2. אם הוא כבר דירג בעבר:
-      // מורידים מהסכום הכללי את הציון הישן והמדויק שלו, ומוסיפים את החדש
       const oldScore = post.ratedBy[existingRatingIndex].score;
       post.ratingSum = (post.ratingSum - oldScore) + ratingNum;
-      
-      // מעדכנים את הציון שלו במערך לציון החדש
       post.ratedBy[existingRatingIndex].score = ratingNum;
-      
-      // כמות המדרגים (ratingCount) נשארת זהה!
     } else {
-      // 3. אם זה משתמש חדש שמדרג פעם ראשונה:
       post.ratedBy.push({ userId, score: ratingNum });
       post.ratingCount += 1;
       post.ratingSum += ratingNum;
     }
 
-    // 4. חישוב הממוצע המדויק
     post.averageRating = Number((post.ratingSum / post.ratingCount).toFixed(1));
 
     await post.save();
