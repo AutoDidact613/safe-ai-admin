@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { API_ENDPOINTS, apiCall } from "../../config/api";
 import ProviderKeysManagement from "./ProviderKeysManagement";
 
@@ -48,6 +49,7 @@ interface CreateUserResponse {
 }
 
 export default function UsersManagement() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -102,7 +104,7 @@ export default function UsersManagement() {
       setUsers(data);
     } catch (error) {
       console.error("Failed to fetch users:", error);
-      alert("שגיאה בטעינת משתמשים");
+      alert(t("usersManagement.errorLoadingUsers"));
     } finally {
       setLoading(false);
     }
@@ -165,8 +167,8 @@ export default function UsersManagement() {
       await fetchUsers();
     } catch (error: unknown) {
       console.error("Error creating user:", error);
-      const errorMessage = error instanceof Error ? error.message : "שגיאה לא ידועה";
-      alert(`שגיאה ביצירת משתמש: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : t("usersManagement.errorUnknown");
+      alert(t("usersManagement.createUserErrorPrefix", { message: errorMessage }));
     } finally {
       setSaving(false);
     }
@@ -193,18 +195,18 @@ export default function UsersManagement() {
       setShowEditModal(false);
       setEditingUser(null);
       await fetchUsers();
-      alert("המשתמש עודכן בהצלחה");
+      alert(t("usersManagement.userUpdatedSuccess"));
     } catch (error: unknown) {
       console.error("Error updating user:", error);
-      const errorMessage = error instanceof Error ? error.message : "שגיאה לא ידועה";
-      alert(`שגיאה בעדכון משתמש: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : t("usersManagement.errorUnknown");
+      alert(t("usersManagement.updateUserErrorPrefix", { message: errorMessage }));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteUser = async (userId: string, userEmail: string) => {
-    if (!confirm(`האם אתה בטוח שברצונך למחוק את המשתמש ${userEmail}?\n\nאזהרה: מחיקת משתמש תמחק גם את המפתחות שלו ב-LiteLLM`)) {
+    if (!confirm(t("usersManagement.deleteConfirm", { email: userEmail }))) {
       return;
     }
 
@@ -214,11 +216,11 @@ export default function UsersManagement() {
       });
 
       await fetchUsers();
-      alert("המשתמש נמחק בהצלחה");
+      alert(t("usersManagement.userDeletedSuccess"));
     } catch (error: unknown) {
       console.error("Error deleting user:", error);
-      const errorMessage = error instanceof Error ? error.message : "שגיאה לא ידועה";
-      alert(`שגיאה במחיקת משתמש: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : t("usersManagement.errorUnknown");
+      alert(t("usersManagement.deleteUserErrorPrefix", { message: errorMessage }));
     }
   };
 
@@ -245,20 +247,20 @@ export default function UsersManagement() {
   };
 
   const getProfileName = (profileId?: string) => {
-    if (!profileId) return "ללא פרופיל";
+    if (!profileId) return t("usersManagement.noProfile");
     const profile = profiles.find((p) => p._id === profileId);
-    return profile ? profile.name : "פרופיל לא נמצא";
+    return profile ? profile.name : t("usersManagement.profileNotFound");
   };
 
   const getOrganizationName = (organizationId?: string) => {
-    if (!organizationId) return "ללא ארגון";
+    if (!organizationId) return t("usersManagement.noOrganization");
     const org = organizations.find((o) => o._id === organizationId);
-    return org ? org.name : "ארגון לא נמצא";
+    return org ? org.name : t("usersManagement.organizationNotFound");
   };
   const getOrganizationDescription = (organizationId?: string) => {
-    if (!organizationId) return "ללא ארגון";
+    if (!organizationId) return t("usersManagement.noOrganization");
     const org = organizations.find((o) => o._id === organizationId);
-    return org ? org.description : "ארגון לא נמצא";
+    return org ? org.description : t("usersManagement.organizationNotFound");
   };
 
   const filteredUsers = users.filter((user) => {
@@ -288,17 +290,17 @@ export default function UsersManagement() {
   });
 
   if (loading) {
-    return <div className="loading-state">טוען משתמשים...</div>;
+    return <div className="loading-state">{t("usersManagement.loadingUsers")}</div>;
   }
 
   return (
     <div>
       <div className="management-header">
-        <h2>ניהול משתמשים</h2>
+        <h2>{t("safeaiNav.manageUsers")}</h2>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <div className="badge badge-info">סה"כ משתמשים: {users.length}</div>
+          <div className="badge badge-info">{t("usersManagement.totalUsersCount", { count: users.length })}</div>
           <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
-            + משתמש חדש
+            + {t("usersManagement.newUserTitle")}
           </button>
         </div>
       </div>
@@ -306,7 +308,7 @@ export default function UsersManagement() {
       <div className="search-bar">
         <input
           type="text"
-          placeholder="חפש משתמש..."
+          placeholder={t("usersManagement.searchPlaceholder")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -315,40 +317,40 @@ export default function UsersManagement() {
       {/* Filters */}
       <div style={{ display: "flex", gap: "15px", marginBottom: "20px", flexWrap: "wrap" }}>
         <div>
-          <label style={{ marginLeft: "8px", fontWeight: "bold" }}>סטטוס:</label>
+          <label style={{ marginLeft: "8px", fontWeight: "bold" }}>{t("usersManagement.statusLabel")}</label>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as "all" | "active" | "inactive")}
             style={{ padding: "5px 10px", borderRadius: "4px", border: "1px solid #ddd" }}
           >
-            <option value="all">הכל</option>
-            <option value="active">פעיל</option>
-            <option value="inactive">לא פעיל</option>
+            <option value="all">{t("common.all")}</option>
+            <option value="active">{t("orgUsers.active")}</option>
+            <option value="inactive">{t("orgUsers.inactive")}</option>
           </select>
         </div>
 
         <div>
-          <label style={{ marginLeft: "8px", fontWeight: "bold" }}>מצב:</label>
+          <label style={{ marginLeft: "8px", fontWeight: "bold" }}>{t("usersManagement.modeLabel")}</label>
           <select
             value={filterMode}
             onChange={(e) => setFilterMode(e.target.value as "all" | "BYOK" | "MANAGED")}
             style={{ padding: "5px 10px", borderRadius: "4px", border: "1px solid #ddd" }}
           >
-            <option value="all">הכל</option>
+            <option value="all">{t("common.all")}</option>
             <option value="BYOK">BYOK</option>
             <option value="MANAGED">MANAGED</option>
           </select>
         </div>
 
         <div>
-          <label style={{ marginLeft: "8px", fontWeight: "bold" }}>פרופיל:</label>
+          <label style={{ marginLeft: "8px", fontWeight: "bold" }}>{t("usersManagement.profileLabel")}</label>
           <select
             value={filterProfile}
             onChange={(e) => setFilterProfile(e.target.value)}
             style={{ padding: "5px 10px", borderRadius: "4px", border: "1px solid #ddd" }}
           >
-            <option value="all">הכל</option>
-            <option value="none">ללא פרופיל</option>
+            <option value="all">{t("common.all")}</option>
+            <option value="none">{t("usersManagement.noProfile")}</option>
             {profiles.map((profile) => (
               <option key={profile._id} value={profile._id}>
                 {profile.name}
@@ -358,14 +360,14 @@ export default function UsersManagement() {
         </div>
 
         <div>
-          <label style={{ marginLeft: "8px", fontWeight: "bold" }}>ארגון:</label>
+          <label style={{ marginLeft: "8px", fontWeight: "bold" }}>{t("usersManagement.organizationLabel")}</label>
           <select
             value={filterOrganization}
             onChange={(e) => setFilterOrganization(e.target.value)}
             style={{ padding: "5px 10px", borderRadius: "4px", border: "1px solid #ddd" }}
           >
-            <option value="all">הכל</option>
-            <option value="none">ללא ארגון</option>
+            <option value="all">{t("common.all")}</option>
+            <option value="none">{t("usersManagement.noOrganization")}</option>
             {organizations.map((org) => (
               <option key={org._id} value={org._id}>
                 {org.name}
@@ -385,52 +387,52 @@ export default function UsersManagement() {
           marginBottom: "20px" 
         }}>
           <h3 style={{ marginTop: 0, marginBottom: "15px", color: "#495057" }}>
-            📊 סטטיסטיקות ארגון: {getOrganizationName(filterOrganization)}
+            📊 {t("usersManagement.orgStatsTitle", { name: getOrganizationName(filterOrganization) })}
           </h3>
           <p>
             {getOrganizationDescription(filterOrganization)}
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "15px" }}>
-            <div style={{ 
-              backgroundColor: "white", 
-              padding: "15px", 
-              borderRadius: "6px", 
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)" 
+            <div style={{
+              backgroundColor: "white",
+              padding: "15px",
+              borderRadius: "6px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
             }}>
-              <div style={{ fontSize: "14px", color: "#6c757d", marginBottom: "5px" }}>סה"כ משתמשים</div>
+              <div style={{ fontSize: "14px", color: "#6c757d", marginBottom: "5px" }}>{t("usersManagement.statTotalUsersLabel")}</div>
               <div style={{ fontSize: "24px", fontWeight: "bold", color: "#007bff" }}>
                 {organizationStats.totalUsers}
               </div>
             </div>
-            <div style={{ 
-              backgroundColor: "white", 
-              padding: "15px", 
-              borderRadius: "6px", 
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)" 
+            <div style={{
+              backgroundColor: "white",
+              padding: "15px",
+              borderRadius: "6px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
             }}>
-              <div style={{ fontSize: "14px", color: "#6c757d", marginBottom: "5px" }}>משתמשים פעילים</div>
+              <div style={{ fontSize: "14px", color: "#6c757d", marginBottom: "5px" }}>{t("statistics.activeUsersLabel")}</div>
               <div style={{ fontSize: "24px", fontWeight: "bold", color: "#28a745" }}>
                 {organizationStats.activeUsers}
               </div>
             </div>
-            <div style={{ 
-              backgroundColor: "white", 
-              padding: "15px", 
-              borderRadius: "6px", 
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)" 
+            <div style={{
+              backgroundColor: "white",
+              padding: "15px",
+              borderRadius: "6px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
             }}>
-              <div style={{ fontSize: "14px", color: "#6c757d", marginBottom: "5px" }}>סה"כ עלות חודשית</div>
+              <div style={{ fontSize: "14px", color: "#6c757d", marginBottom: "5px" }}>{t("usersManagement.statTotalMonthlyCostLabel")}</div>
               <div style={{ fontSize: "24px", fontWeight: "bold", color: "#dc3545" }}>
                 ${organizationStats.totalCost.toFixed(2)}
               </div>
             </div>
-            <div style={{ 
-              backgroundColor: "white", 
-              padding: "15px", 
-              borderRadius: "6px", 
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)" 
+            <div style={{
+              backgroundColor: "white",
+              padding: "15px",
+              borderRadius: "6px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
             }}>
-              <div style={{ fontSize: "14px", color: "#6c757d", marginBottom: "5px" }}>ממוצע למשתמש</div>
+              <div style={{ fontSize: "14px", color: "#6c757d", marginBottom: "5px" }}>{t("usersManagement.statAvgPerUserLabel")}</div>
               <div style={{ fontSize: "24px", fontWeight: "bold", color: "#ffc107" }}>
                 ${organizationStats.averageCostPerUser.toFixed(2)}
               </div>
@@ -441,10 +443,10 @@ export default function UsersManagement() {
 
       {filteredUsers.length === 0 ? (
         <div className="empty-state">
-          <p>לא נמצאו משתמשים</p>
+          <p>{t("usersManagement.noUsersFound")}</p>
           {users.length === 0 && (
             <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
-              צור משתמש ראשון
+              {t("usersManagement.createFirstUserButton")}
             </button>
           )}
         </div>
@@ -460,23 +462,23 @@ export default function UsersManagement() {
                       user.isActive ? "badge badge-success" : "badge badge-danger"
                     }
                   >
-                    {user.isActive ? "פעיל" : "לא פעיל"}
+                    {user.isActive ? t("orgUsers.active") : t("orgUsers.inactive")}
                   </span>
                 </div>
               </div>
               <div className="item-card-body">
                 <div className="item-detail">
-                  <span className="item-detail-label">אימייל:</span>
+                  <span className="item-detail-label">{t("profileModal.labelEmail")}</span>
                   <span className="item-detail-value">{user.email}</span>
                 </div>
                 {user.name && (
                   <div className="item-detail">
-                    <span className="item-detail-label">שם:</span>
+                    <span className="item-detail-label">{t("profileModal.labelName")}</span>
                     <span className="item-detail-value">{user.name}</span>
                   </div>
                 )}
                 <div className="item-detail">
-                  <span className="item-detail-label">פרופיל:</span>
+                  <span className="item-detail-label">{t("usersManagement.profileLabel")}</span>
                   <span className="item-detail-value">
                     <span className={user.profileId ? "badge badge-info" : "badge badge-secondary"}>
                       {getProfileName(user.profileId)}
@@ -484,7 +486,7 @@ export default function UsersManagement() {
                   </span>
                 </div>
                 <div className="item-detail">
-                  <span className="item-detail-label">ארגון:</span>
+                  <span className="item-detail-label">{t("usersManagement.organizationLabel")}</span>
                   <span className="item-detail-value">
                     <span className={user.organizationId ? "badge badge-info" : "badge badge-secondary"}>
                       {getOrganizationName(user.organizationId)}
@@ -492,7 +494,7 @@ export default function UsersManagement() {
                   </span>
                 </div>
                 <div className="item-detail">
-                  <span className="item-detail-label">מצב:</span>
+                  <span className="item-detail-label">{t("usersManagement.modeLabel")}</span>
                   <span className="item-detail-value">
                     <span className={user.mode === "BYOK" ? "badge badge-info" : "badge badge-warning"}>
                       {user.mode}
@@ -509,7 +511,7 @@ export default function UsersManagement() {
                 </div>
                 {user.costLimits && (
                   <div className="item-detail">
-                    <span className="item-detail-label">עלות חודשית:</span>
+                    <span className="item-detail-label">{t("usersManagement.monthlyCostLabel")}</span>
                     <span className="item-detail-value">
                       ${user.costLimits.currentMonthSpent.toFixed(2)} / ${user.costLimits.monthlyBudget.toFixed(2)}
                     </span>
@@ -517,7 +519,7 @@ export default function UsersManagement() {
                 )}
                 {user.createdAt && (
                   <div className="item-detail">
-                    <span className="item-detail-label">נוצר בתאריך:</span>
+                    <span className="item-detail-label">{t("usersManagement.createdOnLabel")}</span>
                     <span className="item-detail-value">
                       {new Date(user.createdAt).toLocaleDateString("he-IL")}
                     </span>
@@ -530,7 +532,7 @@ export default function UsersManagement() {
                   onClick={() => openEditModal(user)}
                   style={{ flex: 1, minWidth: "100px" }}
                 >
-                  ערוך
+                  {t("common.edit")}
                 </button>
                 {user.mode === "BYOK" && (
                   <button
@@ -538,7 +540,7 @@ export default function UsersManagement() {
                     onClick={() => setManagingKeysUser(user)}
                     style={{ flex: 1, minWidth: "100px" }}
                   >
-                    🔑 API Keys
+                    🔑 {t("nav.apiKeys")}
                   </button>
                 )}
                 <button
@@ -546,7 +548,7 @@ export default function UsersManagement() {
                   onClick={() => handleDeleteUser(user._id, user.email)}
                   style={{ flex: 1, minWidth: "100px" }}
                 >
-                  מחק
+                  {t("common.delete")}
                 </button>
               </div>
             </div>
@@ -559,7 +561,7 @@ export default function UsersManagement() {
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>משתמש חדש</h2>
+              <h2>{t("usersManagement.newUserTitle")}</h2>
               <button className="modal-close" onClick={() => setShowCreateModal(false)}>
                 ×
               </button>
@@ -567,7 +569,7 @@ export default function UsersManagement() {
 
             <form onSubmit={handleCreateUser}>
               <div className="form-group">
-                <label>אימייל *</label>
+                <label>{t("register.emailLabel")}</label>
                 <input
                   type="email"
                   value={createFormData.email}
@@ -578,22 +580,22 @@ export default function UsersManagement() {
               </div>
 
               <div className="form-group">
-                <label>שם (אופציונלי)</label>
+                <label>{t("usersManagement.nameOptionalLabel")}</label>
                 <input
                   type="text"
                   value={createFormData.name}
                   onChange={(e) => setCreateFormData({ ...createFormData, name: e.target.value })}
-                  placeholder="שם המשתמש"
+                  placeholder={t("usersManagement.userNamePlaceholder")}
                 />
               </div>
 
               <div className="form-group">
-                <label>פרופיל (אופציונלי)</label>
+                <label>{t("usersManagement.profileOptionalLabel")}</label>
                 <select
                   value={createFormData.profileId}
                   onChange={(e) => setCreateFormData({ ...createFormData, profileId: e.target.value })}
                 >
-                  <option value="">ללא פרופיל</option>
+                  <option value="">{t("usersManagement.noProfile")}</option>
                   {profiles.map((profile) => (
                     <option key={profile._id} value={profile._id}>
                       {profile.name}
@@ -603,7 +605,7 @@ export default function UsersManagement() {
               </div>
 
               <div className="form-group">
-                <label>מצב *</label>
+                <label>{t("usersManagement.modeRequiredLabel")}</label>
                 <select
                   value={createFormData.mode}
                   onChange={(e) => setCreateFormData({ ...createFormData, mode: e.target.value as "BYOK" | "MANAGED" })}
@@ -621,7 +623,7 @@ export default function UsersManagement() {
                     checked={createFormData.isActive}
                     onChange={(e) => setCreateFormData({ ...createFormData, isActive: e.target.checked })}
                   />
-                  משתמש פעיל
+                  {t("usersManagement.activeUserCheckbox")}
                 </label>
               </div>
 
@@ -632,10 +634,10 @@ export default function UsersManagement() {
                   onClick={() => setShowCreateModal(false)}
                   disabled={saving}
                 >
-                  ביטול
+                  {t("common.cancel")}
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? "יוצר..." : "צור משתמש"}
+                  {saving ? t("usersManagement.creatingButton") : t("usersManagement.createUserButton")}
                 </button>
               </div>
             </form>
@@ -648,7 +650,7 @@ export default function UsersManagement() {
         <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>עריכת משתמש: {editingUser.email}</h2>
+              <h2>{t("usersManagement.editUserTitle", { email: editingUser.email })}</h2>
               <button className="modal-close" onClick={() => setShowEditModal(false)}>
                 ×
               </button>
@@ -656,7 +658,7 @@ export default function UsersManagement() {
 
             <form onSubmit={handleEditUser}>
               <div className="form-group">
-                <label>אימייל (לא ניתן לשינוי)</label>
+                <label>{t("usersManagement.emailNoChangeLabel")}</label>
                 <input
                   type="email"
                   value={editingUser.email}
@@ -666,22 +668,22 @@ export default function UsersManagement() {
               </div>
 
               <div className="form-group">
-                <label>שם</label>
+                <label>{t("usersManagement.nameLabel")}</label>
                 <input
                   type="text"
                   value={editFormData.name}
                   onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                  placeholder="שם המשתמש"
+                  placeholder={t("usersManagement.userNamePlaceholder")}
                 />
               </div>
 
               <div className="form-group">
-                <label>פרופיל</label>
+                <label>{t("usersManagement.profileLabelNoColon")}</label>
                 <select
                   value={editFormData.profileId}
                   onChange={(e) => setEditFormData({ ...editFormData, profileId: e.target.value })}
                 >
-                  <option value="">ללא פרופיל</option>
+                  <option value="">{t("usersManagement.noProfile")}</option>
                   {profiles.map((profile) => (
                     <option key={profile._id} value={profile._id}>
                       {profile.name}
@@ -691,12 +693,12 @@ export default function UsersManagement() {
               </div>
 
               <div className="form-group">
-                <label>ארגון</label>
+                <label>{t("usersManagement.organizationLabelNoColon")}</label>
                 <select
                   value={editFormData.organizationId}
                   onChange={(e) => setEditFormData({ ...editFormData, organizationId: e.target.value })}
                 >
-                  <option value="">ללא ארגון</option>
+                  <option value="">{t("usersManagement.noOrganization")}</option>
                   {organizations.map((org) => (
                     <option key={org._id} value={org._id}>
                       {org.name}
@@ -706,7 +708,7 @@ export default function UsersManagement() {
               </div>
 
               <div className="form-group">
-                <label>מצב</label>
+                <label>{t("usersManagement.modeLabelNoColon")}</label>
                 <select
                   value={editFormData.mode}
                   onChange={(e) => setEditFormData({ ...editFormData, mode: e.target.value as "BYOK" | "MANAGED" })}
@@ -723,7 +725,7 @@ export default function UsersManagement() {
                     checked={editFormData.isActive}
                     onChange={(e) => setEditFormData({ ...editFormData, isActive: e.target.checked })}
                   />
-                  משתמש פעיל
+                  {t("usersManagement.activeUserCheckbox")}
                 </label>
               </div>
 
@@ -734,10 +736,10 @@ export default function UsersManagement() {
                   onClick={() => setShowEditModal(false)}
                   disabled={saving}
                 >
-                  ביטול
+                  {t("common.cancel")}
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? "שומר..." : "שמור שינויים"}
+                  {saving ? t("profileModal.buttonSaving") : t("usersManagement.saveChangesButton")}
                 </button>
               </div>
             </form>
@@ -759,7 +761,7 @@ export default function UsersManagement() {
         <div className="modal-overlay" onClick={() => setShowApiKeyModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>🔑 API Key נוצר בהצלחה!</h2>
+              <h2>🔑 {t("usersManagement.apiKeyCreatedTitle")}</h2>
               <button className="modal-close" onClick={() => setShowApiKeyModal(false)}>
                 ×
               </button>
@@ -773,9 +775,9 @@ export default function UsersManagement() {
                 padding: "15px", 
                 marginBottom: "20px" 
               }}>
-                <strong>⚠️ אזהרה חשובה:</strong>
+                <strong>⚠️ {t("usersManagement.importantWarningLabel")}</strong>
                 <p style={{ margin: "10px 0 0 0" }}>
-                  זוהי ההזדמנות היחידה שלך לשמור את המפתח הזה. לא תוכל לראות אותו שוב!
+                  {t("usersManagement.apiKeyOneTimeWarning")}
                 </p>
               </div>
 
@@ -801,10 +803,10 @@ export default function UsersManagement() {
                 style={{ width: "100%" }}
                 onClick={() => {
                   navigator.clipboard.writeText(generatedApiKey);
-                  alert("המפתח הועתק ללוח!");
+                  alert(t("usersManagement.keyCopiedAlert"));
                 }}
               >
-                📋 העתק ללוח
+                📋 {t("usersManagement.copyToClipboardButton")}
               </button>
             </div>
 
@@ -816,7 +818,7 @@ export default function UsersManagement() {
                   setGeneratedApiKey("");
                 }}
               >
-                סגור
+                {t("common.close")}
               </button>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface ArrayInputProps {
   label: string;
@@ -17,6 +18,7 @@ export default function ArrayInput({
   onRemove,
   onUpdate,
 }: ArrayInputProps) {
+  const { t } = useTranslation();
   const [newItem, setNewItem] = useState("");
 
   const handleAdd = () => {
@@ -68,7 +70,7 @@ export default function ArrayInput({
             onClick={handleAdd}
             style={{ padding: "5px 15px" }}
           >
-            + הוסף
+            + {t("common.addButton")}
           </button>
         </div>
       </div>

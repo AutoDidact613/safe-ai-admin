@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { API_ENDPOINTS, apiCall } from "../../config/api";
 
 interface Profile {
@@ -16,6 +17,7 @@ interface ProfileTesterProps {
 }
 
 export default function ProfileTester({ profiles }: ProfileTesterProps) {
+  const { t } = useTranslation();
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [testText, setTestText] = useState("");
   const [testing, setTesting] = useState(false);
@@ -26,7 +28,7 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
     e.preventDefault();
     
     if (!selectedProfileId || !testText.trim()) {
-      setError("יש לבחור פרופיל ולהזין טקסט לבדיקה");
+      setError(t("profileTester.validationRequired"));
       return;
     }
 
@@ -46,8 +48,8 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
 
       setResult(response);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "שגיאה לא ידועה";
-      setError(`שגיאה בבדיקת הטקסט: ${errorMessage}`);
+      const errorMessage = err instanceof Error ? err.message : t("usersManagement.errorUnknown");
+      setError(t("profileTester.testErrorPrefix", { message: errorMessage }));
     } finally {
       setTesting(false);
     }
@@ -55,11 +57,11 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
 
   const getReasonText = (reason: string) => {
     const reasons: Record<string, string> = {
-      "blocked-category": "נחסם על ידי קטגוריה חסומה",
-      "passed-vector": "עבר בדיקת וקטורים",
-      "allowed-by-llm": "אושר על ידי מודל השפה",
-      "blocked-by-llm": "נחסם על ידי מודל השפה",
-      "low-confidence": "רמת ביטחון נמוכה",
+      "blocked-category": t("profileTester.reasonBlockedCategory"),
+      "passed-vector": t("profileTester.reasonPassedVector"),
+      "allowed-by-llm": t("profileTester.reasonAllowedByLlm"),
+      "blocked-by-llm": t("profileTester.reasonBlockedByLlm"),
+      "low-confidence": t("profileTester.reasonLowConfidence"),
     };
     return reasons[reason] || reason;
   };
@@ -73,11 +75,11 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
       borderRadius: "8px",
       marginBottom: "30px"
     }}>
-      <h3 style={{ marginTop: 0, marginBottom: "20px" }}>🧪 בדיקת פרופיל</h3>
-      
+      <h3 style={{ marginTop: 0, marginBottom: "20px" }}>🧪 {t("profileTester.title")}</h3>
+
       <form onSubmit={handleTest}>
         <div className="form-group">
-          <label>בחר פרופיל לבדיקה *</label>
+          <label>{t("profileTester.selectProfileLabel")}</label>
           <select
             value={selectedProfileId}
             onChange={(e) => {
@@ -87,7 +89,7 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
             }}
             required
           >
-            <option value="">-- בחר פרופיל --</option>
+            <option value="">{t("profileModal.selectPlaceholder")}</option>
             {profiles.map((profile) => (
               <option key={profile._id} value={profile._id}>
                 {profile.name}
@@ -97,7 +99,7 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
         </div>
 
         <div className="form-group">
-          <label>טקסט לבדיקה *</label>
+          <label>{t("profileTester.testTextLabel")}</label>
           <textarea
             value={testText}
             onChange={(e) => {
@@ -105,20 +107,20 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
               setResult(null);
               setError(null);
             }}
-            placeholder="הזן טקסט כדי לבדוק אם הוא יעבור או ייחסם על ידי הפרופיל..."
+            placeholder={t("profileTester.testTextPlaceholder")}
             rows={4}
             required
             style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid #ddd" }}
           />
         </div>
 
-        <button 
-          type="submit" 
-          className="btn btn-primary" 
+        <button
+          type="submit"
+          className="btn btn-primary"
           disabled={testing || !selectedProfileId || !testText.trim()}
           style={{ width: "100%" }}
         >
-          {testing ? "בודק..." : "🔍 בדוק טקסט"}
+          {testing ? t("profileTester.testingButton") : `🔍 ${t("profileTester.testButton")}`}
         </button>
       </form>
 
@@ -131,7 +133,7 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
           borderRadius: "4px",
           color: "#721c24"
         }}>
-          <strong>❌ שגיאה:</strong> {error}
+          <strong>❌ {t("statistics.errorLabel")}</strong> {error}
         </div>
       )}
 
@@ -149,10 +151,10 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
             </span>
             <div>
               <h4 style={{ margin: 0, color: result.allowed ? "#155724" : "#721c24" }}>
-                {result.allowed ? "טקסט מאושר" : "טקסט חסום"}
+                {result.allowed ? t("profileTester.textApprovedTitle") : t("profileTester.textBlockedTitle")}
               </h4>
               <p style={{ margin: "5px 0 0 0", fontSize: "14px", color: result.allowed ? "#155724" : "#721c24" }}>
-                פרופיל: <strong>{selectedProfile?.name}</strong>
+                {t("usersManagement.profileLabel")} <strong>{selectedProfile?.name}</strong>
               </p>
             </div>
           </div>
@@ -163,7 +165,7 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
             borderRadius: "4px",
             fontSize: "14px"
           }}>
-            <strong>סיבה:</strong> {getReasonText(result.reason)}
+            <strong>{t("profileTester.reasonLabel")}</strong> {getReasonText(result.reason)}
           </div>
 
           <div style={{
@@ -174,7 +176,7 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
             fontSize: "13px",
             fontFamily: "monospace"
           }}>
-            <strong>טקסט שנבדק:</strong>
+            <strong>{t("profileTester.testedTextLabel")}</strong>
             <div style={{ marginTop: "5px", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
               "{testText}"
             </div>

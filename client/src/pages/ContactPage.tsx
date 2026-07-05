@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { API_ENDPOINTS, apiCall } from "../config/api";
 import "../styles/contact-page.css";
 
 export default function ContactPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -19,12 +21,12 @@ export default function ContactPage() {
     e.preventDefault();
 
     if (!isLoggedIn) {
-      setMessage("עליך להתחבר כדי לשלוח הודעה");
+      setMessage(t("contact.requiresLogin"));
       return;
     }
 
     if (!title.trim() || !description.trim()) {
-      setMessage("נא למלא את כל השדות");
+      setMessage(t("contact.allFieldsRequired"));
       return;
     }
 
@@ -44,7 +46,7 @@ export default function ContactPage() {
         }
       );
 
-      setMessage(response.message || "ההודעה נשלחה בהצלחה!");
+      setMessage(response.message || t("contact.successMessage"));
       setTitle("");
       setDescription("");
 
@@ -54,7 +56,7 @@ export default function ContactPage() {
       }, 2000);
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "אירעה שגיאה בשליחת ההודעה. נסה שוב.";
+        error instanceof Error ? error.message : t("contact.errorSending");
       setMessage(errorMessage);
       console.error("Error sending message:", error);
     } finally {
@@ -66,14 +68,14 @@ export default function ContactPage() {
     return (
       <div className="contact-page">
         <div className="contact-container">
-          <h1>צור קשר</h1>
+          <h1>{t("contact.title")}</h1>
           <div className="login-required">
-            <p>עליך להתחבר כדי לשלוח הודעה</p>
+            <p>{t("contact.requiresLogin")}</p>
             <button
               className="btn btn-primary"
               onClick={() => navigate("/login")}
             >
-              התחבר
+              {t("contact.loginButton")}
             </button>
           </div>
         </div>
@@ -84,29 +86,25 @@ export default function ContactPage() {
   return (
     <div className="contact-page">
       <div className="contact-container">
-        <h1>צור קשר</h1>
-        <p className="contact-subtitle">שלח לנו הודעה ונחזור אליך בהקדם</p>
-
-        {/* Design Partner Message */}
+        <h1>{t("contact.title")}</h1>
+        <p className="contact-subtitle">{t("contact.subtitle")}</p>
         <div className="design-partner-banner">
           <div className="design-partner-icon">🤝</div>
           <div className="design-partner-content">
-            <h3>אתם  שותפי העיצוב  שלנו!</h3>
+            <h3>{t("contact.partnerBannerTitle")}</h3>
             <p>
-              המערכת נמצאת בשלב הרצה ניסיונית (Beta) ומתעדכנת כל שבוע.<br/> 
-              המשוב שלכם חיוני לנו ומאפשר לנו לעצב מערכת מקצועית וטובה יותר.<br/>
-              כל הערה, רעיון או בעיה שתשתפו איתנו - <br />יתקבלו בברכה ויעזרו לנו לשפר את החוויה עבורכם ועבור כל המשתמשים.
+              {t("contact.partnerBannerText")}
             </p>
             <p className="design-partner-highlight">
-              💡 תודה שאתם חלק מהמסע שלנו לבניית פתרון AI בטוח ומתקדם!
+              {t("contact.partnerHighlight")}
             </p>
             <div className="guides-link-section">
-              <p>זקוקים לעזרה? בקרו במרכז המדריכים שלנו:</p>
+              <p>{t("contact.guidesSection")}</p>
               <a
                 href="/docs"
                 className="guides-link-button"
               >
-                📚 מדריכי שימוש
+                {t("contact.guidesDocs")}
               </a>
               <a
                 href="https://drive.google.com/drive/folders/1-x8qSkCQRWxfIGyNzjszUW_u3eiggY8b?usp=drive_link"
@@ -114,7 +112,7 @@ export default function ContactPage() {
                 rel="noopener noreferrer"
                 className="guides-link-button secondary"
               >
-                📂 תיקיית המדריכים בדרייב
+                {t("contact.guidesDrive")}
               </a>
             </div>
           </div>
@@ -122,25 +120,25 @@ export default function ContactPage() {
 
         <form onSubmit={handleSubmit} className="contact-form">
           <div className="form-group">
-            <label htmlFor="title">כותרת</label>
+            <label htmlFor="title">{t("contact.labelTitle")}</label>
             <input
               type="text"
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="נושא ההודעה"
+              placeholder={t("contact.titlePlaceholder")}
               disabled={isSubmitting}
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="description">תיאור</label>
+            <label htmlFor="description">{t("contact.labelDescription")}</label>
             <textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="פרט את הודעתך כאן..."
+              placeholder={t("contact.descriptionPlaceholder")}
               rows={8}
               disabled={isSubmitting}
               required
@@ -158,7 +156,7 @@ export default function ContactPage() {
             className="btn btn-primary"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "שולח..." : "שלח הודעה"}
+            {isSubmitting ? t("contact.buttonSubmitting") : t("contact.buttonSubmit")}
           </button>
         </form>
       </div>

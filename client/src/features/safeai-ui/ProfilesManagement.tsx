@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { API_ENDPOINTS, apiCall } from "../../config/api";
 import ArrayInput from "./ArrayInput";
 import ProfileTester from "./ProfileTester";
@@ -22,6 +23,7 @@ interface Profile {
 }
 
 export default function ProfilesManagement() {
+  const { t } = useTranslation();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -57,7 +59,7 @@ export default function ProfilesManagement() {
       setProfiles(data);
     } catch (error) {
       console.error("Failed to fetch profiles:", error);
-      alert("שגיאה בטעינת פרופילים");
+      alert(t("profilesManagement.errorLoading"));
     } finally {
       setLoading(false);
     }
@@ -76,11 +78,11 @@ export default function ProfilesManagement() {
       await fetchProfiles();
       setShowCreateModal(false);
       resetForm();
-      alert("הפרופיל נוצר בהצלחה");
+      alert(t("profilesManagement.createdSuccess"));
     } catch (error: unknown) {
       console.error("Error creating profile:", error);
-      const errorMessage = error instanceof Error ? error.message : "שגיאה לא ידועה";
-      alert(`שגיאה ביצירת פרופיל: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : t("usersManagement.errorUnknown");
+      alert(t("profilesManagement.createErrorPrefix", { message: errorMessage }));
     } finally {
       setSaving(false);
     }
@@ -102,18 +104,18 @@ export default function ProfilesManagement() {
       setShowEditModal(false);
       setEditingProfile(null);
       resetForm();
-      alert("הפרופיל עודכן בהצלחה");
+      alert(t("profilesManagement.updatedSuccess"));
     } catch (error: unknown) {
       console.error("Error updating profile:", error);
-      const errorMessage = error instanceof Error ? error.message : "שגיאה לא ידועה";
-      alert(`שגיאה בעדכון פרופיל: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : t("usersManagement.errorUnknown");
+      alert(t("profilesManagement.updateErrorPrefix", { message: errorMessage }));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteProfile = async (id: string, name: string) => {
-    if (!confirm(`האם אתה בטוח שברצונך למחוק את הפרופיל "${name}"?`)) return;
+    if (!confirm(t("profilesManagement.deleteConfirm", { name }))) return;
 
     try {
       await apiCall(`${API_ENDPOINTS.profiles}/${id}`, {
@@ -121,11 +123,11 @@ export default function ProfilesManagement() {
       });
 
       await fetchProfiles();
-      alert("הפרופיל נמחק בהצלחה");
+      alert(t("profilesManagement.deletedSuccess"));
     } catch (error: unknown) {
       console.error("Error deleting profile:", error);
-      const errorMessage = error instanceof Error ? error.message : "שגיאה לא ידועה";
-      alert(`שגיאה במחיקת פרופיל: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : t("usersManagement.errorUnknown");
+      alert(t("profilesManagement.deleteErrorPrefix", { message: errorMessage }));
     }
   };
 
@@ -173,16 +175,16 @@ export default function ProfilesManagement() {
   );
 
   if (loading) {
-    return <div className="loading-state">טוען פרופילים...</div>;
+    return <div className="loading-state">{t("profilesManagement.loadingProfiles")}</div>;
   }
 
 
   return (
     <div>
       <div className="management-header">
-        <h2>ניהול פרופילים</h2>
+        <h2>{t("safeaiNav.manageProfiles")}</h2>
         <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
-          + פרופיל חדש
+          + {t("profilesManagement.newProfileButton")}
         </button>
       </div>
 
@@ -192,7 +194,7 @@ export default function ProfilesManagement() {
       <div className="search-bar">
         <input
           type="text"
-          placeholder="חפש פרופיל..."
+          placeholder={t("profilesManagement.searchPlaceholder")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -200,10 +202,10 @@ export default function ProfilesManagement() {
 
       {filteredProfiles.length === 0 ? (
         <div className="empty-state">
-          <p>לא נמצאו פרופילים</p>
+          <p>{t("profilesManagement.noProfilesFound")}</p>
           {profiles.length === 0 && (
             <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
-              צור פרופיל ראשון
+              {t("profilesManagement.createFirstProfileButton")}
             </button>
           )}
         </div>
@@ -216,34 +218,34 @@ export default function ProfilesManagement() {
               </div>
               <div className="item-card-body">
                 <div className="item-detail">
-                  <span className="item-detail-label">נוצר על ידי:</span>
+                  <span className="item-detail-label">{t("profileModal.labelCreatedBy")}</span>
                   <span className="item-detail-value">{profile.createdBy}</span>
                 </div>
                 <div className="item-detail">
-                  <span className="item-detail-label">אימייל:</span>
+                  <span className="item-detail-label">{t("profileModal.labelEmail")}</span>
                   <span className="item-detail-value">{profile.creatorEmail}</span>
                 </div>
                 <div className="item-detail">
-                  <span className="item-detail-label">סטטוס אישור:</span>
+                  <span className="item-detail-label">{t("profilesManagement.approvalStatusLabel")}</span>
                   <span className={`badge ${
-                    profile.approvalStatus === 'approved' ? 'badge-success' : 
-                    profile.approvalStatus === 'rejected' ? 'badge-danger' : 
+                    profile.approvalStatus === 'approved' ? 'badge-success' :
+                    profile.approvalStatus === 'rejected' ? 'badge-danger' :
                     'badge-warning'
                   }`}>
-                    {profile.approvalStatus === 'approved' ? '✅ מאושר' : 
-                     profile.approvalStatus === 'rejected' ? '❌ נדחה' : 
-                     '⏳ ממתין לאישור'}
+                    {profile.approvalStatus === 'approved' ? `✅ ${t("profilesManagement.approvedBadge")}` :
+                     profile.approvalStatus === 'rejected' ? `❌ ${t("profilesManagement.rejectedBadge")}` :
+                     `⏳ ${t("profilesManagement.pendingBadge")}`}
                   </span>
                 </div>
                 <div className="item-detail">
-                  <span className="item-detail-label">נראות:</span>
+                  <span className="item-detail-label">{t("profilesManagement.visibilityLabel")}</span>
                   <span className={`badge ${profile.visibility === 'public' ? 'badge-info' : 'badge-secondary'}`}>
-                    {profile.visibility === 'public' ? '🌐 ציבורי' : '🔒 פנימי'}
+                    {profile.visibility === 'public' ? `🌐 ${t("profilesManagement.publicBadge")}` : `🔒 ${t("profilesManagement.internalBadge")}`}
                   </span>
                 </div>
                 {profile.allowedCategories && profile.allowedCategories.length > 0 && (
                   <div className="item-detail">
-                    <span className="item-detail-label">קטגוריות מותרות:</span>
+                    <span className="item-detail-label">{t("profilesManagement.allowedCategoriesLabel")}</span>
                     <span className="item-detail-value">
                       {profile.allowedCategories.length}
                     </span>
@@ -251,7 +253,7 @@ export default function ProfilesManagement() {
                 )}
                 {profile.blockedCategories && profile.blockedCategories.length > 0 && (
                   <div className="item-detail">
-                    <span className="item-detail-label">קטגוריות חסומות:</span>
+                    <span className="item-detail-label">{t("profilesManagement.blockedCategoriesLabel")}</span>
                     <span className="item-detail-value">
                       {profile.blockedCategories.length}
                     </span>
@@ -292,7 +294,7 @@ export default function ProfilesManagement() {
                   {(!profile.contentPrompts || profile.contentPrompts.length === 0) &&
                    (!profile.behaviorPrompts || profile.behaviorPrompts.length === 0) &&
                    (!profile.knowledgePrompts || profile.knowledgePrompts.length === 0) && (
-                    <div style={{ fontSize: "12px", color: "#999" }}>אין prompts מוגדרים</div>
+                    <div style={{ fontSize: "12px", color: "#999" }}>{t("profilesManagement.noPromptsDefined")}</div>
                   )}
                 </div>
               </div>
@@ -302,14 +304,14 @@ export default function ProfilesManagement() {
                   onClick={() => openEditModal(profile)}
                   style={{ flex: 1 }}
                 >
-                  ערוך
+                  {t("common.edit")}
                 </button>
                 <button
                   className="btn btn-danger"
                   onClick={() => handleDeleteProfile(profile._id, profile.name)}
                   style={{ flex: 1 }}
                 >
-                  מחק
+                  {t("common.delete")}
                 </button>
               </div>
             </div>
@@ -322,7 +324,7 @@ export default function ProfilesManagement() {
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxHeight: "90vh", overflowY: "auto" }}>
             <div className="modal-header">
-              <h2>פרופיל חדש</h2>
+              <h2>{t("profilesManagement.newProfileButton")}</h2>
               <button className="modal-close" onClick={() => setShowCreateModal(false)}>
                 ×
               </button>
@@ -330,18 +332,18 @@ export default function ProfilesManagement() {
 
             <form onSubmit={handleCreateProfile}>
               <div className="form-group">
-                <label>שם הפרופיל *</label>
+                <label>{t("profilesManagement.profileNameLabel")}</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
-                  placeholder="למשל: פרופיל בסיסי"
+                  placeholder={t("profilesManagement.profileNamePlaceholder")}
                 />
               </div>
 
               <div className="form-group">
-                <label>נוצר על ידי *</label>
+                <label>{t("profilesManagement.createdByRequiredLabel")}</label>
                 <input
                   type="text"
                   value={formData.createdBy}
@@ -351,7 +353,7 @@ export default function ProfilesManagement() {
               </div>
 
               <div className="form-group">
-                <label>אימייל יוצר *</label>
+                <label>{t("profilesManagement.creatorEmailRequiredLabel")}</label>
                 <input
                   type="email"
                   value={formData.creatorEmail}
@@ -363,36 +365,36 @@ export default function ProfilesManagement() {
               </div>
 
               <div className="form-group">
-                <label>סטטוס אישור *</label>
+                <label>{t("profilesManagement.approvalStatusRequiredLabel")}</label>
                 <select
                   value={formData.approvalStatus}
                   onChange={(e) => setFormData({ ...formData, approvalStatus: e.target.value as 'pending' | 'approved' | 'rejected' })}
                   required
                 >
-                  <option value="pending">⏳ ממתין לאישור</option>
-                  <option value="approved">✅ מאושר</option>
-                  <option value="rejected">❌ נדחה</option>
+                  <option value="pending">⏳ {t("profilesManagement.pendingBadge")}</option>
+                  <option value="approved">✅ {t("profilesManagement.approvedBadge")}</option>
+                  <option value="rejected">❌ {t("profilesManagement.rejectedBadge")}</option>
                 </select>
               </div>
 
               <div className="form-group">
-                <label>נראות *</label>
+                <label>{t("profilesManagement.visibilityRequiredLabel")}</label>
                 <select
                   value={formData.visibility}
                   onChange={(e) => setFormData({ ...formData, visibility: e.target.value as 'public' | 'internal' })}
                   required
                 >
-                  <option value="public">🌐 ציבורי</option>
-                  <option value="internal">🔒 פנימי</option>
+                  <option value="public">🌐 {t("profilesManagement.publicBadge")}</option>
+                  <option value="internal">🔒 {t("profilesManagement.internalBadge")}</option>
                 </select>
               </div>
 
               <hr style={{ margin: "20px 0" }} />
 
               <ArrayInput
-                label="קטגוריות מותרות"
+                label={t("profilesManagement.allowedCategoriesInputLabel")}
                 items={formData.allowedCategories || []}
-                placeholder="הוסף קטגוריה מותרת"
+                placeholder={t("profilesManagement.allowedCategoryPlaceholder")}
                 onAdd={(value) => setFormData({ ...formData, allowedCategories: [...(formData.allowedCategories || []), value] })}
                 onRemove={(index) => setFormData({ ...formData, allowedCategories: (formData.allowedCategories || []).filter((_, i) => i !== index) })}
                 onUpdate={(index, value) => {
@@ -403,9 +405,9 @@ export default function ProfilesManagement() {
               />
 
               <ArrayInput
-                label="קטגוריות חסומות"
+                label={t("profilesManagement.blockedCategoriesInputLabel")}
                 items={formData.blockedCategories || []}
-                placeholder="הוסף קטגוריה חסומה"
+                placeholder={t("profilesManagement.blockedCategoryPlaceholder")}
                 onAdd={(value) => setFormData({ ...formData, blockedCategories: [...(formData.blockedCategories || []), value] })}
                 onRemove={(index) => setFormData({ ...formData, blockedCategories: (formData.blockedCategories || []).filter((_, i) => i !== index) })}
                 onUpdate={(index, value) => {
@@ -418,7 +420,7 @@ export default function ProfilesManagement() {
               <ArrayInput
                 label="Content Prompts"
                 items={formData.contentPrompts || []}
-                placeholder="הוסף Content Prompt"
+                placeholder={t("profilesManagement.contentPromptsPlaceholder")}
                 onAdd={(value) => setFormData({ ...formData, contentPrompts: [...(formData.contentPrompts || []), value] })}
                 onRemove={(index) => setFormData({ ...formData, contentPrompts: (formData.contentPrompts || []).filter((_, i) => i !== index) })}
                 onUpdate={(index, value) => {
@@ -431,7 +433,7 @@ export default function ProfilesManagement() {
               <ArrayInput
                 label="Behavior Prompts"
                 items={formData.behaviorPrompts || []}
-                placeholder="הוסף Behavior Prompt"
+                placeholder={t("profilesManagement.behaviorPromptsPlaceholder")}
                 onAdd={(value) => setFormData({ ...formData, behaviorPrompts: [...(formData.behaviorPrompts || []), value] })}
                 onRemove={(index) => setFormData({ ...formData, behaviorPrompts: (formData.behaviorPrompts || []).filter((_, i) => i !== index) })}
                 onUpdate={(index, value) => {
@@ -444,7 +446,7 @@ export default function ProfilesManagement() {
               <ArrayInput
                 label="Knowledge Prompts"
                 items={formData.knowledgePrompts || []}
-                placeholder="הוסף Knowledge Prompt"
+                placeholder={t("profilesManagement.knowledgePromptsPlaceholder")}
                 onAdd={(value) => setFormData({ ...formData, knowledgePrompts: [...(formData.knowledgePrompts || []), value] })}
                 onRemove={(index) => setFormData({ ...formData, knowledgePrompts: (formData.knowledgePrompts || []).filter((_, i) => i !== index) })}
                 onUpdate={(index, value) => {
@@ -461,10 +463,10 @@ export default function ProfilesManagement() {
                   onClick={() => setShowCreateModal(false)}
                   disabled={saving}
                 >
-                  ביטול
+                  {t("common.cancel")}
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? "יוצר..." : "צור פרופיל"}
+                  {saving ? t("usersManagement.creatingButton") : t("profilesManagement.createProfileButton")}
                 </button>
               </div>
             </form>
@@ -477,7 +479,7 @@ export default function ProfilesManagement() {
         <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxHeight: "90vh", overflowY: "auto" }}>
             <div className="modal-header">
-              <h2>עריכת פרופיל: {editingProfile.name}</h2>
+              <h2>{t("profilesManagement.editProfileTitle", { name: editingProfile.name })}</h2>
               <button className="modal-close" onClick={() => setShowEditModal(false)}>
                 ×
               </button>
@@ -485,18 +487,18 @@ export default function ProfilesManagement() {
 
             <form onSubmit={handleEditProfile}>
               <div className="form-group">
-                <label>שם הפרופיל *</label>
+                <label>{t("profilesManagement.profileNameLabel")}</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
-                  placeholder="למשל: פרופיל בסיסי"
+                  placeholder={t("profilesManagement.profileNamePlaceholder")}
                 />
               </div>
 
               <div className="form-group">
-                <label>נוצר על ידי *</label>
+                <label>{t("profilesManagement.createdByRequiredLabel")}</label>
                 <input
                   type="text"
                   value={formData.createdBy}
@@ -506,7 +508,7 @@ export default function ProfilesManagement() {
               </div>
 
               <div className="form-group">
-                <label>אימייל יוצר *</label>
+                <label>{t("profilesManagement.creatorEmailRequiredLabel")}</label>
                 <input
                   type="email"
                   value={formData.creatorEmail}
@@ -518,36 +520,36 @@ export default function ProfilesManagement() {
               </div>
 
               <div className="form-group">
-                <label>סטטוס אישור *</label>
+                <label>{t("profilesManagement.approvalStatusRequiredLabel")}</label>
                 <select
                   value={formData.approvalStatus}
                   onChange={(e) => setFormData({ ...formData, approvalStatus: e.target.value as 'pending' | 'approved' | 'rejected' })}
                   required
                 >
-                  <option value="pending">⏳ ממתין לאישור</option>
-                  <option value="approved">✅ מאושר</option>
-                  <option value="rejected">❌ נדחה</option>
+                  <option value="pending">⏳ {t("profilesManagement.pendingBadge")}</option>
+                  <option value="approved">✅ {t("profilesManagement.approvedBadge")}</option>
+                  <option value="rejected">❌ {t("profilesManagement.rejectedBadge")}</option>
                 </select>
               </div>
 
               <div className="form-group">
-                <label>נראות *</label>
+                <label>{t("profilesManagement.visibilityRequiredLabel")}</label>
                 <select
                   value={formData.visibility}
                   onChange={(e) => setFormData({ ...formData, visibility: e.target.value as 'public' | 'internal' })}
                   required
                 >
-                  <option value="public">🌐 ציבורי</option>
-                  <option value="internal">🔒 פנימי</option>
+                  <option value="public">🌐 {t("profilesManagement.publicBadge")}</option>
+                  <option value="internal">🔒 {t("profilesManagement.internalBadge")}</option>
                 </select>
               </div>
 
               <hr style={{ margin: "20px 0" }} />
 
               <ArrayInput
-                label="קטגוריות מותרות"
+                label={t("profilesManagement.allowedCategoriesInputLabel")}
                 items={formData.allowedCategories || []}
-                placeholder="הוסף קטגוריה מותרת"
+                placeholder={t("profilesManagement.allowedCategoryPlaceholder")}
                 onAdd={(value) => setFormData({ ...formData, allowedCategories: [...(formData.allowedCategories || []), value] })}
                 onRemove={(index) => setFormData({ ...formData, allowedCategories: (formData.allowedCategories || []).filter((_, i) => i !== index) })}
                 onUpdate={(index, value) => {
@@ -558,9 +560,9 @@ export default function ProfilesManagement() {
               />
 
               <ArrayInput
-                label="קטגוריות חסומות"
+                label={t("profilesManagement.blockedCategoriesInputLabel")}
                 items={formData.blockedCategories || []}
-                placeholder="הוסף קטגוריה חסומה"
+                placeholder={t("profilesManagement.blockedCategoryPlaceholder")}
                 onAdd={(value) => setFormData({ ...formData, blockedCategories: [...(formData.blockedCategories || []), value] })}
                 onRemove={(index) => setFormData({ ...formData, blockedCategories: (formData.blockedCategories || []).filter((_, i) => i !== index) })}
                 onUpdate={(index, value) => {
@@ -573,7 +575,7 @@ export default function ProfilesManagement() {
               <ArrayInput
                 label="Content Prompts"
                 items={formData.contentPrompts || []}
-                placeholder="הוסף Content Prompt"
+                placeholder={t("profilesManagement.contentPromptsPlaceholder")}
                 onAdd={(value) => setFormData({ ...formData, contentPrompts: [...(formData.contentPrompts || []), value] })}
                 onRemove={(index) => setFormData({ ...formData, contentPrompts: (formData.contentPrompts || []).filter((_, i) => i !== index) })}
                 onUpdate={(index, value) => {
@@ -586,7 +588,7 @@ export default function ProfilesManagement() {
               <ArrayInput
                 label="Behavior Prompts"
                 items={formData.behaviorPrompts || []}
-                placeholder="הוסף Behavior Prompt"
+                placeholder={t("profilesManagement.behaviorPromptsPlaceholder")}
                 onAdd={(value) => setFormData({ ...formData, behaviorPrompts: [...(formData.behaviorPrompts || []), value] })}
                 onRemove={(index) => setFormData({ ...formData, behaviorPrompts: (formData.behaviorPrompts || []).filter((_, i) => i !== index) })}
                 onUpdate={(index, value) => {
@@ -599,7 +601,7 @@ export default function ProfilesManagement() {
               <ArrayInput
                 label="Knowledge Prompts"
                 items={formData.knowledgePrompts || []}
-                placeholder="הוסף Knowledge Prompt"
+                placeholder={t("profilesManagement.knowledgePromptsPlaceholder")}
                 onAdd={(value) => setFormData({ ...formData, knowledgePrompts: [...(formData.knowledgePrompts || []), value] })}
                 onRemove={(index) => setFormData({ ...formData, knowledgePrompts: (formData.knowledgePrompts || []).filter((_, i) => i !== index) })}
                 onUpdate={(index, value) => {
@@ -616,10 +618,10 @@ export default function ProfilesManagement() {
                   onClick={() => setShowEditModal(false)}
                   disabled={saving}
                 >
-                  ביטול
+                  {t("common.cancel")}
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? "שומר..." : "שמור שינויים"}
+                  {saving ? t("profileModal.buttonSaving") : t("usersManagement.saveChangesButton")}
                 </button>
               </div>
             </form>

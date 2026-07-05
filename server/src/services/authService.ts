@@ -37,7 +37,7 @@ export async function register(data: {
   // Check if user already exists
   const existingUser = await User.findOne({ email: data.email.toLowerCase() });
   if (existingUser) {
-    throw new Error("משתמש עם אימייל זה כבר קיים במערכת");
+    throw { code: "EMAIL_ALREADY_EXISTS", message: "A user with this email already exists" };
   }
 
   // Hash password
@@ -131,9 +131,10 @@ export async function register(data: {
       error: errorDetail.message,
       stack: errorDetail.stack,
     });
-    throw new Error(
-      `ההרשמה נכשלה: ${error.message || "שגיאה בתקשורת עם השרת"}`,
-    );
+    throw {
+      code: "REGISTRATION_FAILED",
+      message: `Registration failed: ${error.message || "Server communication error"}`,
+    };
   }
 }
 

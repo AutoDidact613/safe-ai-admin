@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import "../styles/safeai-ui.css";
 import ProfilesManagement from "../features/safeai-ui/ProfilesManagement";
 import UsersManagement from "../features/safeai-ui/UsersManagement";
@@ -23,6 +24,7 @@ interface UserData {
 }
 
 export default function SafeAIUIPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   // Initialize state from localStorage
@@ -107,7 +109,7 @@ export default function SafeAIUIPage() {
                       strokeLinejoin="round"
                     />
                   </svg>
-                  סטטיסטיקות
+                  {t("safeaiNav.statistics")}
                 </button>
                 <button
                   className={
@@ -125,7 +127,7 @@ export default function SafeAIUIPage() {
                       strokeLinecap="round"
                     />
                   </svg>
-                  ניהול פרופילים
+                  {t("safeaiNav.manageProfiles")}
                 </button>
                 <button
                   className={
@@ -143,7 +145,7 @@ export default function SafeAIUIPage() {
                       strokeLinecap="round"
                     />
                   </svg>
-                  ניהול משתמשים
+                  {t("safeaiNav.manageUsers")}
                 </button>
                 <button
                   className={
@@ -161,7 +163,7 @@ export default function SafeAIUIPage() {
                       strokeLinecap="round"
                     />
                   </svg>
-                  ניהול ארגונים
+                  {t("safeaiNav.manageOrganizations")}
                 </button>
               </>
             )}
@@ -184,7 +186,7 @@ export default function SafeAIUIPage() {
                       strokeLinejoin="round"
                     />
                   </svg>
-                  סטטיסטיקות
+                  {t("safeaiNav.statistics")}
                 </button>
                 <button
                   className={
@@ -229,7 +231,7 @@ export default function SafeAIUIPage() {
                       stroke-linecap="round"
                     />
                   </svg>
-                  מפתחות API
+                  {t("safeaiNav.apiKeys")}
                 </button>
               </>
             )}

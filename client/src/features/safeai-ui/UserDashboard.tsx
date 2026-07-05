@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { API_ENDPOINTS } from "../../config/api";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
@@ -79,6 +80,7 @@ interface LimitsStatus {
 }
 
 export default function UserDashboard({ user }: UserDashboardProps) {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<DashboardStats>({
     totalRequests: 0,
     successfulRequests: 0,
@@ -196,7 +198,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
 
   const handleSaveProfile = async () => {
     if (!selectedProfileId || !user?._id) {
-      setProfileError("אנא בחר פרופיל");
+      setProfileError(t("profileModal.errorSelectProfile"));
       return;
     }
 
@@ -229,71 +231,71 @@ export default function UserDashboard({ user }: UserDashboardProps) {
       setIsEditingProfile(false);
     } catch (err) {
       console.error("Error saving profile:", err);
-      setProfileError("שגיאה בשמירת הפרופיל");
+      setProfileError(t("profileModal.errorSavingProfile"));
     } finally {
       setSavingProfile(false);
     }
   };
 
   if (loading) {
-    return <div className="loading-state">טוען נתונים...</div>;
+    return <div className="loading-state">{t("userDashboard.loadingData")}</div>;
   }
 
   return (
     <div>
       <div className="management-header">
-        <h2>שלום, {user?.name || user?.email}</h2>
-        <span className="badge badge-success">חשבון פעיל</span>
+        <h2>{t("userDashboard.greeting", { name: user?.name || user?.email })}</h2>
+        <span className="badge badge-success">{t("userDashboard.activeAccountBadge")}</span>
       </div>
 
       <div className="dashboard-grid">
         <div className="stat-card">
-          <h3>סה"כ בקשות</h3>
+          <h3>{t("userDashboard.totalRequestsLabel")}</h3>
           <p className="stat-value">{stats.totalRequests}</p>
         </div>
 
         <div className="stat-card">
-          <h3>בקשות מאושרות</h3>
+          <h3>{t("userDashboard.successfulRequestsLabel")}</h3>
           <p className="stat-value">{stats.successfulRequests}</p>
           <p className="stat-change positive">
-            {((stats.successfulRequests / stats.totalRequests) * 100).toFixed(1)}% מאושרות
+            {t("userDashboard.successfulPercent", { percent: ((stats.successfulRequests / stats.totalRequests) * 100).toFixed(1) })}
           </p>
         </div>
 
         <div className="stat-card">
-          <h3>בקשות חסומות</h3>
+          <h3>{t("userDashboard.blockedRequestsLabel")}</h3>
           <p className="stat-value">{stats.blockedRequests}</p>
           <p className="stat-change negative">
-            {((stats.blockedRequests / stats.totalRequests) * 100).toFixed(1)}% חסימה
+            {t("userDashboard.blockedPercent", { percent: ((stats.blockedRequests / stats.totalRequests) * 100).toFixed(1) })}
           </p>
         </div>
 
         <div className="stat-card">
-          <h3>סטטוס API Key</h3>
+          <h3>{t("userDashboard.apiKeyStatusLabel")}</h3>
           <p className="stat-value">
-            <span className="badge badge-success">פעיל</span>
+            <span className="badge badge-success">{t("orgUsers.active")}</span>
           </p>
           <p className="stat-change">
-            {stats.lastActivity && `פעילות אחרונה: ${new Date(stats.lastActivity).toLocaleString("he-IL")}`}
+            {stats.lastActivity && t("userDashboard.lastActivityLabel", { date: new Date(stats.lastActivity).toLocaleString("he-IL") })}
           </p>
         </div>
       </div>
 
       <div className="card" style={{ marginTop: "24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <h3>פרטי חשבון</h3>
+          <h3>{t("userDashboard.accountDetailsTitle")}</h3>
         </div>
         <div style={{ marginTop: "16px" }}>
           <div className="item-detail">
-            <span className="item-detail-label">אימייל:</span>
+            <span className="item-detail-label">{t("profileModal.labelEmail")}</span>
             <span className="item-detail-value">{user?.email}</span>
           </div>
           <div className="item-detail">
-            <span className="item-detail-label">שם:</span>
+            <span className="item-detail-label">{t("profileModal.labelName")}</span>
             <span className="item-detail-value">{user?.name}</span>
           </div>
           <div className="item-detail">
-            <span className="item-detail-label">מזהה משתמש:</span>
+            <span className="item-detail-label">{t("userDashboard.userIdLabel")}</span>
             <span className="item-detail-value">{user?._id || "N/A"}</span>
           </div>
         </div>
@@ -301,14 +303,14 @@ export default function UserDashboard({ user }: UserDashboardProps) {
 
       <div className="card" style={{ marginTop: "24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <h3>פרופיל AI</h3>
+          <h3>{t("userDashboard.aiProfileTitle")}</h3>
           {!isEditingProfile && (
             <button
               onClick={() => setIsEditingProfile(true)}
               className="btn btn-secondary"
               style={{ padding: "8px 16px", fontSize: "14px" }}
             >
-              ערוך פרופיל
+              {t("userDashboard.editProfileButton")}
             </button>
           )}
         </div>
@@ -318,21 +320,21 @@ export default function UserDashboard({ user }: UserDashboardProps) {
             {currentProfile ? (
               <>
                 <div className="item-detail">
-                  <span className="item-detail-label">פרופיל נוכחי:</span>
+                  <span className="item-detail-label">{t("userDashboard.currentProfileLabel")}</span>
                   <span className="item-detail-value">
                     <span className="badge badge-primary">{currentProfile.name}</span>
                   </span>
                 </div>
                 <div className="item-detail">
-                  <span className="item-detail-label">נוצר על ידי:</span>
+                  <span className="item-detail-label">{t("profileModal.labelCreatedBy")}</span>
                   <span className="item-detail-value">{currentProfile.creatorEmail}</span>
                 </div>
               </>
             ) : (
               <div className="alert alert-warning">
-                <strong>⚠️ לא נבחר פרופיל</strong>
+                <strong>⚠️ {t("userDashboard.noProfileSelectedWarning")}</strong>
                 <p style={{ marginTop: "8px", marginBottom: 0 }}>
-                  אנא בחר פרופיל AI כדי להתחיל להשתמש במערכת.
+                  {t("userDashboard.selectProfilePrompt")}
                 </p>
               </div>
             )}
@@ -340,7 +342,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
         ) : (
           <div style={{ marginTop: "16px" }}>
             <div className="form-group">
-              <label htmlFor="profile-select">בחר פרופיל:</label>
+              <label htmlFor="profile-select">{t("profileModal.selectLabel")}</label>
               <select
                 id="profile-select"
                 value={selectedProfileId}
@@ -355,7 +357,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
                   backgroundColor: "#f8f9fa",
                 }}
               >
-                <option value="">-- בחר פרופיל --</option>
+                <option value="">{t("profileModal.selectPlaceholder")}</option>
                 {allProfiles.map((profile) => (
                   <option key={profile._id} value={profile._id}>
                     {profile.name}
@@ -377,7 +379,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
                 className="btn btn-primary"
                 style={{ flex: 1 }}
               >
-                {savingProfile ? "שומר..." : "שמור"}
+                {savingProfile ? t("profileModal.buttonSaving") : t("common.save")}
               </button>
               <button
                 onClick={() => {
@@ -388,7 +390,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
                 className="btn btn-secondary"
                 style={{ flex: 1 }}
               >
-                ביטול
+                {t("common.cancel")}
               </button>
             </div>
           </div>
@@ -399,23 +401,23 @@ export default function UserDashboard({ user }: UserDashboardProps) {
       {usageStats && (
         <>
           <div className="card" style={{ marginTop: "24px" }}>
-            <h3>סטטיסטיקות שימוש (7 ימים אחרונים)</h3>
+            <h3>{t("userDashboard.usageStatsTitle")}</h3>
             <div className="dashboard-grid" style={{ marginTop: "16px" }}>
               <div className="stat-card">
-                <h4>סה"כ Tokens</h4>
+                <h4>{t("userDashboard.totalTokensLabel")}</h4>
                 <p className="stat-value">{usageStats.totalTokens.toLocaleString()}</p>
-                <p className="stat-change">ממוצע: {Math.round(usageStats.totalTokens / (usageStats.totalRequests || 1))} לבקשה</p>
+                <p className="stat-change">{t("userDashboard.avgTokensPerRequest", { avg: Math.round(usageStats.totalTokens / (usageStats.totalRequests || 1)) })}</p>
               </div>
               <div className="stat-card">
-                <h4>זמן תגובה ממוצע</h4>
+                <h4>{t("userDashboard.avgResponseTimeLabel")}</h4>
                 <p className="stat-value">{Math.round(usageStats.avgResponseTime)}ms</p>
               </div>
               <div className="stat-card">
-                <h4>עלות כוללת</h4>
+                <h4>{t("userDashboard.totalCostLabel")}</h4>
                 <p className="stat-value">${usageStats.totalCost.toFixed(4)}</p>
               </div>
               <div className="stat-card">
-                <h4>שיעור הצלחה</h4>
+                <h4>{t("userDashboard.successRateLabel")}</h4>
                 <p className="stat-value">
                   {((usageStats.successfulRequests / (usageStats.totalRequests || 1)) * 100).toFixed(1)}%
                 </p>
@@ -426,7 +428,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
           {/* Daily Usage Chart */}
           {dailyUsage.length > 0 && (
             <div className="card" style={{ marginTop: "24px" }}>
-              <h3>שימוש יומי</h3>
+              <h3>{t("userDashboard.dailyUsageTitle")}</h3>
               <ResponsiveContainer width="100%" height={300} style={{ marginTop: "16px" }}>
                 <LineChart data={dailyUsage}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -443,9 +445,9 @@ export default function UserDashboard({ user }: UserDashboardProps) {
                   <Line 
                     yAxisId="left"
                     type="monotone" 
-                    dataKey="requests" 
-                    stroke="#8884d8" 
-                    name="בקשות"
+                    dataKey="requests"
+                    stroke="#8884d8"
+                    name={t("userDashboard.chartRequestsLabel")}
                   />
                   <Line 
                     yAxisId="right"
@@ -462,17 +464,17 @@ export default function UserDashboard({ user }: UserDashboardProps) {
           {/* Model Usage Table */}
           {modelUsage.length > 0 && (
             <div className="card" style={{ marginTop: "24px" }}>
-              <h3>שימוש לפי מודל (30 ימים אחרונים)</h3>
+              <h3>{t("userDashboard.modelUsageTitle")}</h3>
               <div style={{ overflowX: "auto", marginTop: "16px" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ borderBottom: "2px solid #ddd" }}>
-                      <th style={{ padding: "12px", textAlign: "right" }}>מודל</th>
-                      <th style={{ padding: "12px", textAlign: "right" }}>ספק</th>
-                      <th style={{ padding: "12px", textAlign: "center" }}>בקשות</th>
+                      <th style={{ padding: "12px", textAlign: "right" }}>{t("userDashboard.modelHeaderLabel")}</th>
+                      <th style={{ padding: "12px", textAlign: "right" }}>{t("userDashboard.providerHeaderLabel")}</th>
+                      <th style={{ padding: "12px", textAlign: "center" }}>{t("userDashboard.requestsHeaderLabel")}</th>
                       <th style={{ padding: "12px", textAlign: "center" }}>Tokens</th>
-                      <th style={{ padding: "12px", textAlign: "center" }}>עלות</th>
-                      <th style={{ padding: "12px", textAlign: "center" }}>חינמי</th>
+                      <th style={{ padding: "12px", textAlign: "center" }}>{t("userDashboard.costHeaderLabel")}</th>
+                      <th style={{ padding: "12px", textAlign: "center" }}>{t("userDashboard.freeHeaderLabel")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -503,11 +505,11 @@ export default function UserDashboard({ user }: UserDashboardProps) {
           {/* Rate Limits Status */}
           {limitsStatus && (
             <div className="card" style={{ marginTop: "24px" }}>
-              <h3>מצב Rate Limits</h3>
+              <h3>{t("userDashboard.rateLimitsTitle")}</h3>
               <div style={{ marginTop: "16px" }}>
                 <div style={{ marginBottom: "20px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                    <span>בקשות לדקה:</span>
+                    <span>{t("userDashboard.perMinuteLabel")}</span>
                     <span>
                       {limitsStatus.rateLimits.perMinute.used} / {limitsStatus.rateLimits.perMinute.limit}
                     </span>
@@ -531,7 +533,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
 
                 <div style={{ marginBottom: "20px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                    <span>בקשות ליום:</span>
+                    <span>{t("userDashboard.perDayLabel")}</span>
                     <span>
                       {limitsStatus.rateLimits.perDay.used} / {limitsStatus.rateLimits.perDay.limit}
                     </span>
@@ -556,7 +558,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
                 {limitsStatus.budget && (
                   <div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                      <span>תקציב חודשי:</span>
+                      <span>{t("userDashboard.monthlyBudgetLabel")}</span>
                       <span>
                         ${limitsStatus.budget.currentSpent.toFixed(4)} / ${limitsStatus.budget.monthlyLimit.toFixed(2)}
                       </span>
@@ -577,7 +579,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
                       }} />
                     </div>
                     <p style={{ marginTop: "8px", fontSize: "14px", color: "#666" }}>
-                      נותרו: ${limitsStatus.budget.remaining.toFixed(4)} ({(100 - limitsStatus.budget.percentUsed).toFixed(1)}%)
+                      {t("userDashboard.remainingBudget", { amount: limitsStatus.budget.remaining.toFixed(4), percent: (100 - limitsStatus.budget.percentUsed).toFixed(1) })}
                     </p>
                   </div>
                 )}
@@ -589,12 +591,12 @@ export default function UserDashboard({ user }: UserDashboardProps) {
 
       {usageLoading && (
         <div className="card" style={{ marginTop: "24px", textAlign: "center", padding: "40px" }}>
-          <p>טוען סטטיסטיקות שימוש...</p>
+          <p>{t("userDashboard.loadingUsageStats")}</p>
         </div>
       )}
 
       <div className="alert alert-info" style={{ marginTop: "24px" }}>
-        <strong>💡 טיפ:</strong> הסטטיסטיקות מתעדכנות בזמן אמת ומציגות את השימוש שלך ב-7-30 הימים האחרונים.
+        <strong>💡 {t("userDashboard.tipLabel")}</strong> {t("userDashboard.tipText")}
       </div>
     </div>
   );

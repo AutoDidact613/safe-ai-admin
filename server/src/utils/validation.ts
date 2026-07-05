@@ -8,16 +8,16 @@ import { z } from "zod";
  * Registration validation schema
  */
 export const registerSchema = z.object({
-  email: z.string().email("כתובת אימייל לא תקינה"),
+  email: z.string().email("EMAIL_INVALID"),
   password: z
     .string()
-    .min(8, "הסיסמה חייבת להכיל לפחות 8 תווים")
-    .regex(/[A-Z]/, "הסיסמה חייבת להכיל לפחות אות גדולה אחת")
-    .regex(/[a-z]/, "הסיסמה חייבת להכיל לפחות אות קטנה אחת")
-    .regex(/[0-9]/, "הסיסמה חייבת להכיל לפחות ספרה אחת"),
-  name: z.string().min(2, "השם חייב להכיל לפחות 2 תווים"),
+    .min(8, "PASSWORD_TOO_SHORT")
+    .regex(/[A-Z]/, "PASSWORD_MISSING_UPPERCASE")
+    .regex(/[a-z]/, "PASSWORD_MISSING_LOWERCASE")
+    .regex(/[0-9]/, "PASSWORD_MISSING_DIGIT"),
+  name: z.string().min(2, "NAME_TOO_SHORT"),
   organization: z.string().optional(),
-  organizationId: z.string().min(1, "חובה לבחור ארגון"),
+  organizationId: z.string().min(1, "ORGANIZATION_REQUIRED"),
   profileId: z.string().optional(),
   mode: z.enum(["BYOK", "MANAGED"]).default("BYOK"),
 });
@@ -26,8 +26,8 @@ export const registerSchema = z.object({
  * Login validation schema
  */
 export const loginSchema = z.object({
-  email: z.string().email("כתובת אימייל לא תקינה"),
-  password: z.string().min(1, "נא להזין סיסמה"),
+  email: z.string().email("EMAIL_INVALID"),
+  password: z.string().min(1, "PASSWORD_REQUIRED"),
 });
 
 /**
@@ -84,8 +84,12 @@ export function validateRequest<T>(schema: z.ZodSchema<T>, data: unknown): T {
     return schema.parse(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const messages = error.issues.map((err: z.ZodIssue) => err.message).join(", ");
-      throw new Error(messages);
+      const messages = error.issues.map((err: z.ZodIssue) => err.message);
+      const validationError = new Error(messages.join(", ")) as Error & {
+        code?: string;
+      };
+      validationError.code = messages[0];
+      throw validationError;
     }
     throw error;
   }

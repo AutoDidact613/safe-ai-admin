@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { API_ENDPOINTS, apiCall } from "../config/api";
 
 interface Profile {
@@ -21,6 +22,7 @@ export default function ProfileSelectionModal({
   userId,
   onProfileSelected,
 }: ProfileSelectionModalProps) {
+  const { t } = useTranslation();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -40,7 +42,7 @@ export default function ProfileSelectionModal({
       setProfiles(data);
     } catch (err) {
       console.error("Error fetching profiles:", err);
-      setError("שגיאה בטעינת הפרופילים");
+      setError(t("profileModal.errorLoadingProfiles"));
     } finally {
       setLoading(false);
     }
@@ -48,7 +50,7 @@ export default function ProfileSelectionModal({
 
   const handleSave = async () => {
     if (!selectedProfileId) {
-      setError("אנא בחר פרופיל");
+      setError(t("profileModal.errorSelectProfile"));
       return;
     }
 
@@ -72,7 +74,7 @@ export default function ProfileSelectionModal({
       onClose();
     } catch (err) {
       console.error("Error saving profile:", err);
-      setError("שגיאה בשמירת הפרופיל");
+      setError(t("profileModal.errorSavingProfile"));
     } finally {
       setSaving(false);
     }
@@ -113,23 +115,22 @@ export default function ProfileSelectionModal({
         }}
       >
         <h2 style={{ marginBottom: "16px", fontSize: "24px", fontWeight: "bold" }}>
-          בחר פרופיל AI
+          {t("profileModal.title")}
         </h2>
 
         <div
           className="alert alert-warning"
           style={{ marginBottom: "24px", padding: "16px", borderRadius: "6px" }}
         >
-          <strong>⚠️ נדרש פרופיל</strong>
+          <strong>{t("profileModal.warning")}</strong>
           <p style={{ marginTop: "8px", marginBottom: 0 }}>
-            כדי להתחיל להשתמש במערכת, עליך לבחור פרופיל AI. הפרופיל קובע את הגבולות
-            והמדיניות של השימוש שלך במערכת.
+            {t("profileModal.description")}
           </p>
         </div>
 
         {loading ? (
           <div style={{ textAlign: "center", padding: "40px" }}>
-            <p>טוען פרופילים...</p>
+            <p>{t("profileModal.loading")}</p>
           </div>
         ) : (
           <>
@@ -143,7 +144,7 @@ export default function ProfileSelectionModal({
                   fontSize: "16px",
                 }}
               >
-                בחר פרופיל:
+                {t("profileModal.selectLabel")}
               </label>
               <select
                 id="profile-select"
@@ -161,7 +162,7 @@ export default function ProfileSelectionModal({
                   backgroundColor: "#f8f9fa",
                 }}
               >
-                <option value="">-- בחר פרופיל --</option>
+                <option value="">{t("profileModal.selectPlaceholder")}</option>
                 {profiles.map((profile) => (
                   <option key={profile._id} value={profile._id}>
                     {profile.name}
@@ -180,20 +181,20 @@ export default function ProfileSelectionModal({
                 }}
               >
                 <p style={{ marginBottom: "8px", fontWeight: "500" }}>
-                  פרטי הפרופיל:
+                  {t("profileModal.profileDetails")}
                 </p>
                 {profiles
                   .filter((p) => p._id === selectedProfileId)
                   .map((profile) => (
                     <div key={profile._id}>
                       <p style={{ marginBottom: "4px", fontSize: "14px" }}>
-                        <strong>שם:</strong> {profile.name}
+                        <strong>{t("profileModal.labelName")}</strong> {profile.name}
                       </p>
                       <p style={{ marginBottom: "4px", fontSize: "14px" }}>
-                        <strong>נוצר על ידי:</strong> {profile.createdBy}
+                        <strong>{t("profileModal.labelCreatedBy")}</strong> {profile.createdBy}
                       </p>
                       <p style={{ marginBottom: 0, fontSize: "14px" }}>
-                        <strong>אימייל:</strong> {profile.creatorEmail}
+                        <strong>{t("profileModal.labelEmail")}</strong> {profile.creatorEmail}
                       </p>
                     </div>
                   ))}
@@ -216,7 +217,7 @@ export default function ProfileSelectionModal({
                 className="btn btn-primary"
                 style={{ flex: 1, padding: "12px", fontSize: "16px" }}
               >
-                {saving ? "שומר..." : "שמור והמשך"}
+                {saving ? t("profileModal.buttonSaving") : t("profileModal.buttonSave")}
               </button>
             </div>
 
@@ -228,7 +229,7 @@ export default function ProfileSelectionModal({
                 textAlign: "center",
               }}
             >
-              תוכל לשנות את הפרופיל בכל עת מהדשבורד שלך
+              {t("profileModal.footer")}
             </p>
           </>
         )}

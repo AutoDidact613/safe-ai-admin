@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function RegisterFormSuccess() {
+  const { t } = useTranslation();
   const [showAPIKey, setShowAPIKey] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -14,7 +16,7 @@ export default function RegisterFormSuccess() {
       <div className="auth-form-wrapper" style={{ maxWidth: "700px" }}>
         <div style={{ textAlign: "center", marginBottom: "30px" }}>
           <h1 style={{ fontSize: "32px", marginBottom: "10px" }}>
-            ✅ ההרשמה הושלמה בהצלחה!
+            {t("registerSuccess.title")}
           </h1>
         </div>
 
@@ -29,16 +31,16 @@ export default function RegisterFormSuccess() {
           }}
         >
           <h2 style={{ fontSize: "24px", marginBottom: "15px", color: "white" }}>
-            📧 אימות אימייל נדרש
+            {t("registerSuccess.emailHeading")}
           </h2>
           <p style={{ fontSize: "16px", lineHeight: "1.6", marginBottom: "15px" }}>
-            {message || "נשלח אימייל אימות לכתובת שהזנת. אנא אמת את האימייל שלך כדי להתחבר."}
+            {message || t("registerSuccess.emailMessage")}
           </p>
           <p style={{ fontSize: "14px", marginBottom: "10px" }}>
-            <strong>כתובת האימייל:</strong> {email}
+            <strong>{t("registerSuccess.emailLabel")}</strong> {email}
           </p>
           <p style={{ fontSize: "14px", lineHeight: "1.5" }}>
-            לאחר אימות האימייל, תוכל להתחבר למערכת ולהתחיל להשתמש בשירותים שלנו.
+            {t("registerSuccess.emailDescription")}
           </p>
         </div>
 
@@ -56,17 +58,17 @@ export default function RegisterFormSuccess() {
             <h3
               style={{ color: "#856404", marginBottom: "10px", fontSize: "18px" }}
             >
-              ⚠️ מפתח API - שמור אותו עכשיו!
+              {t("registerSuccess.apiKeyWarningTitle")}
             </h3>
             <p style={{ color: "#856404", marginBottom: "15px", fontSize: "14px" }}>
-              זהו המפתח היחיד שלך לגישה ל-API. לא תוכל לראות אותו שוב!
+              {t("registerSuccess.apiKeyWarningDesc")}
             </p>
             <button
               onClick={() => setShowAPIKey(!showAPIKey)}
               className="btn btn-secondary"
               style={{ padding: "10px 20px" }}
             >
-              {showAPIKey ? "הסתר מפתח" : "הצג מפתח API"}
+              {showAPIKey ? t("registerSuccess.buttonHideKey") : t("registerSuccess.buttonShowKey")}
             </button>
             
             {showAPIKey && (
@@ -89,7 +91,7 @@ export default function RegisterFormSuccess() {
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(proxyApiKey);
-                      alert("המפתח הועתק ללוח!");
+                      alert(t("registerSuccess.keyCopied"));
                     } catch (err) {
                       console.error("Failed to copy:", err);
                     }
@@ -97,7 +99,7 @@ export default function RegisterFormSuccess() {
                   className="btn btn-secondary"
                   style={{ marginTop: "10px", width: "100%" }}
                 >
-                  📋 העתק מפתח
+                  {t("registerSuccess.buttonCopyKey")}
                 </button>
               </div>
             )}
@@ -110,7 +112,7 @@ export default function RegisterFormSuccess() {
             className="btn btn-primary btn-full"
             style={{ fontSize: "16px", padding: "15px" }}
           >
-            עבור לדף התחברות
+            {t("registerSuccess.buttonLoginPage")}
           </button>
         </div>
 
@@ -122,7 +124,7 @@ export default function RegisterFormSuccess() {
             color: "#999",
           }}
         >
-          לא קיבלת אימייל? בדוק את תיקיית הספאם או צור קשר עם התמיכה
+          {t("registerSuccess.noEmailFooter")}
         </p>
       </div>
     </div>

@@ -2,10 +2,13 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import "../styles/top-navigation.css";
 import { cleanupTokenManager } from "../utils/tokenManager";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 export default function TopNavigation() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<{ name: string; email: string } | null>(
     null,
@@ -95,28 +98,28 @@ export default function TopNavigation() {
               {/* Public Navigation */}
           
        <Link to="/about" className="top-nav-link">
-למה?
+                {t("nav.why")}
               </Link>
               <Link to="/courses" className="top-nav-link">
-                קורסים
+               {t("nav.courses")}
               </Link>
               <Link to="/docs" className="top-nav-link">
-                מדריך SafeAI
+                {t("nav.docs")}
               </Link>
               <Link to="/recommended-guides" className="top-nav-link">
-                מדריכים מומלצים
+                {t("nav.recommendedGuides")}
               </Link>
               <Link to="/contact" className="top-nav-link">
-                צור קשר
+                {t("nav.contact")}
               </Link>
        
 
               {/* Auth Buttons */}
               <Link to="/login" className="top-nav-btn top-nav-btn-secondary">
-                התחברות
+                {t("nav.login")}
               </Link>
               <Link to="/register" className="top-nav-btn top-nav-btn-primary">
-                הרשמה
+                {t("nav.register")}
               </Link>
             </>
           ) : (
@@ -126,19 +129,19 @@ export default function TopNavigation() {
                 to="/safeai-ui"
                 className={`top-nav-link ${location.pathname === "/safeai-ui" ? "active" : ""}`}
               >
-                איזור אישי
+               {t("nav.personalArea")}
               </Link>
               <Link to="/courses" className="top-nav-link">
-                קורסים
+                {t("nav.courses")}
               </Link>
               <Link to="/docs" className="top-nav-link">
-                מדריך SafeAI
+                {t("nav.docs")}
               </Link>
               <Link to="/recommended-guides" className="top-nav-link">
-                מדריכים מומלצים
+                {t("nav.recommendedGuides")}
               </Link>
               <Link to="/contact" className="top-nav-link">
-                צור קשר
+                {t("nav.contact")}
               </Link>
 
               {/* User Menu */}
@@ -150,7 +153,7 @@ export default function TopNavigation() {
                   <div className="user-avatar">
                     {user?.name?.charAt(0).toUpperCase() || "U"}
                   </div>
-                  <span className="user-name">{user?.name || "משתמש"}</span>
+                  <span className="user-name">{user?.name ||t("nav.defaultUserName")}</span>
                   <svg
                     className={`dropdown-arrow ${showUserMenu ? "open" : ""}`}
                     width="12"
@@ -193,7 +196,7 @@ export default function TopNavigation() {
                           strokeLinecap="round"
                         />
                       </svg>
-                      איזור אישי  
+                      {t("nav.personalArea")}
                     </Link>
                     <Link
                       to="/api-key-display"
@@ -213,7 +216,7 @@ export default function TopNavigation() {
                           strokeLinecap="round"
                         />
                       </svg>
-                      API Keys
+                      {t("nav.apiKeys")}
                     </Link>
                     <div className="user-menu-divider"></div>
                     <button className="user-menu-item" onClick={handleLogout}>
@@ -231,7 +234,7 @@ export default function TopNavigation() {
                           strokeLinejoin="round"
                         />
                       </svg>
-                      יציאה
+                      {t("nav.logout")}
                     </button>
                   </div>
                 )}
@@ -239,6 +242,7 @@ export default function TopNavigation() {
             </>
           )}
         </div>
+        <LanguageSwitcher />
       </div>
     </nav>
   );

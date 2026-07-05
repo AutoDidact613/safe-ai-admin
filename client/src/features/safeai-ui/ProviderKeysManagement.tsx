@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { API_ENDPOINTS, apiCall } from "../../config/api";
 
 interface ProviderKey {
@@ -18,6 +19,7 @@ interface ProviderKeysManagementProps {
 }
 
 export default function ProviderKeysManagement({ userId, userEmail, onClose }: ProviderKeysManagementProps) {
+  const { t } = useTranslation();
   const [keys, setKeys] = useState<ProviderKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -41,7 +43,7 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
       setKeys(userKeys);
     } catch (error) {
       console.error("Failed to fetch provider keys:", error);
-      alert("שגיאה בטעינת מפתחות");
+      alert(t("providerKeysManagement.errorLoadingKeys"));
     } finally {
       setLoading(false);
     }
@@ -66,11 +68,11 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
       await fetchKeys();
       setShowAddModal(false);
       resetForm();
-      alert("המפתח נוסף בהצלחה");
+      alert(t("providerKeysManagement.keyAddedSuccess"));
     } catch (error: unknown) {
       console.error("Error adding provider key:", error);
-      const errorMessage = error instanceof Error ? error.message : "שגיאה לא ידועה";
-      alert(`שגיאה בהוספת מפתח: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : t("usersManagement.errorUnknown");
+      alert(t("providerKeysManagement.addKeyErrorPrefix", { message: errorMessage }));
     } finally {
       setSaving(false);
     }
@@ -86,16 +88,16 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
       });
 
       await fetchKeys();
-      alert(`המפתח ${!currentStatus ? "הופעל" : "הושבת"} בהצלחה`);
+      alert(!currentStatus ? t("userApiKeys.keyEnabledSuccess") : t("userApiKeys.keyDisabledSuccess"));
     } catch (error: unknown) {
       console.error("Error toggling key status:", error);
-      const errorMessage = error instanceof Error ? error.message : "שגיאה לא ידועה";
-      alert(`שגיאה בעדכון סטטוס: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : t("usersManagement.errorUnknown");
+      alert(t("providerKeysManagement.updateStatusErrorPrefix", { message: errorMessage }));
     }
   };
 
   const handleDeleteKey = async (keyId: string, provider: string) => {
-    if (!confirm(`האם אתה בטוח שברצונך למחוק את מפתח ${provider}?`)) {
+    if (!confirm(t("providerKeysManagement.deleteKeyConfirm", { provider }))) {
       return;
     }
 
@@ -105,11 +107,11 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
       });
 
       await fetchKeys();
-      alert("המפתח נמחק בהצלחה");
+      alert(t("providerKeysManagement.keyDeletedSuccess"));
     } catch (error: unknown) {
       console.error("Error deleting key:", error);
-      const errorMessage = error instanceof Error ? error.message : "שגיאה לא ידועה";
-      alert(`שגיאה במחיקת מפתח: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : t("usersManagement.errorUnknown");
+      alert(t("providerKeysManagement.deleteKeyErrorPrefix", { message: errorMessage }));
     }
   };
 
@@ -149,7 +151,7 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
         style={{ maxWidth: "800px", maxHeight: "90vh", overflowY: "auto" }}
       >
         <div className="modal-header">
-          <h2>🔑 ניהול API Keys - {userEmail}</h2>
+          <h2>🔑 {t("providerKeysManagement.modalTitle", { email: userEmail })}</h2>
           <button className="modal-close" onClick={onClose}>
             ×
           </button>
@@ -163,30 +165,29 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
             padding: "15px", 
             marginBottom: "20px" 
           }}>
-            <strong>ℹ️ הסבר:</strong>
+            <strong>ℹ️ {t("providerKeysManagement.explanationLabel")}</strong>
             <p style={{ margin: "10px 0 0 0", fontSize: "14px" }}>
-              משתמש במצב BYOK (Bring Your Own Key) יכול להוסיף מפתחות API משלו לספקים שונים.
-              המפתחות מוצפנים ונשמרים בצורה מאובטחת.
+              {t("providerKeysManagement.byokExplanation")}
             </p>
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-            <h3 style={{ margin: 0 }}>מפתחות קיימים ({keys.length})</h3>
-            <button 
-              className="btn btn-primary" 
+            <h3 style={{ margin: 0 }}>{t("providerKeysManagement.existingKeysTitle", { count: keys.length })}</h3>
+            <button
+              className="btn btn-primary"
               onClick={() => setShowAddModal(true)}
             >
-              + הוסף מפתח
+              + {t("providerKeysManagement.addKeyButton")}
             </button>
           </div>
 
           {loading ? (
-            <div className="loading-state">טוען מפתחות...</div>
+            <div className="loading-state">{t("providerKeysManagement.loadingKeys")}</div>
           ) : keys.length === 0 ? (
             <div className="empty-state">
-              <p>אין מפתחות למשתמש זה</p>
+              <p>{t("providerKeysManagement.noKeysForUser")}</p>
               <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-                הוסף מפתח ראשון
+                {t("userApiKeys.addFirstKeyButton")}
               </button>
             </div>
           ) : (
@@ -213,27 +214,27 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
                     </div>
                     <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                       <span className={key.isActive ? "badge badge-success" : "badge badge-secondary"}>
-                        {key.isActive ? "פעיל" : "לא פעיל"}
+                        {key.isActive ? t("orgUsers.active") : t("orgUsers.inactive")}
                       </span>
                       <button
                         className="btn btn-secondary"
                         onClick={() => handleToggleActive(key._id, key.isActive)}
                         style={{ padding: "5px 15px", fontSize: "13px" }}
                       >
-                        {key.isActive ? "השבת" : "הפעל"}
+                        {key.isActive ? t("providerKeysManagement.disableButton") : t("providerKeysManagement.enableButton")}
                       </button>
                       <button
                         className="btn btn-danger"
                         onClick={() => handleDeleteKey(key._id, key.provider)}
                         style={{ padding: "5px 15px", fontSize: "13px" }}
                       >
-                        מחק
+                        {t("common.delete")}
                       </button>
                     </div>
                   </div>
                   {key.createdAt && (
                     <p style={{ margin: "10px 0 0 0", fontSize: "12px", color: "#999" }}>
-                      נוצר: {new Date(key.createdAt).toLocaleDateString("he-IL")} {new Date(key.createdAt).toLocaleTimeString("he-IL")}
+                      {t("providerKeysManagement.createdAtTimeLabel", { date: new Date(key.createdAt).toLocaleDateString("he-IL"), time: new Date(key.createdAt).toLocaleTimeString("he-IL") })}
                     </p>
                   )}
                 </div>
@@ -244,7 +245,7 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
 
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>
-            סגור
+            {t("common.close")}
           </button>
         </div>
       </div>
@@ -254,7 +255,7 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>הוסף API Key חדש</h2>
+              <h2>{t("providerKeysManagement.addNewKeyModalTitle")}</h2>
               <button className="modal-close" onClick={() => setShowAddModal(false)}>
                 ×
               </button>
@@ -262,7 +263,7 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
 
             <form onSubmit={handleAddKey}>
               <div className="form-group">
-                <label>ספק *</label>
+                <label>{t("providerKeysManagement.providerLabel")}</label>
                 <select
                   value={formData.provider}
                   onChange={(e) => setFormData({ ...formData, provider: e.target.value as "openai" | "anthropic" | "google" | "groq" })}
@@ -276,7 +277,7 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
               </div>
 
               <div className="form-group">
-                <label>API Key *</label>
+                <label>{t("providerKeysManagement.apiKeyRequiredLabel")}</label>
                 <input
                   type="password"
                   value={formData.apiKey}
@@ -286,7 +287,7 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
                   style={{ fontFamily: "monospace" }}
                 />
                 <small style={{ display: "block", marginTop: "5px", color: "#666" }}>
-                  המפתח יוצפן ויישמר בצורה מאובטחת
+                  {t("providerKeysManagement.keyWillBeEncrypted")}
                 </small>
               </div>
 
@@ -297,7 +298,7 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
                     checked={formData.isActive}
                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                   />
-                  מפתח פעיל
+                  {t("providerKeysManagement.activeKeyCheckbox")}
                 </label>
               </div>
 
@@ -308,10 +309,10 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
                   onClick={() => setShowAddModal(false)}
                   disabled={saving}
                 >
-                  ביטול
+                  {t("common.cancel")}
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? "שומר..." : "הוסף מפתח"}
+                  {saving ? t("profileModal.buttonSaving") : t("providerKeysManagement.addKeyButton")}
                 </button>
               </div>
             </form>

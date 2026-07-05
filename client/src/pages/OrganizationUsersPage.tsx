@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 
 interface User {
@@ -27,6 +28,7 @@ interface OrganizationOwner {
 
 
 export default function OrganizationUsersPage() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ export default function OrganizationUsersPage() {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
 
       if (!token) {
-        setError("Not authenticated");
+        setError(t("orgUsers.notAuthenticated"));
         return;
       }
 
@@ -61,7 +63,7 @@ export default function OrganizationUsersPage() {
       );
 
       if (!userOrg) {
-        setError("No organization found");
+        setError(t("orgUsers.noOrganization"));
         return;
       }
 
@@ -78,7 +80,7 @@ export default function OrganizationUsersPage() {
       setUsers(usersResponse.data);
     } catch (err: unknown) {
       console.error("Error fetching organization users:", err);
-      setError((err as { response?: { data?: { error?: string } } }).response?.data?.error || "Failed to fetch organization users");
+      setError((err as { response?: { data?: { error?: string } } }).response?.data?.error || t("orgUsers.fetchError"));
     } finally {
       setLoading(false);
     }
@@ -87,8 +89,8 @@ export default function OrganizationUsersPage() {
   if (loading) {
     return (
       <div style={{ padding: "20px" }}>
-        <h1>Organization Users</h1>
-        <p>Loading...</p>
+        <h1>{t("orgUsers.title")}</h1>
+        <p>{t("orgUsers.loading")}</p>
       </div>
     );
   }
@@ -96,7 +98,7 @@ export default function OrganizationUsersPage() {
   if (error) {
     return (
       <div style={{ padding: "20px" }}>
-        <h1>Organization Users</h1>
+        <h1>{t("orgUsers.title")}</h1>
         <p style={{ color: "red" }}>{error}</p>
       </div>
     );
@@ -104,30 +106,30 @@ export default function OrganizationUsersPage() {
 
   return (
     <div style={{ padding: "20px" }}>
-      <h1>Organization Users</h1>
+      <h1>{t("orgUsers.title")}</h1>
       
       {organization && (
         <div style={{ marginBottom: "20px", padding: "15px", backgroundColor: "#f5f5f5", borderRadius: "8px" }}>
           <h2>{organization.name}</h2>
           <p>{organization.description}</p>
-          <p><strong>Status:</strong> {organization.isActive ? "Active" : "Inactive"}</p>
+          <p><strong>{t("orgUsers.status")}</strong> {organization.isActive ? t("orgUsers.active") : t("orgUsers.inactive")}</p>
         </div>
       )}
 
-      <h3>Users in Organization ({users.length})</h3>
+      <h3>{t("orgUsers.usersInOrg")} ({users.length})</h3>
 
       {users.length === 0 ? (
-        <p>No users found in this organization.</p>
+        <p>{t("orgUsers.noUsers")}</p>
       ) : (
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "20px" }}>
           <thead>
             <tr style={{ backgroundColor: "#f0f0f0" }}>
-              <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Email</th>
-              <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Name</th>
-              <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Role</th>
-              <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Mode</th>
-              <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Status</th>
-              <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>Joined</th>
+              <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>{t("orgUsers.tableHeaders.email")}</th>
+              <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>{t("orgUsers.tableHeaders.name")}</th>
+              <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>{t("orgUsers.tableHeaders.role")}</th>
+              <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>{t("orgUsers.tableHeaders.mode")}</th>
+              <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>{t("orgUsers.tableHeaders.status")}</th>
+              <th style={{ padding: "10px", textAlign: "left", border: "1px solid #ddd" }}>{t("orgUsers.tableHeaders.joined")}</th>
             </tr>
           </thead>
           <tbody>
@@ -155,7 +157,7 @@ export default function OrganizationUsersPage() {
                     color: "white",
                     fontSize: "12px"
                   }}>
-                    {user.isActive ? "Active" : "Inactive"}
+                    {user.isActive ? t("orgUsers.active") : t("orgUsers.inactive")}
                   </span>
                 </td>
                 <td style={{ padding: "10px", border: "1px solid #ddd" }}>

@@ -1,164 +1,142 @@
+import { useTranslation } from "react-i18next";
 import "../styles/about-page.css";
 
 export default function AboutPage() {
+  const { t } = useTranslation();
   return (
     <div className="about-page">
       <div className="about-container">
         <h1>AI 2026</h1>
 
         <section className="about-section">
-          <h2>הרקע:</h2>
+          <h2>{t("about.backgroundHeading")}</h2>
+          <p>{t("about.backgroundP1")}</p>
           <p>
-            כלי ה-AI שטלטל את העולם ומצעיד אותו לקראת מהפיכה אמיתית הוא ה-LLM –
-            מודל שפה גדול שמאפשר לדמות שיח עם בן אדם אמיתי.
+            {t("about.backgroundP2Line1")}
+            <br />
+            {t("about.backgroundP2Line2")}
+            <br />
+            {t("about.backgroundP2Line3")}
           </p>
           <p>
-            בעקבות ההמצאה פותחו צ'אטים רבים שמאפשרים לכל משתמש באינטרנט לפתוח
-            ולדבר כאוות נפשו.
+            {t("about.backgroundP3Line1")}
             <br />
-            לא רק דרך האינטרנט. כיום יש תוכנות שאפשר להתקין על כל מחשב סטנדרטי.
+            {t("about.backgroundP3Line2")}
             <br />
-            (דרישות מינימום נכון לעכשיו - 8GB RAM, מעבד i5) צ'אט מקומי שאפשר
-            לדבר איתו גם ללא שום חיבור לאינטרנט או למקור חיצוני אחר.
+            {t("about.backgroundP3Line3")}
+            <br /> {t("about.backgroundP3Line4")} <br />
+            {t("about.backgroundP3Line5")}
           </p>
           <p>
-            האנושות כולה נכנסה לניסוי חברתי רחב היקף שאת התוצאות שלו נראה במהלך
-            השנים הבאות.
-            <br />
-            ההשלכות של היכולת לתקשר עם דמוי אדם, שההשקפות שלו ניתנות לעיצוב ע''י
-            היוצרים, ההתנהגות, מהלכי השיחה וסגנון הניתוח מוגדרים בצורה מכוונת,
-            יכולות להיות מגוונות:
-            <br />
-            החל משיח מקצועי שנותן תוצרים מדהימים,
-            <br /> המשך בעזרה במשימות של יום יום <br />
-            וכלה בשיחות אישיות, רגשיות, על עניינים אישיים שיכולות להיגמר בנזק
-            למשתמש.
-          </p>
-          <p>
-            (ולכל ההשלכות יש מקרים עם שמות ופרטים שניתן לספר עליהם כבר היום.)
+            {t("about.backgroundP4")}
           </p>
         </section>
 
         <section className="about-section">
           <p>
-            כיהודים, עובדי ד', שומרי תורה ומצוות, <br />
-            כל מהפכה היא זמן מבחן.
+            {t("about.valuesP1Line1")} <br />
+            {t("about.valuesP1Line2")}
             <br />
             <br />
-            אנחנו לא יכולים לקבל את העתיד בשוויון נפש ובלי להתכונן אליו.
+            {t("about.valuesP1Line3")}
             <br />
-            כיום – כשנתיים אחרי שהכלי פרץ לציבור בכל עוצמתו. והוא כאן על מנת
-            להישאר. הגענו לזמן שחייבים לנהל אסטרטגיה.
+            {t("about.valuesP1Line4")}
           </p>
           <p>
-            החרדים לדבר ד' צריכים לקום ולהכריז הכרזות שעד אתמול היו ברורות
-            ומובנות מאליהן:
+            {t("about.valuesP2")}
           </p>
           <ul>
-            <li>לא מדברים עם זרים</li>
-            <li>לא מכניסים זרים הביתה</li>
+            <li>{t("about.valuesList1")}</li>
+            <li>{t("about.valuesList2")}</li>
           </ul>
           <p>
-            אף אמא לא היתה שולחת ילדה לגינה אם היתה היודעת שעומדת שם אישה זרה
-            ומשועממת, שמעוניינת לפטפט איתה ללא הפסקה, לייעץ לה, להנחות ולפדבק,
-            והמטרה העיקרית שלה היא שהשיחה תימשך עד הלילה... ומחר תמשיך...
+            {t("about.valuesP3Line1")}
             <br />
-            אף אב לא היה משאיר בבית מתקין מזגנים שנכנס כדי לעבוד, אבל מתחיל לדבר
-            עם הישיבה בוחער, מתעניין בו בחום, מחמיא, שואל, מציע הצעות, וכל מיני
-            הצעות...
+            {t("about.valuesP3Line2")}
           </p>
         </section>
 
         <section className="about-section">
-          <h2>המצב כרגע בשוק:</h2>
+          <h2>{t("about.marketHeading")}</h2>
           <p>
-            השימוש בכלי AI הוא בלתי נמנע. מתכנתות, גרפיקאיות, מתחזקות, חייבות את
-            הכלים כבר היום. <br />
-            ובשוק של עבודה ככל שהכלי מתקדם יותר, ויש מגוון רחב יותר של כלים,
-            התוצאה היא ביצועים מהירים וטובים יותר.
+            {t("about.marketPLine1")} <br />
+            {t("about.marketPLine2")}
             <br />
-            בבתים רבים נכנס השימוש השוטף ב-AI גם לא לצורך עבודה.
+            {t("about.marketPLine3")}
           </p>
         </section>
 
         <section className="about-section">
-          <h2>הגדרת הבעיה:</h2>
+          <h2>{t("about.problemHeading")}</h2>
           <p>
-            כדי לחזור למקום יהודי נכון חובה לתת מענה. נראה שא''א לגדור "אין
-            להשתמש בכלי ה-AI"
+            {t("about.problemPLine1")}
             <br />
-            כי המשמעות היא:
+            {t("about.problemPLine2")}
             <br />
-            איסור על כל המקצועות הטכנולוגיים / קושי גדול בציות להנחיה - בחלקים
-            גדולים של הציבור
+            {t("about.problemPLine3")}
           </p>
         </section>
 
         <section className="about-section">
-          <h2>המטרה:</h2>
+          <h2>{t("about.goalHeading")}</h2>
           <p>
-            שימוש ב-AI למטרות מקצועיות בלבד. לפתרון משימות קונטקרטיות.
+            {t("about.goalPLine1")}
             <br />
-            לא שימוש בו כ"אדם" שאפשר לפטפט איתו ולקבל מידע בכל תחום שהוא.
+            {t("about.goalPLine2")}
           </p>
         </section>
 
         <section className="about-section">
-          <h2>כיוון מוצע לפתרון:</h2>
+          <h2>{t("about.directionHeading")}</h2>
           <p>
-            AI הוא אדם – כמו מול כל אדם – אם הוא לא מוכר / מוכר בעל השקפות זרות
-            ליהדות –<br />
-            לא רוצים קשר. כשחייבים – אז רשמי ומינימלי.
+            {t("about.directionPLine1")}
             <br />
-            AI הוא כלי – כמו כל כלי חדש שנוצר – צריך ללמוד איך להשתמש בצורה
-            בטוחה ולהנות מהיכולות.
+            {t("about.directionPLine2")}
+            <br />
+            {t("about.directionPLine3")}
             <br />
             <br />
-            אולי שווה לזכור שיש גם אופציה להוציא את המחשבים מהבתים.
+            {t("about.directionPLine4")}
             <br />
-            אנשים זרים בחוץ היו קיימים ויהיו קיימים...
+            {t("about.directionPLine5")}
           </p>
         </section>
 
         <section className="about-section">
-          <h2>יישום של הפתרון:</h2>
+          <h2>{t("about.implementationHeading")}</h2>
 
-          <h3>פיתוח מערכת סינון:</h3>
+          <h3>{t("about.filteringSubheading")}</h3>
           <ul>
-            <li>סינון ליבה – סינון מתכנים אסורים לחלוטין. </li>
+            <li>{t("about.filteringList1")} </li>
             <li>
-              סינון תחום – אפשרות להגדיר תחום שעבורו המערכת מפותחת כך ימנע שיח
-              לא רלוונטי.
+              {t("about.filteringList2")}
             </li>
           </ul>
 
-          <h3>פיתוח מוצרים מכווני מטרה:</h3>
+          <h3>{t("about.goalProductsSubheading")}</h3>
           <p>
-            אם יש תשתית של סינון ניתן בקלות ובמהירות יחסית להרים מערכות שמבצעות
-            משימות לכל תחום.
+            {t("about.goalProductsPLine1")}
             <br />
-            החל ממוצרים אדישים שעונים במקצועיות ובאדישות על כל נושא
+            {t("about.goalProductsPLine2")}
             <br />
-            זהו חבל הצלה בסיסי – היכולת לאסור שימוש בכל צ'אט חופשי כמו (ChatGPT,
-            Gemini ועוד)
+            {t("about.goalProductsPLine3")}
             <br />
-            אמנם חווית השימוש תרד (אין פידבקים, אין הצעות הלאה)
+            {t("about.goalProductsPLine4")}
             <br />
-            אבל עם הסבר זה יתקבל על דעת האנשים היראים.
+            {t("about.goalProductsPLine5")}
             <br />
-            וכלה במוצרים ייעודיים ל -<br />
-            תכנות / מזכירות / הנהלת חשבונות / גרפיקה וכל תחום רלוונטי אחר.
+            {t("about.goalProductsPLine6")}
+            <br />
+            {t("about.goalProductsPLine7")}
           </p>
           <p>
-            הערת אגב: כיום הכלים החזקים שנבנים הם מוכווני מטרה. <br />
-            סגנון העבודה הזה נכנס גם בפיתוח מוצרים בעולם הרחב מתוך הבנה ששימוש
-            ב-AI בצורה לא מבוקרת הוא בעייתי מאד מבחינת אבטחה וביצועים.
+            {t("about.asidePLine1")} <br />
+            {t("about.asidePLine2")}
           </p>
 
-          <h3> ניהול התקשורת עם ה-AI רק דרך ספק מוגן:</h3>
+          <h3>{t("about.providerSubheading")}</h3>
           <p>
-            מרגע שיפותחו מערכות סינון ל-AI יהיה ניתן לסגור את התקשורת עם
-            הספקים החיצוניים כיום זו הדרך היחידה להבטיח הגנה מלאה.
+            {t("about.providerP")}
           </p>
           <svg
             width="800"
@@ -308,37 +286,35 @@ export default function AboutPage() {
         </section>
 
         <section className="about-section">
-          <h2>למה הפתרון לא קיים עד עכשיו:</h2>
+          <h2>{t("about.whyNotHeading")}</h2>
           <p>
-            עוד לא התארגנו בצורה מסודרת. זו הסיבה היחידה לכאורה.
+            {t("about.whyNotPLine1")}
             <br />
-            במהלך הניסיון לפתח תוסף מקביל לתוספים הקיימים, ולאחר מכן גם API ועוד
-            מוצרים,
+            {t("about.whyNotPLine2")}
             <br />
-            מאד בלטה העובדה שכיום עם הכלים שקיימים לפיתוח,
+            {t("about.whyNotPLine3")}
             <br />
-            המשימה של ייצור חלופות היא אפשרית בהחלט מבחינת זמן ומשאבים.
-            <br />
+            {t("about.whyNotPLine4")}
             <br />
             <br />
-            מה שנדרש כרגע זה צוות פיתוח קטן (אנשים בצוות 1-3) , לפיתוח המוצרים
-            ותמיכה טכנית.
             <br />
-            או אולי גם ניהול קהילה מסודרת שמרכזת פניות בנושא, עדכונים, ובקשות.
+            {t("about.whyNotPLine5")}
             <br />
-            הגענו לנקודת זמן שצריך לעצור בה. ולסדר את הכל מחדש.
+            {t("about.whyNotPLine6")}
+            <br />
+            {t("about.whyNotPLine7")}
           </p>
           <ul>
-            <li>יש לנו שליטה על הנושא.</li>
-            <li>אנחנו לא בתוך כאוס.</li>
-            <li>אפשר להגדיר בקלות את הסכנות.</li>
-            <li>אפשר במאמץ סביר להציג פתרונות.</li>
+            <li>{t("about.whyNotList1")}</li>
+            <li>{t("about.whyNotList2")}</li>
+            <li>{t("about.whyNotList3")}</li>
+            <li>{t("about.whyNotList4")}</li>
           </ul>
         </section>
 
         <section className="about-cta">
-          <h2>הקמנו קהילה בגיטהאב ===&gt;</h2>
-          <p>יש לכם מה לתרום? הכנסו לכאן:</p>
+          <h2>{t("about.ctaHeading")}</h2>
+          <p>{t("about.ctaP")}</p>
           <a
             href="https://safeai613.github.io/"
             target="_blank"
@@ -348,15 +324,15 @@ export default function AboutPage() {
             https://safeai613.github.io/
           </a>
 
-          <h3>ידע זה כח</h3>
+          <h3>{t("about.knowledgeHeading")}</h3>
           <p>
-            יש לכם מה להוסיף?
+            {t("about.knowledgePLine1")}
             <br />
-            טיפים?
+            {t("about.knowledgePLine2")}
             <br />
-            מוצרים איכותיים שכדאי להכיר?
+            {t("about.knowledgePLine3")}
             <br />
-            כתבו למייל support@safeai613.com
+            {t("about.knowledgePLine4")}
           </p>
         </section>
       </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { API_ENDPOINTS } from "../../config/api";
 
 interface StatisticsProps {
@@ -39,6 +40,7 @@ interface AdminStats {
 }
 
 export default function Statistics({ user }: StatisticsProps) {
+  const { t } = useTranslation();
   const [usageData, setUsageData] = useState<UsageData[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<"week" | "month" | "year">("week");
@@ -122,7 +124,7 @@ export default function Statistics({ user }: StatisticsProps) {
         }
       } catch (err) {
         console.error("Error fetching statistics:", err);
-        setError("שגיאה בטעינת הסטטיסטיקות");
+        setError(t("statistics.errorLoading"));
       } finally {
         setLoading(false);
       }
@@ -139,13 +141,13 @@ export default function Statistics({ user }: StatisticsProps) {
   const blockRate = ((totalBlocked / totalRequests) * 100).toFixed(1);
 
   if (loading) {
-    return <div className="loading-state">טוען סטטיסטיקות...</div>;
+    return <div className="loading-state">{t("statistics.loadingStats")}</div>;
   }
 
   if (error) {
     return (
       <div className="alert alert-error">
-        <strong>❌ שגיאה:</strong> {error}
+        <strong>❌ {t("statistics.errorLabel")}</strong> {error}
       </div>
     );
   }
@@ -153,25 +155,25 @@ export default function Statistics({ user }: StatisticsProps) {
   return (
     <div>
       <div className="management-header">
-        <h2>{localStorage.getItem("userRole") === "admin" ? "סטטיסטיקות מערכת - מנהל" : "סטטיסטיקות שימוש"}</h2>
+        <h2>{localStorage.getItem("userRole") === "admin" ? t("statistics.adminTitle") : t("statistics.userTitle")}</h2>
         <div style={{ display: "flex", gap: "8px" }}>
           <button
             className={timeRange === "week" ? "btn btn-primary" : "btn btn-secondary"}
             onClick={() => setTimeRange("week")}
           >
-            שבוע
+            {t("statistics.weekButton")}
           </button>
           <button
             className={timeRange === "month" ? "btn btn-primary" : "btn btn-secondary"}
             onClick={() => setTimeRange("month")}
           >
-            חודש
+            {t("statistics.monthButton")}
           </button>
           <button
             className={timeRange === "year" ? "btn btn-primary" : "btn btn-secondary"}
             onClick={() => setTimeRange("year")}
           >
-            שנה
+            {t("statistics.yearButton")}
           </button>
         </div>
       </div>
@@ -180,78 +182,78 @@ export default function Statistics({ user }: StatisticsProps) {
       {adminStats && (
         <div className="dashboard-grid">
           <div className="stat-card">
-            <h3>סה"כ בקשות</h3>
+            <h3>{t("userDashboard.totalRequestsLabel")}</h3>
             <p className="stat-value">{adminStats.totalRequests}</p>
             <p className="stat-change">
-              {timeRange === "week" ? "7 ימים אחרונים" : timeRange === "month" ? "30 ימים אחרונים" : "שנה אחרונה"}
+              {timeRange === "week" ? t("statistics.last7Days") : timeRange === "month" ? t("statistics.last30Days") : t("statistics.lastYear")}
             </p>
           </div>
 
           <div className="stat-card">
-            <h3>בקשות מוצלחות</h3>
+            <h3>{t("statistics.successfulRequestsLabel")}</h3>
             <p className="stat-value">{adminStats.successfulRequests}</p>
             <p className="stat-change positive">
-              {adminStats.totalRequests > 0 ? ((adminStats.successfulRequests / adminStats.totalRequests) * 100).toFixed(1) : "0"}% הצלחה
+              {t("statistics.successPercent", { percent: adminStats.totalRequests > 0 ? ((adminStats.successfulRequests / adminStats.totalRequests) * 100).toFixed(1) : "0" })}
             </p>
           </div>
 
           {localStorage.getItem("userRole") === "admin" && (
             <>
               <div className="stat-card">
-                <h3>בקשות חסומות</h3>
+                <h3>{t("userDashboard.blockedRequestsLabel")}</h3>
                 <p className="stat-value">{adminStats.blockedRequests}</p>
                 <p className="stat-change negative">
-                  {adminStats.totalRequests > 0 ? ((adminStats.blockedRequests / adminStats.totalRequests) * 100).toFixed(1) : "0"}% חסימה
+                  {t("userDashboard.blockedPercent", { percent: adminStats.totalRequests > 0 ? ((adminStats.blockedRequests / adminStats.totalRequests) * 100).toFixed(1) : "0" })}
                 </p>
               </div>
 
               <div className="stat-card">
-                <h3>משתמשים פעילים</h3>
+                <h3>{t("statistics.activeUsersLabel")}</h3>
                 <p className="stat-value">{adminStats.activeUsers}</p>
-                <p className="stat-change">מתוך {adminStats.totalUsers} סה"כ</p>
+                <p className="stat-change">{t("statistics.outOfTotal", { total: adminStats.totalUsers })}</p>
               </div>
             </>
           )}
 
           <div className="stat-card">
-            <h3>סה"כ Tokens</h3>
+            <h3>{t("userDashboard.totalTokensLabel")}</h3>
             <p className="stat-value">{adminStats.totalTokens.toLocaleString()}</p>
             <p className="stat-change">
-              ממוצע: {Math.round(adminStats.totalTokens / (adminStats.totalRequests || 1))} לבקשה
+              {t("userDashboard.avgTokensPerRequest", { avg: Math.round(adminStats.totalTokens / (adminStats.totalRequests || 1)) })}
             </p>
           </div>
 
           <div className="stat-card">
-            <h3>עלות כוללת</h3>
+            <h3>{t("userDashboard.totalCostLabel")}</h3>
             <p className="stat-value">${adminStats.totalCost.toFixed(4)}</p>
             <p className="stat-change">
-              ממוצע: ${(adminStats.totalCost / (adminStats.totalRequests || 1)).toFixed(6)} לבקשה
+              {t("statistics.avgCostPerRequest", { avg: (adminStats.totalCost / (adminStats.totalRequests || 1)).toFixed(6) })}
             </p>
           </div>
 
           <div className="stat-card">
-            <h3>זמן תגובה ממוצע</h3>
+            <h3>{t("userDashboard.avgResponseTimeLabel")}</h3>
             <p className="stat-value">{Math.round(adminStats.avgResponseTime)}ms</p>
           </div>
 
           <div className="stat-card">
-            <h3>ממוצע יומי</h3>
+            <h3>{t("statistics.dailyAverageLabel")}</h3>
             <p className="stat-value">{avgRequestsPerDay.toFixed(0)}</p>
-            <p className="stat-change">בקשות ליום</p>
+            <p className="stat-change">{t("statistics.requestsPerDay")}</p>
           </div>
         </div>
       )}
 
       <div className="card" style={{ marginTop: "24px" }}>
-        <h3>פירוט יומי</h3>
+        <h3>{t("statistics.dailyBreakdownTitle")}</h3>
         <div style={{ marginTop: "16px", maxHeight: "400px", overflowY: "auto" }}>
           <table className="table">
             <thead>
               <tr>
-                <th>תאריך</th>
-                <th>בקשות</th>
-                <th>חסומות</th>
-                <th>שיעור הצלחה</th>
+                <th>{t("statistics.tableDate")}</th>
+                <th>{t("userDashboard.requestsHeaderLabel")}</th>
+                <th>{t("statistics.tableBlocked")}</th>
+                <th>{t("statistics.tableSuccessRate")}</th>
               </tr>
             </thead>
             <tbody>
@@ -279,20 +281,20 @@ export default function Statistics({ user }: StatisticsProps) {
 
       {adminStats && localStorage.getItem("userRole") === "admin" && (
         <div className="card" style={{ marginTop: "24px" }}>
-          <h3>תובנות מערכת</h3>
+          <h3>{t("statistics.systemInsightsTitle")}</h3>
           <div style={{ marginTop: "16px" }}>
             <div className="alert alert-info">
-              <strong>📊 ניתוח מערכת:</strong>
+              <strong>📊 {t("statistics.systemAnalysisLabel")}</strong>
               <ul style={{ marginTop: "8px", marginBottom: "0", paddingRight: "20px" }}>
-                <li>הממוצע היומי במערכת: {avgRequestsPerDay.toFixed(0)} בקשות</li>
-                <li>שיעור החסימה במערכת: {blockRate}%</li>
-                <li>משתמשים פעילים: {adminStats.activeUsers} מתוך {adminStats.totalUsers} ({adminStats.totalUsers > 0 ? ((adminStats.activeUsers / adminStats.totalUsers) * 100).toFixed(1) : "0"}%)</li>
+                <li>{t("statistics.dailyAverageInsight", { avg: avgRequestsPerDay.toFixed(0) })}</li>
+                <li>{t("statistics.blockRateInsight", { rate: blockRate })}</li>
+                <li>{t("statistics.activeUsersInsight", { active: adminStats.activeUsers, total: adminStats.totalUsers, percent: adminStats.totalUsers > 0 ? ((adminStats.activeUsers / adminStats.totalUsers) * 100).toFixed(1) : "0" })}</li>
                 <li>
                   {parseFloat(blockRate) < 10
-                    ? "שיעור חסימה נמוך - המערכת פועלת כראוי! ✅"
+                    ? t("statistics.insightLowBlockRate")
                     : parseFloat(blockRate) < 25
-                    ? "שיעור חסימה בינוני - מומלץ לבדוק את הפרופילים ⚠️"
-                    : "שיעור חסימה גבוה - נדרשת בדיקה של הפרופילים והגדרות 🔴"}
+                    ? t("statistics.insightMediumBlockRate")
+                    : t("statistics.insightHighBlockRate")}
                 </li>
               </ul>
             </div>
