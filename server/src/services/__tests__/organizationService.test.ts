@@ -380,6 +380,18 @@ describe("organizationService.publicRequestOrganization", () => {
     expect(mockedRegister).not.toHaveBeenCalled();
   });
 
+  it("throws if the owner email format is invalid", async () => {
+    await expect(
+      organizationService.publicRequestOrganization({
+        ...input,
+        ownerEmail: "not-an-email",
+      })
+    ).rejects.toThrow("כתובת האימייל אינה תקינה");
+
+    expect(mockedRepo.findOrganizationByName).not.toHaveBeenCalled();
+    expect(mockedRegister).not.toHaveBeenCalled();
+  });
+
   it("rolls back the created user if organization creation fails on a duplicate name", async () => {
     mockedRepo.findOrganizationByName.mockResolvedValue(null as any);
     mockedRegister.mockResolvedValue({ user: { _id: "user1" } } as any);
