@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { getMyOrganization } from "../features/organizations/api/organizationApi";
+import * as XLSX from "xlsx";
+import { createOrganizationMember, getMyOrganization } from "../features/organizations/api/organizationApi";
 import "../styles/organization-wallet.css";
 
 interface User {
@@ -11,6 +12,7 @@ interface User {
   isActive: boolean;
   createdAt: string;
   mode: string;
+  lastLogin?: string;
 }
 
 interface Organization {
@@ -42,6 +44,14 @@ export default function OrganizationUsersPage() {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [isSavingOrg, setIsSavingOrg] = useState(false);
+
+  const [memberName, setMemberName] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
+  const [addMemberError, setAddMemberError] = useState<string | null>(null);
+  const [createdMembers, setCreatedMembers] = useState<
+    { name: string; email: string; password: string }[]
+  >([]);
 
   useEffect(() => {
     fetchOrganizationAndUsers();
@@ -197,6 +207,62 @@ export default function OrganizationUsersPage() {
     }
   };
 
+  const reloadUsers = async () => {
+    if (!organization) return;
+    const token = localStorage.getItem("accessToken");
+    const usersResponse = await axios.get(
+      `${import.meta.env.VITE_API_URL}/organizations/${organization._id}/users`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setUsers(usersResponse.data);
+  };
+
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!organization || !memberName.trim() || !memberEmail.trim()) {
+      setAddMemberError("יש למלא שם וכתובת אימייל");
+      return;
+    }
+    try {
+      setAddingMember(true);
+      setAddMemberError(null);
+      const result = await createOrganizationMember(organization._id, {
+        name: memberName.trim(),
+        email: memberEmail.trim(),
+      });
+      setCreatedMembers((prev) => [
+        ...prev,
+        {
+          name: result.user.name || memberName.trim(),
+          email: result.user.email,
+          password: result.temporaryPassword,
+        },
+      ]);
+      setMemberName("");
+      setMemberEmail("");
+      await reloadUsers();
+    } catch (err: unknown) {
+      setAddMemberError(err instanceof Error ? err.message : "הוספת המשתמש נכשלה");
+    } finally {
+      setAddingMember(false);
+    }
+  };
+
+  const handleDownloadExcel = () => {
+    const loginUrl = `${window.location.origin}/login`;
+    const rows = createdMembers.map((m) => ({
+      "שם": m.name,
+      "אימייל": m.email,
+      "סיסמה זמנית": m.password,
+      "קישור להתחברות": loginUrl,
+      "סטטוס": "ממתין להתחברות ראשונה",
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "משתמשים חדשים");
+    XLSX.writeFile(workbook, `משתמשי-${organization?.name || "ארגון"}.xlsx`);
+  };
+
   if (loading) {
     return (
       <div className="organization-page">
@@ -312,6 +378,57 @@ export default function OrganizationUsersPage() {
         </div>
       )}
 
+      <h3>הוספת משתמש חדש לארגון</h3>
+      <form onSubmit={handleAddMember} className="org-edit-form">
+        <input
+          type="text"
+          dir="rtl"
+          value={memberName}
+          onChange={(e) => setMemberName(e.target.value)}
+          placeholder="שם מלא"
+          className="org-edit-input"
+        />
+        <input
+          type="email"
+          dir="rtl"
+          value={memberEmail}
+          onChange={(e) => setMemberEmail(e.target.value)}
+          placeholder="כתובת אימייל"
+          className="org-edit-input"
+        />
+        {addMemberError && <p className="error-text">{addMemberError}</p>}
+        <button type="submit" disabled={addingMember} className="topup-button">
+          {addingMember ? "מוסיף..." : "הוסף משתמש"}
+        </button>
+      </form>
+
+      {createdMembers.length > 0 && (
+        <div className="organization-info-card">
+          <p>נוספו {createdMembers.length} משתמשים חדשים בסשן הזה. פרטי ההתחברות שיש למסור להם:</p>
+          <table className="organization-table">
+            <thead>
+              <tr>
+                <th>שם</th>
+                <th>אימייל</th>
+                <th>סיסמה זמנית</th>
+              </tr>
+            </thead>
+            <tbody>
+              {createdMembers.map((m) => (
+                <tr key={m.email}>
+                  <td>{m.name}</td>
+                  <td>{m.email}</td>
+                  <td>{m.password}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button type="button" className="topup-button" onClick={handleDownloadExcel}>
+            הורדת קובץ אקסל
+          </button>
+        </div>
+      )}
+
       <h3>משתמשים בארגון ({users.length})</h3>
 
       {users.length === 0 ? (
@@ -324,6 +441,7 @@ export default function OrganizationUsersPage() {
               <th>שם</th>
               <th>תפקיד</th>
               <th>סטטוס</th>
+              <th>סטטוס הצטרפות</th>
               <th>תאריך הצטרפות</th>
             </tr>
           </thead>
@@ -348,6 +466,13 @@ export default function OrganizationUsersPage() {
                     backgroundColor: user.isActive ? "#4CAF50" : "#f44336"
                   }}>
                     {user.isActive ? "פעיל" : "לא פעיל"}
+                  </span>
+                </td>
+                <td className="status-cell">
+                  <span className="status-pill" style={{
+                    backgroundColor: user.lastLogin ? "#4CAF50" : "#f44336"
+                  }}>
+                    {user.lastLogin ? "הצטרף" : "ממתין להתחברות ראשונה"}
                   </span>
                 </td>
                 <td>{new Date(user.createdAt).toLocaleDateString()}</td>
