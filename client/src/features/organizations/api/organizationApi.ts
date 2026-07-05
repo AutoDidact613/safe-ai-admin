@@ -97,6 +97,21 @@ export const publicRequestOrganization = async (
   });
 };
 
+// יצירת משתמש חדש בארגון + סיסמה זמנית שנוצרת אוטומטית
+export const createOrganizationMember = async (
+  orgId: string,
+  data: { name: string; email: string; role?: string }
+): Promise<{
+  success: boolean;
+  user: { _id: string; name: string; email: string };
+  temporaryPassword: string;
+}> => {
+  return apiCall(API_ENDPOINTS.adminOrganizations.members(orgId), {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+};
+
 // הארגון של המשתמש הנוכחי (בכל סטטוס)
 export const getMyOrganization = async (): Promise<{ organization: AdminOrganization | null }> => {
   return apiCall(API_ENDPOINTS.adminOrganizations.my, { method: "GET" });

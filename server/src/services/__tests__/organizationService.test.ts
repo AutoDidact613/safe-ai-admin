@@ -327,6 +327,73 @@ describe("organizationService.addUserToOrganizationByEmail", () => {
   });
 });
 
+describe("organizationService.createOrganizationMember", () => {
+  const memberData = { name: "New Member", email: "member@example.com" };
+
+  it("throws if the organization does not exist", async () => {
+    mockedRepo.getOrganizationById.mockResolvedValue(null as any);
+
+    await expect(
+      organizationService.createOrganizationMember("org1", memberData)
+    ).rejects.toThrow("Organization not found");
+
+    expect(mockedRegister).not.toHaveBeenCalled();
+  });
+
+  it("throws when the organization already has maxUsers members", async () => {
+    mockedRepo.getOrganizationById.mockResolvedValue({
+      _id: "org1",
+      settings: { maxUsers: 2 },
+    } as any);
+    mockedUserRepo.countUsersByOrganization.mockResolvedValue(2);
+
+    await expect(
+      organizationService.createOrganizationMember("org1", memberData)
+    ).rejects.toThrow("הארגון הגיע למספר המשתמשים המרבי המותר (2)");
+
+    expect(mockedRegister).not.toHaveBeenCalled();
+  });
+
+  it("registers a new user linked to the organization with a generated password", async () => {
+    mockedRepo.getOrganizationById.mockResolvedValue({ _id: "org1" } as any);
+    mockedUserRepo.countUsersByOrganization.mockResolvedValue(0);
+    mockedRegister.mockResolvedValue({
+      user: { _id: "newUser1", name: "New Member", email: "member@example.com" },
+    } as any);
+
+    const result = await organizationService.createOrganizationMember("org1", memberData);
+
+    expect(mockedRegister).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: "member@example.com",
+        name: "New Member",
+        organizationId: "org1",
+        role: "user",
+        skipEmailVerification: true,
+      })
+    );
+    expect(result.user).toEqual({
+      _id: "newUser1",
+      name: "New Member",
+      email: "member@example.com",
+    });
+    expect(typeof result.temporaryPassword).toBe("string");
+    expect(result.temporaryPassword.length).toBeGreaterThan(0);
+  });
+
+  it("uses the given role instead of the default", async () => {
+    mockedRepo.getOrganizationById.mockResolvedValue({ _id: "org1" } as any);
+    mockedUserRepo.countUsersByOrganization.mockResolvedValue(0);
+    mockedRegister.mockResolvedValue({ user: { _id: "newUser1" } } as any);
+
+    await organizationService.createOrganizationMember("org1", { ...memberData, role: "admin" });
+
+    expect(mockedRegister).toHaveBeenCalledWith(
+      expect.objectContaining({ role: "admin" })
+    );
+  });
+});
+
 describe("organizationService.topUpOrganizationWallet", () => {
   it("throws if the organization does not exist", async () => {
     mockedRepo.getOrganizationById.mockResolvedValue(null as any);

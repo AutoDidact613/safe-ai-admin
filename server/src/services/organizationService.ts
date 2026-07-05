@@ -1,9 +1,14 @@
+import crypto from "crypto";
 import * as repo from "../repositories/organizationRepository";
 import * as userRepo from "../repositories/userRepository";
 import { UsageLog } from "../models";
 import { register } from "./authService";
 import { sendOrgApprovalRequestEmail, sendOrgApprovedEmail, sendOrgStatusEmail } from "../utils/email";
 import logger from "../logger";
+
+function generateTemporaryPassword(): string {
+  return crypto.randomBytes(9).toString("base64").replace(/[^a-zA-Z0-9]/g, "");
+}
 
 export async function createOrganization(data: any) {
   try {
@@ -152,6 +157,47 @@ export async function addUserToOrganizationByEmail(
   }
 
   return addUserToOrganization(orgId, user._id.toString(), role);
+}
+
+/**
+ * Create a brand-new user account (with a generated temporary password)
+ * directly inside an organization. Used by org owners/admins adding members
+ * who don't already have a SafeAI account.
+ */
+export async function createOrganizationMember(
+  orgId: string,
+  data: { name: string; email: string; role?: string }
+) {
+  try {
+    const organization = await repo.getOrganizationById(orgId);
+    if (!organization) {
+      throw new Error("Organization not found");
+    }
+
+    const maxUsers = (organization as any).settings?.maxUsers ?? 10;
+    const currentUserCount = await userRepo.countUsersByOrganization(orgId);
+    if (currentUserCount >= maxUsers) {
+      throw new Error(`הארגון הגיע למספר המשתמשים המרבי המותר (${maxUsers})`);
+    }
+
+    const temporaryPassword = generateTemporaryPassword();
+
+    const { user } = await register({
+      email: data.email,
+      password: temporaryPassword,
+      name: data.name,
+      organizationId: orgId,
+      role: data.role || "user",
+      skipEmailVerification: true,
+    });
+
+    logger.info("Organization member created", { orgId, userId: user._id });
+
+    return { user, temporaryPassword };
+  } catch (error) {
+    logger.error("Failed to create organization member", { error, orgId });
+    throw error;
+  }
 }
 
 export async function topUpOrganizationWallet(orgId: string, amount: number) {
