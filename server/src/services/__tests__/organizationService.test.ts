@@ -526,3 +526,73 @@ describe("organizationService.getOrganizationUsageSummary", () => {
     });
   });
 });
+
+describe("organizationService.updateOrganization", () => {
+  it("delegates to the repository with the given data", async () => {
+    mockedRepo.updateOrganization.mockResolvedValue({ _id: "org1", name: "New" } as any);
+
+    const result = await organizationService.updateOrganization("org1", { name: "New" });
+
+    expect(mockedRepo.updateOrganization).toHaveBeenCalledWith("org1", { name: "New" });
+    expect(result).toEqual({ _id: "org1", name: "New" });
+  });
+});
+
+describe("organizationService.getOrganizationUsers", () => {
+  it("returns only users belonging to the given organization", async () => {
+    mockedUserRepo.getUsers.mockResolvedValue([
+      { _id: "u1", organizationId: "org1" },
+      { _id: "u2", organizationId: "otherOrg" },
+      { _id: "u3", organizationId: "org1" },
+    ] as any);
+
+    const result = await organizationService.getOrganizationUsers("org1");
+
+    expect(result).toEqual([
+      { _id: "u1", organizationId: "org1" },
+      { _id: "u3", organizationId: "org1" },
+    ]);
+  });
+
+  it("excludes users with no organizationId at all", async () => {
+    mockedUserRepo.getUsers.mockResolvedValue([
+      { _id: "u1", organizationId: undefined },
+    ] as any);
+
+    const result = await organizationService.getOrganizationUsers("org1");
+
+    expect(result).toEqual([]);
+  });
+});
+
+describe("organizationService.getOrganizationForUser", () => {
+  it("returns null if the user does not exist", async () => {
+    mockedUserRepo.getUserById.mockResolvedValue(null as any);
+
+    const result = await organizationService.getOrganizationForUser("user1");
+
+    expect(result).toBeNull();
+    expect(mockedRepo.getOrganizationById).not.toHaveBeenCalled();
+  });
+
+  it("returns null if the user has no organization", async () => {
+    mockedUserRepo.getUserById.mockResolvedValue({ _id: "user1" } as any);
+
+    const result = await organizationService.getOrganizationForUser("user1");
+
+    expect(result).toBeNull();
+  });
+
+  it("returns the organization the user belongs to", async () => {
+    mockedUserRepo.getUserById.mockResolvedValue({
+      _id: "user1",
+      organizationId: "org1",
+    } as any);
+    mockedRepo.getOrganizationById.mockResolvedValue({ _id: "org1" } as any);
+
+    const result = await organizationService.getOrganizationForUser("user1");
+
+    expect(mockedRepo.getOrganizationById).toHaveBeenCalledWith("org1");
+    expect(result).toEqual({ _id: "org1" });
+  });
+});
