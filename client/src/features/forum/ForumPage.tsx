@@ -91,8 +91,7 @@ export const ForumPage: React.FC = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, currentPage]);
 
-  // אפקט חכם המושך המלצות מבוססות היסטוריית הגלישה ומסנן כפילויות מהעמוד
-// שדרוג: מבטיח תצוגה קבועה של בדיוק 3 פוסטים מוצעים ללא כפילויות
+  // אפקט חכם המושך המלצות ומסנן כפילויות - מעודכן לשימוש ב-postId מהיר
   useEffect(() => {
     const userHistory = JSON.parse(localStorage.getItem('viewed_titles') || '[]');
     let targetTitle = '';
@@ -103,8 +102,16 @@ export const ForumPage: React.FC = () => {
       targetTitle = posts[0].title;
     }
 
-    if (targetTitle) {
-      fetch(`http://localhost:5000/api/posts/search-similar?title=${encodeURIComponent(targetTitle)}`)
+    // שינוי: בניית ה-queryParam בצורה חכמה. עדיפות עליונה ל-postId של פוסט קיים למהירות שיא
+    let queryParam = '';
+    if (posts.length > 0) {
+      queryParam = `postId=${posts[0]._id}`;
+    } else if (targetTitle) {
+      queryParam = `title=${encodeURIComponent(targetTitle)}`;
+    }
+
+    if (queryParam) {
+      fetch(`http://localhost:5000/api/posts/search-similar?${queryParam}`)
         .then((res) => res.json())
         .then((data) => {
           if (Array.isArray(data)) {
@@ -264,7 +271,7 @@ export const ForumPage: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-            placeholder="חפשי פוסטים, תגיות או נושאים..."
+            placeholder="חפשו פוסטים, תגיות או נושאים..."
             style={{ width: '100%', padding: '10px 35px 10px 15px', borderRadius: '6px', border: '2px solid #d1fae5', fontSize: '15px', outline: 'none' }}
           />
           <i className="fa-solid fa-magnifying-glass" style={{ position: 'absolute', top: '50%', right: '12px', transform: 'translateY(-50%)', color: '#10b981', fontSize: '16px' }}></i>

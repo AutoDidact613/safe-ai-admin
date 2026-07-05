@@ -88,7 +88,8 @@ export const PostThreadPage: React.FC = () => {
           if (updatedHistory.length > 5) updatedHistory.pop();
           localStorage.setItem('viewed_titles', JSON.stringify(updatedHistory));
 
-          fetch(`http://localhost:5000/api/posts/search-similar?title=${encodeURIComponent(currentTitle)}`)
+          // שימוש בפרמטר postId המהיר ב-100% מול ה-Backend
+          fetch(`http://localhost:5000/api/posts/search-similar?postId=${data.post._id}`)
             .then((res) => res.json())
             .then((similarData) => {
               if (Array.isArray(similarData)) {
@@ -398,7 +399,6 @@ export const PostThreadPage: React.FC = () => {
               </div>
             )}
 
-            {/* תיקון: הצגת קבצי S3 של הפוסט הראשי ללא שרשור localhost כפול */}
             {post.attachments && post.attachments.length > 0 && (
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {post.attachments.map((file, index) => {
@@ -501,7 +501,6 @@ export const PostThreadPage: React.FC = () => {
                     style={{ margin: '4px 0 0 0', color: '#374151', fontSize: '14px', lineHeight: '1.5' }} 
                   />
 
-                  {/* תיקון: רנדור תמונות וקבצים מצורפים של תגובות ללא localhost כפול */}
                   {comment.attachments && comment.attachments.length > 0 && (
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
                       {comment.attachments.map((file, idx) => {
@@ -752,12 +751,11 @@ export const PostThreadPage: React.FC = () => {
         </div>
       )}
 
-      {/* מיקום מעודכן: תיבת ההמלצות מבוססת AI מופיעה כעת כקומפוננטה האחרונה בתחתית הדף */}
       {similarPosts.length > 0 && (
         <div style={{ marginTop: '40px', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
           <h3 style={{ color: '#064e3b', margin: '0 0 15px 0', fontSize: '16px', fontWeight: 'bold' }}>
             <i className="fa-solid fa-circle-nodes" style={{ marginLeft: '8px', color: '#10b981' }}></i>
-            שרשורים נוספים שיכולים לעניין אותך:
+            פוסטים נוספים שיכולים לעניין אותך:
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px' }}>
             {similarPosts.map((p) => (

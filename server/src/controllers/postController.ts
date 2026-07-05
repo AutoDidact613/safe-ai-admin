@@ -5,6 +5,12 @@ import Tag from '../models/Tag';
 import ModerationLog from '../models/ModerationLog';
 import { User } from '../models/User';
 import { OpenAI } from 'openai'; 
+import NodeCache from 'node-cache'; // ייבוא תקין של ה-Cache בשרת
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// אתחול זיכרון המטמון הגלובלי בשרת
+const recommendationCache = new NodeCache({ stdTTL: 1800, checkperiod: 60 });
 
 /**
  * פונקציית עזר להפיכת טקסט לוקטור מספרי באמצעות OpenAI
@@ -84,14 +90,15 @@ export const getPosts = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error fetching posts', error });
   }
 };
-
 export const getPostById = async (req: Request, res: Response) => {
   try {
     const post = await Post.findById(req.params.id)
       .populate('author', 'name')
       .populate('tags', 'name');
       
-    if (!post) return res.status(404).json({ message: 'הפוסט לא נמצא' });
+    if (!post) {
+      return res.status(404).json({ message: 'הפוסט לא נמצא' });
+    }
 
     const comments = await Comment.find({ postId: req.params.id }).populate('author', 'name');
     res.status(200).json({ post, comments });
@@ -106,7 +113,9 @@ export const incrementView = async (req: Request, res: Response) => {
     const { userId } = req.body; 
 
     const post = await Post.findById(id);
-    if (!post) return res.status(404).json({ message: 'הפוסט לא נמצא' });
+    if (!post) {
+      return res.status(404).json({ message: 'הפוסט לא נמצא' });
+    }
 
     if (post.author.toString() === userId) {
       return res.status(200).json({ viewsCount: post.viewsCount, msg: 'יוצר הפוסט צופה - לא נספר' });
@@ -123,13 +132,39 @@ export const incrementView = async (req: Request, res: Response) => {
 
 export const searchSimilarPosts = async (req: Request, res: Response) => {
   try {
-    const { title } = req.query;
-    if (!title || (title as string).length < 3) {
+    const { postId, title } = req.query;
+
+    // 1. יצירת מפתח ייחודי בזיכרון עבור הבקשה הזו
+    const cacheKey = postId ? `similar:id:${postId}` : `similar:title:${title}`;
+
+    // 2. בדיקה: האם ההמלצות לפוסט זה כבר קיימות בזיכרון המהיר?
+    const cachedRecommendations = recommendationCache.get(cacheKey);
+    if (cachedRecommendations) {
+      return res.status(200).json(cachedRecommendations);
+    }
+
+    // 3. Cache Miss - המידע לא בזיכרון, נשלוף אותו מבסיס הנתונים:
+    let searchEmbedding: number[] = [];
+
+    // א) שליפת הווקטור המוכן מה-DB לפי ה-postId
+    if (postId) {
+      const currentPost = await Post.findById(postId);
+      if (currentPost && currentPost.titleEmbedding && currentPost.titleEmbedding.length > 0) {
+        searchEmbedding = currentPost.titleEmbedding;
+      }
+    }
+
+    // ב) גיבוי לפוסטים ישנים: פנייה חד פעמית ל-OpenAI
+    if (searchEmbedding.length === 0 && title && (title as string).length >= 3) {
+      searchEmbedding = await getEmbedding(title as string);
+    }
+
+    // ג) הגנה: אם אין וקטור משום מקור, נחזיר מערך ריק מיד
+    if (searchEmbedding.length === 0) {
       return res.status(200).json([]);
     }
 
-    const searchEmbedding = await getEmbedding(title as string);
-
+    // ד) הרצת החיפוש הוקטורי ב-MongoDB Atlas
     const similar = await Post.aggregate([
       {
         $vectorSearch: {
@@ -137,7 +172,7 @@ export const searchSimilarPosts = async (req: Request, res: Response) => {
           path: 'titleEmbedding',
           queryVector: searchEmbedding,
           numCandidates: 10,
-          limit: 3 
+          limit: 4 
         }
       },
       {
@@ -148,13 +183,20 @@ export const searchSimilarPosts = async (req: Request, res: Response) => {
       }
     ]);
 
-    res.status(200).json(similar);
+    // 4. שמירה ב-Cache: שומרים את התוצאה בזיכרון המהיר ל-30 דקות הבאות!
+    recommendationCache.set(cacheKey, similar);
+
+    // 5. החזרת התוצאה ל-React
+    return res.status(200).json(similar);
+
   } catch (error) {
-    console.error('Error in semantic searchSimilarPosts:', error);
-    res.status(500).json({ message: 'שגיאה בחיפוש פוסטים דומים', error });
+    console.error('Error in semantic searchSimilarPosts with Cache:', error);
+    return res.status(500).json({ 
+      message: 'שגיאה בחיפוש פוסטים דומים', 
+      error: error instanceof Error ? error.message : error 
+    });
   }
 };
-
 export const createPost = async (req: Request, res: Response) => {
   try {
     const { title, content, category, tags, fileUrl } = req.body;
@@ -269,7 +311,6 @@ export const searchPosts = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'שגיאה בביצוע החיפוש', error });
   }
 };
-
 export const createComment = async (req: Request, res: Response) => {
   try {
     const { postId, content, userId } = req.body;
