@@ -33,7 +33,6 @@ interface Post {
   ratedBy: string[];
 }
 
-
 export const PostThreadPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -41,14 +40,14 @@ export const PostThreadPage: React.FC = () => {
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
-  
   const [commentLoading, setCommentLoading] = useState(false);
-  
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [userRating, setUserRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const commentFileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const [similarPosts, setSimilarPosts] = useState<{ _id: string; title: string }[]>([]);
 
   const currentUserStr = localStorage.getItem('user');
   const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
@@ -79,6 +78,46 @@ export const PostThreadPage: React.FC = () => {
         setPost(data.post);
         setComments(data.comments || []);
         setLoading(false);
+
+        if (data.post && data.post.title) {
+          const currentTitle = data.post.title;
+          
+          const existingHistory = JSON.parse(localStorage.getItem('viewed_titles') || '[]');
+          const updatedHistory = existingHistory.filter((title: string) => title !== currentTitle);
+          updatedHistory.unshift(currentTitle);
+          if (updatedHistory.length > 5) updatedHistory.pop();
+          localStorage.setItem('viewed_titles', JSON.stringify(updatedHistory));
+
+          fetch(`http://localhost:5000/api/posts/search-similar?title=${encodeURIComponent(currentTitle)}`)
+            .then((res) => res.json())
+            .then((similarData) => {
+              if (Array.isArray(similarData)) {
+                let filtered = similarData.filter((p: any) => p._id !== data.post._id);
+
+                const uniqueMap = new Map();
+                filtered.forEach(p => uniqueMap.set(p._id, p));
+                let finalSimilar = Array.from(uniqueMap.values());
+
+                if (finalSimilar.length < 3) {
+                  const backupPosts = JSON.parse(localStorage.getItem('user_posts_backup') || '[]');
+                  for (const fallbackItem of backupPosts) {
+                    if (finalSimilar.length >= 3) break;
+                    if (fallbackItem._id !== data.post._id && !finalSimilar.some(r => r._id === fallbackItem._id)) {
+                      finalSimilar.push({
+                        _id: fallbackItem._id,
+                        title: fallbackItem.title
+                      });
+                    }
+                  }
+                }
+
+                setSimilarPosts(finalSimilar.slice(0, 3));
+              } else {
+                setSimilarPosts([]);
+              }
+            })
+            .catch((err) => console.error('Error fetching similar posts:', err));
+        }
       })
       .catch((err) => {
         console.error('Error fetching post thread:', err);
@@ -136,75 +175,78 @@ export const PostThreadPage: React.FC = () => {
       alert('שגיאה בתקשורת עם השרת');
     }
   };
-const handleCommentSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!editor) return;
 
-  const htmlContent = editor.getHTML();
-  if (!htmlContent || htmlContent === '<p></p>' || commentLoading) return;
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editor) return;
 
-  setCommentLoading(true);
-  let finalFileUrl = "";
+    const htmlContent = editor.getHTML();
+    if (!htmlContent || htmlContent === '<p></p>' || commentLoading) return;
 
-  // --- שלב א': העלאת קובץ התגובה ל-S3 במידה וקיים ---
-  if (selectedFile) {
+    setCommentLoading(true);
+    let finalFileUrl = "";
+
+    if (selectedFile) {
+      try {
+        const urlResponse = await fetch('http://localhost:5000/api/upload/get-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: selectedFile.name,
+            fileType: selectedFile.type,
+          }),
+        });
+
+        if (!urlResponse.ok) throw new Error('נכשלה קבלת קישור מאובטח לתגובה');
+        const { uploadUrl, fileUrl } = await urlResponse.json();
+
+        const awsResponse = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': selectedFile.type },
+          body: selectedFile,
+        });
+
+        if (!awsResponse.ok) throw new Error('העלאת קובץ התגובה ל-S3 נכשלה');
+        finalFileUrl = fileUrl;
+
+      } catch (error) {
+        console.error('Error uploading comment file to S3:', error);
+        alert('נכשלה העלאת הקובץ המצורף לתגובה. אנו נסה שוב.');
+        setCommentLoading(false);
+        return;
+      }
+    }
+
+    const commentPayload = {
+      postId: id || '',
+      content: htmlContent,
+      fileUrl: finalFileUrl,
+      userId: currentUser?._id
+    };
+
     try {
-      const urlResponse = await fetch('http://localhost:5000/api/upload/get-url', {
+      const response = await fetch(`http://localhost:5000/api/posts/${id}/comment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: selectedFile.name,
-          fileType: selectedFile.type,
-        }),
+        body: JSON.stringify(commentPayload)
       });
 
-      if (!urlResponse.ok) throw new Error('נכשלה קבלת קישור מאובטח לתגובה');
-      const { uploadUrl, fileUrl } = await urlResponse.json();
-
-      const awsResponse = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': selectedFile.type },
-        body: selectedFile,
-      });
-
-      if (!awsResponse.ok) throw new Error('העלאת קובץ התגובה ל-S3 נכשלה');
-      finalFileUrl = fileUrl;
-
-    } catch (error) {
-      console.error('Error uploading comment file to S3:', error);
-      alert('נכשלה העלאת הקובץ המצורף לתגובה. אנא נסה שוב.');
+      if (response.ok) {
+        const savedComment = await response.json();
+        setComments((prevComments) => [...prevComments, savedComment]);
+        editor.commands.clearContent(); 
+        setSelectedFile(null);
+        navigate('/forum');
+      } else {
+        const errData = await response.json();
+        alert(`שגיאת שרת: ${errData.message || 'לא ניתן לשמור תגובה'}`);
+      }
+    } catch (err) {
+      console.error('Error submitting comment:', err);
+    } finally {
       setCommentLoading(false);
-      return;
     }
-  }
-
-  // --- שלב ב': שליחת התגובה כ-JSON נקי לשרת ---
-  const commentPayload = {
-    postId: id || '',
-    content: htmlContent,
-    fileUrl: finalFileUrl // הקישור מ-S3 (או ריק אם אין קובץ)
   };
-
-  try {
-    const response = await fetch(`http://localhost:5000/api/posts/${id}/comment`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(commentPayload)
-    });
-
-    if (response.ok) {
-      const savedComment = await response.json();
-      setComments((prevComments) => [...prevComments, savedComment]);
-      editor.commands.clearContent(); 
-      setSelectedFile(null);
-      navigate('/forum');
-    }
-  } catch (err) {
-    console.error('Error submitting comment:', err);
-  } finally {
-    setCommentLoading(false);
-  }
-};
 
   const handleStarClick = async (selectedRating: number) => {
     if (!post) return;
@@ -229,89 +271,67 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
       console.error('Failed to save rating:', error);
     }
   };
-  // ה-Pipe המלא והתקני להמרת כל מספר לגימטריה נקייה
-const convertToGematriaPipe = (num: number): string => {
-  if (num === 15) return 'טו"';
-  if (num === 16) return 'טז"';
 
-  // מאות, עשרות ויחידות - מכסה את כל 22 אותיות הא-ב
-  const hundreds = ['', 'ק', 'ר', 'ש', 'ת'];
-  const tens = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
-  const units = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+  const convertToGematriaPipe = (num: number): string => {
+    if (num === 15) return 'טו"';
+    if (num === 16) return 'טז"';
+    const hundreds = ['', 'ק', 'ר', 'ש', 'ת'];
+    const tens = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
+    const units = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+    let result = '';
+    const h = Math.floor((num % 1000) / 100);
+    const t = Math.floor((num % 100) / 10);
+    const u = num % 10;
+    if (h > 0) result += hundreds[h] || '';
+    if (t > 0) result += tens[t] || '';
+    if (u > 0) result += units[u] || '';
+    if (result.length === 1) {
+      return `${result}'`;
+    } else if (result.length > 1) {
+      return `${result.slice(0, -1)}"${result.slice(-1)}`;
+    }
+    return result;
+  };
 
-  let result = '';
+  const formatForumDate = (dateInput: string | Date | number): string => {
+    const now = new Date();
+    const date = new Date(dateInput);
+    if (isNaN(date.getTime())) return '';
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const timeString = date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-  // פירוק מתמטי של המספר לפי מיקומים (מאות, עשרות, יחידות)
-  const h = Math.floor((num % 1000) / 100);
-  const t = Math.floor((num % 100) / 10);
-  const u = num % 10;
+    if (diffInMinutes < 60 && diffInMinutes >= 0) {
+      return diffInMinutes === 0 ? 'עכשיו' : `לפני ${diffInMinutes} דקות`;
+    } 
+    if (compareDate.getTime() === today.getTime()) return `היום ב-${timeString}`;
+    if (compareDate.getTime() === yesterday.getTime()) return `אתמול ב-${timeString}`;
 
-  if (h > 0) result += hundreds[h] || '';
-  if (t > 0) result += tens[t] || '';
-  if (u > 0) result += units[u] || '';
+    const isCurrentYear = date.getFullYear() === now.getFullYear();
+    const monthFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { month: 'long' });
+    const monthName = monthFormatter.format(date).replace(/[\u0591-\u05C7]/g, "");
+    const dayLetters = convertToGematriaPipe(date.getDate());
+    let hebrewDate = `${dayLetters} ב${monthName}`;
 
-  // הוספת גרשיים או מירכאות לפי כללי הדקדוק התקניים
-  if (result.length === 1) {
-    return `${result}'`;
-  } else if (result.length > 1) {
-    return `${result.slice(0, -1)}"${result.slice(-1)}`;
-  }
-  
-  return result;
-};
+    if (!isCurrentYear) {
+      const jewishYearFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { year: 'numeric' });
+      const yearParts = jewishYearFormatter.format(date).split(' ');
+      let yearLetters = yearParts[yearParts.length - 1];
+      if (yearLetters.startsWith('ה')) yearLetters = yearLetters.substring(1);
+      hebrewDate += ` ${yearLetters}`;
+    }
 
-const formatForumDate = (dateInput: string | Date | number): string => {
-  const now = new Date();
-  const date = new Date(dateInput);
-  
-  if (isNaN(date.getTime())) return '';
-
-  const diffInMs = now.getTime() - date.getTime();
-  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-  const timeString = date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-  // 1. בדיקת זמנים יחסיים
-  if (diffInMinutes < 60 && diffInMinutes >= 0) {
-    return diffInMinutes === 0 ? 'עכשיו' : `לפני ${diffInMinutes} דקות`;
-  } 
-  if (compareDate.getTime() === today.getTime()) return `היום ב-${timeString}`;
-  if (compareDate.getTime() === yesterday.getTime()) return `אתמול ב-${timeString}`;
-
-  // 2. הפעלת ה-Pipe על היום בחודש והשנה
-  const isCurrentYear = date.getFullYear() === now.getFullYear();
-  
-  // שליפת שם החודש העברי בלבד מהדפדפן (זה תמיד טקסט יציב ללא מספרים)
-  const monthFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { month: 'long' });
-  const monthName = monthFormatter.format(date).replace(/[\u0591-\u05C7]/g, ""); // ניקוי ניקוד גורף
-
-  const dayLetters = convertToGematriaPipe(date.getDate());
-  let hebrewDate = `${dayLetters} ב${monthName}`;
-
-  // הוספת שנת הגימטריה רק אם זו לא השנה הנוכחית
-  if (!isCurrentYear) {
-    // חישוב השנה העברית הנוכחית מתוך ה-Timestamp (למשל 5786 עבור תשפ"ו)
-    const jewishYearFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { year: 'numeric' });
-    const yearParts = jewishYearFormatter.format(date).split(' ');
-    let yearLetters = yearParts[yearParts.length - 1]; // שולף את המילה האחרונה
-    
-    if (yearLetters.startsWith('ה')) yearLetters = yearLetters.substring(1); // ניקוי ה' הידיעה
-    hebrewDate += ` ${yearLetters}`;
-  }
-
-  // 3. תאריך לועזי נקי (ללא שנה אם זו השנה הנוכחית)
-  const gregoreanDate = date.toLocaleDateString('he-IL', {
-    day: 'numeric',
-    month: 'numeric',
-    year: isCurrentYear ? undefined : 'numeric'
-  });
-
-  return `${hebrewDate} / ${gregoreanDate}`;
-};
+    const gregoreanDate = date.toLocaleDateString('he-IL', {
+      day: 'numeric',
+      month: 'numeric',
+      year: isCurrentYear ? undefined : 'numeric'
+    });
+    return `${hebrewDate} / ${gregoreanDate}`;
+  };
 
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: '#10b981', fontWeight: 'bold', direction: 'rtl' }}>טוען שרשור...</div>;
   if (!post) return <div style={{ textAlign: 'center', padding: '50px', direction: 'rtl' }}>הפוסט לא נמצא.</div>;
@@ -327,7 +347,6 @@ const formatForumDate = (dateInput: string | Date | number): string => {
       </button>
 
       <div style={{ display: 'flex', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#fff', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '15px' }}>
-        
         <div style={{ width: '140px', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '15px', borderLeft: '1px solid #e2e8f0' }}>
           <div style={{ width: '50px', height: '50px', borderRadius: '50%', backgroundColor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 'bold', marginBottom: '5px' }}>
             {post.author?.name?.charAt(0).toUpperCase() || 'U'}
@@ -339,12 +358,10 @@ const formatForumDate = (dateInput: string | Date | number): string => {
 
         <div style={{ flex: 1, padding: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
-            
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '400' }}>
                 {formatForumDate(post.createdAt)}
               </span>
-              
               <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '400' }}>
                 👁 צפיות: {post.viewsCount}
               </span>
@@ -354,13 +371,11 @@ const formatForumDate = (dateInput: string | Date | number): string => {
               <span style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold' }}>
                 {post.category}
               </span>
-              
               {post.isLocked && (
                 <span style={{ backgroundColor: '#f59e0b', color: 'white', padding: '1px 8px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   🔒 נעול
                 </span>
               )}
-
               <h1 style={{ margin: 0, fontSize: '19px', color: '#064e3b', fontWeight: 'bold' }}>{post.title}</h1>
             </div>
 
@@ -383,21 +398,22 @@ const formatForumDate = (dateInput: string | Date | number): string => {
               </div>
             )}
 
+            {/* תיקון: הצגת קבצי S3 של הפוסט הראשי ללא שרשור localhost כפול */}
             {post.attachments && post.attachments.length > 0 && (
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {post.attachments.map((file, index) => {
-                  const fileUrl = `http://localhost:5000/uploads/${file}`;
+                  const fileUrl = file.startsWith('http') ? file : `http://localhost:5000/uploads/${file}`;
                   return (
                     <a 
                       key={index}
                       href={fileUrl}
                       target="_blank"
                       rel="noreferrer"
-                      download={file}
+                      download
                       style={{ textDecoration: 'none', border: '1px solid #10b981', borderRadius: '4px', padding: '4px 10px', backgroundColor: '#fff', color: '#059669', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' }}
                     >
                       <i className="fa-solid fa-file-arrow-down"></i>
-                      {file}
+                      הורד קובץ מצורף
                     </a>
                   );
                 })}
@@ -407,9 +423,8 @@ const formatForumDate = (dateInput: string | Date | number): string => {
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '24px', padding: '12px 0', borderTop: '1px solid #eee' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '24px', padding: '12px 0', borderTop: '1px solid #eee', marginBottom: '20px' }}>
         <span style={{ fontSize: '14px', color: '#4b5563', fontWeight: '500' }}>דירוג הפוסט:</span>
-        
         <div style={{ display: 'flex', gap: '4px' }}>
           {[1, 2, 3, 4, 5].map((star) => {
             const isFilled = star <= (hoverRating || userRating);
@@ -432,7 +447,6 @@ const formatForumDate = (dateInput: string | Date | number): string => {
             );
           })}
         </div>
-
         <span style={{ fontSize: '12px', color: '#9ca3af' }}>
           ({post.averageRating || 0}/5 מתוך {post.ratingCount || 0} מדרגים)
         </span>
@@ -464,7 +478,6 @@ const formatForumDate = (dateInput: string | Date | number): string => {
 
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: '10px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-                    
                     <div style={{ color: '#9ca3af', fontSize: '11px', fontWeight: '400' }}>
                       {formatForumDate(comment.createdAt)}
                     </div>
@@ -488,10 +501,11 @@ const formatForumDate = (dateInput: string | Date | number): string => {
                     style={{ margin: '4px 0 0 0', color: '#374151', fontSize: '14px', lineHeight: '1.5' }} 
                   />
 
+                  {/* תיקון: רנדור תמונות וקבצים מצורפים של תגובות ללא localhost כפול */}
                   {comment.attachments && comment.attachments.length > 0 && (
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
                       {comment.attachments.map((file, idx) => {
-                        const fileUrl = `http://localhost:5000/uploads/${file}`;
+                        const fileUrl = file.startsWith('http') ? file : `http://localhost:5000/uploads/${file}`;
                         const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(file);
 
                         if (isImage) {
@@ -515,7 +529,7 @@ const formatForumDate = (dateInput: string | Date | number): string => {
                             >
                               <img 
                                 src={fileUrl} 
-                                alt={file} 
+                                alt="קובץ מצורף" 
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                               />
                             </div>
@@ -544,9 +558,7 @@ const formatForumDate = (dateInput: string | Date | number): string => {
                             }}
                           >
                             <i className="fa-solid fa-paperclip" style={{ fontSize: '11px' }}></i> 
-                            <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {file}
-                            </span>
+                            <span>הורד קובץ מצורף</span>
                           </a>
                         );
                       })}
@@ -562,13 +574,12 @@ const formatForumDate = (dateInput: string | Date | number): string => {
       <div ref={bottomRef} />
 
       {post.isLocked ? (
-        <div style={{ border: '2px dashed #f59e0b', borderRadius: '6px', padding: '20px', backgroundColor: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', color: '#b45309', fontWeight: 'bold', fontSize: '15px', textAlign: 'center' }}>
+        <div style={{ border: '2px dashed #f59e0b', borderRadius: '6px', padding: '20px', backgroundColor: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', color: '#b45309', fontWeight: 'bold', fontSize: '15px', textAlign: 'center', marginBottom: '25px' }}>
           <i className="fa-solid fa-lock" style={{ fontSize: '20px' }}></i>
           <span>שרשור זה ננעל לתגובות חדשות על ידי מנהל המערכת.</span>
         </div>
       ) : (
-        <div style={{ border: '1px solid #10b981', borderRadius: '4px', padding: '15px', backgroundColor: '#f0fdf4', display: 'flex', gap: '15px', alignItems: 'flex-start' }}>
-          
+        <div style={{ border: '1px solid #10b981', borderRadius: '4px', padding: '15px', backgroundColor: '#f0fdf4', display: 'flex', gap: '15px', alignItems: 'flex-start', marginBottom: '25px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px' }}>
             <div style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold', boxShadow: '0 2px 5px rgba(16,185,129,0.2)' }}>
               {currentUserInitial}
@@ -699,7 +710,6 @@ const formatForumDate = (dateInput: string | Date | number): string => {
               </div>
             )}
 
-            {/* שדרוג: חיווי ויזואלי ישיר בתוך תיבת הטקסט על הצלחת העלאת הקובץ ללא אלרטים */}
             {selectedFile && (
               <div style={{ padding: '6px 12px', backgroundColor: '#f0fdf4', borderBottom: '1px solid #d1fae5', display: 'flex', alignItems: 'center', justifyItems: 'flex-start', gap: '8px', color: '#15803d', fontSize: '13px', fontWeight: '500' }}>
                 <i className="fa-solid fa-circle-check" style={{ fontSize: '14px' }}></i>
@@ -739,6 +749,33 @@ const formatForumDate = (dateInput: string | Date | number): string => {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* מיקום מעודכן: תיבת ההמלצות מבוססת AI מופיעה כעת כקומפוננטה האחרונה בתחתית הדף */}
+      {similarPosts.length > 0 && (
+        <div style={{ marginTop: '40px', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+          <h3 style={{ color: '#064e3b', margin: '0 0 15px 0', fontSize: '16px', fontWeight: 'bold' }}>
+            <i className="fa-solid fa-circle-nodes" style={{ marginLeft: '8px', color: '#10b981' }}></i>
+            שרשורים נוספים שיכולים לעניין אותך:
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px' }}>
+            {similarPosts.map((p) => (
+              <div 
+                key={p._id}
+                onClick={() => {
+                  navigate(`/forum/post/${p._id}`);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer', transition: '0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = '#10b981'}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+              >
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#1e293b', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</h4>
+                <span style={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold' }}>המשך לשרשור המלא ←</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

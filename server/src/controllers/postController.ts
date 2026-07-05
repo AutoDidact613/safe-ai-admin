@@ -31,16 +31,28 @@ async function getEmbedding(text: string): Promise<number[]> {
 export const getPosts = async (req: Request, res: Response) => {
   try {
     const { userRole } = req.query;
+    
+    // 1. קריאת העמוד הנוכחי מה-Query Parameters (ברירת מחדל: עמוד 1)
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = 10; // הגדרה קבועה של 10 פוסטים לעמוד
+    const skip = (page - 1) * limit; // חישוב כמה פוסטים לדלג עליהם
 
     let filterQuery: any = {};
     if (userRole !== 'admin') {
       filterQuery.isBlocked = { $ne: true };
     }
     
+    // 2. קבלת המספר הכולל של הפוסטים במערכת לצורך חישוב כמות העמודים
+    const totalPosts = await Post.countDocuments(filterQuery);
+    const totalPages = Math.ceil(totalPosts / limit);
+
+    // 3. שליפת הפוסטים הרלוונטיים בלבד לעמוד הנוכחי
     const posts = await Post.find(filterQuery)
       .populate('author', 'name')
       .populate('tags', 'name')
-      .sort({ lastActivity: -1 });
+      .sort({ lastActivity: -1 })
+      .skip(skip)   // דילוג על הפוסטים של העמודים הקודמים
+      .limit(limit); // הגבלה ל-10 פוסטים בלבד
 
     const postsWithDetails = await Promise.all(posts.map(async (post) => {
       const commentCount = await Comment.countDocuments({ postId: post._id });
@@ -59,7 +71,14 @@ export const getPosts = async (req: Request, res: Response) => {
       };
     }));
 
-    res.status(200).json(postsWithDetails);
+    // 4. החזרת הפוסטים יחד עם נתוני העמודים ל-Frontend
+    res.status(200).json({
+      posts: postsWithDetails,
+      currentPage: page,
+      totalPages: totalPages,
+      totalPosts: totalPosts
+    });
+
   } catch (error) {
     console.error('Error in getPosts:', error);
     res.status(500).json({ message: 'Error fetching posts', error });
