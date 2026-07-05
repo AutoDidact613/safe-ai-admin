@@ -52,17 +52,8 @@ export async function updateOrganization(orgId: string, data: any) {
 
 export async function deleteOrganization(orgId: string) {
   try {
-    // Get all users in this organization
-    const users = await userRepo.getUsers();
-    const orgUsers = users.filter((u: any) => u.organizationId?.toString() === orgId);
-
-    // Remove organization reference from all users
-    for (const user of orgUsers) {
-      await userRepo.updateUser(user._id.toString(), {
-        organizationId: null,
-        role: user.role === "org_owner" ? "user" : user.role,
-      });
-    }
+    // Remove organization reference from all members in bulk
+    await userRepo.removeUsersFromOrganization(orgId);
 
     // Delete the organization
     const result = await repo.deleteOrganization(orgId);
@@ -78,8 +69,7 @@ export async function deleteOrganization(orgId: string) {
 
 export async function getOrganizationUsers(orgId: string) {
   try {
-    const users = await userRepo.getUsers();
-    return users.filter((u: any) => u.organizationId?.toString() === orgId);
+    return await userRepo.getUsersByOrganization(orgId);
   } catch (error) {
     logger.error("Failed to get organization users", { error });
     throw error;
