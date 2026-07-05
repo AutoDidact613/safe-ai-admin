@@ -1,7 +1,15 @@
 import { Organization } from "../models/organization";
+import logger from "../logger";
 
 export async function createOrganization(data: any) {
-  return Organization.create(data);
+  try {
+    const organization = await Organization.create(data);
+    logger.info("Organization created in DB", { organizationId: organization._id });
+    return organization;
+  } catch (error) {
+    logger.error("Failed to create organization in DB", { error, data });
+    throw error;
+  }
 }
 
 export async function findOrganizationByName(name: string) {
@@ -21,14 +29,28 @@ export async function getOrganizationsByOwnerId(ownerId: string) {
 }
 
 export async function updateOrganization(orgId: string, data: any) {
-  return Organization.findByIdAndUpdate(orgId, data, {
-    new: true,
-    runValidators: true,
-  }).lean();
+  try {
+    const organization = await Organization.findByIdAndUpdate(orgId, data, {
+      new: true,
+      runValidators: true,
+    }).lean();
+    logger.info("Organization updated in DB", { orgId, data });
+    return organization;
+  } catch (error) {
+    logger.error("Failed to update organization in DB", { error, orgId });
+    throw error;
+  }
 }
 
 export async function deleteOrganization(orgId: string) {
-  return Organization.findByIdAndDelete(orgId).lean();
+  try {
+    const organization = await Organization.findByIdAndDelete(orgId).lean();
+    logger.info("Organization deleted in DB", { orgId });
+    return organization;
+  } catch (error) {
+    logger.error("Failed to delete organization in DB", { error, orgId });
+    throw error;
+  }
 }
 
 export async function getPendingOrganizations() {
