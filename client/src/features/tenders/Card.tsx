@@ -1,10 +1,39 @@
+import type { TenderTime } from './types'
+
+const singularUnit = (unit: string): string => {
+  switch (unit) {
+    case 'שעות':
+      return 'שעה'
+    case 'ימים':
+      return 'יום'
+    case 'שבועות':
+      return 'שבוע'
+    case 'חודשים':
+      return 'חודש'
+    case 'שנים':
+      return 'שנה'
+    default:
+      return unit
+  }
+}
+
+const formatTimeRequired = (time?: TenderTime): string => {
+  if (!time) return '—'
+  const unit = time.value === 1 ? singularUnit(time.unit) : time.unit
+  return time.value === 1 ? `${unit}` : `${time.value} ${unit}`
+}
+
+const formatBudget = (budget?: number): string => {
+  return budget === undefined || budget === null ? '—' : budget.toString()
+}
+
 interface TenderCardProps {
   id: string
   title: string
   publisherUserCode?: string
   shortDescription?: string
-  timeRequired?: string
-  budget?: string
+  timeRequired?: TenderTime
+  budget?: number
   productType?: string
   aiApplicationType?: string
   wantsEmails?: boolean
@@ -48,11 +77,11 @@ export default function Card({
       <div className="tender-card__meta">
         <div>
           <span>תקציב</span>
-          <strong>{budget ?? '—'}</strong>
+          <strong>{formatBudget(budget)} ש"ח </strong>
         </div>
         <div>
           <span>זמן נדרש</span>
-          <strong>{timeRequired ?? '—'}</strong>
+          <strong>{formatTimeRequired(timeRequired)}</strong>
         </div>
         <div>
           <span> הצעות: </span>

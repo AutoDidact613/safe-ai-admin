@@ -17,7 +17,7 @@ export async function sendApplicantRegisteredEmail(params: {
     name: string;
     email: string;
     details: string;
-    proposal?: string | undefined;
+    proposal?: number | undefined;
     contactMethod?: string | undefined;
   };
 }): Promise<void> {

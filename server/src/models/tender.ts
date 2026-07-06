@@ -8,9 +8,15 @@ const TenderSchema = new Schema(
 
     shortDescription: { type: String },
 
-    timeRequired: { type: String },
+    timeRequired: {
+      type: {
+        value: { type: Number },
+        unit: { type: String },
+      },
+      default: { value: 0, unit: 'ימים' }
+    },
 
-    budget: { type: String },
+    budget: { type: Number, default: 0 },
 
     productType: { type:String },
 
@@ -30,7 +36,7 @@ const TenderSchema = new Schema(
             details: { type: String, required: true },
             name: { type: String, required: true },
             email: { type: String, required: true },
-            proposal: { type: String, required: false },
+            proposal: { type: Number, required: false },
             contactMethod: { type: String, required: false }
             },
         ],

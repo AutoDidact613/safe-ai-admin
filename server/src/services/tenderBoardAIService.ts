@@ -5,21 +5,27 @@ import { TenderLog } from "../models/tendersBoardLog";
 import { callAI } from "./aiService"; // ← הפונקציה הגנרית
 
 // ==========================================
+// פונקציית עזר — נרמול ערכי enum
+// ==========================================
+const normalizeEnum = (val: unknown): unknown =>
+  typeof val === "string" ? val.trim().replace(/\s+/g, " ") : val;
+
+// ==========================================
 // סכמות Zod
 // ==========================================
 const TenderZodSchema = z.object({
   title: z.string().describe("כותרת קצרה וקולעת למכרז"),
   shortDescription: z.string().describe("תיאור תמציתי של מהות המכרז"),
-  timeRequired: z.string().describe("לוח הזמנים הנדרש או דדליין"),
-  budget: z.string().describe("התקציב המוערך למכרז"),
-  productType: z.enum([
+  timeRequired: z.object({ value: z.number().optional(), unit: z.enum(['שעות','ימים','שבועות','חודשים','שנים']).optional() }).describe("לוח הזמנים הנדרש — מספר ביחד עם יחידת זמן"),
+  budget: z.number().describe("התקציב המוערך במטבע יחיד (מספר בלבד)") ,
+  productType: z.preprocess(normalizeEnum, z.enum([
     "אפליקציה", "אתר", "תוכנת desktop",
     "הטמעה של פיצר במערכת קיימת", "ייעוץ",
     "הקמת תשתית לאייגנט", "אחר"
-  ]),
-  aiApplicationType: z.enum([
+  ])),
+  aiApplicationType: z.preprocess(normalizeEnum, z.enum([
     "התממשקות פשוטה", "צאטבוט", "אייגנט", "מולטי אייגנט"
-  ]).describe("ענה בעברית בלבד, בדיוק לפי הenum"),
+  ])).describe("ענה בעברית בלבד, בדיוק לפי הenum!!! אל תענה באנגלית או משהו אחר!!!"),
   agentsRequired: z.array(z.string()),
   wantsEmails: z.boolean(),
   additionalDetails: z.string(),
@@ -34,33 +40,59 @@ const SearchQueryZodSchema = z.object({
 // ==========================================
 // System Prompts
 // ==========================================
-const TENDER_SYSTEM_PROMPT = `אתה עוזר מקצועי לניהול מכרזים. נתח את הטקסט וחלץ את המידע לשדות ה-JSON.
-החזר JSON בלבד במבנה הבא בדיוק — עברית בלבד בערכי ה-enum:
-{"title":"...","shortDescription":"...","timeRequired":"...","budget":"...","productType":"אפליקציה","aiApplicationType":"צאטבוט","agentsRequired":[],"wantsEmails":true,"additionalDetails":"..."}
-ערכי productType המותרים: "אפליקציה","אתר","תוכנת desktop","הטמעה של פיצר במערכת קיימת","ייעוץ","הקמת תשתית לאייגנט","אחר"
-ערכי aiApplicationType המותרים: "התממשקות פשוטה","צאטבוט","אייגנט","מולטי אייגנט"`;
+const TENDER_SYSTEM_PROMPT = `אתה מנתח מכרזים. תפקידך: לקבל תיאור טקסטואלי ולהחזיר JSON מובנה בלבד.
 
-// ✅ תיקון 1: prompt מפורש עם דוגמאות כדי ש-Gemini יעטוף ב-query
-// ✅ תיקון 3: ערכי enum בעברית מפורשים כדי ש-Gemini לא יחזיר אנגלית
-const SEARCH_SYSTEM_PROMPT = `אתה מומחה MongoDB. תרגם את בקשת החיפוש לשאילתת filter עבור Mongoose.
+== כללי פלט ==
+- החזר JSON בלבד. אסור להוסיף הסבר, כותרת, markdown, קוד-בלוק או כל טקסט אחר.
+- אל תכתוב backtick backtick backtick json או backtick backtick backtick — JSON גולמי בלבד.
+- כל המפתחות חייבים להופיע בפלט, גם אם הערך ריק.
 
-השדות הזמינים: title, shortDescription, productType, budget, timeRequired, aiApplicationType, additionalDetails.
+== מבנה JSON מדויק ==
+{"title":"כותרת קצרה וקולעת","shortDescription":"תיאור תמציתי של מהות המכרז","timeRequired":{"value":14,"unit":"ימים"},"budget":10000,"productType":"<ערך מהרשימה בלבד>","aiApplicationType":"<ערך מהרשימה בלבד>","agentsRequired":[],"wantsEmails":true,"additionalDetails":"פרטים נוספים"}
 
-חוקים:
-1. השתמש ב-$regex עם 'i' לחיפוש טקסט חופשי.
-2. השתמש ב-$or לחיפוש במספר שדות במקביל.
-3. להתאמה ל-enum — השתמש בערך העברי המדויק:
-   ערכי aiApplicationType: "התממשקות פשוטה", "צאטבוט", "אייגנט", "מולטי אייגנט"
-   ערכי productType: "אפליקציה","אתר","תוכנת desktop","הטמעה של פיצר במערכת קיימת","ייעוץ","הקמת תשתית לאייגנט","אחר"
+== ערכי productType — העתק בדיוק אחד מהרשימה תו-תו ==
+"אפליקציה" | "אתר" | "תוכנת desktop" | "הטמעה של פיצר במערכת קיימת" | "ייעוץ" | "הקמת תשתית לאייגנט" | "אחר"
 
-חובה: החזר תמיד JSON במבנה הבא בלבד — עטוף את השאילתה תחת המפתח "query":
-{"query": { ...שאילתת MongoDB... }}
+== ערכי aiApplicationType — העתק בדיוק אחד מהרשימה תו-תו ==
+"התממשקות פשוטה" | "צאטבוט" | "אייגנט" | "מולטי אייגנט"
 
-דוגמה לחיפוש "צאטבוטים":
-{"query": {"aiApplicationType": "צאטבוט"}}
+== חוקים קריטיים ==
+- ערכי enum: העתק תו-תו מהרשימה. ללא רווחים מיותרים, ללא תרגום לאנגלית, ללא המצאת ערכים חדשים.
+- אם אין התאמה ברורה — בחר את הערך הקרוב ביותר מהרשימה.
+- ערכי timeRequired.unit: "שעות" | "ימים" | "שבועות" | "חודשים" | "שנים"
 
-דוגמה לחיפוש טקסט חופשי:
-{"query": {"$or": [{"title": {"$regex": "foo", "$options": "i"}}, {"shortDescription": {"$regex": "foo", "$options": "i"}}]}}`;
+== דוגמה לפלט תקין ==
+{"title":"foo","shortDescription":"bar baz","timeRequired":{"value":30,"unit":"ימים"},"budget":50000,"productType":"אפליקציה","aiApplicationType":"צאטבוט","agentsRequired":["foo agent"],"wantsEmails":false,"additionalDetails":""}`;
+
+const SEARCH_SYSTEM_PROMPT = `אתה מנוע חיפוש MongoDB. תפקידך: לקבל בקשת חיפוש בשפה חופשית ולהחזיר JSON בלבד — שאילתת filter תקנית עבור Mongoose.
+
+== כללי פלט ==
+- החזר JSON בלבד. אסור להוסיף הסבר, כותרת, markdown, קוד-בלוק או כל טקסט אחר.
+- חובה לעטוף את השאילתה תחת המפתח "query" — תמיד, ללא יוצא מן הכלל.
+- מבנה הפלט: {"query": { ...שאילתת MongoDB... }}
+
+== השדות הזמינים לחיפוש ==
+title, shortDescription, productType, budget, timeRequired, aiApplicationType, additionalDetails
+
+== חוקי בניית השאילתה ==
+1. חיפוש טקסט חופשי — השתמש ב-$regex עם $options:"i". חלץ מילות מפתח בלבד, אל תשים את הבקשה המלאה.
+2. חיפוש במספר שדות במקביל — השתמש ב-$or.
+3. התאמה לשדות enum — השתמש בערך העברי המדויק בלבד, ללא $regex, ללא שינוי תו אחד:
+   aiApplicationType: "התממשקות פשוטה" | "צאטבוט" | "אייגנט" | "מולטי אייגנט"
+   productType: "אפליקציה" | "אתר" | "תוכנת desktop" | "הטמעה של פיצר במערכת קיימת" | "ייעוץ" | "הקמת תשתית לאייגנט" | "אחר"
+4. אם הבקשה מתאימה לערך enum — השתמש בהתאמה מדויקת בלבד, לא ב-$regex.
+5. אם אין מספיק מידע לבניית שאילתה — החזר: {"query": {}}
+
+== דוגמאות ==
+
+בקשה: "אני רוצה צאטבוטים"
+פלט: {"query": {"aiApplicationType": "צאטבוט"}}
+
+בקשה: "אייגנטים לניהול foo"
+פלט: {"query": {"aiApplicationType": "אייגנט", "$or": [{"title": {"$regex": "foo", "$options": "i"}}, {"shortDescription": {"$regex": "foo", "$options": "i"}}]}}
+
+בקשה: "מערכת לניהול bar"
+פלט: {"query": {"$or": [{"title": {"$regex": "bar", "$options": "i"}}, {"shortDescription": {"$regex": "bar", "$options": "i"}}]}}`;
 
 // ==========================================
 // פונקציית עזר — שמירת לוג
@@ -146,7 +178,7 @@ export class AIService {
     }
   }
 
-  static async generateSearchQuery(userSearchText: string): Promise<any> {
+  static async generateSearchQuery(userSearchText: string): Promise<Record<string, any>> {
     const startTime = Date.now();
     try {
       logger.info("Starting AI search query generation", { searchText: userSearchText });

@@ -257,7 +257,7 @@ export async function applyToTender(
     name: string;
     email: string;
     details: string;
-    proposal?: string;
+    proposal?: number;
     contactMethod?: string;
   }
 ) {
@@ -300,7 +300,7 @@ export async function applyToTender(
     name: normalizedName,
     email: normalizedEmail,
     details: applicant.details.trim(),
-    proposal: applicant.proposal?.trim() || undefined,
+    proposal: applicant.proposal,
     contactMethod: applicant.contactMethod?.trim() || undefined,
   };
 
@@ -328,7 +328,10 @@ export async function applyToTender(
           adminEmail,
           tenderTitle: tender.title,
           tenderId,
-          applicant: normalizedApplicant,
+          applicant: {
+            ...normalizedApplicant,
+            proposal: normalizedApplicant.proposal?.toString(),
+          },
         });
       }
     }
@@ -428,7 +431,7 @@ export async function smartSearchTenders(searchText: string) {
     const safeFilter = sanitizeSearchFilter(mongoFilter);
 
     logger.info("Executing smart search with filter", { filter: JSON.stringify(safeFilter) });
-
+    console.log("Executing smart search with filter:", JSON.stringify(safeFilter));
     return await repo.getTenders(safeFilter);
   } catch (error: any) {
     if (error?.message === "RATE_LIMIT") {

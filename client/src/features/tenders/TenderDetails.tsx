@@ -1,28 +1,5 @@
 import { useMemo } from 'react'
-
-interface Applicant {
-  name: string
-  email: string
-  details: string
-  proposal?: string
-  contactMethod?: string
-}
-
-interface Tender {
-  id: string
-  title: string
-  publisherUserCode?: string
-  shortDescription?: string
-  timeRequired?: string
-  budget?: string
-  productType?: string
-  aiApplicationType?: string
-  isActive?: boolean
-  agentsRequired?: string[]
-  wantsEmails?: boolean
-  additionalDetails?: string
-  applicants?: Applicant[]
-}
+import type { Tender } from './types'
 
 interface Props {
   tender: Tender
@@ -30,16 +7,40 @@ interface Props {
   onApply: (id: string) => void
 }
 
+const singularUnit = (unit: string): string => {
+  switch (unit) {
+    case 'שעות':
+      return 'שעה'
+    case 'ימים':
+      return 'יום'
+    case 'שבועות':
+      return 'שבוע'
+    case 'חודשים':
+      return 'חודש'
+    case 'שנים':
+      return 'שנה'
+    default:
+      return unit
+  }
+}
+
+const formatTimeRequired = (time?: Tender['timeRequired']): string => {
+  if (!time) return '—'
+  const unit = time.value === 1 ? singularUnit(time.unit) : time.unit
+  return time.value === 1 ? `${unit}` : `${time.value} ${unit}`
+}
+
+const formatBudget = (budget?: number): string => {
+  return budget === undefined || budget === null ? '—' : budget.toString()
+}
+
 export default function TenderDetails({ tender, onClose, onApply }: Props) {
   const proposalRange = useMemo(() => {
     if (!tender || !tender.applicants || tender.applicants.length === 0) return null
     const nums = tender.applicants
       .map((a) => {
-        if (!a.proposal) return NaN
-        const match = a.proposal.match(/[\d,.]+(\.?\d+)?/)
-        if (!match) return NaN
-        const n = parseFloat(match[0].replace(/,/g, ''))
-        return Number.isFinite(n) ? n : NaN
+        if (!a.proposal || typeof a.proposal !== 'number') return NaN
+        return Number.isFinite(a.proposal) ? a.proposal : NaN
       })
       .filter((n) => !isNaN(n))
     if (nums.length === 0) return null
@@ -76,11 +77,11 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
             <div style={{ border: '1px solid var(--border-color)', padding: '12px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
               <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>תקציב</span>
-              <strong>{tender.budget ?? '—'}</strong>
+              <strong>{formatBudget(tender.budget)}</strong>
             </div>
             <div style={{ border: '1px solid var(--border-color)', padding: '12px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
               <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>זמן נדרש</span>
-              <strong>{tender.timeRequired ?? '—'}</strong>
+              <strong>{formatTimeRequired(tender.timeRequired)}</strong>
             </div>
             <div style={{ border: '1px solid var(--border-color)', padding: '12px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
               <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>רשומים לפרויקט</span>

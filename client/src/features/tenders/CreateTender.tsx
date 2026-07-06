@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { apiCall, API_ENDPOINTS } from '../../config/api'
+import AiThinkingLoader from './AiThinkingLoader.tsx'
+
 
 interface TenderFormData {
   tenderName: string
@@ -8,8 +10,8 @@ interface TenderFormData {
   productType: string
   aiApplicationType: string
   isActive: boolean
-  duration: string
-  budget: string
+  duration: { value: number; unit: 'שעות' | 'ימים' | 'שבועות' | 'חודשים' | 'שנים' }
+  budget: number
   additionalDetails: string
   wantsEmails: boolean
 }
@@ -39,13 +41,15 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
     productType: '',
     aiApplicationType: '',
     isActive: true,
-    duration: '',
-    budget: '',
+    duration: { value: 0, unit: 'ימים' },
+    budget: 0,
     additionalDetails: '',
     wantsEmails: false,
   })
 
   const [formMessage, setFormMessage] = useState<string>('')
+  const [createSuccessMessage, setCreateSuccessMessage] = useState<string>('')
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string>('')
 
   const [productTypeOptions, setProductTypeOptions] = useState<string[]>([])
@@ -55,6 +59,9 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
   const [isSmartOpen, setIsSmartOpen] = useState<boolean>(false)
   const [smartText, setSmartText] = useState<string>('')
   const [isSmartLoading, setIsSmartLoading] = useState<boolean>(false)
+
+  // אפשרויות יחידות זמן
+  const timeUnits = ['שעות', 'ימים', 'שבועות', 'חודשים', 'שנים'] as const
 
   useEffect(() => {
     const fetchFilterOptions = async () => {
@@ -93,6 +100,19 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
     }
   }, [formData.aiApplicationType])
 
+  useEffect(() => {
+    if (!createSuccessMessage) return undefined
+
+    setShowSuccessOverlay(true)
+    const timer = window.setTimeout(() => {
+      setShowSuccessOverlay(false)
+      setCreateSuccessMessage('')
+      onSuccess()
+    }, 4000)
+
+    return () => window.clearTimeout(timer)
+  }, [createSuccessMessage, onSuccess])
+
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
@@ -100,7 +120,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
     setFormData((current) => ({
       ...current,
       [name]: type === 'checkbox' ? (event.target as HTMLInputElement).checked : value,
-    }))
+    } as any))
   }
 
   const handleAgentChange = (index: number, value: string) => {
@@ -207,7 +227,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
         body: JSON.stringify(payload),
       })
 
-      setFormMessage('המכרז נשלח בהצלחה!')
+      setCreateSuccessMessage('המכרז נשלח בהצלחה!')
       setFormData({
         tenderName: '',
         explanation: '',
@@ -215,15 +235,11 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
         productType: '',
         aiApplicationType: '',
         isActive: true,
-        duration: '',
-        budget: '',
+        duration: { value: 0, unit: 'ימים' },
+        budget: 0,
         additionalDetails: '',
         wantsEmails: false,
       })
-
-      setTimeout(() => {
-        onSuccess()
-      }, 3000)
     } catch (error) {
       console.error('Failed to create tender', error)
       setErrorMessage('לא ניתן לשמור את המכרז כעת. אנא נסה שוב מאוחר יותר.')
@@ -282,7 +298,10 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
                 disabled={isSmartLoading}
                 style={{ marginTop: '12px' }}
               >
-                {isSmartLoading ? 'מנתח נתונים...' : 'ייצר מכרז באופן אוטומטי'}
+                {isSmartLoading
+                  ? <AiThinkingLoader color="#ffffff" />
+                  : 'ייצר מכרז באופן אוטומטי'
+                }
               </button>
             </div>
           )}
@@ -411,28 +430,41 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
         <div className="bottom-row" style={{ marginTop: '24px' }}>
           <div className="bottom-field">
             <label htmlFor="duration">כמה זמן ניתן לביצוע המשימה</label>
-            <input
-              id="duration"
-              name="duration"
-              value={formData.duration}
-              onChange={handleInputChange}
-              className="input"
-              placeholder="בחר זמן"
-              maxLength={50}
-            />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                id="duration-value"
+                name="duration-value"
+                value={formData.duration.value}
+                onChange={(e) => setFormData((c) => ({ ...c, duration: { ...c.duration, value: Number(e.target.value) } }))}
+                className="input"
+                placeholder="מספר"
+                type="number"
+                min={0}
+              />
+              <select
+                id="duration-unit"
+                name="duration-unit"
+                value={formData.duration.unit}
+                onChange={(e) => setFormData((c) => ({ ...c, duration: { ...c.duration, unit: e.target.value as any } }))}
+              >
+                {timeUnits.map((u) => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="bottom-field">
-            <label htmlFor="budget">תקציב</label>
+            <label htmlFor="budget">תקציב - בשקלים</label>
             <input
               id="budget"
               name="budget"
               value={formData.budget}
-              onChange={handleInputChange}
-              type="text"
+              onChange={(e) => setFormData((c) => ({ ...c, budget: Number(e.target.value) }))}
+              type="number"
               placeholder="הזן סכום"
               className="input"
-              maxLength={50}
+              min={0}
             />
           </div>
         </div>
@@ -473,6 +505,15 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
           </button>
         </div>
       </form>
+
+      {showSuccessOverlay && createSuccessMessage && (
+        <div className="success-modal-overlay" role="alert" aria-live="assertive">
+          <div className="success-modal">
+            <div className="success-modal__icon">✅</div>
+            <div className="success-modal__text">{createSuccessMessage}</div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

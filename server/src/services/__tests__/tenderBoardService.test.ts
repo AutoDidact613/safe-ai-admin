@@ -13,15 +13,6 @@ jest.mock("../../logger", () => ({
   info: jest.fn(),
   error: jest.fn(),
 }));
-jest.mock("../../config/geminiclient", () => ({
-  geminiClient: {
-    chat: {
-      completions: {
-        create: jest.fn(),
-      },
-    },
-  },
-}));
 jest.mock("../../utils/email", () => ({
   sendApplicantRegisteredEmail: jest.fn(),
   sendTenderClosedEmail: jest.fn(),
