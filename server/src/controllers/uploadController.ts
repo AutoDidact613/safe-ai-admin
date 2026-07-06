@@ -30,9 +30,12 @@ export const getPresignedUrl = async (
       return res.status(400).json({ error: "שם וסוג הקובץ נדרשים" });
     }
 
-    // חילוץ סיומת הקובץ ויצירת מפתח ייחודי
-    const fileExtension = fileName.split('.').pop();
-    const uniqueKey = `uploads/${uuidv4()}.${fileExtension}`;
+    // 1. ניקוי שם הקובץ המקורי מרווחים מיותרים כדי שלא ישברו את מחרוזת ה-URL
+    const cleanOriginalName = fileName.replace(/\s+/g, '_');
+
+    // 2. יצירת מפתח ייחודי בתוך S3 ששומר על השם המקורי בסופו של ה-GUID
+    // פורמט לדוגמה: uploads/11e8-d2f5-4553-bf5b_my_homework.docx
+    const uniqueKey = `uploads/${uuidv4()}_${cleanOriginalName}`;
 
     // הכנת פקודת ההעלאה עבור ה-Bucket
     const command = new PutObjectCommand({

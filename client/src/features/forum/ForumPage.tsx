@@ -263,7 +263,7 @@ export const ForumPage: React.FC = () => {
           onClick={() => setIsModalOpen(true)}
           style={{ backgroundColor: '#10b981', color: 'white', padding: '10px 25px', border: 'none', borderRadius: '6px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' }}
         >
-          הוסף תוכן חדש
+          הוסף פוסט חדש
         </button>
 
         <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
@@ -307,7 +307,8 @@ export const ForumPage: React.FC = () => {
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             {posts.map((post) => {
-              const isLongPost = post.content.length > 140;
+              const lineCount = post.content.split('\n').length;
+              const isLongPost = post.content.length > 140 || lineCount > 6;
               const isExpanded = expandedPosts.includes(post._id);
 
               return (
@@ -358,7 +359,9 @@ export const ForumPage: React.FC = () => {
                       <div style={{ marginBottom: '10px' }}>
                         <p style={{ color: '#4b5563', lineHeight: '1.5', fontSize: '14px', margin: 0, whiteSpace: 'pre-line' }}>
                           {isLongPost && !isExpanded 
-                            ? `${post.content.substring(0, 140)}...` 
+                            ? post.content.split('\n').length > 6
+                              ? post.content.split('\n').slice(0, 6).join('\n')
+                              : `${post.content.substring(0, 140)}`
                             : post.content}
                         </p>
                         {isLongPost && (
