@@ -350,6 +350,18 @@
   box-shadow: var(--shadow-lg);
   word-break: break-word;
   overflow-wrap: anywhere;
+  transition: transform 200ms cubic-bezier(.2,.9,.2,1), border-color 180ms ease, box-shadow 200ms ease;
+}
+
+.tender-card:hover,
+.tender-card:focus-within {
+  transform: translateY(-6px);
+  border-color: #16a34a; /* ירוק בוהק קל */
+  box-shadow: 0 14px 34px rgba(16,163,127,0.12);
+}
+
+.tender-card:active {
+  transform: translateY(-2px);
 }
 
 .tender-card__header h3 {

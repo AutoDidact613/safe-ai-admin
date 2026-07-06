@@ -127,7 +127,7 @@ async function saveTenderLog(params: {
 // ==========================================
 // מחלקת השירות — משתמשת ב-callAI
 // ==========================================
-export class AIService {
+export class TBAIService {
 
   static async generateTenderData(userDescription: string) {
     const startTime = Date.now();
@@ -234,3 +234,5 @@ export class AIService {
     }
   }
 }
+
+export const AIService = TBAIService;

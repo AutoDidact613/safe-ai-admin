@@ -11,16 +11,7 @@ import AiThinkingLoader from '../features/tenders/AiThinkingLoader.tsx'
 
 const initialTenders: Tender[] = []
 
-// פונקציית עזר לחילוץ מספר מתוך מחרוזת תקציב
-const parseBudgetValue = (budget: number | string | undefined): number => {
-  if (budget === undefined || budget === null) return 0
-  if (typeof budget === 'number') return budget
-  const match = String(budget).match(/[\d,.]+/)
-  if (!match) return 0
-  const normalized = match[0].replace(/,/g, '')
-  const n = parseFloat(normalized)
-  return Number.isFinite(n) ? Math.round(n) : 0
-}
+// Budget is now stored as a number; no string parsing helper required
 
 // המרה של זמן מובנה לימים — מקבל רק מבנה `TenderTime`
 const parseTimeToDays = (time?: TenderTime): number => {
@@ -84,7 +75,7 @@ export default function TenderBoardPage() {
     const timer = window.setTimeout(() => {
       setSuccessMessage('')
       setShowSuccessOverlay(false)
-    }, 4000)
+    }, 3000)
 
     return () => window.clearTimeout(timer)
   }, [successMessage])
@@ -95,7 +86,7 @@ export default function TenderBoardPage() {
     publisherUserCode: tender.publisherUserCode,
     shortDescription: tender.shortDescription,
     timeRequired: tender.timeRequired,
-    budget: typeof tender.budget === 'number' ? tender.budget : parseBudgetValue(tender.budget),
+    budget: typeof tender.budget === 'number' ? tender.budget : 0,
     productType: tender.productType,
     aiApplicationType: tender.aiApplicationType,
     isActive: tender.isActive ?? true,
@@ -207,7 +198,7 @@ export default function TenderBoardPage() {
       let matchBudget = true
       if (minBudget) {
         const parsedMinBudget = parseInt(minBudget, 10) || 0
-        const tenderBudget = parseBudgetValue(t.budget)
+        const tenderBudget = (t.budget ?? 0)
         matchBudget = tenderBudget >= parsedMinBudget
       }
 

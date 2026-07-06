@@ -12,7 +12,7 @@ import {
   // createSmartTender,  // נעקוף את פונקציית המעבר הבעייתית
   smartSearchTenders,     
 } from "../services/tenderBoardService";
-import { AIService } from "../services/tenderBoardAIService"; // יבוא ישיר של שירות ה-AI הסטטי החסון
+import { TBAIService } from "../services/tenderBoardAIService";
 import logger from "../logger";
 
 /**
@@ -222,8 +222,7 @@ export async function createSmartTenderHandler(req: Request, res: Response) {
       return res.status(400).json({ error: "Text description is required for AI generation" });
     }
 
-    // קריאה ישירה לפונקציה הסטטית המאובטחת שתיקנו ב-AIService
-    const parsedAiData = await AIService.generateTenderData(text);
+    const parsedAiData = await TBAIService.generateTenderData(text);
     
     // החזרת האובייקט המפורסר מה-AI ללא יצירת המכרז בבסיס הנתונים
     res.status(201).json({ success: true, tender: parsedAiData });

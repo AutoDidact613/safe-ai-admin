@@ -1,14 +1,14 @@
 import mongoose from "mongoose";
 import * as repo from "../repositories/tenderBoardRepository";
 import logger from "../logger";
-import { AIService } from "./tenderBoardAIService";
+import { TBAIService } from "./tenderBoardAIService";
 import { TenderLog } from "../models/tendersBoardLog";
 import {
   sendApplicantRegisteredEmail,
   sendTenderClosedEmail,
 } from "../utils/email";
 
-const aiService = new AIService();
+const aiService = new TBAIService();
 
 // הרשימה הסטטית של התחומים 
 const Static_ProductType_List = [
@@ -362,7 +362,7 @@ export async function createSmartTender(text: string) {
   try {
     logger.info("Processing createSmartTender requested", { textLength: text?.length });
 
-    const aiTenderData = await AIService.generateTenderData(text);
+    const aiTenderData = await TBAIService.generateTenderData(text);
 
     const fullTenderData = {
       ...aiTenderData,
@@ -426,7 +426,7 @@ export async function smartSearchTenders(searchText: string) {
   try {
     logger.info("Received search text for smart search", { searchText });
 
-    const mongoFilter = await AIService.generateSearchQuery(searchText);
+    const mongoFilter = await TBAIService.generateSearchQuery(searchText);
 
     const safeFilter = sanitizeSearchFilter(mongoFilter);
 

@@ -17,13 +17,17 @@ interface TenderFormData {
 }
 
 interface SmartCreateResponse {
+  success: boolean
   tender?: {
     title?: string
     shortDescription?: string
     productType?: string
     aiApplicationType?: string
-    budget?: string
-    timeRequired?: string
+    budget?: number | string
+    timeRequired?: {
+      value: number
+      unit: 'שעות' | 'ימים' | 'שבועות' | 'חודשים' | 'שנים'
+    }
     additionalDetails?: string
     agentsRequired?: string[]
   }
@@ -108,7 +112,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
       setShowSuccessOverlay(false)
       setCreateSuccessMessage('')
       onSuccess()
-    }, 4000)
+    }, 3000)
 
     return () => window.clearTimeout(timer)
   }, [createSuccessMessage, onSuccess])
@@ -179,7 +183,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
           explanation: response.tender?.shortDescription || current.explanation,
           productType: response.tender?.productType || current.productType,
           aiApplicationType: response.tender?.aiApplicationType || current.aiApplicationType,
-          budget: response.tender?.budget || current.budget,
+          budget: Number(response.tender?.budget ?? current.budget),
           duration: response.tender?.timeRequired || current.duration,
           additionalDetails: response.tender?.additionalDetails || current.additionalDetails,
           agents: response.tender?.agentsRequired || current.agents,
