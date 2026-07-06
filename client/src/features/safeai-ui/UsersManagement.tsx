@@ -469,7 +469,7 @@ export default function UsersManagement() {
               <div className="item-card-body">
                 <div className="item-detail">
                   <span className="item-detail-label">{t("profileModal.labelEmail")}</span>
-                  <span className="item-detail-value">{user.email}</span>
+                  <span className="item-detail-value" dir="ltr">{user.email}</span>
                 </div>
                 {user.name && (
                   <div className="item-detail">

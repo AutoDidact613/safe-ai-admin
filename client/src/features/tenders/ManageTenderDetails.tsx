@@ -39,7 +39,7 @@ export default function ManageTenderDetails({
   onUpdateTender,
   onDeleteTender,
 }: ManageTenderDetailsProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   // שמירת מצב הטופס בהתאם למבנה הנתונים הקים במכרז
   const [draftTender, setDraftTender] = useState<Tender>({ ...tender })
   const [agents, setAgents] = useState<string[]>(tender.agentsRequired ?? ['', ''])
@@ -169,7 +169,7 @@ export default function ManageTenderDetails({
   const showAgentsSection = draftTender.aiApplicationType === 'אייגנט' || draftTender.aiApplicationType === 'מולטי אייגנט'
 
   return (
-    <article className="detail-panel content-page-full" style={{ padding: '24px', maxWidth: '95%', margin: '0 auto', boxSizing: 'border-box' }} dir="rtl">
+    <article className="detail-panel content-page-full" style={{ padding: '24px', maxWidth: '95%', margin: '0 auto', boxSizing: 'border-box' }} dir={i18n.dir()}>
       <header className="detail-panel__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <h2>{t('tenders.updateTenderDetailsTitle')}</h2>
         <button type="button" className="tab-button" onClick={onClose}>

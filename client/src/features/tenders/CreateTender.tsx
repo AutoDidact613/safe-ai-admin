@@ -33,7 +33,7 @@ interface CreateTenderProps {
 }
 
 export default function CreateTender({ onSuccess }: CreateTenderProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [formData, setFormData] = useState<TenderFormData>({
     tenderName: '',
     explanation: '',
@@ -236,7 +236,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
   const showAgentsSection = formData.aiApplicationType === 'אייגנט' || formData.aiApplicationType === 'מולטי אייגנט'
 
   return (
-    <div className="page-shell" dir="rtl">
+    <div className="page-shell" dir={i18n.dir()}>
       <form className="tender-form" onSubmit={handleSubmit}>
         <header className="form-header">
           <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '16px' }}>

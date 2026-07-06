@@ -118,7 +118,7 @@ export default function AdminRequestsList() {
                     {userInfo?.name || t("requests.unknownValue")}
                   </td>
                   <td onClick={() => navigate(`/request/${req._id}`)} style={{ cursor: "pointer" }}>
-                    {userInfo?.email || t("requests.noEmailValue")}
+                    {userInfo?.email ? <span dir="ltr">{userInfo.email}</span> : t("requests.noEmailValue")}
                   </td>
                   <td onClick={() => navigate(`/request/${req._id}`)} style={{ cursor: "pointer" }}>
                     {req.title || t("requests.noSubject")}

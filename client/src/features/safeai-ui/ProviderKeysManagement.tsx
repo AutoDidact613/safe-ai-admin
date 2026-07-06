@@ -207,7 +207,7 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
                       <span style={{ fontSize: "24px" }}>{getProviderIcon(key.provider)}</span>
                       <div>
                         <h4 style={{ margin: 0 }}>{getProviderName(key.provider)}</h4>
-                        <p style={{ margin: "5px 0 0 0", fontSize: "13px", color: "#666", fontFamily: "monospace" }}>
+                        <p dir="ltr" style={{ margin: "5px 0 0 0", fontSize: "13px", color: "#666", fontFamily: "monospace", textAlign: "left" }}>
                           {key.keyPrefix}...
                         </p>
                       </div>

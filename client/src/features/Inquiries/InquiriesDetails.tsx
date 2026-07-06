@@ -58,11 +58,11 @@ const InquiriesDetails: FC = () => {
         <h2>{t("inquiries.detailsTitle")}</h2>
 
         <p><strong>{t("inquiries.nameLabel")}</strong> {inquiry.name}</p>
-        <p><strong>{t("inquiries.emailLabel")}</strong> {inquiry.email}</p>
+        <p><strong>{t("inquiries.emailLabel")}</strong> <span dir="ltr">{inquiry.email}</span></p>
         <p><strong>{t("inquiries.subjectLabel")}</strong> {inquiry.subject}</p>
         <p><strong>{t("inquiries.messageLabel")}</strong> {inquiry.message}</p>
         <p><strong>{t("inquiries.statusLabel")}</strong> {inquiry.status}</p>
-        <p><strong>{t("inquiries.createdAtLabel")}</strong> {inquiry.createdAt}</p>
+        <p><strong>{t("inquiries.createdAtLabel")}</strong> <span dir="ltr">{inquiry.createdAt}</span></p>
 
         <div className="details-images">
           {inquiry.attachments?.map((a, i) => (

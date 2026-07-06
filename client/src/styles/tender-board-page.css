@@ -25,12 +25,10 @@
   padding: 24px 26px 40px;
   color: var(--text-main);
   font-family: System-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  direction: rtl;
 }
 
 .dashboard-shell, .page-shell, .manage-shell {
   width: 100%;
-  direction: rtl;
   box-sizing: border-box;
 }
 
@@ -245,7 +243,7 @@
   color: #0f172a;
   background: transparent;
   border: none;
-  text-align: right;
+  text-align: start;
   cursor: pointer;
 }
 
@@ -312,7 +310,7 @@
   background: var(--secondary-bg);
   color: #0f172a;
   font-size: 0.95rem;
-  text-align: right;
+  text-align: start;
   font-family: inherit;
   transition: all 0.2s ease;
 }
@@ -362,7 +360,7 @@
   font-size: 1.15rem;
   line-height: 1.4;
   margin-bottom: 10px;
-  text-align: right;
+  text-align: start;
 }
 
 .tender-card__summary {

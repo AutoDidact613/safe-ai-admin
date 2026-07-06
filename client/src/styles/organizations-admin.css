@@ -1,5 +1,5 @@
 /* Admin: full organizations management */
-.orgs-admin-container { padding: 24px; direction: rtl; }
+.orgs-admin-container { padding: 24px; }
 .orgs-admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 12px; }
 .orgs-admin-title { font-size: 24px; font-weight: bold; }
 .orgs-admin-subtitle { margin-bottom: 20px; color: #666; }
@@ -13,7 +13,7 @@
 
 /* Table */
 .orgs-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-.orgs-table th { background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; text-align: right; padding: 12px; font-size: 14px; }
+.orgs-table th { background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; text-align: start; padding: 12px; font-size: 14px; }
 .orgs-table tr { border-bottom: 1px solid #dee2e6; }
 .orgs-table td { padding: 12px; font-size: 14px; }
 .orgs-table tbody tr:hover { background-color: #fafafa; }

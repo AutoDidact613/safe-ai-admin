@@ -172,7 +172,7 @@ const TableView: React.FC = () => {
 
   // ------------------- רינדור -------------------
   return (
-    <div style={{ width: "500px", margin: "0 auto", direction: "rtl" }}>
+    <div style={{ width: "500px", margin: "0 auto" }}>
       {/* טבלת משתמשים */}
       <h2>{t("tableView.usersTableTitle")}</h2>
 

@@ -55,9 +55,9 @@ const InquiriesCard: FC<InquiriesCardProps> = ({ e }) => {
           <div className="inquiries-card-meta">
             <span className="inquiries-card-value">{name}</span>
             <span className="inquiries-card-sep">•</span>
-            <span className="inquiries-card-value">{email}</span>
+            <span className="inquiries-card-value" dir="ltr">{email}</span>
             <span className="inquiries-card-sep">•</span>
-            <time className="inquiries-card-time">{createdAt}</time>
+            <time className="inquiries-card-time" dir="ltr">{createdAt}</time>
           </div>
         </div>
 

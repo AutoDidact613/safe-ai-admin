@@ -62,7 +62,7 @@
 
 .stat-info {
   flex: 1;
-  text-align: right;
+  text-align: start;
 }
 
 .stat-info h3 {
@@ -117,13 +117,13 @@
   background: #f8f9fa;
   border-radius: 12px;
   transition: all 0.3s ease;
-  border-right: 4px solid transparent;
+  border-inline-start: 4px solid transparent;
 }
 
 .activity-card:hover {
   background: #e9ecef;
   transform: translateX(-5px);
-  border-right-color: #667eea;
+  border-inline-start-color: #667eea;
 }
 
 .activity-icon-wrapper {
@@ -142,7 +142,7 @@
 
 .activity-details {
   flex: 1;
-  text-align: right;
+  text-align: start;
 }
 
 .activity-details h3 {

@@ -298,7 +298,7 @@ export default function UserApiKeysPage() {
                              key.provider === "anthropic" ? "Anthropic (Claude)" : 
                              key.provider === "google" ? "Google (Gemini)" : "Groq"}
                           </h4>
-                          <p style={{ margin: "5px 0 0 0", fontSize: "13px", color: "#666", fontFamily: "monospace" }}>
+                          <p dir="ltr" style={{ margin: "5px 0 0 0", fontSize: "13px", color: "#666", fontFamily: "monospace", textAlign: "left" }}>
                             {key.keyPrefix}...
                           </p>
                         </div>

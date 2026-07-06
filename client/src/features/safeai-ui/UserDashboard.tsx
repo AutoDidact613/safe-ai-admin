@@ -288,7 +288,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
         <div style={{ marginTop: "16px" }}>
           <div className="item-detail">
             <span className="item-detail-label">{t("profileModal.labelEmail")}</span>
-            <span className="item-detail-value">{user?.email}</span>
+            <span className="item-detail-value" dir="ltr">{user?.email}</span>
           </div>
           <div className="item-detail">
             <span className="item-detail-label">{t("profileModal.labelName")}</span>
@@ -296,7 +296,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
           </div>
           <div className="item-detail">
             <span className="item-detail-label">{t("userDashboard.userIdLabel")}</span>
-            <span className="item-detail-value">{user?._id || "N/A"}</span>
+            <span className="item-detail-value" dir="ltr">{user?._id || "N/A"}</span>
           </div>
         </div>
       </div>

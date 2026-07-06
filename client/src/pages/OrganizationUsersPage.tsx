@@ -32,7 +32,7 @@ interface OrganizationOwner {
 }
 
 export default function OrganizationUsersPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
@@ -307,7 +307,7 @@ export default function OrganizationUsersPage() {
               <form onSubmit={handleSaveOrg} className="org-edit-form">
                 <input
                   type="text"
-                  dir="rtl"
+                  dir={i18n.dir()}
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   required
@@ -315,7 +315,7 @@ export default function OrganizationUsersPage() {
                   placeholder={t("orgUsers.orgNamePlaceholder")}
                 />
                 <textarea
-                  dir="rtl"
+                  dir={i18n.dir()}
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   className="org-edit-input"
@@ -365,7 +365,7 @@ export default function OrganizationUsersPage() {
               <input
                 type="number"
                 min="1"
-                dir="rtl"
+                dir="ltr"
                 placeholder={t("orgUsers.amountPlaceholder")}
                 value={topUpAmount}
                 onChange={(e) => setTopUpAmount(e.target.value !== "" ? Number(e.target.value) : "")}
@@ -384,7 +384,7 @@ export default function OrganizationUsersPage() {
       <form onSubmit={handleAddMember} className="org-edit-form">
         <input
           type="text"
-          dir="rtl"
+          dir={i18n.dir()}
           value={memberName}
           onChange={(e) => setMemberName(e.target.value)}
           placeholder={t("orgUsers.fullNamePlaceholder")}
@@ -392,7 +392,7 @@ export default function OrganizationUsersPage() {
         />
         <input
           type="email"
-          dir="rtl"
+          dir="ltr"
           value={memberEmail}
           onChange={(e) => setMemberEmail(e.target.value)}
           placeholder={t("orgUsers.emailPlaceholder")}

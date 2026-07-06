@@ -89,6 +89,7 @@ export default function ApiKeyDisplay() {
             {t("apiKeyDisplay.yourApiKeyLabel")}
           </p>
           <div
+            dir="ltr"
             style={{
               background: "white",
               padding: "20px",
@@ -98,6 +99,7 @@ export default function ApiKeyDisplay() {
               wordBreak: "break-all",
               border: "3px solid #fff",
               boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+              textAlign: "left",
             }}
           >
             {proxyApiKey}
