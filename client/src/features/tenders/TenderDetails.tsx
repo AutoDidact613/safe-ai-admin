@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface Applicant {
   name: string
@@ -31,6 +32,7 @@ interface Props {
 }
 
 export default function TenderDetails({ tender, onClose, onApply }: Props) {
+  const { t } = useTranslation()
   const proposalRange = useMemo(() => {
     if (!tender || !tender.applicants || tender.applicants.length === 0) return null
     const nums = tender.applicants
@@ -57,7 +59,7 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
           </div>
           <div>
             <button type="button" className="tab-button" onClick={onClose}>
-              סגור
+              {t('common.close')}
             </button>
           </div>
         </header>
@@ -67,7 +69,7 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
           {/* תיאור קצר והסבר */}
           {tender.shortDescription && (
             <div style={{ background: 'var(--secondary-bg)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-              <strong>הסבר על הפרויקט:</strong>
+              <strong>{t('tenders.detailsProjectExplanationLabel')}</strong>
               <p style={{ margin: '8px 0 0', color: '#475569', lineHeight: '1.6' }}>{tender.shortDescription}</p>
             </div>
           )}
@@ -75,20 +77,20 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
           {/* גריד נתונים יבש */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
             <div style={{ border: '1px solid var(--border-color)', padding: '12px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>תקציב</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>{t('tenders.budgetLabel')}</span>
               <strong>{tender.budget ?? '—'}</strong>
             </div>
             <div style={{ border: '1px solid var(--border-color)', padding: '12px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>זמן נדרש</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>{t('tenders.timeRequiredLabel')}</span>
               <strong>{tender.timeRequired ?? '—'}</strong>
             </div>
             <div style={{ border: '1px solid var(--border-color)', padding: '12px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>רשומים לפרויקט</span>
-              <strong>{tender.applicants?.length ?? 0} מועמדים</strong>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>{t('tenders.registeredForProjectLabel')}</span>
+              <strong>{t('tenders.applicantsCountSuffix', { count: tender.applicants?.length ?? 0 })}</strong>
             </div>
             <div style={{ border: '1px solid var(--border-color)', padding: '12px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>טווח הצעות</span>
-              <strong>{proposalRange ? proposalRange : 'אין הצעות'}</strong>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>{t('tenders.proposalRangeLabel')}</span>
+              <strong>{proposalRange ? proposalRange : t('tenders.noProposalsText')}</strong>
             </div>
           </div>
 
@@ -97,13 +99,13 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
               {tender.productType && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>סוג מוצר:</span>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('tenders.productTypeLabel')}</span>
                   <span className="domain-pill" style={{ backgroundColor: '#f1f5f9', color: '#334155', borderColor: '#cbd5e1' }}>{tender.productType}</span>
                 </div>
               )}
               {tender.aiApplicationType && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>יישום AI:</span>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('tenders.aiApplicationLabel')}</span>
                   <span className="domain-pill">{tender.aiApplicationType}</span>
                 </div>
               )}
@@ -113,7 +115,7 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
           {/* סעיף אג'נטים נדרשים */}
           {tender.agentsRequired && tender.agentsRequired.length > 0 && (
             <div className="agents-required" style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
-              <strong style={{ display: 'block', marginBottom: '8px' }}>האג'נטים הנדרשים:</strong>
+              <strong style={{ display: 'block', marginBottom: '8px' }}>{t('tenders.requiredAgentsLabel')}</strong>
               <div className="agents-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {tender.agentsRequired.map((a) => (
                   <span key={a} className="agent-pill">{a}</span>
@@ -125,7 +127,7 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
           {/* פרטים נוספים חופשיים */}
           {tender.additionalDetails && (
             <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
-              <strong>פרטים נוספים:</strong>
+              <strong>{t('tenders.additionalDetailsLabel')}</strong>
               <p style={{ marginTop: '8px', color: '#475569', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{tender.additionalDetails}</p>
             </div>
           )}
@@ -140,7 +142,7 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
                 onApply(tender.id)
               }}
             >
-              הרשמה למכרז
+              {t('tenders.applyToTenderLabel')}
             </button>
           </div>
         </section>

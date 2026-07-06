@@ -31,7 +31,7 @@ export default function LandingPage() {
           {t("landing.heroSubtitle")}
         </p>
         <Link to="/become-org-owner" className="hero-org-owner-link">
-          מנהל ארגון? פתחו ארגון חדש במערכת
+          {t("landing.orgOwnerLinkText")}
         </Link>
       </div>
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { apiCall } from "../../config/api";
 
 interface RequestData {
@@ -13,6 +14,7 @@ export default function RequestDetails() {
     const navigate = useNavigate();
     const [replyText, setReplyText] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { t } = useTranslation();
 
         useEffect(() => {
         apiCall(`/contact/my-requests/${id}`, { method: "GET" })
@@ -24,7 +26,7 @@ export default function RequestDetails() {
     }, [id]);
 
 
-    if (!request) return <div>טוען פרטי פנייה...</div>;
+    if (!request) return <div>{t("requests.loadingDetails")}</div>;
 
     const handleCloseRequest = async () => {
         try {
@@ -32,11 +34,11 @@ export default function RequestDetails() {
 
             // עדכון ה-State של ה-request כדי שהסטטוס ישתנה ב-UI באופן מיידי
             setRequest({ ...request, status: 'closed' });
-            alert("הפנייה נסגרה בהצלחה!");
+            alert(t("requests.closeSuccessAlert"));
             navigate(-1); // נווט חזרה לרשימת הפניות לאחר סגירה
         } catch (error) {
             console.error("שגיאה בסגירת הפנייה:", error);
-            alert("שגיאה בסגירת הפנייה. נסי שוב מאוחר יותר.");
+            alert(t("requests.closeFailedAlert"));
         }
     };
 
@@ -60,20 +62,20 @@ export default function RequestDetails() {
 
         return (
         <div className="request-details-container">
-            <h2>פרטי הפנייה</h2>
+            <h2>{t("inquiries.detailsTitle")}</h2>
             <div className="request-card">
                 <h3>{String(request.title || "")}</h3>
-                <p><strong>סוג:</strong> {String(request.requestType || "")}</p>
-                <p><strong>תוכן:</strong> {String(request.description || "")}</p>
-                <p><strong>תאריך שליחה:</strong> {request.createdAt ? new Date(request.createdAt as string | number | Date).toLocaleDateString("he-IL") : ""}</p>
-                <button onClick={handleCloseRequest}>סגור פנייה</button>
+                <p><strong>{t("requests.typeLabel")}</strong> {String(request.requestType || "")}</p>
+                <p><strong>{t("requests.contentLabel")}</strong> {String(request.description || "")}</p>
+                <p><strong>{t("requests.sentDateLabel")}</strong> {request.createdAt ? new Date(request.createdAt as string | number | Date).toLocaleDateString("he-IL") : ""}</p>
+                <button onClick={handleCloseRequest}>{t("requests.closeRequestBtn")}</button>
 
                 <div className="replies-list">
                     {(request.replies || []).map((replyItem, index: number) => {
                         const reply = replyItem as Record<string, unknown>;
                         return (
                             <div key={index} className={`reply-bubble ${String(reply.senderRole || "")}`}>
-                                <p><strong>{reply.senderRole === 'admin' ? 'אדמין' : 'אני'}:</strong> {String(reply.text || "")}</p>
+                                <p><strong>{reply.senderRole === 'admin' ? t("requests.adminSenderLabel") : t("requests.meSenderLabel")}:</strong> {String(reply.text || "")}</p>
                                 <small>{reply.createdAt ? new Date(reply.createdAt as string | number | Date).toLocaleString("he-IL") : ""}</small>
                             </div>
                         );
@@ -84,10 +86,10 @@ export default function RequestDetails() {
                     <textarea
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
-                        placeholder="כתוב תגובה..."
+                        placeholder={t("requests.replyPlaceholder")}
                     />
                     <button onClick={handleAddReply} disabled={isSubmitting}>
-                        {isSubmitting ? "שולח..." : "שלח תגובה"}
+                        {isSubmitting ? t("forgotPassword.sendingBtn") : t("inquiries.sendResponseBtn")}
                     </button>
                 </div>
             </div>

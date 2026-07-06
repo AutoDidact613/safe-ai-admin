@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import type { AdminOrganization } from "../api/organizationApi";
 
 interface OrganizationsTableProps {
@@ -9,15 +10,6 @@ interface OrganizationsTableProps {
   busyId: string | null;
 }
 
-function translateStatus(status: string): string {
-  switch (status) {
-    case "approved": return "מאושר";
-    case "pending": return "ממתין";
-    case "rejected": return "נדחה";
-    default: return status || "לא מוגדר";
-  }
-}
-
 export const OrganizationsTable: React.FC<OrganizationsTableProps> = ({
   organizations,
   onOpen,
@@ -25,21 +17,32 @@ export const OrganizationsTable: React.FC<OrganizationsTableProps> = ({
   onActivate,
   busyId,
 }) => {
+  const { t } = useTranslation();
+
+  function translateStatus(status: string): string {
+    switch (status) {
+      case "approved": return t("organizations.statusApproved");
+      case "pending": return t("pendingOrganizations.pendingStatus");
+      case "rejected": return t("organizations.statusRejected");
+      default: return status || t("organizations.statusUndefined");
+    }
+  }
+
   if (organizations.length === 0) {
-    return <div className="orgs-empty">לא נמצאו ארגונים התואמים את החיפוש</div>;
+    return <div className="orgs-empty">{t("organizations.noOrgsFoundSearch")}</div>;
   }
 
   return (
     <table className="orgs-table">
       <thead>
         <tr>
-          <th>שם הארגון</th>
-          <th>בעלים</th>
-          <th>סטטוס</th>
-          <th>פעילות</th>
-          <th>משתמשים</th>
-          <th>יתרת ארנק</th>
-          <th>פעולות</th>
+          <th>{t("pendingOrganizations.tableHeaderOrgName")}</th>
+          <th>{t("orgUsers.roleOrgOwner")}</th>
+          <th>{t("pendingOrganizations.tableHeaderStatus")}</th>
+          <th>{t("organizations.activityColumn")}</th>
+          <th>{t("organizations.usersLabel")}</th>
+          <th>{t("organizations.walletBalanceLabel")}</th>
+          <th>{t("pendingOrganizations.tableHeaderActions")}</th>
         </tr>
       </thead>
       <tbody>
@@ -52,7 +55,7 @@ export const OrganizationsTable: React.FC<OrganizationsTableProps> = ({
             </td>
             <td>
               <span className={`status-badge ${org.isActive ? "active" : "inactive"}`}>
-                {org.isActive ? "פעיל" : "מושעה"}
+                {org.isActive ? t("orgUsers.active") : t("organizations.statusSuspended")}
               </span>
             </td>
             <td>{org.userCount}</td>
@@ -64,7 +67,7 @@ export const OrganizationsTable: React.FC<OrganizationsTableProps> = ({
                   disabled={busyId === org._id}
                   onClick={() => onSuspend(org._id)}
                 >
-                  השעה
+                  {t("organizations.suspendBtn")}
                 </button>
               ) : (
                 <button
@@ -72,7 +75,7 @@ export const OrganizationsTable: React.FC<OrganizationsTableProps> = ({
                   disabled={busyId === org._id}
                   onClick={() => onActivate(org._id)}
                 >
-                  הפעל
+                  {t("organizations.activateBtn")}
                 </button>
               )}
             </td>

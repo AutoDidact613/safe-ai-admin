@@ -138,7 +138,7 @@ export default function SafeAIUIPage() {
   const renderSection = () => {
     // Org owners whose org is not yet approved only see the pending screen
     if (userRole === "org_owner") {
-      if (orgGate.loading) return <div className="orgs-loading">טוען...</div>;
+      if (orgGate.loading) return <div className="orgs-loading">{t("common.loading")}</div>;
       if (orgGate.pending) return <PendingApprovalScreen orgName={orgGate.orgName} />;
     }
     switch (activeSection) {
@@ -266,7 +266,7 @@ export default function SafeAIUIPage() {
                       strokeLinecap="round"
                     />
                   </svg>
-                  כל הפניות
+                  {t("safeaiNav.allRequests")}
                   {newRequestCount > 0 && (
                     <span className="sub-nav-badge">({newRequestCount})</span>
                   )}
@@ -348,7 +348,7 @@ export default function SafeAIUIPage() {
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                       <path d="M2 4h12v8H2zM2 4l6 4 6-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    הפניות שלי
+                    {t("requests.myRequestsTitle")}
                 </button>
               </>
             )}
@@ -363,7 +363,7 @@ export default function SafeAIUIPage() {
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M2 14V8M8 14V2M14 14V6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  סטטיסטיקות של הארגון
+                  {t("safeaiNav.orgStatistics")}
                 </button>
                 <button
                   className={activeSection === "org-users" ? "sub-nav-btn active" : "sub-nav-btn"}
@@ -372,7 +372,7 @@ export default function SafeAIUIPage() {
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M11 7a2 2 0 100-4 2 2 0 000 4zM13 13c0-1.657-1.343-3-3-3M5 7a2 2 0 100-4 2 2 0 000 4zM1 13c0-1.657 1.343-3 3-3s3 1.343 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
-                  ניהול משתמשים
+                  {t("safeaiNav.manageUsers")}
                 </button>
               </>
             )}

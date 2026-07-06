@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { API_ENDPOINTS, apiCall } from "../config/api";
 import "../styles/news-page.css";
 
@@ -28,6 +29,7 @@ const initialFormState: NewsFormState = {
 };
 
 export default function AiNewsPage() {
+  const { t } = useTranslation();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -59,7 +61,7 @@ export default function AiNewsPage() {
       setNews((prev) => (pageNumber === 1 ? data : [...prev, ...data]));
       setHasMore(data.length === PAGE_LIMIT);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "שגיאה בטעינת החדשות");
+      setError(err instanceof Error ? err.message : t("aiNews.loadErrorMsg"));
     } finally {
       setLoading(false);
     }
@@ -82,7 +84,7 @@ export default function AiNewsPage() {
     e.preventDefault();
 
     if (!formData.title.trim() || !formData.content.trim()) {
-      setError("יש למלא כותרת ותוכן");
+      setError(t("aiNews.titleContentRequiredMsg"));
       return;
     }
 
@@ -120,7 +122,7 @@ export default function AiNewsPage() {
       await loadNews();
       resetForm();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "שגיאה בשמירת החדשות");
+      setError(err instanceof Error ? err.message : t("aiNews.saveErrorMsg"));
     } finally {
       setSubmitting(false);
     }
@@ -161,7 +163,7 @@ export default function AiNewsPage() {
         resetForm();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "שגיאה במחיקת החדשות");
+      setError(err instanceof Error ? err.message : t("aiNews.deleteErrorMsg"));
     } finally {
       setSubmitting(false);
       setDeleteTarget(null);
@@ -177,7 +179,7 @@ export default function AiNewsPage() {
       <div className="news-loading-container">
         <div className="news-loading-content">
           <div className="news-spinner" />
-          <div className="news-loading-text">טוען חדשות...</div>
+          <div className="news-loading-text">{t("aiNews.loadingText")}</div>
         </div>
       </div>
     );
@@ -190,7 +192,7 @@ export default function AiNewsPage() {
           <div className="news-header-content">
             <h1 className="news-header-title">AI News</h1>
             <p className="news-header-subtitle">
-              חדשות AI הכי חמות שיש!!!
+              {t("aiNews.subtitle")}
             </p>
           </div>
           {isAdmin && (
@@ -199,7 +201,7 @@ export default function AiNewsPage() {
               onClick={handleStartCreate}
               className="btn-add-news"
             >
-              הוספת חדשות
+              {t("aiNews.addNewsBtn")}
             </button>)}
         </div>
 
@@ -209,11 +211,11 @@ export default function AiNewsPage() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="חיפוש לפי כותרת"
+              placeholder={t("aiNews.searchPlaceholder")}
               className="news-search-input"
             />
             <div className="news-results-count">
-              {filteredNews.length} תוצאות
+              {t("aiNews.resultsCount", { count: filteredNews.length })}
             </div>
           </div>
         )}
@@ -230,20 +232,20 @@ export default function AiNewsPage() {
             className="news-form-container"
           >
             <h3 className="news-form-title">
-              {editingId ? "עריכת חדשות" : "יצירת חדשות"}
+              {editingId ? t("aiNews.editNewsTitle") : t("aiNews.createNewsTitle")}
             </h3>
 
             <div className="news-form-inputs">
               <input
                 type="text"
-                placeholder="כותרת"
+                placeholder={t("aiNews.titlePlaceholder")}
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="news-input-field"
               />
 
               <textarea
-                placeholder="תוכן"
+                placeholder={t("aiNews.contentPlaceholder")}
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 rows={6}
@@ -252,7 +254,7 @@ export default function AiNewsPage() {
 
               <input
                 type="text"
-                placeholder="מקור (אופציונלי)"
+                placeholder={t("aiNews.sourcePlaceholder")}
                 value={formData.source}
                 onChange={(e) => setFormData({ ...formData, source: e.target.value })}
                 className="news-input-field"
@@ -260,7 +262,7 @@ export default function AiNewsPage() {
 
               <input
                 type="text"
-                placeholder="תגיות (מופרדות בפסיק)"
+                placeholder={t("aiNews.tagsPlaceholder")}
                 value={formData.tags}
                 onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                 className="news-input-field"
@@ -272,14 +274,14 @@ export default function AiNewsPage() {
                   disabled={submitting}
                   className="btn-submit"
                 >
-                  {submitting ? "שומר..." : editingId ? "עדכון" : "שמירה"}
+                  {submitting ? t("aiNews.savingBtn") : editingId ? t("aiNews.updateBtn") : t("aiNews.saveBtn")}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
                   className="btn-reset"
                 >
-                  איפוס
+                  {t("aiNews.resetBtn")}
                 </button>
               </div>
             </div>
@@ -289,20 +291,20 @@ export default function AiNewsPage() {
         {!showForm && (
           news.length === 0 ? (
             <div className="news-empty">
-              <h3>אין חדשות עדיין</h3>
-              <p>ברגע שיתווספו חדשות הן יופיעו כאן</p>
+              <h3>{t("aiNews.noNewsTitle")}</h3>
+              <p>{t("aiNews.noNewsMessage")}</p>
               {isAdmin && (
                 <button
                   type="button"
                   onClick={handleStartCreate}
                   className="btn-add-news"
                 >
-                  צור חדשות ראשונה
+                  {t("aiNews.createFirstNewsBtn")}
                 </button>
               )}
             </div>
           ) : filteredNews.length === 0 ? (
-            <p className="news-empty-message">אין חדשות מתאימות.</p>
+            <p className="news-empty-message">{t("aiNews.noMatchingNewsMessage")}</p>
           ) : (
             <>
               <div className="news-grid">
@@ -342,7 +344,7 @@ export default function AiNewsPage() {
                           onClick={() => handleEdit(item)}
                           className="btn-edit"
                         >
-                          ערוך
+                          {t("common.edit")}
                         </button>)}
                           {isAdmin && (
                         <button
@@ -350,7 +352,7 @@ export default function AiNewsPage() {
                           onClick={() => openDeleteModal(item)}
                           className="btn-delete"
                         >
-                          מחק
+                          {t("common.delete")}
                         </button>)}
                       </div>
                     </div>
@@ -369,7 +371,7 @@ export default function AiNewsPage() {
                     onClick={() => setPage((p) => p + 1)}
                     className="load-more-btn"
                   >
-                    טען עוד
+                    {t("aiNews.loadMoreBtn")}
                   </button>
                 </div>
               )}
@@ -381,9 +383,9 @@ export default function AiNewsPage() {
       {deleteTarget && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h2 className="modal-title">אישור מחיקה</h2>
+            <h2 className="modal-title">{t("aiNews.confirmDeleteTitle")}</h2>
             <p className="modal-message">
-              האם אתה בטוח שברצונך למחוק את הפריט "{deleteTarget.title}"?
+              {t("aiNews.confirmDeleteMessage", { title: deleteTarget.title })}
             </p>
             <div className="modal-buttons">
               <button
@@ -391,7 +393,7 @@ export default function AiNewsPage() {
                 onClick={cancelDelete}
                 className="btn-cancel"
               >
-                לא
+                {t("aiNews.noBtn")}
               </button>
               <button
                 type="button"
@@ -399,7 +401,7 @@ export default function AiNewsPage() {
                 disabled={submitting}
                 className="btn-confirm-delete"
               >
-                כן
+                {t("aiNews.yesBtn")}
               </button>
             </div>
           </div>

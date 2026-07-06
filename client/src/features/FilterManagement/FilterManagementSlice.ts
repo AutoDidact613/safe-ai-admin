@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
+import i18n from "../../i18n";
 
 
 export interface Prompt {
@@ -47,9 +48,9 @@ export const filterManagementSlice = createSlice({
             const prompt = state.groupPrompts.find(p => p.id === id);
             if (prompt && prompt.Status === "active") {
                 prompt.Status = "not active";
-                alert("הפרומפט הושהה בהצלחה");
+                alert(i18n.t("filterManagement.pauseSuccessAlert"));
             } else {
-                alert("הפרומפט לא פעיל כבר או לא נמצא");
+                alert(i18n.t("filterManagement.pauseFailedAlert"));
             }
         },
         removePrompt: (state, action: PayloadAction<number>) => {

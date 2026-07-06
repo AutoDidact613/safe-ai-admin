@@ -117,7 +117,7 @@ export default function TopNavigation() {
                 to="/ai-news"
                 className={`top-nav-link ${location.pathname === "/ai-news" ? "active" : ""}`}
               >
-                חדשות
+                {t("nav.aiNews")}
               </Link>
               <Link to="/courses" className="top-nav-link">
                 {t("nav.courses")}
@@ -132,10 +132,10 @@ export default function TopNavigation() {
                 {t("nav.contact")}
               </Link>
               <Link to="/tender-board" className="top-nav-link">
-                לוח פרוייקטים
+                {t("nav.tenderBoard")}
               </Link>
               <Link to="/download-agents" className="top-nav-link">
-                הורדת אג'נטים כDesktop
+                {t("nav.downloadAgents")}
               </Link>
 
               {/* User Menu */}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { apiCall, API_ENDPOINTS } from "../../config/api";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 type Reply = {
   senderRole: string;
@@ -26,6 +27,7 @@ export default function AdminRequestsList() {
   const [error, setError] = useState<string | null>(null);
   const [deletingRequestId, setDeletingRequestId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const isRequestNew = (req: Request) => {
     const hasAdminReply = req.replies?.some((reply: Reply) => reply.senderRole === "admin");
@@ -33,7 +35,7 @@ export default function AdminRequestsList() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("האם למחוק את הפנייה הזו לצמיתות?")) return;
+    if (!window.confirm(t("requests.confirmDeletePermanent"))) return;
 
     try {
       setDeletingRequestId(id);
@@ -41,7 +43,7 @@ export default function AdminRequestsList() {
       setRequests((prev) => prev.filter((req) => req._id !== id));
     } catch (err) {
       console.error("שגיאה במחיקת הפנייה:", err);
-      alert("לא הצלחנו למחוק את הפנייה. נסה שוב.");
+      alert(t("requests.deleteFailedAlert"));
     } finally {
       setDeletingRequestId(null);
     }
@@ -56,7 +58,7 @@ export default function AdminRequestsList() {
         setRequests(data || []);
       } catch (err) {
         console.error("שגיאה בטעינה:", err);
-        setError("לא הצלחנו לטעון את כל הפניות. נסה שוב מאוחר יותר.");
+        setError(t("requests.loadAllFailedError"));
       } finally {
         setLoading(false);
       }
@@ -68,8 +70,8 @@ export default function AdminRequestsList() {
   if (loading) {
     return (
       <div className="admin-requests-container">
-        <h2>כל הפניות במערכת (מצב מנהל)</h2>
-        <p>טוען פניות...</p>
+        <h2>{t("requests.adminTitle")}</h2>
+        <p>{t("requests.loadingRequests")}</p>
       </div>
     );
   }
@@ -77,7 +79,7 @@ export default function AdminRequestsList() {
   if (error) {
     return (
       <div className="admin-requests-container">
-        <h2>כל הפניות במערכת (מצב מנהל)</h2>
+        <h2>{t("requests.adminTitle")}</h2>
         <p className="error">{error}</p>
       </div>
     );
@@ -85,19 +87,19 @@ export default function AdminRequestsList() {
 
   return (
     <div className="admin-requests-container">
-      <h2>כל הפניות במערכת (מצב מנהל)</h2>
+      <h2>{t("requests.adminTitle")}</h2>
       {requests.length === 0 ? (
-        <p>אין פניות כרגע.</p>
+        <p>{t("requests.noRequestsYet")}</p>
       ) : (
         <table className="requests-table">
           <thead>
             <tr>
               <th></th>
-              <th>משתמש</th>
-              <th>דואר אלקטרוני</th>
-              <th>נושא</th>
-              <th>סטטוס</th>
-              <th>מחק</th>
+              <th>{t("requests.userColumn")}</th>
+              <th>{t("requests.emailColumn")}</th>
+              <th>{t("requests.subjectColumn")}</th>
+              <th>{t("requests.statusColumn")}</th>
+              <th>{t("common.delete")}</th>
             </tr>
           </thead>
           <tbody>
@@ -109,28 +111,28 @@ export default function AdminRequestsList() {
                 <tr key={req._id}>
                   <td>
                     {needsAdminAttention && (
-                      <span className="request-new-badge request-new-icon">תגובה חדשה</span>
+                      <span className="request-new-badge request-new-icon">{t("requests.newReplyBadge")}</span>
                     )}
                   </td>
                   <td onClick={() => navigate(`/request/${req._id}`)} style={{ cursor: "pointer" }}>
-                    {userInfo?.name || "לא ידוע"}
+                    {userInfo?.name || t("requests.unknownValue")}
                   </td>
                   <td onClick={() => navigate(`/request/${req._id}`)} style={{ cursor: "pointer" }}>
-                    {userInfo?.email || "אין"}
+                    {userInfo?.email || t("requests.noEmailValue")}
                   </td>
                   <td onClick={() => navigate(`/request/${req._id}`)} style={{ cursor: "pointer" }}>
-                    {req.title || "ללא נושא"}
+                    {req.title || t("requests.noSubject")}
                   </td>
                   <td onClick={() => navigate(`/request/${req._id}`)} style={{ cursor: "pointer" }}>
-                    {req.status === "closed" ? "נסגרה" : "פתוחה"}
-                    {newBadge && <span className="request-new-badge">חדש</span>}
+                    {req.status === "closed" ? t("requests.closedStatus") : t("inquiries.statusOpen")}
+                    {newBadge && <span className="request-new-badge">{t("requests.newBadge")}</span>}
                   </td>
                   <td>
                     <button
                       className="delete-request-btn"
                       onClick={() => handleDelete(req._id)}
                       disabled={deletingRequestId === req._id}
-                      title="מחק פנייה"
+                      title={t("requests.deleteRequestTitle")}
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M3 6H5H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { API_ENDPOINTS, apiCall } from "../../config/api";
 
 interface AuthSectionProps {
@@ -21,6 +22,7 @@ export default function AuthSection({ onLogin }: AuthSectionProps) {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,11 +37,11 @@ export default function AuthSection({ onLogin }: AuthSectionProps) {
           if (formData.email === "admin@safeai.com" && formData.password === "admin123") {
             onLogin("admin", { email: formData.email, name: "Admin User" });
           } else {
-            setError("אימייל או סיסמה שגויים");
+            setError(t("authErrors.invalidCredentials"));
           }
         } else {
           // User login simulation
-          onLogin("user", { email: formData.email, name: formData.name || "משתמש" });
+          onLogin("user", { email: formData.email, name: formData.name || t("nav.defaultUserName") });
         }
       } else {
         // Register mode - call the server API
@@ -55,13 +57,13 @@ export default function AuthSection({ onLogin }: AuthSectionProps) {
         );
         
         // Show success message with API key
-        alert(`הרשמה הצליחה!\n\nמפתח ה-API שלך:\n${data.proxyApiKey}\n\nשמור מפתח זה במקום בטוח!`);
-        
+        alert(t("authSection.registrationSuccessAlert", { apiKey: data.proxyApiKey }));
+
         // Auto login after registration
         onLogin("user", data.user);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "שגיאה לא צפויה");
+      setError(err instanceof Error ? err.message : t("authSection.unexpectedError"));
     } finally {
       setLoading(false);
     }
@@ -74,13 +76,13 @@ export default function AuthSection({ onLogin }: AuthSectionProps) {
           className={mode === "login" ? "auth-tab active" : "auth-tab"}
           onClick={() => setMode("login")}
         >
-          התחברות
+          {t("nav.login")}
         </button>
         <button
           className={mode === "register" ? "auth-tab active" : "auth-tab"}
           onClick={() => setMode("register")}
         >
-          הרשמה
+          {t("nav.register")}
         </button>
       </div>
 
@@ -90,15 +92,15 @@ export default function AuthSection({ onLogin }: AuthSectionProps) {
             className={role === "user" ? "role-option selected" : "role-option"}
             onClick={() => setRole("user")}
           >
-            <h3>משתמש</h3>
-            <p>גישה ללוח משתמש וסטטיסטיקות</p>
+            <h3>{t("nav.defaultUserName")}</h3>
+            <p>{t("authSection.userRoleDesc")}</p>
           </div>
           <div
             className={role === "admin" ? "role-option selected" : "role-option"}
             onClick={() => setRole("admin")}
           >
-            <h3>מנהל</h3>
-            <p>ניהול פרופילים ומשתמשים</p>
+            <h3>{t("authSection.adminRoleHeading")}</h3>
+            <p>{t("authSection.adminRoleDesc")}</p>
           </div>
         </div>
       )}
@@ -107,7 +109,7 @@ export default function AuthSection({ onLogin }: AuthSectionProps) {
 
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="form-group">
-          <label>אימייל</label>
+          <label>{t("login.emailLabel")}</label>
           <input
             type="email"
             value={formData.email}
@@ -119,19 +121,19 @@ export default function AuthSection({ onLogin }: AuthSectionProps) {
 
         {mode === "register" && (
           <div className="form-group">
-            <label>שם</label>
+            <label>{t("authSection.nameLabel")}</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="השם שלך"
+              placeholder={t("authSection.namePlaceholder")}
             />
           </div>
         )}
 
         {mode === "login" && (
           <div className="form-group">
-            <label>סיסמה</label>
+            <label>{t("login.passwordLabel")}</label>
             <input
               type="password"
               value={formData.password}
@@ -143,17 +145,17 @@ export default function AuthSection({ onLogin }: AuthSectionProps) {
         )}
 
         <button type="submit" className="btn btn-primary" disabled={loading}>
-          {loading ? "מעבד..." : mode === "login" ? "התחבר" : "הירשם"}
+          {loading ? t("authForm.processingBtn") : mode === "login" ? t("resetPassword.loginLink") : t("register.submitButton")}
         </button>
       </form>
 
       {mode === "login" && role === "admin" && (
         <div className="alert alert-info" style={{ marginTop: "16px" }}>
-          <strong>למטרות הדגמה:</strong>
+          <strong>{t("authForm.demoNoticeLabel")}</strong>
           <br />
-          אימייל: admin@safeai.com
+          {t("authForm.demoEmailPrefix")} admin@safeai.com
           <br />
-          סיסמה: admin123
+          {t("authForm.demoPasswordPrefix")} admin123
         </div>
       )}
     </div>

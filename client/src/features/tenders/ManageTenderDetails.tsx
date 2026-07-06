@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { apiCall, API_ENDPOINTS } from '../../config/api'
 
 interface Applicant {
@@ -38,6 +39,7 @@ export default function ManageTenderDetails({
   onUpdateTender,
   onDeleteTender,
 }: ManageTenderDetailsProps) {
+  const { t } = useTranslation()
   // שמירת מצב הטופס בהתאם למבנה הנתונים הקים במכרז
   const [draftTender, setDraftTender] = useState<Tender>({ ...tender })
   const [agents, setAgents] = useState<string[]>(tender.agentsRequired ?? ['', ''])
@@ -125,12 +127,12 @@ export default function ManageTenderDetails({
       )
 
       if (response.success) {
-        setSuccessMessage('המכרז עודכן בהצלחה')
+        setSuccessMessage(t('tenders.tenderUpdatedSuccessMsg'))
         onUpdateTender(response.tender)
         setTimeout(() => onClose(), 1500)
       }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'שגיאה בעדכון המכרז')
+      setErrorMessage(error instanceof Error ? error.message : t('tenders.tenderUpdateErrorMsg'))
     } finally {
       setIsLoading(false)
     }
@@ -153,12 +155,12 @@ export default function ManageTenderDetails({
       )
 
       if (response.success) {
-        setSuccessMessage('המכרז נסגר בהצלחה')
+        setSuccessMessage(t('tenders.tenderClosedSuccessMsg'))
         onDeleteTender(draftTender.id)
         setTimeout(() => onClose(), 1500)
       }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'שגיאה בסגירת המכרז')
+      setErrorMessage(error instanceof Error ? error.message : t('tenders.tenderCloseErrorMsg'))
     } finally {
       setIsLoading(false)
     }
@@ -169,9 +171,9 @@ export default function ManageTenderDetails({
   return (
     <article className="detail-panel content-page-full" style={{ padding: '24px', maxWidth: '95%', margin: '0 auto', boxSizing: 'border-box' }} dir="rtl">
       <header className="detail-panel__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <h2>עדכון פרטי המכרז</h2>
+        <h2>{t('tenders.updateTenderDetailsTitle')}</h2>
         <button type="button" className="tab-button" onClick={onClose}>
-          חזור לרשימה
+          {t('tenders.backToListBtn')}
         </button>
       </header>
 
@@ -179,7 +181,7 @@ export default function ManageTenderDetails({
         
         {/* שם המכרז */}
         <div className="detail-field">
-          <label htmlFor="tender-title" style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>שם המכרז</label>
+          <label htmlFor="tender-title" style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>{t('tenders.tenderNameLabel')}</label>
           <input
             id="tender-title"
             value={draftTender.title}
@@ -190,7 +192,7 @@ export default function ManageTenderDetails({
 
         {/* הסבר / תיאור */}
         <div className="detail-field">
-          <label htmlFor="tender-shortDescription" style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>הסבר / תאור</label>
+          <label htmlFor="tender-shortDescription" style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>{t('tenders.explanationLabel')}</label>
           <textarea
             id="tender-shortDescription"
             rows={4}
@@ -205,8 +207,8 @@ export default function ManageTenderDetails({
           
           {/* קוביה א': סוג המוצר */}
           <div className="sidebar-card" style={{ flex: '1', minWidth: '280px', padding: '15px', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-            <h3 style={{ margin: '0 0 4px 0' }}>סוג המוצר</h3>
-            <p className="helper-text" style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>בחירת סוג מוצר אחד</p>
+            <h3 style={{ margin: '0 0 4px 0' }}>{t('tenders.productTypeHeading')}</h3>
+            <p className="helper-text" style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>{t('tenders.productTypeHelperText')}</p>
             <div className="domain-list" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {productTypeOptions.map((type) => {
                 const selected = draftTender.productType === type
@@ -235,8 +237,8 @@ export default function ManageTenderDetails({
 
           {/* קוביה ב': צורת שימוש ב-AI */}
           <div className="sidebar-card" style={{ flex: '1', minWidth: '280px', padding: '15px', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-            <h3 style={{ margin: '0 0 4px 0' }}>צורת שימוש ב-AI</h3>
-            <p className="helper-text" style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>בחירת צורת שימוש אחת</p>
+            <h3 style={{ margin: '0 0 4px 0' }}>{t('tenders.aiApplicationHeading')}</h3>
+            <p className="helper-text" style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>{t('tenders.aiApplicationHelperText')}</p>
             <div className="domain-list" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {aiApplicationOptions.map((appType) => {
                 const selected = draftTender.aiApplicationType === appType
@@ -267,19 +269,19 @@ export default function ManageTenderDetails({
         {/* שדות אג'נטים דינמיים - מוצגים רק במידת הצורך */}
         {showAgentsSection && (
           <div className="form-section" style={{ padding: '15px', background: '#f8fafc', borderRadius: '8px' }}>
-            <div className="section-title" style={{ fontWeight: 'bold', marginBottom: '12px' }}>הסבר על אג'נט</div>
+            <div className="section-title" style={{ fontWeight: 'bold', marginBottom: '12px' }}>{t('tenders.agentExplanationSectionTitle')}</div>
             <div className="agent-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {agents.map((agentText, index) => (
                 <div key={index} className="agent-item">
                   <label htmlFor={`agent-${index}`} style={{ display: 'block', marginBottom: '4px', fontSize: '14px' }}>
-                    הסבר על אג'נט {index + 1}
+                    {t('tenders.agentExplanationLabel', { index: index + 1 })}
                   </label>
                   <div className="agent-row" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <textarea
                       id={`agent-${index}`}
                       value={agentText}
                       onChange={(e) => handleAgentChange(index, e.target.value)}
-                      placeholder={`רשום תיאור לאג'נט ${index + 1}`}
+                      placeholder={t('tenders.agentDescriptionPlaceholder', { index: index + 1 })}
                       style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }}
                       rows={2}
                       maxLength={300}
@@ -300,7 +302,7 @@ export default function ManageTenderDetails({
             </div>
             {draftTender.aiApplicationType === 'מולטי אייגנט' && (
               <button type="button" className="button-green" style={{ marginTop: '12px', padding: '6px 12px', cursor: 'pointer' }} onClick={addAgent}>
-                הוספת אג'נט +
+                {t('tenders.addAgentBtn')}
               </button>
             )}
           </div>
@@ -309,7 +311,7 @@ export default function ManageTenderDetails({
         {/* שורת זמן נדרש ותקציב */}
         <div className="detail-row">
           <div className="detail-field">
-            <label htmlFor="tender-timeRequired" style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>כמה זמן ניתן לביצוע המשימה</label>
+            <label htmlFor="tender-timeRequired" style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>{t('tenders.durationLabel')}</label>
             <input
               id="tender-timeRequired"
               value={draftTender.timeRequired ?? ''}
@@ -318,7 +320,7 @@ export default function ManageTenderDetails({
             />
           </div>
           <div className="detail-field">
-            <label htmlFor="tender-budget" style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>תקציב</label>
+            <label htmlFor="tender-budget" style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>{t('tenders.budgetLabel')}</label>
             <input
               id="tender-budget"
               value={draftTender.budget ?? ''}
@@ -331,7 +333,7 @@ export default function ManageTenderDetails({
         {/* פרטים נוספים וקבלת אימייל */}
         <div className="footer-row" style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
           <div className="footer-main" style={{ flex: 2 }}>
-            <label htmlFor="tender-additionalDetails" style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>פרטים נוספים</label>
+            <label htmlFor="tender-additionalDetails" style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>{t('tenders.additionalDetailsFieldLabel')}</label>
             <textarea
               id="tender-additionalDetails"
               rows={3}
@@ -347,7 +349,7 @@ export default function ManageTenderDetails({
                 checked={draftTender.wantsEmails ?? false}
                 onChange={(e) => handleFieldChange('wantsEmails', e.target.checked)}
               />
-              <span className="toggle-text">מעוניין לקבל מיילים</span>
+              <span className="toggle-text">{t('tenders.wantsEmailsLabel')}</span>
             </label>
           </div>
         </div>
@@ -355,19 +357,19 @@ export default function ManageTenderDetails({
 
       {/* רשימת מועמדים קיימים */}
       <section className="applicants-section" style={{ marginTop: '40px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
-        <h3>מועמדים ({tender.applicants?.length ?? 0})</h3>
+        <h3>{t('tenders.applicantsHeading', { count: tender.applicants?.length ?? 0 })}</h3>
         {tender.applicants && tender.applicants.length > 0 ? (
           tender.applicants.map((applicant, index) => (
             <article key={`${applicant.email}-${index}`} className="applicant-card" style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', marginBottom: '10px' }}>
               <h4>{applicant.name}</h4>
-              <p><strong>אימייל:</strong> {applicant.email}</p>
-              <p><strong>פרטים:</strong> {applicant.details}</p>
-              {applicant.proposal && <p><strong>הצעה:</strong> {applicant.proposal}</p>}
-              {applicant.contactMethod && <p><strong>דרכי קשר:</strong> {applicant.contactMethod}</p>}
+              <p><strong>{t('tenders.applicantEmailLabel')}</strong> {applicant.email}</p>
+              <p><strong>{t('tenders.applicantDetailsLabel')}</strong> {applicant.details}</p>
+              {applicant.proposal && <p><strong>{t('tenders.applicantProposalLabel')}</strong> {applicant.proposal}</p>}
+              {applicant.contactMethod && <p><strong>{t('tenders.applicantContactMethodLabel')}</strong> {applicant.contactMethod}</p>}
             </article>
           ))
         ) : (
-          <p style={{ color: '#666' }}>אין עדיין מועמדים שנרשמו למכרז זה.</p>
+          <p style={{ color: '#666' }}>{t('tenders.noApplicantsMessage')}</p>
         )}
       </section>
 
@@ -377,22 +379,22 @@ export default function ManageTenderDetails({
         {successMessage && <div className="success-message" style={{ color: 'green', background: '#e8f5e9', padding: '8px 12px', borderRadius: '4px' }}>{successMessage}</div>}
         
         <button type="button" className="button-green submit-button" onClick={saveTender} disabled={isLoading} style={{ padding: '10px 20px', cursor: 'pointer' }}>
-          {isLoading ? 'שומר...' : 'שמור עדכון'}
+          {isLoading ? t('tenders.savingBtn') : t('tenders.saveUpdateBtn')}
         </button>
 
         {showCloseConfirmation ? (
           <div className="close-confirmation" style={{ display: 'flex', gap: '10px', alignItems: 'center', background: '#fff3cd', padding: '8px', borderRadius: '6px' }}>
-            <span>האם אתה בטוח שברצונך לסגור את המכרז?</span>
+            <span>{t('tenders.closeConfirmQuestion')}</span>
             <button type="button" className="primary-button" onClick={closeTender} disabled={isLoading} style={{ background: 'red', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>
-              כן, סגור מכרז
+              {t('tenders.confirmCloseBtn')}
             </button>
             <button type="button" className="secondary-button" onClick={() => setShowCloseConfirmation(false)} disabled={isLoading} style={{ padding: '6px 12px', cursor: 'pointer' }}>
-              ביטול
+              {t('common.cancel')}
             </button>
           </div>
         ) : (
           <button type="button" className="secondary-button" onClick={() => setShowCloseConfirmation(true)} disabled={isLoading} style={{ padding: '10px 20px', cursor: 'pointer' }}>
-            סגירת המכרז
+            {t('tenders.closeTenderBtn')}
           </button>
         )}
       </div>

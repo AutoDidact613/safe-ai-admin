@@ -11,7 +11,7 @@ export default function ContactPage() {
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
-  const [requestType, setRequestType] = useState("כללי"); // ערך ברירת מחדל
+  const [requestType, setRequestType] = useState(""); // ריק = placeholder, עד שהמשתמש בוחר סוג פנייה
   const [contactTypes, setContactTypes] = useState<{ label: string; value: string }[]>([]);
   
   // הוספת useEffect לטעינת הנתונים מהשרת
@@ -149,7 +149,7 @@ useEffect(() => {
             />
           </div>
           <div className="form-group">
-<label htmlFor="requestType">סוג הפנייה</label>
+<label htmlFor="requestType">{t("requests.requestTypeColumn")}</label>
             <select
               id="requestType"
               value={requestType}
@@ -157,9 +157,11 @@ useEffect(() => {
               disabled={isSubmitting}
               required
             >
-              <option value="" hidden>בחר סוג פנייה</option>
-              {contactTypes.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
+              <option value="" hidden>{t("contact.requestTypePlaceholder")}</option>
+              {contactTypes.map((ct) => (
+                <option key={ct.value} value={ct.value}>
+                  {t(`contact.requestTypes.${ct.value}`, { defaultValue: ct.label })}
+                </option>
               ))}
             </select>
           </div>

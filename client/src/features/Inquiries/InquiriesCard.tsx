@@ -1,6 +1,7 @@
 import { type FC } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { removeInquiry, setCurrentInquiry } from "./inquiriesSlice";
 import type { AppDispatch } from "../../app/store";
 import "./InquiriesCard.css";
@@ -25,6 +26,7 @@ interface InquiriesCardProps {
 const InquiriesCard: FC<InquiriesCardProps> = ({ e }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const { t } = useTranslation();
 
   const { name, email, subject, message, status, createdAt, id } = e;
 
@@ -60,34 +62,34 @@ const InquiriesCard: FC<InquiriesCardProps> = ({ e }) => {
         </div>
 
         <span className={`inquiries-status ${status}`} aria-hidden>
-          {status === "open" ? "פתוחה" : "סגורה"}
+          {status === "open" ? t("inquiries.statusOpen") : t("inquiries.statusClosed")}
         </span>
       </header>
 
       <div className="inquiries-card-body">
-        <p className="inquiries-card-message"><strong>הודעה:</strong> {message}</p>
+        <p className="inquiries-card-message"><strong>{t("inquiries.messageLabel")}</strong> {message}</p>
       </div>
 
       <footer className="inquiries-card-footer">
-        <button className="btn btn-primary" onClick={goToDetails} aria-label="לפרטים">
+        <button className="btn btn-primary" onClick={goToDetails} aria-label={t("inquiries.details")}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
             <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span>לפרטים</span>
+          <span>{t("inquiries.details")}</span>
         </button>
 
-        <button className="btn btn-secondary" type="button" onClick={handleUpdate} aria-label="עריכה">
+        <button className="btn btn-secondary" type="button" onClick={handleUpdate} aria-label={t("inquiries.editAction")}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
             <path d="M3 21v-3.75L17.81 2.44a2 2 0 012.82 0l0 0a2 2 0 010 2.82L5.75 20.06H3z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span>עריכה</span>
+          <span>{t("inquiries.editAction")}</span>
         </button>
 
-        <button className="btn btn-danger" type="button" onClick={handleDelete} aria-label="מחיקה">
+        <button className="btn btn-danger" type="button" onClick={handleDelete} aria-label={t("inquiries.deleteAction")}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
             <path d="M3 6h18M8 6v12a2 2 0 002 2h4a2 2 0 002-2V6M10 6V4a2 2 0 012-2h0a2 2 0 012 2v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span>מחיקה</span>
+          <span>{t("inquiries.deleteAction")}</span>
         </button>
       </footer>
     </article>

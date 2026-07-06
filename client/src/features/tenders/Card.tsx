@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 interface TenderCardProps {
   id: string
   title: string
@@ -23,6 +25,7 @@ export default function Card({
   applicantsCount = 0,
   onView,
 }: TenderCardProps) {
+  const { t } = useTranslation()
   return (
     <article 
       className="tender-card" 
@@ -47,15 +50,15 @@ export default function Card({
 
       <div className="tender-card__meta">
         <div>
-          <span>תקציב</span>
+          <span>{t('tenders.budgetLabel')}</span>
           <strong>{budget ?? '—'}</strong>
         </div>
         <div>
-          <span>זמן נדרש</span>
+          <span>{t('tenders.timeRequiredLabel')}</span>
           <strong>{timeRequired ?? '—'}</strong>
         </div>
         <div>
-          <span> הצעות: </span>
+          <span>{t('tenders.applicantsCountLabel')}</span>
           <strong>{applicantsCount}</strong>
         </div>
         <div>
@@ -81,7 +84,7 @@ export default function Card({
 
       <div className="tender-card__actions" style={{ marginTop: '12px' }}>
         <button type="button" className="details-button" onClick={onView}>
-          פרטים
+          {t('tenders.detailsButton')}
         </button>
       </div>
     </article>

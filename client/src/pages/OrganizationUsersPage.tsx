@@ -137,7 +137,7 @@ export default function OrganizationUsersPage() {
       );
 
       alert(
-        `הארנק נטען בהצלחה! יתרה חדשה: $${response.data.organization.walletBalance}`
+        t("orgUsers.topUpSuccessAlert", { balance: response.data.organization.walletBalance })
       );
 
       setOrganization(response.data.organization);
@@ -149,13 +149,13 @@ export default function OrganizationUsersPage() {
         const errorMsg =
           err.response?.data?.error ||
           err.response?.data?.message ||
-          "נכשל הטעינה לארנק";
+          t("orgUsers.topUpFailedFallback");
 
         alert(errorMsg);
       } else if (err instanceof Error) {
         alert(err.message);
       } else {
-        alert("נכשל הטעינה לארנק");
+        alert(t("orgUsers.topUpFailedFallback"));
       }
     } finally {
       setIsSubmitting(false);
@@ -196,13 +196,13 @@ export default function OrganizationUsersPage() {
         const errorMsg =
           err.response?.data?.error ||
           err.response?.data?.message ||
-          "נכשל עדכון פרטי הארגון";
+          t("orgUsers.updateOrgFailedFallback");
 
         alert(errorMsg);
       } else if (err instanceof Error) {
         alert(err.message);
       } else {
-        alert("נכשל עדכון פרטי הארגון");
+        alert(t("orgUsers.updateOrgFailedFallback"));
       }
     } finally {
       setIsSavingOrg(false);
@@ -222,7 +222,7 @@ export default function OrganizationUsersPage() {
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!organization || !memberName.trim() || !memberEmail.trim()) {
-      setAddMemberError("יש למלא שם וכתובת אימייל");
+      setAddMemberError(t("orgUsers.addMemberFieldsRequired"));
       return;
     }
     try {
@@ -244,7 +244,7 @@ export default function OrganizationUsersPage() {
       setMemberEmail("");
       await reloadUsers();
     } catch (err: unknown) {
-      setAddMemberError(err instanceof Error ? err.message : "הוספת המשתמש נכשלה");
+      setAddMemberError(err instanceof Error ? err.message : t("orgUsers.addMemberFailedFallback"));
     } finally {
       setAddingMember(false);
     }
@@ -253,16 +253,16 @@ export default function OrganizationUsersPage() {
   const handleDownloadExcel = () => {
     const loginUrl = `${window.location.origin}/login`;
     const rows = createdMembers.map((m) => ({
-      "שם": m.name,
-      "אימייל": m.email,
-      "סיסמה זמנית": m.password,
-      "קישור להתחברות": loginUrl,
-      "סטטוס": "ממתין להתחברות ראשונה",
+      [t("orgUsers.excelHeaderName")]: m.name,
+      [t("orgUsers.excelHeaderEmail")]: m.email,
+      [t("orgUsers.excelHeaderPassword")]: m.password,
+      [t("orgUsers.excelHeaderLoginLink")]: loginUrl,
+      [t("orgUsers.excelHeaderStatus")]: t("orgUsers.excelStatusPendingLogin"),
     }));
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "משתמשים חדשים");
-    XLSX.writeFile(workbook, `משתמשי-${organization?.name || "ארגון"}.xlsx`);
+    XLSX.utils.book_append_sheet(workbook, worksheet, t("orgUsers.excelSheetName"));
+    XLSX.writeFile(workbook, `${t("orgUsers.excelFileNamePrefix")}-${organization?.name || t("orgUsers.excelFallbackOrgName")}.xlsx`);
   };
 
   if (loading) {

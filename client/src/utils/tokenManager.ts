@@ -4,6 +4,7 @@
  */
 
 import { API_ENDPOINTS } from '../config/api';
+import i18n from '../i18n';
 
 interface TokenRefreshResponse {
   success: boolean;
@@ -123,8 +124,7 @@ export function handleSessionExpired() {
  */
 function showSessionWarning() {
   const shouldStayLoggedIn = window.confirm(
-    'הפעילות שלך הסתיימה. האם ברצונך להישאר מחובר?\n\n' +
-    'לחץ "אישור" כדי להישאר מחובר, או "ביטול" כדי להתנתק.'
+    i18n.t('tokenManager.sessionExpiredConfirm')
   );
 
   if (shouldStayLoggedIn) {

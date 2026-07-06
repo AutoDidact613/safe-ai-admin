@@ -1,6 +1,7 @@
 import { type FC } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
+import { useTranslation } from "react-i18next";
 import { removeInquiry } from "./inquiriesSlice";
 import type { AppDispatch } from "../../app/store";
 import type { RootState } from "../../app/store";
@@ -15,6 +16,7 @@ interface Inquiry {
 const DeleteInquiries: FC = () => {
   const dispatch: AppDispatch = useDispatch();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // בוחרים את הפנייה הנוכחית מתוך ה־store
   const currentInquiry = useSelector(
@@ -31,19 +33,19 @@ const DeleteInquiries: FC = () => {
 
   // אם אין פנייה נוכחית, מציגים הודעה
   if (!currentInquiry) {
-    return <p>אין פנייה למחיקה</p>;
+    return <p>{t("inquiries.noInquiryToDelete")}</p>;
   }
 
   return (
     <div>
-      <h2>מחיקת פנייה</h2>
-      <p>האם את בטוחה שברצונך למחוק את הפנייה?</p>
+      <h2>{t("inquiries.deleteTitle")}</h2>
+      <p>{t("inquiries.deleteConfirmQuestion")}</p>
 
       <p>
         <strong>{currentInquiry.subject}</strong>
       </p>
 
-      <button className="btn btn-danger" onClick={handleDelete}>מחק</button>
+      <button className="btn btn-danger" onClick={handleDelete}>{t("common.delete")}</button>
     </div>
   );
 };

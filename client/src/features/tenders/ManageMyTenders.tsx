@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import Card from './Card'
 import ManageTenderDetails from './ManageTenderDetails.tsx'
 
@@ -34,6 +35,7 @@ interface Props {
 }
 
 export default function ManageMyTenders({ currentUserCode, tenders, onUpdateTender, onDeleteTender }: Props) {
+  const { t } = useTranslation()
   // סינון מכרזים השייכים למשתמש ושהם פעילים (isActive אינו false)
   const publishedTenders = useMemo(
     () => tenders.filter((tender) => tender.publisherUserCode === currentUserCode && tender.isActive !== false),
@@ -63,11 +65,11 @@ export default function ManageMyTenders({ currentUserCode, tenders, onUpdateTend
     <section className="manage-shell">
       <div className="manage-header">
         <div>
-          <h1>המכרזים שלי</h1>
+          <h1>{t('tenders.myTendersTitle')}</h1>
         </div>
         <div className="manage-summary">
           {publishedTenders.length}
-          <strong>סה"כ מכרזים פעילים:</strong> 
+          <strong>{t('tenders.totalActiveTendersLabel')}</strong>
         </div>
       </div>
 
@@ -90,8 +92,8 @@ export default function ManageMyTenders({ currentUserCode, tenders, onUpdateTend
             ))
           ) : (
             <div className="empty-state" style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px' }}>
-              <h2>אין מכרזים פעילים</h2>
-              <p>לא נמצאו מכרזים פעילים עם קוד משתמש זה. נסה להוסיף או לפרסם מכרז חדש.</p>
+              <h2>{t('tenders.noActiveTendersTitle')}</h2>
+              <p>{t('tenders.noActiveTendersMessage')}</p>
             </div>
           )}
         </div>

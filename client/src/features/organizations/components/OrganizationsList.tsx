@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   getAllOrganizations,
   suspendOrganization,
@@ -20,6 +21,7 @@ export const OrganizationsList = ({ onOpenOrg }: OrganizationsListProps) => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const loadOrganizations = async () => {
     try {
@@ -28,7 +30,7 @@ export const OrganizationsList = ({ onOpenOrg }: OrganizationsListProps) => {
       setOrganizations(Array.isArray(data) ? data : []);
       setError(null);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "נכשלה טעינת הארגונים");
+      setError(err instanceof Error ? err.message : t("organizations.loadOrgsFailedFallback"));
     } finally {
       setLoading(false);
     }
@@ -50,43 +52,43 @@ export const OrganizationsList = ({ onOpenOrg }: OrganizationsListProps) => {
   }, [organizations, search, statusFilter]);
 
   const handleSuspend = async (id: string) => {
-    if (!window.confirm("להשעות את הארגון? משתמשי הארגון לא יוכלו להשתמש ב-API.")) return;
+    if (!window.confirm(t("organizations.confirmSuspendOrg"))) return;
     try {
       setBusyId(id);
       await suspendOrganization(id);
       setOrganizations((prev) => prev.map((o) => (o._id === id ? { ...o, isActive: false } : o)));
     } catch (err: unknown) {
-      alert(`שגיאה בהשעיה: ${err instanceof Error ? err.message : "נכשל"}`);
+      alert(t("organizations.suspendErrorAlert", { error: err instanceof Error ? err.message : t("organizations.genericFailedFallback") }));
     } finally {
       setBusyId(null);
     }
   };
 
   const handleActivate = async (id: string) => {
-    if (!window.confirm("להפעיל מחדש את הארגון? משתמשיו יוכלו שוב להשתמש ב-API.")) return;
+    if (!window.confirm(t("organizations.confirmActivateOrg"))) return;
     try {
       setBusyId(id);
       await activateOrganization(id);
       setOrganizations((prev) => prev.map((o) => (o._id === id ? { ...o, isActive: true } : o)));
     } catch (err: unknown) {
-      alert(`שגיאה בהפעלה: ${err instanceof Error ? err.message : "נכשל"}`);
+      alert(t("organizations.activateErrorAlert", { error: err instanceof Error ? err.message : t("organizations.genericFailedFallback") }));
     } finally {
       setBusyId(null);
     }
   };
 
-  if (loading) return <div className="orgs-loading">טוען ארגונים...</div>;
-  if (error) return <div className="orgs-error">שגיאה: {error}</div>;
+  if (loading) return <div className="orgs-loading">{t("organizations.loadingOrgsList")}</div>;
+  if (error) return <div className="orgs-error">{t("organizations.errorPrefix")} {error}</div>;
 
   return (
     <div>
-      <p className="orgs-admin-subtitle">רשימת כל הארגונים במערכת. סה"כ: {organizations.length}</p>
+      <p className="orgs-admin-subtitle">{t("organizations.allOrgsSubtitle", { count: organizations.length })}</p>
 
       <div className="orgs-toolbar">
         <input
           className="orgs-search"
           type="text"
-          placeholder="חיפוש לפי שם ארגון..."
+          placeholder={t("organizations.searchByOrgNamePlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -95,12 +97,12 @@ export const OrganizationsList = ({ onOpenOrg }: OrganizationsListProps) => {
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
         >
-          <option value="all">כל הסטטוסים</option>
-          <option value="active">פעיל</option>
-          <option value="suspended">מושעה</option>
-          <option value="pending">ממתין לאישור</option>
-          <option value="approved">מאושר</option>
-          <option value="rejected">נדחה</option>
+          <option value="all">{t("organizations.allStatusesOption")}</option>
+          <option value="active">{t("orgUsers.active")}</option>
+          <option value="suspended">{t("organizations.statusSuspended")}</option>
+          <option value="pending">{t("organizations.statusPendingApproval")}</option>
+          <option value="approved">{t("organizations.statusApproved")}</option>
+          <option value="rejected">{t("organizations.statusRejected")}</option>
         </select>
       </div>
 
