@@ -56,7 +56,6 @@ export async function register(data: {
   const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
   try {
-    // בהערה בגלל ה Docker
     // Register with LiteLLM
     const response = await axios.post(
       `${process.env.LITELLM_PROXY_URL}/key/generate`,
@@ -237,7 +236,7 @@ export async function refreshAccessToken(refreshToken: string) {
     });
 
     // Replace old refresh token with new one
-    user.refreshTokens = user.refreshTokens.filter((t) => t !== refreshToken);
+    user.refreshTokens = user.refreshTokens.filter((t: string) => t !== refreshToken);
     user.refreshTokens.push(tokens.refreshToken);
     await user.save();
 
@@ -261,7 +260,7 @@ export async function logout(userId: string, refreshToken: string) {
 
   // Remove refresh token
   if (user.refreshTokens) {
-    user.refreshTokens = user.refreshTokens.filter((t) => t !== refreshToken);
+    user.refreshTokens = user.refreshTokens.filter((t: string) => t !== refreshToken);
     await user.save();
   }
 

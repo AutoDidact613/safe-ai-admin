@@ -29,6 +29,8 @@ import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
 import AiNewsPage from "../pages/AiNewsPage";
 import AiNewsDetailsPage from "../pages/AiNewsDetailsPage";
 import ErrorBoundary from "../components/ErrorBoundary";
+import ForumPage from '../features/forum/ForumPage';
+import { PostThreadPage } from '../features/forum/PostThreadPage';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -143,12 +145,21 @@ export default function AppRouter() {
             </ProtectedRoute>
           }
         />
-        
-                <Route
+
+        <Route
           path="/admin/all-requests"
           element={
             <ProtectedRoute>
               <AdminRequestsList />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/forum"
+          element={
+            <ProtectedRoute>
+              <ForumPage />
             </ProtectedRoute>
           }
         />
@@ -196,6 +207,8 @@ export default function AppRouter() {
           }
         />
 
+
+
         {/* New Pages Routes */}
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
@@ -207,6 +220,7 @@ export default function AppRouter() {
         <Route path="/activity-log" element={<ActivityLogPage />} />
         <Route path="/tender-board" element={<TenderBoardPage />} />
         <Route path="/download-agents" element={<DownloadAgentsPage />} />
+        <Route path="/forum/post/:id" element={<ProtectedRoute><PostThreadPage /></ProtectedRoute>} />
 
         {/* Catch all - 404 */}
         <Route path="*" element={<NotFound />} />

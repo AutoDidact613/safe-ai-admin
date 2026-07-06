@@ -24,7 +24,12 @@ import { requestLogger } from "./middleware/requestLogger";
 import { errorHandler } from "./middleware/errorHandler";
 import { connectDatabase } from "./config/db";
 import { authenticateToken, requireAdmin } from "./middleware/auth";
+import postRoutes from './routes/postRoutes';
 import logger from "./logger";
+import path from 'path';
+import tagRoutes from './routes/tagRoutes';
+import uploadRouter from "./routes/uploadRoutes";
+import cookieParser from 'cookie-parser';
 
 const PORT = process.env.PORT || 3001;
 
@@ -39,7 +44,9 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
-// ×”×’×“×¨×” ×œ-50 ×ž×’×”-×‘×™×™×˜ ×›×“×™ ×œ×”×™×•×ª ×‘×˜×•×—×™×
+app.use(cookieParser());
+
+// הגדרה ל-50 מגה-בייט כדי להיות בטוחים
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
@@ -86,7 +93,13 @@ app.use("/v1", openaiRouter); // Uses proxyAuth middleware in the router
 
 
 
+app.use('/api/posts', postRoutes);
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/api/tags', tagRoutes);
+app.use("/api/upload", uploadRouter);
+
 app.use(errorHandler);
+
 
 async function start() {
   try {
