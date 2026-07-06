@@ -228,7 +228,7 @@ export default function ManageTenderDetails({
                     }}
                     onClick={() => handleFieldChange('productType', draftTender.productType === type ? '' : type)}
                   >
-                    {type}
+                    {t(`tenders.productTypeOptions.${type}`, { defaultValue: type })}
                   </button>
                 )
               })}
@@ -258,7 +258,7 @@ export default function ManageTenderDetails({
                     }}
                     onClick={() => handleFieldChange('aiApplicationType', draftTender.aiApplicationType === appType ? '' : appType)}
                   >
-                    {appType}
+                    {t(`tenders.aiApplicationOptions.${appType}`, { defaultValue: appType })}
                   </button>
                 )
               })}

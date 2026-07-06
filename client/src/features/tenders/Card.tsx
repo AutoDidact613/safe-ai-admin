@@ -71,12 +71,12 @@ export default function Card({
         <div className="tender-card__tags" style={{ marginTop: 'auto', paddingTop: '10px' }}>
           {productType && (
             <span className="domain-pill" style={{ backgroundColor: '#f1f5f9', color: '#334155', borderColor: '#cbd5e1' }}>
-              {productType}
+              {t(`tenders.productTypeOptions.${productType}`, { defaultValue: productType })}
             </span>
           )}
           {aiApplicationType && (
             <span className="domain-pill">
-              {aiApplicationType}
+              {t(`tenders.aiApplicationOptions.${aiApplicationType}`, { defaultValue: aiApplicationType })}
             </span>
           )}
         </div>

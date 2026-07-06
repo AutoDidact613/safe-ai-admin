@@ -1075,7 +1075,22 @@
     "pageNavAriaLabel": "Page navigation",
     "tendersBoardTab": "Tenders Board",
     "publishProjectTab": "Publish Project",
-    "viewMyTendersTab": "View My Tenders"
+    "viewMyTendersTab": "View My Tenders",
+    "productTypeOptions": {
+      "אפליקציה": "Application",
+      "אתר": "Website",
+      "תוכנת desktop": "Desktop Software",
+      "הטמעה של פיצר במערכת קיימת": "Implementing a Feature in an Existing System",
+      "ייעוץ": "Consulting",
+      "הקמת תשתית לאייגנט": "Building Infrastructure for an Agent",
+      "אחר": "Other"
+    },
+    "aiApplicationOptions": {
+      "התממשקות פשוטה": "Simple Integration",
+      "צאטבוט": "Chatbot",
+      "אייגנט": "Agent",
+      "מולטי אייגנט": "Multi-Agent"
+    }
   },
   "tokenManager": {
     "sessionExpiredConfirm": "Your session has expired. Would you like to stay logged in?\n\nClick \"OK\" to stay logged in, or \"Cancel\" to log out."

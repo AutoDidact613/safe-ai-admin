@@ -342,7 +342,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
                       className={`domain-chip ${selected ? 'selected' : ''}`}
                       onClick={() => handleProductTypeSelect(type)}
                     >
-                      {type}
+                      {t(`tenders.productTypeOptions.${type}`, { defaultValue: type })}
                     </button>
                   )
                 })}
@@ -363,7 +363,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
                       className={`domain-chip ${selected ? 'selected' : ''}`}
                       onClick={() => handleAiApplicationSelect(appType)}
                     >
-                      {appType}
+                      {t(`tenders.aiApplicationOptions.${appType}`, { defaultValue: appType })}
                     </button>
                   )
                 })}

@@ -430,7 +430,7 @@ export default function TenderBoardPage() {
                         onMouseDown={() => chooseProductType(p)}
                         className="autocomplete-item"
                       >
-                        {p}
+                        {t(`tenders.productTypeOptions.${p}`, { defaultValue: p })}
                       </div>
                     ))}
                     {productTypes.filter((p) => p.toLowerCase().includes(productTypeInput.toLowerCase() || '')).length === 0 && (
@@ -473,7 +473,7 @@ export default function TenderBoardPage() {
                         onMouseDown={() => chooseAiApplication(a)}
                         className="autocomplete-item"
                       >
-                        {a}
+                        {t(`tenders.aiApplicationOptions.${a}`, { defaultValue: a })}
                       </div>
                     ))}
                     {aiApplications.filter((a) => a.toLowerCase().includes(aiApplicationInput.toLowerCase() || '')).length === 0 && (

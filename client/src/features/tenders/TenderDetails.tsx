@@ -100,13 +100,13 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
               {tender.productType && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('tenders.productTypeLabel')}</span>
-                  <span className="domain-pill" style={{ backgroundColor: '#f1f5f9', color: '#334155', borderColor: '#cbd5e1' }}>{tender.productType}</span>
+                  <span className="domain-pill" style={{ backgroundColor: '#f1f5f9', color: '#334155', borderColor: '#cbd5e1' }}>{t(`tenders.productTypeOptions.${tender.productType}`, { defaultValue: tender.productType })}</span>
                 </div>
               )}
               {tender.aiApplicationType && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('tenders.aiApplicationLabel')}</span>
-                  <span className="domain-pill">{tender.aiApplicationType}</span>
+                  <span className="domain-pill">{t(`tenders.aiApplicationOptions.${tender.aiApplicationType}`, { defaultValue: tender.aiApplicationType })}</span>
                 </div>
               )}
             </div>
