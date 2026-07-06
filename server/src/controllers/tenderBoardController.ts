@@ -39,12 +39,20 @@ export async function listAIApplicationTypes(req: Request, res: Response) {
   }
 }
 
+function isOwnerOrAdmin(req: Request, tender: any): boolean {
+  const user = (req as any).user;
+  return user?.role === "admin" || tender?.publisherUserCode === user?.userId;
+}
+
 /**
  * CREATE Tender
  */
 export async function createTenderHandler(req: Request, res: Response) {
   try {
-    const tender = await createTender(req.body);
+    const user = (req as any).user;
+    // publisherUserCode is derived from the authenticated user, never trusted from the client body,
+    // otherwise any caller could create a tender that impersonates another publisher.
+    const tender = await createTender({ ...req.body, publisherUserCode: user?.userId });
     res.status(201).json({ success: true, tender });
   } catch (error) {
     logger.error("Create tender failed", { error });
@@ -88,11 +96,17 @@ export async function getTenderHandler(req: Request<{ id: string }>, res: Respon
  */
 export async function updateTenderHandler(req: Request<{ id: string }>, res: Response) {
   try {
-    const tender = await updateTender(req.params.id, req.body);
+    const existing = await getTenderById(req.params.id);
 
-    if (!tender) {
+    if (!existing) {
       return res.status(404).json({ error: "Tender not found" });
     }
+
+    if (!isOwnerOrAdmin(req, existing)) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const tender = await updateTender(req.params.id, req.body);
 
     res.json({ success: true, tender });
   } catch (error) {
@@ -106,6 +120,16 @@ export async function updateTenderHandler(req: Request<{ id: string }>, res: Res
  */
 export async function deleteTenderHandler(req: Request<{ id: string }>, res: Response) {
   try {
+    const existing = await getTenderById(req.params.id);
+
+    if (!existing) {
+      return res.status(404).json({ error: "Tender not found" });
+    }
+
+    if (!isOwnerOrAdmin(req, existing)) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
     await deleteTender(req.params.id);
     res.json({ success: true });
   } catch (error) {
@@ -160,11 +184,17 @@ export async function applyToTenderHandler(req: Request, res: Response) {
  */
 export async function closeTenderHandler(req: Request<{ id: string }>, res: Response) {
   try {
-    const tender = await closeTender(req.params.id);
+    const existing = await getTenderById(req.params.id);
 
-    if (!tender) {
+    if (!existing) {
       return res.status(404).json({ error: "Tender not found" });
     }
+
+    if (!isOwnerOrAdmin(req, existing)) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const tender = await closeTender(req.params.id);
 
     res.json({ success: true, tender });
   } catch (error) {

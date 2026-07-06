@@ -175,38 +175,75 @@ export default function SafeAIUIPage() {
             {userRole === "admin" && (
               <>
                 <button
-                  className={activeSection === "statistics" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  className={
+                    activeSection === "statistics"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
                   onClick={() => setActiveSection("statistics")}
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M2 14V8M8 14V2M14 14V6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path
+                      d="M2 14V8M8 14V2M14 14V6"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                   סטטיסטיקות
                 </button>
                 <button
-                  className={activeSection === "profiles" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  className={
+                    activeSection === "profiles"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
                   onClick={() => setActiveSection("profiles")}
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M8 8a3 3 0 100-6 3 3 0 000 6zM2 14c0-2.21 2.686-4 6-4s6 1.79 6 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    <path
+                      d="M8 8a3 3 0 100-6 3 3 0 000 6zM2 14c0-2.21 2.686-4 6-4s6 1.79 6 4"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
                   </svg>
                   ניהול פרופילים
                 </button>
                 <button
-                  className={activeSection === "users" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  className={
+                    activeSection === "users"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
                   onClick={() => setActiveSection("users")}
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M11 7a2 2 0 100-4 2 2 0 000 4zM13 13c0-1.657-1.343-3-3-3M5 7a2 2 0 100-4 2 2 0 000 4zM1 13c0-1.657 1.343-3 3-3s3 1.343 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    <path
+                      d="M11 7a2 2 0 100-4 2 2 0 000 4zM13 13c0-1.657-1.343-3-3-3M5 7a2 2 0 100-4 2 2 0 000 4zM1 13c0-1.657 1.343-3 3-3s3 1.343 3 3"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
                   </svg>
                   ניהול משתמשים
                 </button>
                 <button
-                  className={activeSection === "organizations" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  className={
+                    activeSection === "organizations"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
                   onClick={() => setActiveSection("organizations")}
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M3 3h10v10H3V3zm2 2v6m4-6v6m-4-3h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    <path
+                      d="M3 3h10v10H3V3zm2 2v6m4-6v6m-4-3h6"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
                   </svg>
                   ניהול ארגונים
                 </button>
@@ -239,16 +276,30 @@ export default function SafeAIUIPage() {
             {userRole === "user" && (
               <>
                 <button
-                  className={activeSection === "statistics" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  className={
+                    activeSection === "statistics"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
                   onClick={() => setActiveSection("statistics")}
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M2 14V8M8 14V2M14 14V6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path
+                      d="M2 14V8M8 14V2M14 14V6"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                   סטטיסטיקות
                 </button>
                 <button
-                  className={activeSection === "apikeys" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  className={
+                    activeSection === "apikeys"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
                   onClick={() => setActiveSection("apikeys")}
                 >
                   <svg

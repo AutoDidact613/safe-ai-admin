@@ -55,7 +55,6 @@ router.use(authenticateToken);
 
 // 1. PROTECTED STATIC ROUTES (נתיבים סטטיים תמיד ראשונים)
 router.get("/pending", requireAdmin, getPendingOrganizationsHandler); // System Admin only
-router.patch("/pending/:id", requireAdmin, updateOrganizationHandler); // מעדכן את הסטטוס של הארגון הממתין מול ה-DB - Admin only
 router.get("/admin/all", requireAdmin, getAllOrganizationsHandler); // System Admin only - full list with stats
 router.get("/my", getMyOrganizationHandler); // Current user's own organization (any status)
 

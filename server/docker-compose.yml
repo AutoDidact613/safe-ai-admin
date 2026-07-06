@@ -61,7 +61,7 @@ services:
       - LITELLM_PROXY_URL=http://litellm:4000
       - MONGO_URI=${MONGO_URI}
 
-
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_SECURE=${SMTP_SECURE}

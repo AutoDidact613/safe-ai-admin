@@ -15,7 +15,7 @@ interface TenderFormData {
 }
 
 interface SmartCreateResponse {
-  product?: {
+  tender?: {
     title?: string
     shortDescription?: string
     productType?: string
@@ -155,15 +155,14 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
         console.log('Smart tender data received:', response)
         setFormData((current) => ({
           ...current,
-          tenderName: response.product?.title || current.tenderName,
-          explanation: response.product?.shortDescription || current.explanation,
-          productType: response.product?.productType || current.productType,
-          // השדה הזה לא מופיע בתמונה, נשאר כפי שהיה או שניתן להורידו במידת הצורך
-          aiApplicationType: response.product?.aiApplicationType || current.aiApplicationType,
-          budget: response.product?.budget || current.budget,
-          duration: response.product?.timeRequired || current.duration,
-          additionalDetails: response.product?.additionalDetails || current.additionalDetails,
-          agents: response.product?.agentsRequired || current.agents,
+          tenderName: response.tender?.title || current.tenderName,
+          explanation: response.tender?.shortDescription || current.explanation,
+          productType: response.tender?.productType || current.productType,
+          aiApplicationType: response.tender?.aiApplicationType || current.aiApplicationType,
+          budget: response.tender?.budget || current.budget,
+          duration: response.tender?.timeRequired || current.duration,
+          additionalDetails: response.tender?.additionalDetails || current.additionalDetails,
+          agents: response.tender?.agentsRequired || current.agents,
         }))
         setFormMessage('הנתונים הופקו בהצלחה מהטקסט!')
         setIsSmartOpen(false)
