@@ -408,24 +408,24 @@ describe("organizationService.topUpOrganizationWallet", () => {
       _id: "org1",
       walletBalance: 100,
     } as any);
-    mockedRepo.updateOrganization.mockResolvedValue({} as any);
+    mockedRepo.incrementWalletBalance.mockResolvedValue({
+      walletBalance: 150,
+    } as any);
 
     await organizationService.topUpOrganizationWallet("org1", 50);
 
-    expect(mockedRepo.updateOrganization).toHaveBeenCalledWith("org1", {
-      walletBalance: 150,
-    });
+    expect(mockedRepo.incrementWalletBalance).toHaveBeenCalledWith("org1", 50);
   });
 
   it("treats a missing wallet balance as zero", async () => {
     mockedRepo.getOrganizationById.mockResolvedValue({ _id: "org1" } as any);
-    mockedRepo.updateOrganization.mockResolvedValue({} as any);
+    mockedRepo.incrementWalletBalance.mockResolvedValue({
+      walletBalance: 50,
+    } as any);
 
     await organizationService.topUpOrganizationWallet("org1", 50);
 
-    expect(mockedRepo.updateOrganization).toHaveBeenCalledWith("org1", {
-      walletBalance: 50,
-    });
+    expect(mockedRepo.incrementWalletBalance).toHaveBeenCalledWith("org1", 50);
   });
 });
 
