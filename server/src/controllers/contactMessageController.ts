@@ -98,9 +98,18 @@ export const addReply = async (req: any, res: Response) => {
     const { text } = req.body;
     const userId = req.user?.userId || req.user?.id;
    
-    const senderRole = req.user?.role || 'user'; 
+    const senderRole = req.user?.role || 'user';
+    const isAdmin = senderRole === "admin";
 
     if (!userId) return res.status(401).json({ message: "משתמש לא מזוהה" });
+
+    const existingRequest = await contactMessageService.getRequestById(id);
+
+    if (!existingRequest) return res.status(404).json({ message: "פנייה לא נמצאה" });
+
+    if (!isAdmin && existingRequest.userId?.toString() !== userId) {
+      return res.status(403).json({ message: "אין לך גישה להשיב לפנייה זו" });
+    }
 
     const request = await contactMessageService.addReplyToRequest(id, userId, text, senderRole);
 

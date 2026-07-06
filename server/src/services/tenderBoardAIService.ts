@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import mongoose from "mongoose";
 import logger from "../logger";
-import getTenders from "../repositories/tenderBoardRepository";
 import { TenderLog } from "../models/tendersBoardLog";
 import { callAI } from "./aiService"; // ← הפונקציה הגנרית
 
@@ -166,21 +165,10 @@ export class AIService {
         : { query: raw };
 
       const parsedData = SearchQueryZodSchema.parse(normalized);
-
-      if (!parsedData?.query || Object.keys(parsedData.query).length === 0) {
-          logger.warn("AI generated empty query, returning all tenders", {
-          searchText: userSearchText,
-        });
-        await saveTenderLog({
-          action: "SMART_SEARCH",
-          status: "SUCCESS",
-          metaData: { searchText: userSearchText, query: {}, responseTime: Date.now() - startTime },
-        });
-        return await getTenders({});
-      }
+      const query = parsedData?.query && Object.keys(parsedData.query).length > 0 ? parsedData.query : {};
 
       logger.info("AI search query generation completed", {
-        query: JSON.stringify(parsedData.query),
+        query: JSON.stringify(query),
       });
 
       await saveTenderLog({
@@ -188,12 +176,15 @@ export class AIService {
         status: "SUCCESS",
         metaData: {
           searchText: userSearchText,
-          query: parsedData.query,
+          query,
           responseTime: Date.now() - startTime,
         },
       });
 
-      return await getTenders(parsedData.query);
+      // Returns the raw (not-yet-sanitized) filter object — the caller
+      // (tenderBoardService.smartSearchTenders) is responsible for sanitizing
+      // it against an allowlist before executing it against the database.
+      return query;
 
     } catch (error: any) {
       logger.error("Error in AIService.generateSearchQuery", {

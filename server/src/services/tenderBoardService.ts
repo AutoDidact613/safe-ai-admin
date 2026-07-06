@@ -6,7 +6,7 @@ import { TenderLog } from "../models/tendersBoardLog";
 import {
   sendApplicantRegisteredEmail,
   sendTenderClosedEmail,
-} from "./emailService"; // ייבוא שירות המיילים
+} from "../utils/email";
 
 const aiService = new AIService();
 
@@ -374,15 +374,58 @@ export async function createSmartTender(text: string) {
   }
 }
 
+// Only these tender fields, and only these operators on them, may appear in an
+// AI-generated search filter — blocks $where/$expr/$function-style NoSQL injection
+// via prompt injection in the free-text search box.
+const SEARCHABLE_TENDER_FIELDS = [
+  "title",
+  "shortDescription",
+  "productType",
+  "budget",
+  "timeRequired",
+  "aiApplicationType",
+  "additionalDetails",
+];
+
+function isAllowedFieldValue(value: unknown): boolean {
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return true;
+  }
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return Object.keys(value).every((key) => key === "$regex" || key === "$options");
+  }
+  return false;
+}
+
+function sanitizeSearchFilter(filter: unknown): Record<string, any> {
+  if (!filter || typeof filter !== "object" || Array.isArray(filter)) return {};
+
+  const sanitized: Record<string, any> = {};
+
+  for (const [key, value] of Object.entries(filter as Record<string, unknown>)) {
+    if (key === "$or" || key === "$and") {
+      if (Array.isArray(value)) {
+        const clauses = value.map(sanitizeSearchFilter).filter((clause) => Object.keys(clause).length > 0);
+        if (clauses.length > 0) sanitized[key] = clauses;
+      }
+      continue;
+    }
+
+    if (SEARCHABLE_TENDER_FIELDS.includes(key) && isAllowedFieldValue(value)) {
+      sanitized[key] = value;
+    }
+  }
+
+  return sanitized;
+}
+
 export async function smartSearchTenders(searchText: string) {
   try {
     logger.info("Received search text for smart search", { searchText });
 
     const mongoFilter = await AIService.generateSearchQuery(searchText);
 
-    const safeFilter = (mongoFilter && typeof mongoFilter === "object" && !Array.isArray(mongoFilter))
-      ? mongoFilter
-      : {};
+    const safeFilter = sanitizeSearchFilter(mongoFilter);
 
     logger.info("Executing smart search with filter", { filter: JSON.stringify(safeFilter) });
 
