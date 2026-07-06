@@ -111,3 +111,108 @@ client-only auth logic. No missing-`await` bugs found in this pass.
 
 - Worth uploading this file plus the repo's `AGENTS.md`/CLAUDE.md as project knowledge, so reviews of future PRs start from the same context (who owns which feature area, known trouble spots like the org module's auth pattern).
 - A shared "org standards" doc (when to use `requireAdmin` middleware vs. inline checks, how to extract `userId` from `req.user` consistently, atomic-update pattern for balance/counter fields) would prevent the recurring classes of bug above — this could live as a memory/skill for future review sessions.
+
+## 5. Per-student summary (after full file-by-file review — see `practicum-session-log.md` for details)
+
+### Esti (Ester Cohen-Kovalsky) — Organizations feature
+**Scope:** by far the largest and most ambitious piece of work in the practicum — a full
+multi-tenant org lifecycle (public signup, admin approval/rejection, suspend/reactivate,
+wallet top-up, member management, usage stats). 65 commits, all merged.
+
+**Quality:** strong overall design instincts — status-transition validation, best-effort
+email side effects, server-side re-derivation of ownership on every sensitive endpoint.
+The commit history itself shows real engineering maturity: a steady stream of *targeted,
+well-scoped* follow-up security fixes (IDOR, admin-only gating, self-approval, max-users,
+status transitions) rather than one big rewrite — that's a good instinct to reinforce.
+
+**What we found/fixed this round:** a wallet-balance race condition (read-modify-write
+instead of atomic `$inc`) and a dead route that could have silently bypassed the
+status-transition validation she'd already built elsewhere. Both are the kind of subtle
+concurrency/defense-in-depth issues that come with experience, not carelessness — the
+first-pass logic was correct for the single-request case in both.
+
+**Growth area:** the ownership-check block is copy-pasted across 8 controller handlers
+instead of factored into shared middleware. Worth pairing on extracting that pattern next
+sprint — it's the exact shape that caused the earlier IDOR bugs, and she already has all
+the pieces to fix it herself.
+
+**Unmerged work to follow up on:** `feature/payment-payme` (payment flow, looks real and
+functional) and two superseded org-flow branches — worth 10 minutes to confirm nothing
+there needs rescuing before deleting the branches.
+
+### Tamar (Tamar-BenChaim) — Tender Board feature
+**Scope:** tender board CRUD plus an ambitious AI-assisted "smart create" and "smart
+search" (Gemini) — the only feature in the practicum that integrates an LLM into a
+write/query path. 19 commits, merged.
+
+**Quality:** the core CRUD and the AI integration's *shape* were solid — API key
+server-side only, Zod-schema-validated AI output for creation, tests with proper mocking
+of the AI/DB layers. The commit history shows a rough patch stabilizing TypeScript config
+and test imports before it landed, which tends to happen with the first feature that
+touches a new dependency (AI SDK) in a codebase — not a sign of weaker fundamentals.
+
+**What we found/fixed this round:** this feature had the most findings of the three,
+worth discussing directly with her:
+1. The AI-generated database filter (smart search) was passed to MongoDB with no
+   allowlist — a prompt-injection risk. Good instinct to validate the AI response's
+   *shape* with Zod, but the lesson to carry forward is that shape validation isn't the
+   same as *semantic* validation (which fields/operators are safe to execute).
+2. A function that both *built* a query and *executed* it — the caller then
+   double-executed the result, which meant smart search silently ignored the AI's filter
+   and always returned every tender. Good lesson on keeping "compute" and "act" as
+   separate functions.
+3. No ownership check on edit/close/delete of a tender — any logged-in user could modify
+   anyone's tender. This one's a straightforward gap to flag directly: ownership checks
+   need to exist on every mutating endpoint for a specific record, not just
+   `authenticateToken`.
+4. The smart-create AI response was mapped to the wrong key client-side
+   (`response.product` vs. the server's actual `response.tender`) — the feature *looked*
+   like it worked (success message shown) but never actually filled the form. Worth
+   showing her this one specifically: it's a good example of why testing a feature
+   end-to-end in the browser (not just unit tests with mocks) catches integration bugs
+   that mocked tests structurally can't see.
+
+**Growth area:** end-to-end/manual testing of the full request→response round-trip,
+especially for anything AI-generated, since mocks can hide a mismatched response shape
+indefinitely. Otherwise her instincts for the AI integration (server-side keys, schema
+validation, test mocking of the AI layer) were the right ones from day one.
+
+### Malki (malky1234) — Contact Page + AI News
+**Scope:** contact/request management (submit, reply, close, admin list) and an AI News
+page. 28 commits, merged.
+
+**Quality:** the strongest CI/test hygiene of the three — she's the only junior who added
+a CI pipeline from scratch and wrote real, well-targeted unit tests for her own service
+(validation errors, not-found paths, success-path argument assertions). That discipline is
+worth calling out explicitly as something for the others to emulate.
+
+**What we found/fixed this round:** the one genuinely serious bug in her feature was an
+IDOR on the reply endpoint (`addReply`) — every *other* handler in the same controller
+(`getRequestById`, `closeRequestById`) correctly checked "is this my request or am I
+admin," but the reply handler skipped that check entirely. This is a useful teaching
+example precisely because it's a one-line omission in an otherwise-consistent file — a
+good habit to build is: when adding a new handler next to siblings that already do an
+ownership check, copy that check first, then add the feature logic. Also fixed a
+best-effort-email gap in the contact-submission flow (a mail outage was making already-
+saved submissions look like they'd failed).
+
+**Test hygiene note:** her own test file for AI News (`newsService.test.ts`) didn't mock
+the shared `logger`, so tests were quietly trying to write to a real (unavailable)
+MongoDB and hanging ~10s per test — invisible because the tests still passed. Fixed by
+mocking `logger`, matching the pattern Tamar used in her own test file. Worth a quick
+shared note to both of them: any test exercising code that calls the shared logger should
+mock it, the same way DB/email/AI calls already are.
+
+**Unmerged work to follow up on:** `language-toggle` (i18n, explicitly WIP) — worth
+checking in on scope/timeline before it goes stale.
+
+### Margalit — Forum feature (not merged)
+**Scope:** posts, comments, tags, file upload, and JWT-based auth for creating posts — a
+substantial feature (38 files, +4553/-359 vs `main`) built entirely on her own branch.
+
+**Status:** never merged into `develop` or `main`, and not reviewed for code quality in
+this pass (out of scope — see `practicum-review.md` §1 for the branch survey). It also
+touches the same organization files Esti and grinsh have been iterating on, so the longer
+it stays unmerged, the more it will conflict. This is the one piece of practicum work at
+real risk of being lost or requiring a costly rebase — worth prioritizing a conversation
+with her about integrating it, even if the org-file overlap has to be resolved by hand.
