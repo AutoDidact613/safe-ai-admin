@@ -9,11 +9,14 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const EMAIL_FROM = process.env.EMAIL_FROM || "SafeAI <noreply@safeai.com>";
 
 // Create transporter (configure based on your email provider)
-const createTransporter = () => {
-  // For development, use ethereal.email (fake SMTP)
-  // For production, configure with your actual SMTP settings
-  if (process.env.NODE_ENV === "production") {
-    return nodemailer.createTransport({
+const createTransporter = async () => {
+  const smtpConfigured =
+    !!process.env.SMTP_HOST &&
+    !!process.env.SMTP_USER &&
+    !!process.env.SMTP_PASS;
+
+  if (smtpConfigured) {
+    const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || "587"),
       secure: process.env.SMTP_SECURE === "true",
@@ -22,14 +25,28 @@ const createTransporter = () => {
         pass: process.env.SMTP_PASS,
       },
     });
-  } else {
-    // Development mode - log to console instead of sending
-    return nodemailer.createTransport({
-      streamTransport: true,
-      newline: "unix",
-      buffer: true,
-    });
+
+    await transporter.verify();
+    return transporter;
   }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SMTP configuration is required in production.");
+  }
+
+  const testAccount = await nodemailer.createTestAccount();
+  const transporter = nodemailer.createTransport({
+    host: testAccount.smtp.host,
+    port: testAccount.smtp.port,
+    secure: testAccount.smtp.secure,
+    auth: {
+      user: testAccount.user,
+      pass: testAccount.pass,
+    },
+  });
+
+  await transporter.verify();
+  return transporter;
 };
 
 /**
@@ -42,7 +59,7 @@ export async function sendVerificationEmail(
 ) {
   const verificationUrl = `${FRONTEND_URL}/verify-email/${token}`;
 
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
 
   const mailOptions = {
     from: EMAIL_FROM,
@@ -142,7 +159,7 @@ export async function sendPasswordResetEmail(
 ) {
   const resetUrl = `${FRONTEND_URL}/reset-password/${token}`;
 
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
 
   const mailOptions = {
     from: EMAIL_FROM,
@@ -239,7 +256,7 @@ export async function sendWelcomeEmail(
   name: string,
   proxyApiKey: string,
 ) {
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
 
   const mailOptions = {
     from: EMAIL_FROM,
@@ -301,9 +318,10 @@ export async function sendContactEmail(data: {
   userName: string;
   title: string;
   description: string;
+  requestType: string;
 }) {
   const supportEmail = "support@safeai613.com";
-  const transporter = createTransporter();
+  const transporter = await createTransporter();
 
   const mailOptions = {
     from: EMAIL_FROM,
@@ -347,6 +365,10 @@ export async function sendContactEmail(data: {
             <div class="info-box">
               <div class="label">תיאור:</div>
               <div class="value" style="white-space: pre-wrap;">${data.description}</div>
+            </div>
+            <div class="info-box">
+              <div class="label">סוג הבקשה:</div>
+              <div class="value">${data.requestType}</div>
             </div>
           </div>
           <div class="footer">
@@ -395,5 +417,224 @@ ${data.description}
       stack: error instanceof Error ? error.stack : undefined,
     });
     throw new Error("Failed to send contact email");
+  }
+}
+
+/**
+ * Notify a system admin that a new organization is awaiting approval
+ */
+export async function sendOrgApprovalRequestEmail(
+  adminEmail: string,
+  orgName: string,
+  ownerEmail: string,
+) {
+  const dashboardUrl = `${FRONTEND_URL}/safeai-ui`;
+  const transporter = await createTransporter();
+
+  const mailOptions = {
+    from: EMAIL_FROM,
+    to: adminEmail,
+    subject: `בקשת ארגון חדשה ממתינה לאישור - ${orgName}`,
+    html: `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head><meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .info-box { background: white; padding: 15px; border-radius: 5px; margin: 15px 0; border-right: 4px solid #667eea; }
+          .button { display: inline-block; padding: 15px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header"><h1>🏢 בקשת ארגון חדשה</h1></div>
+          <div class="content">
+            <p>שלום,</p>
+            <p>התקבלה בקשה חדשה לפתיחת ארגון הממתינה לאישורך:</p>
+            <div class="info-box"><strong>שם הארגון:</strong> ${orgName}</div>
+            <div class="info-box"><strong>יוצר הבקשה:</strong> ${ownerEmail}</div>
+            <p style="text-align: center;">
+              <a href="${dashboardUrl}" class="button">מעבר למסך האישורים</a>
+            </p>
+          </div>
+          <div class="footer"><p>© 2026 SafeAI. כל הזכויות שמורות.</p></div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `בקשת ארגון חדשה ממתינה לאישור.\nשם הארגון: ${orgName}\nיוצר הבקשה: ${ownerEmail}\nלאישור: ${dashboardUrl}\n\n© 2026 SafeAI`,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    if (process.env.NODE_ENV !== "production") {
+      logger.debug("📧 Org Approval Request Email (DEV MODE):");
+      logger.info("To:", adminEmail);
+      logger.info("Org:", orgName);
+    }
+    return info;
+  } catch (error) {
+    logger.error("Failed to send org approval request email:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // best-effort - לא זורקים כדי לא להפיל את יצירת הבקשה
+  }
+}
+
+/**
+ * Notify the org owner that their organization was approved and activated
+ */
+export async function sendOrgApprovedEmail(
+  ownerEmail: string,
+  orgName: string,
+  name?: string,
+) {
+  const dashboardUrl = `${FRONTEND_URL}/safeai-ui`;
+  const transporter = await createTransporter();
+
+  const mailOptions = {
+    from: EMAIL_FROM,
+    to: ownerEmail,
+    subject: `הארגון "${orgName}" אושר! 🎉`,
+    html: `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head><meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #10a37f 0%, #0d8f6f 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .button { display: inline-block; padding: 15px 30px; background: #10a37f; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header"><h1>🎉 הארגון שלך אושר!</h1></div>
+          <div class="content">
+            <p>שלום ${name || "מנהל הארגון"},</p>
+            <p>הבקשה לפתיחת הארגון <strong>${orgName}</strong> אושרה, והארגון פעיל כעת.</p>
+            <p>מעכשיו יש לך גישה מלאה למסך ניהול הארגון.</p>
+            <p style="text-align: center;">
+              <a href="${dashboardUrl}" class="button">מעבר לניהול הארגון</a>
+            </p>
+          </div>
+          <div class="footer"><p>© 2026 SafeAI. כל הזכויות שמורות.</p></div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `שלום ${name || "מנהל הארגון"},\nהבקשה לפתיחת הארגון "${orgName}" אושרה והארגון פעיל כעת.\nלניהול הארגון: ${dashboardUrl}\n\n© 2026 SafeAI`,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    if (process.env.NODE_ENV !== "production") {
+      logger.debug("📧 Org Approved Email (DEV MODE):");
+      logger.info("To:", ownerEmail);
+      logger.info("Org:", orgName);
+    }
+    return info;
+  } catch (error) {
+    logger.error("Failed to send org approved email:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // best-effort
+  }
+}
+
+const ORG_STATUS_EMAIL_COPY = {
+  rejected: {
+    subject: (orgName: string) => `הבקשה לפתיחת הארגון "${orgName}" נדחתה`,
+    heading: "הבקשה שלך נדחתה",
+    color: "#d9534f",
+    message: (orgName: string) =>
+      `הבקשה לפתיחת הארגון <strong>${orgName}</strong> נבדקה ולא אושרה על ידי מנהל המערכת.`,
+  },
+  suspended: {
+    subject: (orgName: string) => `הארגון "${orgName}" הושעה`,
+    heading: "הארגון שלך הושעה",
+    color: "#d9534f",
+    message: (orgName: string) =>
+      `הארגון <strong>${orgName}</strong> הושעה על ידי מנהל המערכת, וגישת המשתמשים אליו חסומה זמנית.`,
+  },
+  reactivated: {
+    subject: (orgName: string) => `הארגון "${orgName}" הופעל מחדש`,
+    heading: "הארגון שלך הופעל מחדש",
+    color: "#10a37f",
+    message: (orgName: string) =>
+      `הארגון <strong>${orgName}</strong> הופעל מחדש וחזר לפעילות מלאה.`,
+  },
+} as const;
+
+/**
+ * Notify the org owner about a rejection, suspension, or reactivation.
+ * Shares one template so the three less-common status transitions stay
+ * consistent with each other (and with the approval email above) instead
+ * of only the "approved" path ever notifying the owner.
+ */
+export async function sendOrgStatusEmail(
+  kind: keyof typeof ORG_STATUS_EMAIL_COPY,
+  ownerEmail: string,
+  orgName: string,
+  name?: string,
+) {
+  const copy = ORG_STATUS_EMAIL_COPY[kind];
+  const dashboardUrl = `${FRONTEND_URL}/safeai-ui`;
+  const transporter = await createTransporter();
+
+  const mailOptions = {
+    from: EMAIL_FROM,
+    to: ownerEmail,
+    subject: copy.subject(orgName),
+    html: `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head><meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: ${copy.color}; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .button { display: inline-block; padding: 15px 30px; background: ${copy.color}; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header"><h1>${copy.heading}</h1></div>
+          <div class="content">
+            <p>שלום ${name || "מנהל הארגון"},</p>
+            <p>${copy.message(orgName)}</p>
+            <p style="text-align: center;">
+              <a href="${dashboardUrl}" class="button">מעבר למסך הארגון</a>
+            </p>
+          </div>
+          <div class="footer"><p>© 2026 SafeAI. כל הזכויות שמורות.</p></div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `שלום ${name || "מנהל הארגון"},\n${copy.message(orgName).replace(/<[^>]+>/g, "")}\n${dashboardUrl}\n\n© 2026 SafeAI`,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    if (process.env.NODE_ENV !== "production") {
+      logger.debug(`📧 Org ${kind} Email (DEV MODE):`);
+      logger.info("To:", ownerEmail);
+      logger.info("Org:", orgName);
+    }
+    return info;
+  } catch (error) {
+    logger.error(`Failed to send org ${kind} email:`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // best-effort
   }
 }

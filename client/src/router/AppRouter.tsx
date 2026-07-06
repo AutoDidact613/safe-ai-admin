@@ -9,6 +9,8 @@ import RecommendedGuidesPage from "../pages/RecommendedGuidesPage";
 import CoursesPage from "../pages/CoursesPage";
 import ActivityLogPage from "../pages/ActivityLogPage";
 import AboutPage from "../pages/AboutPage";
+import TenderBoardPage from "../pages/TenderBoardPage";
+import DownloadAgentsPage from "../pages/AgentDownloadsPage";
 import LoginForm from "../features/auth/LoginForm";
 import RegisterForm from "../features/auth/RegisterForm";
 import ApiKeyDisplay from "../features/auth/ApiKeyDisplay";
@@ -18,7 +20,11 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
-import { PendingOrganizationsPage } from "../features/organizations/pages/PendingOrganizationsPage";
+import { PublicOrgOwnerSignup } from "../features/organizations/PublicOrgOwnerSignup";
+import RequestDetails from "../features/safeai-ui/RequestDetails";
+import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
+import AiNewsPage from "../pages/AiNewsPage";
+import AiNewsDetailsPage from "../pages/AiNewsDetailsPage";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -52,14 +58,15 @@ export default function AppRouter() {
     <BrowserRouter>
       {/* Global Top Navigation */}
       <TopNavigation />
-      
+
       {/* Beta Banner */}
       <BetaBanner />
-      
+
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
-        
+        <Route path="/become-org-owner" element={<PublicOrgOwnerSignup />} />
+
         <Route
           path="/login"
           element={
@@ -68,7 +75,7 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
-        
+
         <Route
           path="/register"
           element={
@@ -85,9 +92,9 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
-        
+
         <Route path="/verify-email/:token" element={<EmailVerification />} />
-        
+
         <Route
           path="/forgot-password"
           element={
@@ -96,9 +103,9 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
-        
+
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-        
+
         {/* Protected Routes */}
         <Route
           path="/api-key-display"
@@ -108,13 +115,49 @@ export default function AppRouter() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/safeai-ui"
           element={
             <ProtectedRoute>
               <SafeAIUIPage />
             </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/request/:id"
+          element={
+            <ProtectedRoute>
+              <RequestDetails />
+            </ProtectedRoute>
+          }
+        />
+        
+                <Route
+          path="/admin/all-requests"
+          element={
+            <ProtectedRoute>
+              <AdminRequestsList />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Organization Routes */}
+         <Route
+          path="/ai-news"
+          element={
+           <ProtectedRoute>
+             <AiNewsPage />
+           </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ai-news/:id"
+          element={
+           <ProtectedRoute>
+             <AiNewsDetailsPage />
+           </ProtectedRoute>
           }
         />
 
@@ -128,14 +171,7 @@ export default function AppRouter() {
           }
         />
 
-        <Route
-          path="/admin/organizations"
-          element={
-            <ProtectedRoute>
-              <PendingOrganizationsPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/admin/organizations" element={<Navigate to="/safeai-ui" replace />} />
 
         {/* New Pages Routes */}
         <Route path="/about" element={<AboutPage />} />
@@ -144,6 +180,8 @@ export default function AppRouter() {
         <Route path="/recommended-guides" element={<RecommendedGuidesPage />} />
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/activity-log" element={<ActivityLogPage />} />
+        <Route path="/tender-board" element={<TenderBoardPage />} />
+        <Route path="/download-agents" element={<DownloadAgentsPage />} />
 
         {/* Catch all - 404 */}
         <Route path="*" element={<NotFound />} />

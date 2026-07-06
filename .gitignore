@@ -102,3 +102,6 @@ src/**/*.d.ts.map
 docs/production/*
 
 server/litellm_config.yaml
+
+# Custom project files
+project_tree.txt
