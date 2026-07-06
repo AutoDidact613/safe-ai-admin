@@ -1,27 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-
-interface Applicant {
-  name: string
-  email: string
-  details: string
-  proposal?: string
-  contactMethod?: string
-}
-
-interface Tender {
-  id: string
-  title: string
-  publisherUserCode?: string
-  shortDescription?: string
-  timeRequired?: string
-  budget?: string
-  domains?: string[]
-  agentsRequired?: string[]
-  wantsEmails?: boolean
-  additionalDetails?: string
-  applicants?: Applicant[]
-}
+import type { Applicant, Tender } from './types'
 
 interface Props {
   tender: Tender
@@ -33,7 +12,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [details, setDetails] = useState('')
-  const [proposal, setProposal] = useState('')
+  const [proposal, setProposal] = useState<number | undefined>(undefined)
   const [contactMethod, setContactMethod] = useState('')
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -96,12 +75,12 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
             </label>
 
             <label className="form-field">
-              <span className="form-label">הצעה</span>
+              <span className="form-label">הצעה - בשקלים</span>
               <input
                 className="form-input"
-                type="text"
-                value={proposal}
-                onChange={(e) => setProposal(e.target.value)}
+                type="number"
+                value={proposal ?? ''}
+                onChange={(e) => setProposal(e.target.value ? Number(e.target.value) : undefined)}
                 placeholder="כמה תרצה לגבות עבור העבודה"
               />
             </label>
