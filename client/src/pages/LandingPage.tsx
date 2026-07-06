@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import "../styles/landing-page.css";
 import AboutCompany from "../features/landing/AboutCompany";
 import Products from "../features/landing/Products";
@@ -29,6 +30,9 @@ export default function LandingPage() {
         <p className="hero-subtitle">
           {t("landing.heroSubtitle")}
         </p>
+        <Link to="/become-org-owner" className="hero-org-owner-link">
+          מנהל ארגון? פתחו ארגון חדש במערכת
+        </Link>
       </div>
 
       {/* Section Navigation */}

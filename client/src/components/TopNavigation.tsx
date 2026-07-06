@@ -64,23 +64,6 @@ export default function TopNavigation() {
     navigate("/");
   };
 
-  // const scrollToSection = (sectionId: string) => {
-  //   if (location.pathname !== "/") {
-  //     navigate("/");
-  //     setTimeout(() => {
-  //       const element = document.getElementById(sectionId);
-  //       if (element) {
-  //         element.scrollIntoView({ behavior: "smooth" });
-  //       }
-  //     }, 100);
-  //   } else {
-  //     const element = document.getElementById(sectionId);
-  //     if (element) {
-  //       element.scrollIntoView({ behavior: "smooth" });
-  //     }
-  //   }
-  // };
-
   return (
     <nav className="top-navigation">
       <div className="top-nav-container">
@@ -112,7 +95,6 @@ export default function TopNavigation() {
               <Link to="/contact" className="top-nav-link">
                 {t("nav.contact")}
               </Link>
-       
 
               {/* Auth Buttons */}
               <Link to="/login" className="top-nav-btn top-nav-btn-secondary">
@@ -131,6 +113,12 @@ export default function TopNavigation() {
               >
                {t("nav.personalArea")}
               </Link>
+              <Link
+                to="/ai-news"
+                className={`top-nav-link ${location.pathname === "/ai-news" ? "active" : ""}`}
+              >
+                חדשות
+              </Link>
               <Link to="/courses" className="top-nav-link">
                 {t("nav.courses")}
               </Link>
@@ -142,6 +130,12 @@ export default function TopNavigation() {
               </Link>
               <Link to="/contact" className="top-nav-link">
                 {t("nav.contact")}
+              </Link>
+              <Link to="/tender-board" className="top-nav-link">
+                לוח פרוייקטים
+              </Link>
+              <Link to="/download-agents" className="top-nav-link">
+                הורדת אג'נטים כDesktop
               </Link>
 
               {/* User Menu */}
