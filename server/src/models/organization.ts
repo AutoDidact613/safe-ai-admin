@@ -31,19 +31,20 @@ const OrganizationSchema = new mongoose.Schema(
       default: "pending",
     },
     settings: {
-      // הגדרות ארגוניות כלליות
       maxUsers: {
         type: Number,
         default: 10,
       },
-      allowedDomains: [String], // דומיינים מורשים לרישום אוטומטי
+      allowedDomains: [String],
+      allowedModels: {
+        type: [String],
+        default: [],
+      },
     },
   },
   { timestamps: true }
 );
 
-// Index for faster lookups (name's unique index is already created by
-// `unique: true` on the field above - no need to declare it again here)
 OrganizationSchema.index({ ownerId: 1 });
 
 OrganizationSchema.set("toJSON", {

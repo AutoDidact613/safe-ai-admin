@@ -7,6 +7,12 @@ const ProviderKeySchema = new mongoose.Schema(
     ref: "User",
   },
 
+  organizationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Organization",
+    index: true,
+  },
+
   provider: {
     type: String,
     enum: ["openai","anthropic","google","groq"],
