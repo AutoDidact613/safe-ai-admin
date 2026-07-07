@@ -655,6 +655,7 @@ describe("organizationController provider-key endpoints (#144 MANAGED_ORG)", () 
       _id: "org-B",
       ownerId: "owner-B",
     } as any);
+    mockedService.deleteOrganizationProviderKey.mockResolvedValue({ _id: "key1" } as any);
 
     const req = {
       params: { id: "org-B", keyId: "key1" },
@@ -664,8 +665,27 @@ describe("organizationController provider-key endpoints (#144 MANAGED_ORG)", () 
 
     await deleteOrganizationProviderKeyHandler(req, res);
 
-    expect(mockedService.deleteOrganizationProviderKey).toHaveBeenCalledWith("key1");
+    expect(mockedService.deleteOrganizationProviderKey).toHaveBeenCalledWith("org-B", "key1");
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
+  it("deleteOrganizationProviderKeyHandler returns 404 when the key does not belong to the organization (#276 IDOR)", async () => {
+    mockedService.getOrganizationById.mockResolvedValue({
+      _id: "org-A",
+      ownerId: "owner-A",
+    } as any);
+    mockedService.deleteOrganizationProviderKey.mockResolvedValue(null as any);
+
+    const req = {
+      params: { id: "org-A", keyId: "key-of-org-B" },
+      user: { userId: "owner-A", role: "org_owner" },
+    } as any;
+    const res = mockRes();
+
+    await deleteOrganizationProviderKeyHandler(req, res);
+
+    expect(mockedService.deleteOrganizationProviderKey).toHaveBeenCalledWith("org-A", "key-of-org-B");
+    expect(res.status).toHaveBeenCalledWith(404);
   });
 });
 

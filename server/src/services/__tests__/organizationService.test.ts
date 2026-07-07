@@ -18,6 +18,7 @@ jest.mock("../authService", () => ({ register: jest.fn() }));
 jest.mock("../providerKeyService", () => ({
   addProviderKey: jest.fn(),
   listProviderKeysForOrganization: jest.fn(),
+  getProviderKeyById: jest.fn(),
   deleteProviderKey: jest.fn(),
 }));
 jest.mock("../../models", () => ({
@@ -454,12 +455,38 @@ describe("organizationService org-level provider keys (#144 MANAGED_ORG)", () =>
     expect(result).toEqual([{ _id: "key1" }]);
   });
 
-  it("deleteOrganizationProviderKey delegates to providerKeyService", async () => {
+  it("deleteOrganizationProviderKey deletes the key when it belongs to the organization", async () => {
+    mockedProviderKeyService.getProviderKeyById.mockResolvedValue({
+      _id: "key1",
+      organizationId: "org1",
+    } as any);
     mockedProviderKeyService.deleteProviderKey.mockResolvedValue({ _id: "key1" } as any);
 
-    await organizationService.deleteOrganizationProviderKey("key1");
+    const result = await organizationService.deleteOrganizationProviderKey("org1", "key1");
 
     expect(mockedProviderKeyService.deleteProviderKey).toHaveBeenCalledWith("key1");
+    expect(result).toEqual({ _id: "key1" });
+  });
+
+  it("deleteOrganizationProviderKey refuses to delete a key belonging to a different organization (#276 IDOR)", async () => {
+    mockedProviderKeyService.getProviderKeyById.mockResolvedValue({
+      _id: "key1",
+      organizationId: "org-B",
+    } as any);
+
+    const result = await organizationService.deleteOrganizationProviderKey("org-A", "key1");
+
+    expect(result).toBeNull();
+    expect(mockedProviderKeyService.deleteProviderKey).not.toHaveBeenCalled();
+  });
+
+  it("deleteOrganizationProviderKey returns null when the key does not exist", async () => {
+    mockedProviderKeyService.getProviderKeyById.mockResolvedValue(null as any);
+
+    const result = await organizationService.deleteOrganizationProviderKey("org-A", "missing-key");
+
+    expect(result).toBeNull();
+    expect(mockedProviderKeyService.deleteProviderKey).not.toHaveBeenCalled();
   });
 });
 
