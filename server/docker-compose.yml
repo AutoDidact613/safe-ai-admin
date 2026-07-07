@@ -1,35 +1,32 @@
 # version: "3.8"
 
 services:
-  # 1. בסיס הנתונים PostgreSQL
-  # db:
-  #   image: postgres:16-alpine
-  #   container_name: litellm-db
-  #   restart: unless-stopped
-  #   environment:
-  #     - POSTGRES_USER=llm_user
-  #     - POSTGRES_PASSWORD=llm_pass
-  #     - POSTGRES_DB=litellm_db
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
+  db:
+    image: postgres:16-alpine
+    container_name: litellm-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=llm_user
+      - POSTGRES_PASSWORD=llm_pass
+      - POSTGRES_DB=litellm_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
-  # 2. MongoDB
-  # mongodb:
-  #   image: mongo:7-jammy
-  #   container_name: safe-ai-mongodb
-  #   restart: unless-stopped
-  #   ports:
-  #     - "27017:27017"
-  #   volumes:
-  #     - mongodb_data:/data/db
+  mongodb:
+    image: mongo:7-jammy
+    container_name: safe-ai-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
 
-  # 3. LiteLLM Proxy
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
     container_name: litellm-proxy
     restart: unless-stopped
-    # depends_on:
-    #   - db
+    depends_on:
+      - db
     ports:
       - "4000:4000"
     volumes:
@@ -41,7 +38,6 @@ services:
       - HTTPX_SSL_VERIFY=false
     command: ["--config", "/app/config.yaml", "--port", "4000"]
 
-  # 4. השרת שלך
   server:
     build:
       context: .
@@ -50,7 +46,7 @@ services:
     restart: unless-stopped
     depends_on:
       - litellm
-      # - mongodb
+      - mongodb
     ports:
       - "3001:3001"
     volumes:
@@ -59,7 +55,7 @@ services:
     environment:
       - NODE_ENV=production
       - LITELLM_PROXY_URL=http://litellm:4000
-      - MONGO_URI=${MONGO_URI}
+      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/safeai}
 
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - SMTP_HOST=${SMTP_HOST}
@@ -70,5 +66,5 @@ services:
       - EMAIL_FROM=${EMAIL_FROM}
 volumes:
   postgres_data:
-  # mongodb_data:
+  mongodb_data:
   node_modules:
