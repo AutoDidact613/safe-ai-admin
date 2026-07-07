@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // אתחול החיבור מול AWS עם הגדרת משתני הסביבה
 const s3 = new S3Client({
-  region: process.env.AWS_REGION,
+  region: process.env.AWS_REGION || 'us-east-1',
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",

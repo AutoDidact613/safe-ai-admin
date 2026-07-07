@@ -2,9 +2,9 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Post from '../models/Post';
 import Comment from '../models/Comment';
-import Tag from '../models/Tag'; 
+import Tag from '../models/tag'; 
 import ModerationLog from '../models/ModerationLog';
-import { User } from '../models/User';
+import { User } from '../models/user';
 import NodeCache from 'node-cache'; // ייבוא תקין של ה-Cache בשרת
 import { getEmbedding, refineContent, suggestTitles, suggestTags } from '../services/aiService';
 import { signAttachments } from '../services/s3Service';

@@ -1,4 +1,4 @@
-import Tag from '../models/Tag';
+import Tag from '../models/tag';
 
 /**
  * מוצא תגית קיימת לפי שם (לא תלוי רישיות), ואם היא לא קיימת - יוצר אותה.
