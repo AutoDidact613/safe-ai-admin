@@ -1,23 +1,7 @@
 import cron from 'node-cron';
 import Post from '../models/Post';
-import { OpenAI } from 'openai';
-
-/**
- * פונקציית עזר פרטית להפיכת כותרת הפוסט האוטומטי לוקטור מספרי
- */
-async function getBotEmbedding(text: string): Promise<number[]> {
-  try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const response = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: text,
-    });
-    return response.data[0].embedding;
-  } catch (error) {
-    console.error('Bot Embedding Error:', error);
-    return [];
-  }
-}
+import { getEmbedding, generateDailyPostIdea } from './aiService';
+import { resolveOrCreateTagsByNames } from './tagService';
 
 /**
  * פונקציה ראשית המאתחלת את הבוט האוטומטי בשרת
@@ -38,7 +22,7 @@ export const initializeAutoPostBot = () => {
       // 2. הגנה שנייה: בדיקה מול API חיצוני אם היום חג או ערב חג בישראל
       try {
         const todayIso = new Date().toISOString().split('T')[0]; // פורמט YYYY-MM-DD
-        
+
         // פנייה ל-API חינמי של Hebcal המזהה חגים וערבי חגים רשמיים בארץ
         const holidayResponse = await fetch(
           `https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=off&mod=off&nx=off&year=now&month=now&ss=off&mf=off&c=off`
@@ -50,7 +34,7 @@ export const initializeAutoPostBot = () => {
           const isSameDate = item.date === todayIso;
           const isYomTov = item.yomtov === true;
           const isErevHoliday = item.category === 'roshchodesh' || item.title?.startsWith('Erev');
-          
+
           return isSameDate && (isYomTov || isErevHoliday);
         });
 
@@ -62,8 +46,6 @@ export const initializeAutoPostBot = () => {
         console.error('[BOT] שגיאה בתקשורת עם Hebcal, ליתר ביטחון נעצור את הריצה:', apiError);
         return;
       }
-
-      // המשך הלוגיקה מופיע בחלק 2...
 
       // 3. הגנה שלישית: חיסכון משאבים ובדיקת פעילות אורגנית בבסיס הנתונים
       const lastPost = await Post.findOne().sort({ createdAt: -1 });
@@ -82,31 +64,21 @@ export const initializeAutoPostBot = () => {
       console.log('[BOT] תנאי הפעלה אושרו: לא נמצאה פעילות ביממה האחרונה. פונה ל-OpenAI...');
 
       // 4. פנייה חסכונית וממוקדת ל-OpenAI ליצירת תוכן תכנותי בפורמט JSON קשוח
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-      const aiResponse = await openai.chat.completions.create({
-        model: 'gpt-4o-mini', // המודל הזול והמתאים ביותר למשימה
-        max_tokens: 600,      // חסימת בזבוז: מגבילים את אורך התשובה לפוסט ממוצע וממוקד
-        messages: [
-          {
-            role: 'system',
-            content: 'אתה מתכנת בכיר ומנהל קהילת פיתוח תוכנה. תפקידך להעשיר את הפורום בתוכן איכותי כאשר הוא יבש.'
-          },
-          {
-            role: 'user',
-            content: 'תחשוב על טיפ קוד ייחודי, אתגר תכנות מעניין, או הסבר קצר על טכנולוגיה אקטואלית (למשל React, TypeScript, Node.js, AI פיתוח). החזר לי אובייקט JSON בלבד, ללא סימני markdown של קוד, המכיל את השדות הבאים בעברית: "title" (כותרת מושכת), "content" (תוכן הפוסט בצורה מקצועית ועשירה), "category" (הערך "פיתוח"), "tags" (מערך של 3 תגיות טקסט קשורות).'
-          }
-        ],
-        response_format: { type: 'json_object' } // מאלץ את ה-AI להחזיר רק JSON תקין
-      });
-
-      const parsedData = JSON.parse(aiResponse.choices[0].message.content || '{}');
-
-      if (!parsedData.title || !parsedData.content) {
-        throw new Error('התקבל מידע חסר מהבינה המלאכותית');
-      }
+      const postIdea = await generateDailyPostIdea();
 
       // 5. הפעלת מנגנון ה-Embedding על הכותרת החדשה לצורך תאימות למנוע החיפוש הסמנטי שלך
-      const titleVector = await getBotEmbedding(parsedData.title);
+      const titleVector = await getEmbedding(postIdea.title).catch((err) => {
+        console.error('[BOT] כשל בהפקת embedding לכותרת, ממשיכים בלעדיו:', err);
+        return [];
+      });
+
+      // 6. הפיכת שמות התגיות שה-AI הציע ל-ObjectId-ים אמיתיים במאגר התגיות
+      // (לפני כן: ה-AI התבקש להציע תגיות, אבל הן נוצרו ונזרקו - הפוסט של
+      // הבוט אף פעם לא קיבל תגיות בפועל)
+      const tagIds = await resolveOrCreateTagsByNames(postIdea.tags).catch((err) => {
+        console.error('[BOT] כשל בפתרון תגיות, הפוסט יפורסם בלי תגיות:', err);
+        return [];
+      });
 
       const botUserId = process.env.BOT_USER_ID;
       if (!botUserId) {
@@ -114,17 +86,18 @@ export const initializeAutoPostBot = () => {
         return;
       }
 
-      // 6. שמירת הפוסט האוטומטי בבסיס הנתונים תחת פרופיל הבוט
+      // 7. שמירת הפוסט האוטומטי בבסיס הנתונים תחת פרופיל הבוט
       const newBotPost = new Post({
-        title: parsedData.title,
-        content: parsedData.content,
-        category: parsedData.category || 'פיתוח',
+        title: postIdea.title,
+        content: postIdea.content,
+        category: postIdea.category,
+        tags: tagIds,
         author: botUserId,
         titleEmbedding: titleVector
       });
 
       await newBotPost.save();
-      console.log(`[BOT] הפוסט האוטומטי פורסם בהצלחה! כותרת: "${parsedData.title}"`);
+      console.log(`[BOT] הפוסט האוטומטי פורסם בהצלחה! כותרת: "${postIdea.title}", תגיות: ${tagIds.length}`);
 
     } catch (error) {
       console.error('[BOT] שגיאה כללית בהרצת מנגנון הבוט האוטומטי:', error);

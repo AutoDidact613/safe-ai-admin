@@ -4,127 +4,32 @@ import Comment from '../models/Comment';
 import Tag from '../models/Tag'; 
 import ModerationLog from '../models/ModerationLog';
 import { User } from '../models/User';
-import { OpenAI } from 'openai'; 
 import NodeCache from 'node-cache'; // ייבוא תקין של ה-Cache בשרת
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
-
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { getEmbedding, refineContent, suggestTitles, suggestTags } from '../services/aiService';
+import { signAttachments } from '../services/s3Service';
+import { buildPostListPipeline, buildPostListWithCountPipeline } from '../services/postAggregationService';
+import { resolveOrCreateTagByName } from '../services/tagService';
 
 // אתחול זיכרון המטמון הגלובלי בשרת
 const recommendationCache = new NodeCache({ stdTTL: 1800, checkperiod: 60 });
-const s3Client = new S3Client({ region: process.env.AWS_REGION });
-
 
 /**
- * פונקציית עזר להפיכת טקסט לוקטור מספרי באמצעות OpenAI
+ * מנקה את כל ה-Cache של רשימות הפוסטים (כל העמודים, כל התפקידים).
+ * נקרא בכל פעולה שיכולה לשנות את מה שמוצג ברשימה - פוסט חדש, תגובה חדשה
+ * (משנה lastActivity ואת המיון), או שינוי סטטוס חסימה - כדי שהמשתמשת לא
+ * תצטרך לחכות ל-TTL של 10 שניות כדי לראות את השינוי שלה עצמה.
  */
-async function getEmbedding(text: string): Promise<number[]> {
-  try {
-    // אתחול דינמי שמבטיח קריאה ישירה של המפתח המעודכן ביותר מ-process.env
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-    const response = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: text,
-    });
-    return response.data[0].embedding;
-  } catch (error) {
-    console.error('OpenAI Embedding Error:', error);
-    throw new Error('Failed to generate embedding from OpenAI');
+function invalidatePostsListCache() {
+  const staleKeys = recommendationCache.keys().filter((key) => key.startsWith('posts-list:'));
+  if (staleKeys.length > 0) {
+    recommendationCache.del(staleKeys);
   }
 }
 
 /**
- * בונה pipeline אגרגציה יחיד שמחזיר פוסטים כולל: שם הכותב, תגיות,
- * מספר תגובות ופרטי התגובה האחרונה - הכול בשאילתה אחת למסד הנתונים
- * (במקום שאילתה נפרדת לכל פוסט כמו שהיה קודם).
- *
  * skip/limit הם אופציונליים: אם לא מועברים, לא מתבצע דילוג/הגבלה (למסך חיפוש למשל).
+ * (בניית ה-pipeline עצמה הועברה לשירות services/postAggregationService.ts)
  */
-function buildPostListPipeline(matchStage: Record<string, any>, skip?: number, limit?: number) {
-  const pipeline: any[] = [
-    { $match: matchStage },
-    { $sort: { lastActivity: -1 } },
-  ];
-
-  if (typeof skip === 'number') pipeline.push({ $skip: skip });
-  if (typeof limit === 'number') pipeline.push({ $limit: limit });
-
-  pipeline.push(
-    // חיבור פרטי כותב הפוסט (author) - מחליף את populate('author', 'name')
-    // ה-pipeline מגביל את השדות שמוחזרים לשם בלבד, כדי לא לחשוף שדות רגישים
-    // (כמו סיסמה מוצפנת/אימייל) ולא להעביר ברשת יותר מידע מהנדרש
-    {
-      $lookup: {
-        from: 'users',
-        localField: 'author',
-        foreignField: '_id',
-        pipeline: [{ $project: { name: 1 } }],
-        as: 'author'
-      }
-    },
-    { $unwind: { path: '$author', preserveNullAndEmptyArrays: true } },
-
-    // חיבור התגיות - מחליף את populate('tags', 'name')
-    {
-      $lookup: {
-        from: 'tags',
-        localField: 'tags',
-        foreignField: '_id',
-        pipeline: [{ $project: { name: 1 } }],
-        as: 'tags'
-      }
-    },
-
-    // חיבור כל התגובות של הפוסט (עם שם כותב כל תגובה), כדי לחשב מהן
-    // בתוך מסד הנתונים גם ספירה וגם את התגובה האחרונה - בלי שאילתות נפרדות
-    {
-      $lookup: {
-        from: 'comments',
-        let: { postId: '$_id' },
-        pipeline: [
-          { $match: { $expr: { $eq: ['$postId', '$$postId'] } } },
-          { $sort: { createdAt: -1 } },
-          {
-            $lookup: {
-              from: 'users',
-              localField: 'author',
-              foreignField: '_id',
-              as: 'author'
-            }
-          },
-          { $unwind: { path: '$author', preserveNullAndEmptyArrays: true } },
-          { $project: { content: 1, 'author.name': 1 } }
-        ],
-        as: 'comments'
-      }
-    },
-
-    // חישוב commentCount ו-lastComment מתוך מערך התגובות שחיברנו
-    {
-      $addFields: {
-        commentCount: { $size: '$comments' },
-        lastComment: {
-          $cond: [
-            { $gt: [{ $size: '$comments' }, 0] },
-            {
-              authorName: { $ifNull: [{ $arrayElemAt: ['$comments.author.name', 0] }, 'משתמש'] },
-              content: { $arrayElemAt: ['$comments.content', 0] }
-            },
-            null
-          ]
-        }
-      }
-    },
-
-    // מסירים את מערך התגובות המלא - השדות commentCount/lastComment מכילים את מה שצריך
-    { $project: { comments: 0 } }
-  );
-
-  return pipeline;
-}
 
 export const getPosts = async (req: Request, res: Response) => {
   try {
@@ -140,22 +45,38 @@ export const getPosts = async (req: Request, res: Response) => {
       filterQuery.isBlocked = { $ne: true };
     }
 
-    // 2. קבלת המספר הכולל של הפוסטים במערכת לצורך חישוב כמות העמודים
-    const totalPosts = await Post.countDocuments(filterQuery);
-    const totalPages = Math.ceil(totalPosts / limit);
+    // Cache קצר-טווח (10 שניות) לרשימת הפוסטים - זה הנתיב הכי נטען באתר,
+    // וכל המשתמשות עם אותו userRole מקבלות תוצאה זהה לאותו עמוד. חלון
+    // זמן קצר כזה משמעו שפוסט חדש יופיע כמעט מיידית, אבל בעומס גבוה
+    // (הרבה כניסות בבת אחת) רוב הבקשות נענות מהזיכרון ולא ממסד הנתונים.
+    const listCacheKey = `posts-list:${page}:${userRole || 'user'}`;
+    const cachedList = recommendationCache.get(listCacheKey);
+    if (cachedList) {
+      return res.status(200).json(cachedList);
+    }
 
-    // 3. שליפת הפוסטים + author + tags + commentCount + lastComment בשאילתה אחת
-    const postsWithDetails = await Post.aggregate(
-      buildPostListPipeline(filterQuery, skip, limit)
+    // 2+3. שליפת הפוסטים לעמוד הנוכחי (עם author/tags/commentCount/lastComment)
+    // וגם הספירה הכוללת - בקריאה אחת בלבד למסד הנתונים (לפני כן: שתי קריאות נפרדות)
+    const [result] = await Post.aggregate(
+      buildPostListWithCountPipeline(filterQuery, skip, limit)
     );
 
-    // 4. החזרת הפוסטים יחד עם נתוני העמודים ל-Frontend
-    res.status(200).json({
+    const postsWithDetails = result?.data || [];
+    const totalPosts = result?.totalCount || 0;
+    const totalPages = Math.ceil(totalPosts / limit);
+
+    const responseBody = {
       posts: postsWithDetails,
       currentPage: page,
       totalPages: totalPages,
       totalPosts: totalPosts
-    });
+    };
+
+    // TTL קצר בכוונה (10 שניות) - שונה מה-TTL הכללי (30 דקות) של שאר ה-Cache
+    recommendationCache.set(listCacheKey, responseBody, 10);
+
+    // 4. החזרת הפוסטים יחד עם נתוני העמודים ל-Frontend
+    res.status(200).json(responseBody);
 
   } catch (error) {
     console.error('Error in getPosts:', error);
@@ -163,34 +84,6 @@ export const getPosts = async (req: Request, res: Response) => {
   }
 };
 
-async function generatePresignedDownloadUrl(fileKey: string): Promise<string> {
-  try {
-    if (!fileKey) return '';
-    
-    // אם הקישור כבר מכיל חתימה בתוקף, אין צורך לחתום עליו שוב
-    if (fileKey.startsWith('http') && fileKey.includes('X-Amz-Signature')) return fileKey;
-    
-    // תיקון חכם: חילוץ שם הקובץ האמיתי מתוך ה-URL המלא של S3
-    // מוחק את כל הכתובת של ה-Bucket ונשאר רק עם ה-Key (שם הקובץ והסיומת שלו)
-    let key = fileKey;
-    if (fileKey.startsWith('http')) {
-      // לוקח את החלק האחרון אחרי הסלאש, ומוריד פרמטרים של סימן שאלה אם יש
-      const urlObj = new URL(fileKey);
-      key = urlObj.pathname.substring(1); // מוריד את הסלאש הראשון
-    }
-
-    const command = new GetObjectCommand({
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: decodeURIComponent(key), // הגנה למקרה שיש רווחים או עברית בשם הקובץ
-    });
-
-    // יצירת הקישור הזמני ל-15 דקות
-    return await getSignedUrl(s3Client, command, { expiresIn: 900 });
-  } catch (error) {
-    console.error("Error generating presigned download URL:", error);
-    return fileKey; 
-  }
-}
 export const getPostById = async (req: Request, res: Response) => {
   try {
     // 1. הגנה: מניעת HTTP Cache כדי להכריח את הדפדפן לקבל מפתחות חתימה טריים בכל פעם
@@ -207,9 +100,7 @@ export const getPostById = async (req: Request, res: Response) => {
 
     // 2. חתימה דינמית על קבצי הפוסט הראשי מול S3 (בתוקף ל-15 דקות)
     if (post.attachments && post.attachments.length > 0) {
-      post.attachments = await Promise.all(
-        post.attachments.map(fileKey => generatePresignedDownloadUrl(fileKey))
-      );
+      post.attachments = await signAttachments(post.attachments);
     }
 
     // שליפת התגובות לפוסט
@@ -221,9 +112,7 @@ export const getPostById = async (req: Request, res: Response) => {
     await Promise.all(
       comments.map(async (comment) => {
         if (comment.attachments && comment.attachments.length > 0) {
-          comment.attachments = await Promise.all(
-            comment.attachments.map(fileKey => generatePresignedDownloadUrl(fileKey))
-          );
+          comment.attachments = await signAttachments(comment.attachments);
         }
       })
     );
@@ -280,8 +169,10 @@ export const searchSimilarPosts = async (req: Request, res: Response) => {
     let searchEmbedding: number[] = [];
 
     // א) שליפת הווקטור המוכן מה-DB לפי ה-postId
+    // .select() מביא רק את השדה שבאמת נחוץ (במקום כל מסמך הפוסט המלא -
+    // תוכן, מצורפים, דירוגים וכו') ו-.lean() כי זו קריאה בלבד, בלי שמירה בהמשך
     if (postId) {
-      const currentPost = await Post.findById(postId);
+      const currentPost = await Post.findById(postId).select('titleEmbedding').lean();
       if (currentPost && currentPost.titleEmbedding && currentPost.titleEmbedding.length > 0) {
         searchEmbedding = currentPost.titleEmbedding;
       }
@@ -414,14 +305,10 @@ export const createPost = async (req: Request, res: Response) => {
           finalTagIds.push(tagItem.id || tagItem.value);
         } else {
           const newTagName = (tagItem.label || tagItem.name || tagItem.value || '').trim();
-          
+
           if (newTagName) {
-            let existingTag = await Tag.findOne({ name: { $regex: new RegExp(`^${newTagName}$`, 'i') } });
-            
-            if (!existingTag) {
-              existingTag = await Tag.create({ name: newTagName });
-            }
-            finalTagIds.push(existingTag._id as string);
+            const resolvedId = await resolveOrCreateTagByName(newTagName);
+            if (resolvedId) finalTagIds.push(resolvedId);
           }
         }
       }
@@ -438,6 +325,7 @@ export const createPost = async (req: Request, res: Response) => {
     });
 
     const savedPost = await newPost.save();
+    invalidatePostsListCache();
 
     // יצירת ה-embedding מתבצעת ברקע (לא await) - כך המשתמשת מקבלת אישור מיידי
     // על יצירת הפוסט, בלי לחכות לזמן התגובה של OpenAI
@@ -447,7 +335,8 @@ export const createPost = async (req: Request, res: Response) => {
 
     const populatedPost = await Post.findById(savedPost._id)
       .populate('author', 'name')
-      .populate('tags', 'name');
+      .populate('tags', 'name')
+      .lean();
 
     return res.status(201).json(populatedPost);
 
@@ -521,10 +410,14 @@ export const createComment = async (req: Request, res: Response) => {
     const populatedComment = await Comment.findById(savedComment._id)
       .select('postId content attachments author createdAt')
       .populate('author', 'name');
-    
+
+    // עדכון lastActivity ברקע - לא חוסם את התגובה למשתמשת (שלא כמו לפני,
+    // כשה-await כאן עיכב את השמירה על התגובה עצמה בכל הוספת תגובה)
     post.lastActivity = new Date();
-    await post.save({ validateBeforeSave: false });    
-    
+    post.save({ validateBeforeSave: false })
+      .then(() => invalidatePostsListCache())
+      .catch((err) => console.error('Error updating post.lastActivity in background:', err));
+
     res.status(201).json(populatedComment);
   } catch (error) {
     console.error('Error in createComment:', error);
@@ -598,6 +491,7 @@ export const moderatePost = async (req: Request, res: Response) => {
     }
 
     await post.save();
+    invalidatePostsListCache();
 
     await ModerationLog.create({
       action: logAction,
@@ -661,66 +555,17 @@ export const generateAiAssistance = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'התוכן קצר מדי בשביל לקבל עזרת AI' });
     }
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
     if (mode === 'refine') {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        max_tokens: 500,
-        messages: [
-          {
-            role: 'system',
-            content: 'אתה עוזר עריכה מקצועי בפורום פיתוח תוכנה. תפקידך לשפר את הניסוח, לתקן שגיאות כתיב בעברית, ולסדר קטעי קוד בתוך בלוקים מתאימים של Markdown. אל תוסיף מידע חדש ואל תאריך את הפוסט סתם.'
-          },
-          {
-            role: 'user',
-            content: `אנא שפר את הניסוח של הטקסט הבא והחזר לי רק את הטקסט המעובד והמשופר: \n\n${content}`
-          }
-        ]
-      });
-      return res.status(200).json({ refinedContent: response.choices[0].message.content?.trim() });
+      const refinedContent = await refineContent(content);
+      return res.status(200).json({ refinedContent });
 
-} else if (mode === 'titles') {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        max_tokens: 150,
-        messages: [
-          {
-            role: 'system',
-            content: 'אתה עוזר כתיבה לפורום טכנולוגי. החזר אך ורק אובייקט JSON תקין (ללא סימני Markdown מסביב).'
-          },
-          {
-            role: 'user',
-            content: `נתח את הטקסט הבא והצע לו 3 אופציות לכותרות קצרות ומושכות בעברית המתאימות לפוסט. החזר מבנה JSON בדיוק כך: {"titles": ["אופציה 1", "אופציה 2", "אופציה 3"]}. הנה הטקסט: \n\n${content}`
-          }
-        ],
-        response_format: { type: 'json_object' }
-      });
-      const data = JSON.parse(response.choices[0].message.content || '{}');
-      
-      // תיקון: מחזיר ישירות את המערך מתוך ה-JSON כדי להתאים לציפיות של ה-React
-      return res.status(200).json({ titles: data.titles || [] });
+    } else if (mode === 'titles') {
+      const titles = await suggestTitles(content);
+      return res.status(200).json({ titles });
 
     } else if (mode === 'tags') {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        max_tokens: 60, // קצר וחסכוני יותר
-        messages: [
-          {
-            role: 'system',
-            content: 'אתה עוזר מקצועי לייצור תגיות נושא עבור פורום. תפקידך לחלץ מהטקסט עד 3 מילות מפתח קצרות, מדויקות ורלוונטיות ביותר המייצגות את לב הנושא (בעברית או באנגלית). עליך להחזיר אך ורק אובייקט JSON תקין ומדויק בפורמט הבא: {"tags": ["תגית1", "תגית2", "תגית3"]}, ללא סימני Markdown וללא שום טקסט נלווה.'
-          },
-          {
-            role: 'user',
-            content: `חלץ עד 3 תגיות נושא מתאימות עבור הטקסט הבא: \n\n${content}`
-          }
-        ],
-        response_format: { type: 'json_object' }
-      });
-      const data = JSON.parse(response.choices[0].message.content || '{}');
-      
-      // החזרת המערך המפורסר ישירות ל-React
-      return res.status(200).json({ tags: data.tags || [] });
+      const tags = await suggestTags(content);
+      return res.status(200).json({ tags });
     }
 
     return res.status(400).json({ message: 'מצב עבודה לא תקין' });

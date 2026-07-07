@@ -116,4 +116,7 @@ async function start() {
   }
 }
 
-start();
+export default app;
+if (require.main === module) {
+  start();
+}
