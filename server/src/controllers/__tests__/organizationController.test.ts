@@ -1,11 +1,12 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { Request, Response } from "express";
-import { getOrganizationUsersHandler } from "../organizationController";
+import { getOrganizationUsersHandler, updateOrganizationHandler } from "../organizationController";
 import * as organizationService from "../../services/organizationService";
 
 jest.mock("../../services/organizationService", () => ({
   getOrganizationById: jest.fn(),
   getOrganizationUsers: jest.fn(),
+  updateOrganization: jest.fn(),
 }));
 
 const mockedService = jest.mocked(organizationService);
@@ -17,8 +18,8 @@ function mockRes(): Response {
   return res as Response;
 }
 
-function mockReq(orgId: string, user: { userId: string; role: string }): Request<{ id: string }> {
-  return { params: { id: orgId }, user } as any;
+function mockReq(orgId: string, user: { userId: string; role: string }, body: any = {}): Request<{ id: string }> {
+  return { params: { id: orgId }, user, body } as any;
 }
 
 beforeEach(() => {
@@ -102,5 +103,70 @@ describe("organizationController.getOrganizationUsersHandler", () => {
 
     expect(res.status).toHaveBeenCalledWith(404);
     expect(mockedService.getOrganizationUsers).not.toHaveBeenCalled();
+  });
+});
+
+describe("organizationController.updateOrganizationHandler", () => {
+  it("strips walletBalance, ownerId and isActive when a non-admin owner updates their organization", async () => {
+    mockedService.getOrganizationById.mockResolvedValue({
+      _id: "org-A",
+      ownerId: "owner-A",
+    } as any);
+    mockedService.updateOrganization.mockResolvedValue({ _id: "org-A" } as any);
+
+    const req = mockReq("org-A", { userId: "owner-A", role: "org_owner" }, {
+      name: "New Name",
+      description: "New description",
+      walletBalance: 999999,
+      ownerId: "attacker-id",
+      isActive: true,
+      status: "approved",
+    });
+    const res = mockRes();
+
+    await updateOrganizationHandler(req, res);
+
+    expect(mockedService.updateOrganization).toHaveBeenCalledWith("org-A", {
+      name: "New Name",
+      description: "New description",
+    });
+  });
+
+  it("returns 403 when an org_owner tries to update a different organization", async () => {
+    mockedService.getOrganizationById.mockResolvedValue({
+      _id: "org-B",
+      ownerId: "owner-B",
+    } as any);
+
+    const req = mockReq("org-B", { userId: "owner-A", role: "org_owner" }, {
+      walletBalance: 999999,
+    });
+    const res = mockRes();
+
+    await updateOrganizationHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockedService.updateOrganization).not.toHaveBeenCalled();
+  });
+
+  it("allows an admin to update any field, including walletBalance and ownerId", async () => {
+    mockedService.getOrganizationById.mockResolvedValue({
+      _id: "org-B",
+      ownerId: "owner-B",
+    } as any);
+    mockedService.updateOrganization.mockResolvedValue({ _id: "org-B" } as any);
+
+    const req = mockReq("org-B", { userId: "admin-1", role: "admin" }, {
+      walletBalance: 999999,
+      ownerId: "new-owner",
+    });
+    const res = mockRes();
+
+    await updateOrganizationHandler(req, res);
+
+    expect(mockedService.updateOrganization).toHaveBeenCalledWith("org-B", {
+      walletBalance: 999999,
+      ownerId: "new-owner",
+    });
   });
 });
