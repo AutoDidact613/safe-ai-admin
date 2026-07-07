@@ -27,7 +27,7 @@ import { getOrganizationById } from "../services/organizationService";
 const router = express.Router();
 
 // חוסם פעולות ניהול לבעל ארגון כל עוד הארגון אינו מאושר (אדמין עוקף)
-async function requireApprovedOrg(
+export async function requireApprovedOrg(
   req: express.Request<{ id: string }>,
   res: express.Response,
   next: express.NextFunction

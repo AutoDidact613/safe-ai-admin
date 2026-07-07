@@ -5,6 +5,7 @@ import {
   updateOrganizationHandler,
   publicRequestOrganizationHandler,
   topUpOrganizationWalletHandler,
+  approveOrganizationHandler,
 } from "../organizationController";
 import * as organizationService from "../../services/organizationService";
 
@@ -14,6 +15,7 @@ jest.mock("../../services/organizationService", () => ({
   updateOrganization: jest.fn(),
   publicRequestOrganization: jest.fn(),
   topUpOrganizationWallet: jest.fn(),
+  approveOrganization: jest.fn(),
 }));
 
 const mockedService = jest.mocked(organizationService);
@@ -277,5 +279,44 @@ describe("organizationController.topUpOrganizationWalletHandler", () => {
 
     expect(res.status).toHaveBeenCalledWith(403);
     expect(mockedService.topUpOrganizationWallet).not.toHaveBeenCalled();
+  });
+});
+
+describe("organizationController.approveOrganizationHandler (#229 ORG-02)", () => {
+  it("approves a pending organization and returns the updated organization", async () => {
+    mockedService.approveOrganization.mockResolvedValue({
+      _id: "org-A",
+      status: "approved",
+      isActive: true,
+    } as any);
+
+    const req = { params: { id: "org-A" } } as any;
+    const res = mockRes();
+
+    await approveOrganizationHandler(req, res);
+
+    expect(mockedService.approveOrganization).toHaveBeenCalledWith("org-A");
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        organization: expect.objectContaining({ status: "approved", isActive: true }),
+      })
+    );
+  });
+
+  it("returns 400 when the organization is not pending", async () => {
+    mockedService.approveOrganization.mockRejectedValue(
+      new Error("ניתן לאשר רק ארגון שממתין לאישור")
+    );
+
+    const req = { params: { id: "org-A" } } as any;
+    const res = mockRes();
+
+    await approveOrganizationHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: "ניתן לאשר רק ארגון שממתין לאישור" })
+    );
   });
 });
