@@ -1,16 +1,24 @@
 import { OpenAI } from 'openai';
 
-// לקוח OpenAI יחיד, נוצר פעם אחת בעת טעינת המודול - לא בכל קריאה לפונקציה.
-// (לפני כן, נוצרו 3 מופעים נפרדים של OpenAI בקובץ postController.ts,
-// אחד מהם אפילו לא היה בשימוש בכלל)
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// לקוח OpenAI יחיד - אבל נבנה באופן "עצל" (lazy), רק בפעם הראשונה שבאמת
+// קוראים לאחת מהפונקציות למטה, לא בזמן טעינת המודול (import). ההבדל קריטי:
+// לפני כן, עצם ה-import של הקובץ הזה (למשל דרך postController.ts) קרס
+// אם OPENAI_API_KEY לא הוגדר - כך שגם בדיקות שלא בכלל צריכות AI נכשלו.
+let openaiInstance: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiInstance) {
+    openaiInstance = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return openaiInstance;
+}
 
 /**
  * הופך טקסט לוקטור מספרי (embedding), לשימוש בחיפוש סמנטי של פוסטים דומים.
  */
 export async function getEmbedding(text: string): Promise<number[]> {
   try {
-    const response = await openai.embeddings.create({
+    const response = await getOpenAIClient().embeddings.create({
       model: 'text-embedding-3-small',
       input: text,
     });
@@ -29,7 +37,7 @@ export async function getEmbedding(text: string): Promise<number[]> {
  * משפר את הניסוח של תוכן פוסט קיים.
  */
 export async function refineContent(content: string): Promise<string> {
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAIClient().chat.completions.create({
     model: 'gpt-4o-mini',
     max_tokens: 500,
     messages: [
@@ -50,7 +58,7 @@ export async function refineContent(content: string): Promise<string> {
  * מציע עד 3 כותרות מתאימות לתוכן פוסט.
  */
 export async function suggestTitles(content: string): Promise<string[]> {
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAIClient().chat.completions.create({
     model: 'gpt-4o-mini',
     max_tokens: 150,
     messages: [
@@ -73,7 +81,7 @@ export async function suggestTitles(content: string): Promise<string[]> {
  * מחלץ עד 3 תגיות נושא רלוונטיות מתוך תוכן פוסט.
  */
 export async function suggestTags(content: string): Promise<string[]> {
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAIClient().chat.completions.create({
     model: 'gpt-4o-mini',
     max_tokens: 60,
     messages: [
@@ -104,7 +112,7 @@ export interface BotPostIdea {
 }
 
 export async function generateDailyPostIdea(): Promise<BotPostIdea> {
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAIClient().chat.completions.create({
     model: 'gpt-4o-mini',
     max_tokens: 600,
     messages: [
