@@ -1,7 +1,3 @@
-/**
- * Authentication Service
- * Handles user registration, login, token management, and password reset
- */
 
 import bcrypt from "bcryptjs";
 import { User } from "../models/user";
@@ -23,9 +19,6 @@ import { nonnegative } from "zod";
 
 const SALT_ROUNDS = 10;
 
-/**
- * Register a new user
- */
 export async function register(data: {
   email: string;
   password: string;
@@ -33,30 +26,25 @@ export async function register(data: {
   organization?: string;
   organizationId?: string;
   profileId?: string;
-  mode?: "BYOK" | "MANAGED";
+  mode?: "BYOK" | "MANAGED" | "MANAGED_ORG";
   role?: string;
   skipEmailVerification?: boolean;
 }) {
-  // Check if user already exists
   const existingUser = await User.findOne({ email: data.email.toLowerCase() });
   if (existingUser) {
     throw new Error("משתמש עם אימייל זה כבר קיים במערכת");
   }
 
-  // Hash password
   const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
 
-  // Generate proxy API key
   const proxyApiKey = generateApiKey("sk-safeai");
   const proxyKeyHash = hashApiKey(proxyApiKey);
   const proxyKeyPrefix = getKeyPrefix(proxyApiKey);
 
-  // Generate verification token
   const verificationToken = generateRandomToken();
   const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
   try {
-    // Register with LiteLLM
     const response = await axios.post(
       `${process.env.LITELLM_PROXY_URL}/key/generate`,
       {
@@ -80,7 +68,6 @@ export async function register(data: {
     const { key, token, key_name } = response.data;
     const litellmKeyEncrypted = encryptSecret(key);
 
-    // Create user in database
     const user = await User.create({
       email: data.email.toLowerCase(),
       password: hashedPassword,
@@ -89,7 +76,7 @@ export async function register(data: {
       ...(data.organizationId && { organizationId: data.organizationId }),
       ...(data.profileId && { profileId: data.profileId }),
       mode: data.mode || "BYOK",
-      role: data.role || "user", // Always "user" unless caller specifies (e.g. org_owner)
+      role: data.role || "user",
       proxyKeyHash,
       proxyKeyPrefix,
       litellmKeyEncrypted,
@@ -100,9 +87,6 @@ export async function register(data: {
       verificationTokenExpires,
     });
 
-    // Only send the verification email for the normal self-registration flow.
-    // Flows where a different gate exists (e.g. admin approval for org owners)
-    // can skip it via skipEmailVerification.
     if (!data.skipEmailVerification) {
       logger.info("Before sending verification email", {
         email: user.email,
@@ -123,7 +107,7 @@ export async function register(data: {
 
     return {
       user,
-      proxyApiKey, // Return this only once!
+      proxyApiKey,
     };
   } catch (error: any) {
     const errorDetail = error.response?.data || error.message;
@@ -137,11 +121,7 @@ export async function register(data: {
   }
 }
 
-/**
- * Login user
- */
 export async function login(email: string, password: string) {
-  // Find user
   const user = await User.findOne({ email: email.toLowerCase() });
   if (!user) {
     throw {
@@ -151,7 +131,6 @@ export async function login(email: string, password: string) {
     };
   }
 
-  // Check password
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
     throw {
@@ -161,7 +140,6 @@ export async function login(email: string, password: string) {
     };
   }
 
-  // Check if email is verified
   if (!user.emailVerified) {
     throw {
       statusCode: 403,
@@ -170,7 +148,6 @@ export async function login(email: string, password: string) {
     };
   }
 
-  // Check if user is active
   if (!user.isActive) {
     throw {
       statusCode: 403,
@@ -179,23 +156,19 @@ export async function login(email: string, password: string) {
     };
   }
 
-  // Update last login
   user.lastLogin = new Date();
 
-  // Generate JWT tokens
   const tokens = generateTokenPair({
     userId: user._id.toString(),
     email: user.email,
     role: user.role,
   });
 
-  // Add refresh token to user's tokens
   if (!user.refreshTokens) {
     user.refreshTokens = [];
   }
   user.refreshTokens.push(tokens.refreshToken);
 
-  // Keep only last 5 refresh tokens
   if (user.refreshTokens.length > 5) {
     user.refreshTokens = user.refreshTokens.slice(-5);
   }
@@ -209,33 +182,25 @@ export async function login(email: string, password: string) {
   };
 }
 
-/**
- * Refresh access token
- */
 export async function refreshAccessToken(refreshToken: string) {
   try {
-    // Verify refresh token
     const decoded = verifyRefreshToken(refreshToken);
 
-    // Find user
     const user = await User.findById(decoded.userId);
     if (!user) {
       throw new Error("User not found");
     }
 
-    // Check if refresh token exists in user's tokens
     if (!user.refreshTokens || !user.refreshTokens.includes(refreshToken)) {
       throw new Error("Invalid refresh token");
     }
 
-    // Generate new access token
     const tokens = generateTokenPair({
       userId: user._id.toString(),
       email: user.email,
       role: user.role,
     });
 
-    // Replace old refresh token with new one
     user.refreshTokens = user.refreshTokens.filter((t: string) => t !== refreshToken);
     user.refreshTokens.push(tokens.refreshToken);
     await user.save();
@@ -249,16 +214,12 @@ export async function refreshAccessToken(refreshToken: string) {
   }
 }
 
-/**
- * Logout user (invalidate refresh token)
- */
 export async function logout(userId: string, refreshToken: string) {
   const user = await User.findById(userId);
   if (!user) {
     throw new Error("User not found");
   }
 
-  // Remove refresh token
   if (user.refreshTokens) {
     user.refreshTokens = user.refreshTokens.filter((t: string) => t !== refreshToken);
     await user.save();
@@ -267,9 +228,6 @@ export async function logout(userId: string, refreshToken: string) {
   return { success: true };
 }
 
-/**
- * Verify email
- */
 export async function verifyEmail(token: string) {
   const user = await User.findOne({
     verificationToken: token,
@@ -288,9 +246,6 @@ export async function verifyEmail(token: string) {
   return { user };
 }
 
-/**
- * Request password reset
- */
 export async function forgotPassword(email: string) {
   const user = await User.findOne({ email: email.toLowerCase() });
   if (!user) {
@@ -298,7 +253,6 @@ export async function forgotPassword(email: string) {
     return { success: true };
   }
 
-  // Generate reset token
   const resetToken = generateRandomToken();
   const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
@@ -306,15 +260,11 @@ export async function forgotPassword(email: string) {
   user.passwordResetExpires = resetExpires;
   await user.save();
 
-  // Send reset email
   await sendPasswordResetEmail(user.email, resetToken, user.name || undefined);
 
   return { success: true };
 }
 
-/**
- * Reset password
- */
 export async function resetPassword(token: string, newPassword: string) {
   const user = await User.findOne({
     passwordResetToken: token,
@@ -325,14 +275,12 @@ export async function resetPassword(token: string, newPassword: string) {
     throw new Error("קישור איפוס הסיסמה אינו תקף או שפג תוקפו");
   }
 
-  // Hash new password
   const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
 
   user.password = hashedPassword;
   user.passwordResetToken = null as any;
   user.passwordResetExpires = null as any;
 
-  // Invalidate all refresh tokens for security
   user.refreshTokens = [];
 
   await user.save();
@@ -340,9 +288,6 @@ export async function resetPassword(token: string, newPassword: string) {
   return { success: true };
 }
 
-/**
- * Get current user info
- */
 export async function getCurrentUser(userId: string) {
   const user = await User.findById(userId).populate("profileId");
   if (!user) {

@@ -3,6 +3,7 @@ import * as repo from "../repositories/organizationRepository";
 import * as userRepo from "../repositories/userRepository";
 import { UsageLog } from "../models";
 import { register } from "./authService";
+import * as providerKeyService from "./providerKeyService";
 import { sendOrgApprovalRequestEmail, sendOrgApprovedEmail, sendOrgStatusEmail } from "../utils/email";
 import logger from "../logger";
 
@@ -12,16 +13,13 @@ function generateTemporaryPassword(): string {
 
 export async function createOrganization(data: any) {
   try {
-    // Verify that the owner exists and update their role
     const owner = await userRepo.getUserById(data.ownerId);
     if (!owner) {
       throw new Error("Owner user not found");
     }
 
-    // Create the organization
     const organization = await repo.createOrganization(data);
 
-    // Update the owner's role to org_owner (unless they're already admin) and link to organization
     await userRepo.updateUser(data.ownerId, {
       role: owner.role === "admin" ? "admin" : "org_owner",
       organizationId: organization._id,
@@ -57,10 +55,8 @@ export async function updateOrganization(orgId: string, data: any) {
 
 export async function deleteOrganization(orgId: string) {
   try {
-    // Remove organization reference from all members in bulk
     await userRepo.removeUsersFromOrganization(orgId);
 
-    // Delete the organization
     const result = await repo.deleteOrganization(orgId);
 
     logger.info("Organization deleted", { organizationId: orgId });
@@ -102,7 +98,6 @@ export async function addUserToOrganization(orgId: string, userId: string, role:
       }
     }
 
-    // Update user's organization and role
     await userRepo.updateUser(userId, {
       organizationId: orgId,
       role: role,
@@ -132,7 +127,6 @@ export async function removeUserFromOrganization(userId: string) {
       throw new Error("User not found");
     }
 
-    // Remove organization reference
     await userRepo.updateUser(userId, {
       organizationId: null,
     });
@@ -159,14 +153,9 @@ export async function addUserToOrganizationByEmail(
   return addUserToOrganization(orgId, user._id.toString(), role);
 }
 
-/**
- * Create a brand-new user account (with a generated temporary password)
- * directly inside an organization. Used by org owners/admins adding members
- * who don't already have a SafeAI account.
- */
 export async function createOrganizationMember(
   orgId: string,
-  data: { name: string; email: string; role?: string }
+  data: { name: string; email: string; role?: string; mode?: "BYOK" | "MANAGED" | "MANAGED_ORG" }
 ) {
   try {
     const organization = await repo.getOrganizationById(orgId);
@@ -188,6 +177,7 @@ export async function createOrganizationMember(
       name: data.name,
       organizationId: orgId,
       role: data.role || "user",
+      ...(data.mode && { mode: data.mode }),
       skipEmailVerification: true,
     });
 
@@ -226,12 +216,6 @@ export async function getPendingOrganizationsForAdmin() {
   return repo.getPendingOrganizations();
 }
 
-/**
- * Public sign-up flow: creates a brand-new org_owner user account together
- * with a pending organization, in one step. No prior login/registration
- * required — this IS the registration for org owners. Called from a public,
- * unauthenticated endpoint.
- */
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function publicRequestOrganization(data: {
@@ -245,14 +229,11 @@ export async function publicRequestOrganization(data: {
     throw new Error("כתובת האימייל אינה תקינה");
   }
 
-  // בדיקה מוקדמת - נמנעת מיצירת משתמש כשברור מראש ששם הארגון תפוס
   const existingOrg = await repo.findOrganizationByName(data.orgName);
   if (existingOrg) {
     throw new Error("שם הארגון כבר תפוס, אנא בחרו שם אחר");
   }
 
-  // יוצר את חשבון בעל הארגון ישירות במצב מאומת
-  // (אימות המייל מדולג — אישור המנהל הוא השער האמיתי)
   const { user } = await register({
     email: data.ownerEmail,
     password: data.ownerPassword,
@@ -261,9 +242,6 @@ export async function publicRequestOrganization(data: {
     skipEmailVerification: true,
   });
 
-  // יצירת הארגון במצב ממתין ולא פעיל. אם זה נכשל (למשל מרוץ נדיר על אותו שם
-  // ארגון בין הבדיקה המוקדמת לכאן), מבטלים את המשתמש שכבר נוצר כדי לא
-  // להשאיר רשומת משתמש "יתומה" ללא ארגון.
   let organization;
   try {
     organization = await repo.createOrganization({
@@ -281,7 +259,6 @@ export async function publicRequestOrganization(data: {
     throw error;
   }
 
-  // קישור המשתמש לארגון שנוצר
   await userRepo.updateUser(user._id.toString(), {
     organizationId: organization._id,
   });
@@ -291,7 +268,6 @@ export async function publicRequestOrganization(data: {
     ownerEmail: data.ownerEmail,
   });
 
-  // התראה לכל האדמינים (best-effort)
   try {
     const users = await userRepo.getUsers();
     const admins = users.filter((u: any) => u.role === "admin");
@@ -321,7 +297,6 @@ export async function approveOrganization(orgId: string) {
     isActive: true,
   });
 
-  // מייל לבעל הארגון (best-effort). ownerId מגיע populated עם email+name
   try {
     const owner = organization.ownerId as any;
     if (owner?.email) {
@@ -349,7 +324,6 @@ export async function rejectOrganization(orgId: string) {
     isActive: false,
   });
 
-  // מייל לבעל הארגון (best-effort), לעקביות עם approveOrganization
   try {
     const owner = organization.ownerId as any;
     if (owner?.email) {
@@ -363,11 +337,6 @@ export async function rejectOrganization(orgId: string) {
   return updated;
 }
 
-/**
- * Return the organization that the given user owns/belongs to (with its status),
- * or null. Used by the frontend to decide between the pending screen and the
- * full management screen.
- */
 export async function getMyOrganization(userId: string) {
   const user = await userRepo.getUserById(userId);
   if (!user || !user.organizationId) {
@@ -394,7 +363,6 @@ export async function setOrganizationActive(orgId: string, isActive: boolean) {
 
   const updated = await repo.updateOrganization(orgId, { isActive });
 
-  // מייל לבעל הארגון (best-effort), לעקביות עם approveOrganization
   try {
     const owner = organization.ownerId as any;
     if (owner?.email) {
@@ -436,4 +404,28 @@ export async function getOrganizationUsageSummary(orgId: string) {
     totalTokens: summary.totalTokens,
     totalCost: summary.totalCost,
   };
+}
+
+/**
+ * Org-level AI provider key management, used by MANAGED_ORG members
+ * (see proxyService.resolveProviderKeyForUser) instead of a personal
+ * or system-wide key.
+ */
+export async function addOrganizationProviderKey(
+  organizationId: string,
+  data: { provider: string; apiKey: string }
+) {
+  return providerKeyService.addProviderKey({
+    organizationId,
+    provider: data.provider,
+    apiKey: data.apiKey,
+  });
+}
+
+export async function listOrganizationProviderKeys(organizationId: string) {
+  return providerKeyService.listProviderKeysForOrganization(organizationId);
+}
+
+export async function deleteOrganizationProviderKey(keyId: string) {
+  return providerKeyService.deleteProviderKey(keyId);
 }

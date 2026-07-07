@@ -8,12 +8,18 @@ import {
   sendOrgApprovalRequestEmail,
 } from "../../utils/email";
 import { register } from "../authService";
+import * as providerKeyService from "../providerKeyService";
 import { UsageLog } from "../../models";
 
 jest.mock("../../repositories/organizationRepository");
 jest.mock("../../repositories/userRepository");
 jest.mock("../../utils/email");
 jest.mock("../authService", () => ({ register: jest.fn() }));
+jest.mock("../providerKeyService", () => ({
+  addProviderKey: jest.fn(),
+  listProviderKeysForOrganization: jest.fn(),
+  deleteProviderKey: jest.fn(),
+}));
 jest.mock("../../models", () => ({
   UsageLog: { aggregate: jest.fn() },
 }));
@@ -21,6 +27,7 @@ jest.mock("../../models", () => ({
 const mockedRepo = jest.mocked(repo);
 const mockedUserRepo = jest.mocked(userRepo);
 const mockedRegister = jest.mocked(register);
+const mockedProviderKeyService = jest.mocked(providerKeyService);
 const mockedUsageLog = jest.mocked(UsageLog);
 
 beforeEach(() => {
@@ -391,6 +398,68 @@ describe("organizationService.createOrganizationMember", () => {
     expect(mockedRegister).toHaveBeenCalledWith(
       expect.objectContaining({ role: "admin" })
     );
+  });
+
+  it("passes mode: MANAGED_ORG through to register (#144)", async () => {
+    mockedRepo.getOrganizationById.mockResolvedValue({ _id: "org1" } as any);
+    mockedUserRepo.countUsersByOrganization.mockResolvedValue(0);
+    mockedRegister.mockResolvedValue({ user: { _id: "newUser1" } } as any);
+
+    await organizationService.createOrganizationMember("org1", {
+      ...memberData,
+      mode: "MANAGED_ORG",
+    });
+
+    expect(mockedRegister).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: "MANAGED_ORG" })
+    );
+  });
+
+  it("does not pass a mode key to register when none is given", async () => {
+    mockedRepo.getOrganizationById.mockResolvedValue({ _id: "org1" } as any);
+    mockedUserRepo.countUsersByOrganization.mockResolvedValue(0);
+    mockedRegister.mockResolvedValue({ user: { _id: "newUser1" } } as any);
+
+    await organizationService.createOrganizationMember("org1", memberData);
+
+    expect(mockedRegister).toHaveBeenCalledWith(
+      expect.not.objectContaining({ mode: expect.anything() })
+    );
+  });
+});
+
+describe("organizationService org-level provider keys (#144 MANAGED_ORG)", () => {
+  it("addOrganizationProviderKey delegates to providerKeyService with the organizationId", async () => {
+    mockedProviderKeyService.addProviderKey.mockResolvedValue({ _id: "key1" } as any);
+
+    const result = await organizationService.addOrganizationProviderKey("org1", {
+      provider: "openai",
+      apiKey: "sk-test",
+    });
+
+    expect(mockedProviderKeyService.addProviderKey).toHaveBeenCalledWith({
+      organizationId: "org1",
+      provider: "openai",
+      apiKey: "sk-test",
+    });
+    expect(result).toEqual({ _id: "key1" });
+  });
+
+  it("listOrganizationProviderKeys delegates to providerKeyService", async () => {
+    mockedProviderKeyService.listProviderKeysForOrganization.mockResolvedValue([{ _id: "key1" }] as any);
+
+    const result = await organizationService.listOrganizationProviderKeys("org1");
+
+    expect(mockedProviderKeyService.listProviderKeysForOrganization).toHaveBeenCalledWith("org1");
+    expect(result).toEqual([{ _id: "key1" }]);
+  });
+
+  it("deleteOrganizationProviderKey delegates to providerKeyService", async () => {
+    mockedProviderKeyService.deleteProviderKey.mockResolvedValue({ _id: "key1" } as any);
+
+    await organizationService.deleteOrganizationProviderKey("key1");
+
+    expect(mockedProviderKeyService.deleteProviderKey).toHaveBeenCalledWith("key1");
   });
 });
 
