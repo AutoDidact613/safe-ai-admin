@@ -14,7 +14,11 @@ export async function getEmbedding(text: string): Promise<number[]> {
       model: 'text-embedding-3-small',
       input: text,
     });
-    return response.data[0].embedding;
+    const embedding = response.data[0]?.embedding;
+    if (!embedding) {
+      throw new Error('OpenAI לא החזיר embedding בתשובה');
+    }
+    return embedding;
   } catch (error) {
     console.error('OpenAI Embedding Error:', error);
     throw new Error('Failed to generate embedding from OpenAI');
@@ -39,7 +43,7 @@ export async function refineContent(content: string): Promise<string> {
       }
     ]
   });
-  return response.choices[0].message.content?.trim() || '';
+  return response.choices[0]?.message.content?.trim() || '';
 }
 
 /**
@@ -61,7 +65,7 @@ export async function suggestTitles(content: string): Promise<string[]> {
     ],
     response_format: { type: 'json_object' }
   });
-  const data = JSON.parse(response.choices[0].message.content || '{}');
+  const data = JSON.parse(response.choices[0]?.message.content || '{}');
   return data.titles || [];
 }
 
@@ -84,7 +88,7 @@ export async function suggestTags(content: string): Promise<string[]> {
     ],
     response_format: { type: 'json_object' }
   });
-  const data = JSON.parse(response.choices[0].message.content || '{}');
+  const data = JSON.parse(response.choices[0]?.message.content || '{}');
   return data.tags || [];
 }
 
@@ -116,7 +120,7 @@ export async function generateDailyPostIdea(): Promise<BotPostIdea> {
     response_format: { type: 'json_object' }
   });
 
-  const parsed = JSON.parse(response.choices[0].message.content || '{}');
+  const parsed = JSON.parse(response.choices[0]?.message.content || '{}');
 
   if (!parsed.title || !parsed.content) {
     throw new Error('התקבל מידע חסר מהבינה המלאכותית');

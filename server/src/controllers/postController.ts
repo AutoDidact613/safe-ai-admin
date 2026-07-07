@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import Post from '../models/Post';
 import Comment from '../models/Comment';
-import Tag from '../models/tag'; 
+import Tag from '../models/Tag'; 
 import ModerationLog from '../models/ModerationLog';
-import { User } from '../models/user';
+import { User } from '../models/User';
 import NodeCache from 'node-cache'; // ייבוא תקין של ה-Cache בשרת
 import { getEmbedding, refineContent, suggestTitles, suggestTags } from '../services/aiService';
 import { signAttachments } from '../services/s3Service';
@@ -104,7 +105,7 @@ export const getPostById = async (req: Request, res: Response) => {
     }
 
     // שליפת התגובות לפוסט
-    const comments = await Comment.find({ postId: req.params.id }).populate('author', 'name').lean();
+    const comments = await Comment.find({ postId: String(req.params.id) }).populate('author', 'name').lean();
 
     // 3. חתימה דינמית על קבצי התגובות מול S3 (במידה וקיימים)
     // מקביל על כל התגובות בבת אחת, במקום תגובה-אחר-תגובה ברצף (שהיה מאט
@@ -444,7 +445,7 @@ export const deleteCommentByAdmin = async (req: Request, res: Response) => {
       action: 'DELETE_COMMENT',
       adminId: user._id,
       targetId: comment._id,
-      details: `המנהל ${user.name} מחק את התגובה: "${comment.content.substring(0, 50)}..." שנכתבה על ידי ${comment.author?.name || 'אנונימי'}`
+      details: `המנהל ${user.name} מחק את התגובה: "${comment.content.substring(0, 50)}..." שנכתבה על ידי ${(comment.author as unknown as { name?: string })?.name || 'אנונימי'}`
     });
 
     res.status(200).json({ message: 'התגובה נמחקה ותועדה בהצלחה' });
@@ -521,13 +522,16 @@ export const ratePost = async (req: Request, res: Response) => {
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
     const existingRatingIndex = post.ratedBy.findIndex(
-      (r: any) => r.userId.toString() === userId
+      (r: { userId: mongoose.Types.ObjectId; score: number }) => r.userId.toString() === userId
     );
 
     if (existingRatingIndex !== -1) {
-      const oldScore = post.ratedBy?.[existingRatingIndex]?.score;
-      post.ratingSum = (post.ratingSum - oldScore) + ratingNum;
-      post.ratedBy[existingRatingIndex].score = ratingNum;
+      const existingRating = post.ratedBy[existingRatingIndex];
+      if (existingRating) {
+        const oldScore = existingRating.score;
+        post.ratingSum = (post.ratingSum - oldScore) + ratingNum;
+        existingRating.score = ratingNum;
+      }
     } else {
       post.ratedBy.push({ userId, score: ratingNum });
       post.ratingCount += 1;

@@ -27,10 +27,20 @@ export const initializeAutoPostBot = () => {
         const holidayResponse = await fetch(
           `https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=off&mod=off&nx=off&year=now&month=now&ss=off&mf=off&c=off`
         );
-        const holidayData = await holidayResponse.json();
+        interface HebcalItem {
+          date: string;
+          yomtov?: boolean;
+          category?: string;
+          title?: string;
+        }
+        interface HebcalResponse {
+          items?: HebcalItem[];
+        }
+
+        const holidayData = await holidayResponse.json() as HebcalResponse;
 
         // בדיקה האם התאריך הנוכחי מוגדר כ-Yom Tov (יום טוב / אסור במלאכה) או ערב חג
-        const isRestrictedDay = holidayData.items?.some((item: any) => {
+        const isRestrictedDay = holidayData.items?.some((item: HebcalItem) => {
           const isSameDate = item.date === todayIso;
           const isYomTov = item.yomtov === true;
           const isErevHoliday = item.category === 'roshchodesh' || item.title?.startsWith('Erev');

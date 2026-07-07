@@ -1,7 +1,7 @@
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
-const s3Client = new S3Client({ region: process.env.AWS_REGION });
+const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
 /**
  * מייצר קישור הורדה זמני (חתום) לקובץ יחיד ב-S3.

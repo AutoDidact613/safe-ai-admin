@@ -1,4 +1,4 @@
-import Tag from '../models/tag';
+import Tag from '../models/Tag';
 
 /**
  * מוצא תגית קיימת לפי שם (לא תלוי רישיות), ואם היא לא קיימת - יוצר אותה.
@@ -14,7 +14,7 @@ export async function resolveOrCreateTagByName(name: string): Promise<string | n
     existingTag = await Tag.create({ name: trimmed });
   }
 
-  return existingTag._id as string;
+  return existingTag._id.toString();
 }
 
 /**

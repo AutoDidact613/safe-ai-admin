@@ -6,7 +6,7 @@
  */
 
 import { UsageLog } from "../models";
-import { User } from "..";
+import { User } from "../models/user";
 import logger from "../logger";
 
 interface LogUsageParams {
