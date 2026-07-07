@@ -15,6 +15,7 @@ import {
   addOrganizationProviderKeyHandler,
   listOrganizationProviderKeysHandler,
   deleteOrganizationProviderKeyHandler,
+  getPendingOrganizationsHandler,
 } from "../organizationController";
 import * as organizationService from "../../services/organizationService";
 
@@ -34,6 +35,7 @@ jest.mock("../../services/organizationService", () => ({
   addOrganizationProviderKey: jest.fn(),
   listOrganizationProviderKeys: jest.fn(),
   deleteOrganizationProviderKey: jest.fn(),
+  getPendingOrganizationsForAdmin: jest.fn(),
 }));
 
 const mockedService = jest.mocked(organizationService);
@@ -664,5 +666,25 @@ describe("organizationController provider-key endpoints (#144 MANAGED_ORG)", () 
 
     expect(mockedService.deleteOrganizationProviderKey).toHaveBeenCalledWith("key1");
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+});
+
+describe("organizationController.getPendingOrganizationsHandler (#228 ORG-01)", () => {
+  it("returns a newly-created pending organization so an admin can review it", async () => {
+    mockedService.getPendingOrganizationsForAdmin.mockResolvedValue([
+      { _id: "org1", name: "Acme", status: "pending" },
+    ] as any);
+
+    const req = {} as any;
+    const res = mockRes();
+
+    await getPendingOrganizationsHandler(req, res);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        data: [expect.objectContaining({ name: "Acme", status: "pending" })],
+      })
+    );
   });
 });
