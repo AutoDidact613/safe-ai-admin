@@ -73,6 +73,26 @@ export async function register(data: {
   //       },
   //       timeout: 5000,
   //     },
+    //בהערה בגלל ה Docker
+    // Register with LiteLLM
+    // const response = await axios.post(
+    //   `${process.env.LITELLM_PROXY_URL}/key/generate`,
+    //   {
+    //     models: ["*"],
+    //     user_id: data.email,
+    //     duration: "30d",
+    //     metadata: {
+    //       source: "SafeAI_Registration",
+    //       user_email: data.email,
+    //     },
+    //   },
+    //   {
+    //     headers: {
+    //       Authorization: `Bearer ${process.env.LITELLM_MASTER_KEY}`,
+    //       "Content-Type": "application/json",
+    //     },
+    //     timeout: 5000,
+    //   },
     // );
 
     // const { key, token, key_name } = response.data;
@@ -85,6 +105,12 @@ export async function register(data: {
     const key_name="vv"
     const litellmKeyEncrypted ="l"
 
+    
+    //מילוי מחרוזות סתם
+    const key = "aa";
+    const token = "aa";
+    const key_name = "aa";
+    const litellmKeyEncrypted = "aa";
     // Create user in database
     const user = await User.create({
       email: data.email.toLowerCase(),

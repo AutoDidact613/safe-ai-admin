@@ -3,7 +3,6 @@ import LandingPage from "../pages/LandingPage";
 import SafeAIUIPage from "../pages/SafeAIUIPage";
 import NotFound from "../pages/NotFound";
 import OrganizationUsersPage from "../pages/OrganizationUsersPage";
-import AdminOrganizationsPage from "../pages/AdminOrganizationsPage";
 import ContactPage from "../pages/ContactPage";
 import DocsPage from "../pages/DocsPage";
 import RecommendedGuidesPage from "../pages/RecommendedGuidesPage";
@@ -21,6 +20,8 @@ import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
 import ForumPage  from '../features/forum/ForumPage';
 import { PostThreadPage } from '../features/forum/PostThreadPage';
+import { PendingOrganizationsPage } from "../features/organizations/pages/PendingOrganizationsPage";
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const accessToken = localStorage.getItem("accessToken");
   const user = localStorage.getItem("user");
@@ -141,7 +142,7 @@ export default function AppRouter() {
           path="/admin/organizations"
           element={
             <ProtectedRoute>
-              <AdminOrganizationsPage />
+              <PendingOrganizationsPage />
             </ProtectedRoute>
           }
         />
