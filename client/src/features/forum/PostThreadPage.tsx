@@ -93,11 +93,11 @@ export const PostThreadPage: React.FC = () => {
             .then((res) => res.json())
             .then((similarData) => {
               if (Array.isArray(similarData)) {
-                let filtered = similarData.filter((p: any) => p._id !== data.post._id);
+                const filtered = similarData.filter((p: { _id: string }) => p._id !== data.post._id);
 
                 const uniqueMap = new Map();
                 filtered.forEach(p => uniqueMap.set(p._id, p));
-                let finalSimilar = Array.from(uniqueMap.values());
+                const finalSimilar = Array.from(uniqueMap.values());
 
                 if (finalSimilar.length < 3) {
                   const backupPosts = JSON.parse(localStorage.getItem('user_posts_backup') || '[]');
@@ -388,7 +388,7 @@ export const PostThreadPage: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
             {post.tags && post.tags.length > 0 && (
               <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                {post.tags.map((tag: any, idx) => {
+                {post.tags.map((tag: { name: string } | string, idx: number) => {
                   const tagName = typeof tag === 'object' && tag !== null ? tag.name : tag;
                   return (
                     <span key={idx} style={{ backgroundColor: '#f0fdf4', color: '#16a34a', padding: '1px 6px', borderRadius: '4px', fontSize: '11px', border: '1px solid #bbf7d0', fontWeight: 'bold' }}>
@@ -607,7 +607,7 @@ export const PostThreadPage: React.FC = () => {
                   onChange={(e) => {
                     const val = e.target.value;
                     if (val === 'p') editor.chain().focus().setParagraph().run();
-                    else editor.chain().focus().toggleHeading({ level: Number(val) as any }).run();
+                    else editor.chain().focus().toggleHeading({ level: Number(val) as 1 | 2 | 3 | 4 | 5 | 6 }).run();
                   }}
                   style={{ border: '1px solid #e5e7eb', borderRadius: '4px', padding: '2px 4px', fontSize: '12px', color: '#374151', outline: 'none' }}
                 >
