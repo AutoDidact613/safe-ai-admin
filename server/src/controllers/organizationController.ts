@@ -20,12 +20,12 @@ import {
   approveOrganization,
   rejectOrganization,
   getMyOrganization,
+  addOrganizationProviderKey,
+  listOrganizationProviderKeys,
+  deleteOrganizationProviderKey,
 } from "../services/organizationService";
 import logger from "../logger";
 
-/**
- * Create a new organization (Admin only)
- */
 export async function createOrganizationHandler(req: Request, res: Response) {
   try {
     const adminUser = (req as any).user;
@@ -40,9 +40,6 @@ export async function createOrganizationHandler(req: Request, res: Response) {
   }
 }
 
-/**
- * List organizations (Admin sees all, Org Owner sees theirs)
- */
 export async function listOrganizationsHandler(req: Request, res: Response) {
   try {
     const user = (req as any).user;
@@ -72,9 +69,6 @@ export async function listOrganizationsHandler(req: Request, res: Response) {
   }
 }
 
-/**
- * Get organization by ID (Admin or Org Owner)
- */
 export async function getOrganizationHandler(
   req: Request<{ id: string }>,
   res: Response
@@ -101,9 +95,6 @@ export async function getOrganizationHandler(
   }
 }
 
-/**
- * Update organization (Admin or Org Owner)
- */
 export async function updateOrganizationHandler(
   req: Request<{ id: string }>,
   res: Response
@@ -124,9 +115,6 @@ export async function updateOrganizationHandler(
       return res.status(403).json({ error: "Access denied" });
     }
 
-    // Non-admin owners may only edit their own profile fields - not status,
-    // walletBalance, isActive, ownerId, etc. Those go through their own
-    // dedicated admin-only routes (approve/reject/suspend/activate/top-up).
     const updateData = isAdmin
       ? req.body
       : { name: req.body.name, description: req.body.description };
@@ -139,9 +127,6 @@ export async function updateOrganizationHandler(
   }
 }
 
-/**
- * Delete organization (Admin only)
- */
 export async function deleteOrganizationHandler(
   req: Request<{ id: string }>,
   res: Response
@@ -160,9 +145,6 @@ export async function deleteOrganizationHandler(
   }
 }
 
-/**
- * Get users of an organization (Admin or Org Owner)
- */
 export async function getOrganizationUsersHandler(
   req: Request<{ id: string }>,
   res: Response
@@ -192,9 +174,6 @@ export async function getOrganizationUsersHandler(
   }
 }
 
-/**
- * Add an existing user to an organization by ID (Admin or Org Owner)
- */
 export async function addUserToOrganizationHandler(
   req: Request<{ id: string }>,
   res: Response
@@ -223,10 +202,6 @@ export async function addUserToOrganizationHandler(
   }
 }
 
-/**
- * Create a brand-new user account directly inside an organization,
- * with a generated temporary password (Admin or Org Owner)
- */
 export async function createOrganizationMemberHandler(
   req: Request<{ id: string }>,
   res: Response
@@ -234,7 +209,7 @@ export async function createOrganizationMemberHandler(
   try {
     const user = (req as any).user;
     const orgId = req.params.id;
-    const { name, email, role } = req.body;
+    const { name, email, role, mode } = req.body;
 
     if (!name?.trim() || !email?.trim()) {
       return res.status(400).json({ error: "יש למלא שם וכתובת אימייל" });
@@ -255,6 +230,7 @@ export async function createOrganizationMemberHandler(
       name: name.trim(),
       email: email.trim(),
       role,
+      mode,
     });
 
     res.status(201).json({
@@ -268,9 +244,85 @@ export async function createOrganizationMemberHandler(
   }
 }
 
-/**
- * Add a user to organization by Email (Admin or Org Owner)
- */
+export async function addOrganizationProviderKeyHandler(
+  req: Request<{ id: string }>,
+  res: Response
+) {
+  try {
+    const user = (req as any).user;
+    const orgId = req.params.id;
+    const { provider, apiKey } = req.body;
+
+    const organization = await getOrganizationById(orgId);
+    if (!organization) {
+      return res.status(404).json({ error: "Organization not found" });
+    }
+
+    const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const key = await addOrganizationProviderKey(orgId, { provider, apiKey });
+    res.status(201).json({ success: true, key });
+  } catch (error: any) {
+    logger.error("Failed to add organization provider key", { error });
+    res.status(400).json({ error: error.message || "Failed to add provider key" });
+  }
+}
+
+export async function listOrganizationProviderKeysHandler(
+  req: Request<{ id: string }>,
+  res: Response
+) {
+  try {
+    const user = (req as any).user;
+    const orgId = req.params.id;
+
+    const organization = await getOrganizationById(orgId);
+    if (!organization) {
+      return res.status(404).json({ error: "Organization not found" });
+    }
+
+    const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const keys = await listOrganizationProviderKeys(orgId);
+    res.json(keys);
+  } catch (error) {
+    logger.error("Failed to list organization provider keys", { error });
+    res.status(500).json({ error: "Failed to list provider keys" });
+  }
+}
+
+export async function deleteOrganizationProviderKeyHandler(
+  req: Request<{ id: string; keyId: string }>,
+  res: Response
+) {
+  try {
+    const user = (req as any).user;
+    const orgId = req.params.id;
+
+    const organization = await getOrganizationById(orgId);
+    if (!organization) {
+      return res.status(404).json({ error: "Organization not found" });
+    }
+
+    const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    await deleteOrganizationProviderKey(req.params.keyId);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error("Failed to delete organization provider key", { error });
+    res.status(500).json({ error: "Failed to delete provider key" });
+  }
+}
+
 export async function addUserByEmailToOrganizationHandler(
   req: Request<{ id: string }>,
   res: Response
@@ -313,9 +365,6 @@ export async function addUserByEmailToOrganizationHandler(
   }
 }
 
-/**
- * Remove a user from an organization (Admin or Org Owner)
- */
 export async function removeUserFromOrganizationHandler(
   req: Request<{ userId: string }>,
   res: Response
@@ -346,9 +395,6 @@ export async function removeUserFromOrganizationHandler(
   }
 }
 
-/**
- * Get all pending organizations for authorization (Admin only)
- */
 export async function getPendingOrganizationsHandler(
   req: Request,
   res: Response
@@ -369,9 +415,6 @@ export async function getPendingOrganizationsHandler(
   }
 }
 
-/**
- * Top up organization wallet (Admin or Org Owner) - Mock Only
- */
 export async function topUpOrganizationWalletHandler(
   req: Request<{ id: string }>,
   res: Response
@@ -408,9 +451,6 @@ export async function topUpOrganizationWalletHandler(
   }
 }
 
-/**
- * List ALL organizations with user counts + wallet balance (Admin only)
- */
 export async function getAllOrganizationsHandler(_req: Request, res: Response) {
   try {
     const organizations = await listAllOrganizationsWithStats();
@@ -421,9 +461,6 @@ export async function getAllOrganizationsHandler(_req: Request, res: Response) {
   }
 }
 
-/**
- * Suspend an organization (Admin only) -> isActive: false
- */
 export async function suspendOrganizationHandler(
   req: Request<{ id: string }>,
   res: Response
@@ -437,9 +474,6 @@ export async function suspendOrganizationHandler(
   }
 }
 
-/**
- * Reactivate a suspended organization (Admin only) -> isActive: true
- */
 export async function activateOrganizationHandler(
   req: Request<{ id: string }>,
   res: Response
@@ -453,9 +487,6 @@ export async function activateOrganizationHandler(
   }
 }
 
-/**
- * Get organization usage summary + wallet balance (Admin or Org Owner)
- */
 export async function getOrganizationStatsHandler(
   req: Request<{ id: string }>,
   res: Response
@@ -485,10 +516,6 @@ export async function getOrganizationStatsHandler(
   }
 }
 
-/**
- * PUBLIC: create org-owner account + pending organization together.
- * No authentication required — this IS the sign-up for org owners.
- */
 export async function publicRequestOrganizationHandler(req: Request, res: Response) {
   try {
     const { ownerName, ownerEmail, ownerPassword, orgName, orgDescription } = req.body;
@@ -515,9 +542,6 @@ export async function publicRequestOrganizationHandler(req: Request, res: Respon
     });
   } catch (error: any) {
     logger.error("Failed public organization request", { error });
-    // register() ו-publicRequestOrganization() כבר זורקים הודעות עבריות ברורות
-    // ומובחנות עבור התנגשות אימייל לעומת התנגשות שם ארגון - מציגים אותן כמו
-    // שהן במקום למפות כל שגיאה גורפת ל"אימייל כבר רשום".
     if (error?.message?.includes("אימייל") || error?.message?.includes("שם הארגון")) {
       return res.status(409).json({ error: error.message });
     }
@@ -525,10 +549,6 @@ export async function publicRequestOrganizationHandler(req: Request, res: Respon
   }
 }
 
-/**
- * Get the current user's own organization (with status). Accessible to the owner
- * regardless of approval state, so the frontend can show the right screen.
- */
 export async function getMyOrganizationHandler(req: Request, res: Response) {
   try {
     const user = (req as any).user;
@@ -540,9 +560,6 @@ export async function getMyOrganizationHandler(req: Request, res: Response) {
   }
 }
 
-/**
- * Approve a pending organization (Admin only) -> status=approved, isActive=true, email owner
- */
 export async function approveOrganizationHandler(
   req: Request<{ id: string }>,
   res: Response
@@ -556,9 +573,6 @@ export async function approveOrganizationHandler(
   }
 }
 
-/**
- * Reject a pending organization (Admin only) -> status=rejected, isActive=false
- */
 export async function rejectOrganizationHandler(
   req: Request<{ id: string }>,
   res: Response

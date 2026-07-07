@@ -11,6 +11,10 @@ import {
   activateOrganizationHandler,
   addUserToOrganizationHandler,
   removeUserFromOrganizationHandler,
+  createOrganizationMemberHandler,
+  addOrganizationProviderKeyHandler,
+  listOrganizationProviderKeysHandler,
+  deleteOrganizationProviderKeyHandler,
 } from "../organizationController";
 import * as organizationService from "../../services/organizationService";
 
@@ -26,6 +30,10 @@ jest.mock("../../services/organizationService", () => ({
   removeUserFromOrganization: jest.fn(),
   rejectOrganization: jest.fn(),
   setOrganizationActive: jest.fn(),
+  createOrganizationMember: jest.fn(),
+  addOrganizationProviderKey: jest.fn(),
+  listOrganizationProviderKeys: jest.fn(),
+  deleteOrganizationProviderKey: jest.fn(),
 }));
 
 const mockedService = jest.mocked(organizationService);
@@ -545,5 +553,116 @@ describe("organizationController.removeUserFromOrganizationHandler (#233 ORG-06)
 
     expect(mockedService.removeUserFromOrganization).toHaveBeenCalledWith("user-1");
     expect(res.status).not.toHaveBeenCalledWith(403);
+  });
+});
+
+describe("organizationController.createOrganizationMemberHandler mode (#144 MANAGED_ORG)", () => {
+  it("passes the mode through to createOrganizationMember", async () => {
+    mockedService.getOrganizationById.mockResolvedValue({
+      _id: "org-A",
+      ownerId: "owner-A",
+    } as any);
+    mockedService.createOrganizationMember.mockResolvedValue({
+      user: { _id: "newUser1", name: "New Member", email: "member@example.com" },
+      temporaryPassword: "temp123",
+    } as any);
+
+    const req = {
+      params: { id: "org-A" },
+      user: { userId: "owner-A", role: "org_owner" },
+      body: { name: "New Member", email: "member@example.com", mode: "MANAGED_ORG" },
+    } as any;
+    const res = mockRes();
+
+    await createOrganizationMemberHandler(req, res);
+
+    expect(mockedService.createOrganizationMember).toHaveBeenCalledWith(
+      "org-A",
+      expect.objectContaining({
+        name: "New Member",
+        email: "member@example.com",
+        mode: "MANAGED_ORG",
+      })
+    );
+  });
+});
+
+describe("organizationController provider-key endpoints (#144 MANAGED_ORG)", () => {
+  it("addOrganizationProviderKeyHandler adds a key when the org_owner owns the organization", async () => {
+    mockedService.getOrganizationById.mockResolvedValue({
+      _id: "org-A",
+      ownerId: "owner-A",
+    } as any);
+    mockedService.addOrganizationProviderKey.mockResolvedValue({ _id: "key1" } as any);
+
+    const req = {
+      params: { id: "org-A" },
+      user: { userId: "owner-A", role: "org_owner" },
+      body: { provider: "openai", apiKey: "sk-test" },
+    } as any;
+    const res = mockRes();
+
+    await addOrganizationProviderKeyHandler(req, res);
+
+    expect(mockedService.addOrganizationProviderKey).toHaveBeenCalledWith("org-A", {
+      provider: "openai",
+      apiKey: "sk-test",
+    });
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  it("addOrganizationProviderKeyHandler returns 403 for a cross-org attempt", async () => {
+    mockedService.getOrganizationById.mockResolvedValue({
+      _id: "org-B",
+      ownerId: "owner-B",
+    } as any);
+
+    const req = {
+      params: { id: "org-B" },
+      user: { userId: "owner-A", role: "org_owner" },
+      body: { provider: "openai", apiKey: "sk-test" },
+    } as any;
+    const res = mockRes();
+
+    await addOrganizationProviderKeyHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockedService.addOrganizationProviderKey).not.toHaveBeenCalled();
+  });
+
+  it("listOrganizationProviderKeysHandler lists keys for the owning org_owner", async () => {
+    mockedService.getOrganizationById.mockResolvedValue({
+      _id: "org-A",
+      ownerId: "owner-A",
+    } as any);
+    mockedService.listOrganizationProviderKeys.mockResolvedValue([{ _id: "key1" }] as any);
+
+    const req = {
+      params: { id: "org-A" },
+      user: { userId: "owner-A", role: "org_owner" },
+    } as any;
+    const res = mockRes();
+
+    await listOrganizationProviderKeysHandler(req, res);
+
+    expect(res.json).toHaveBeenCalledWith([{ _id: "key1" }]);
+  });
+
+  it("deleteOrganizationProviderKeyHandler deletes a key when an admin requests it", async () => {
+    mockedService.getOrganizationById.mockResolvedValue({
+      _id: "org-B",
+      ownerId: "owner-B",
+    } as any);
+
+    const req = {
+      params: { id: "org-B", keyId: "key1" },
+      user: { userId: "admin-1", role: "admin" },
+    } as any;
+    const res = mockRes();
+
+    await deleteOrganizationProviderKeyHandler(req, res);
+
+    expect(mockedService.deleteOrganizationProviderKey).toHaveBeenCalledWith("key1");
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
   });
 });

@@ -20,13 +20,15 @@ import {
   approveOrganizationHandler,
   rejectOrganizationHandler,
   getMyOrganizationHandler,
+  addOrganizationProviderKeyHandler,
+  listOrganizationProviderKeysHandler,
+  deleteOrganizationProviderKeyHandler,
 } from "../controllers/organizationController";
 import { authenticateToken, requireAdmin } from "../middleware/auth";
 import { getOrganizationById } from "../services/organizationService";
 
 const router = express.Router();
 
-// חוסם פעולות ניהול לבעל ארגון כל עוד הארגון אינו מאושר (אדמין עוקף)
 export async function requireApprovedOrg(
   req: express.Request<{ id: string }>,
   res: express.Response,
@@ -88,5 +90,10 @@ router.post("/:id/users/by-email", requireApprovedOrg, addUserByEmailToOrganizat
 
 // Wallet Management (Mock) - blocked until org is approved (admins bypass)
 router.post("/:id/top-up", requireApprovedOrg, topUpOrganizationWalletHandler); // Admin or approved Org Owner
+
+// Org-level AI provider keys, used by "MANAGED_ORG" members instead of a personal key
+router.post("/:id/provider-keys", requireApprovedOrg, addOrganizationProviderKeyHandler); // Admin or approved Org Owner
+router.get("/:id/provider-keys", requireApprovedOrg, listOrganizationProviderKeysHandler); // Admin or approved Org Owner
+router.delete("/:id/provider-keys/:keyId", requireApprovedOrg, deleteOrganizationProviderKeyHandler); // Admin or approved Org Owner
 
 export default router;
