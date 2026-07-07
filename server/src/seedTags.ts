@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Tag from './models/Tag'; // ודאי שהנתיב למודל ה-Tag שלך מדויק
+import Tag from './models/tag'; // ודאי שהנתיב למודל ה-Tag שלך מדויק
 
 // 1. מושגים ליבה, שפות, ספריות וכלים (ידני - כ-250 מושגים)
 const coreTechConcepts = [

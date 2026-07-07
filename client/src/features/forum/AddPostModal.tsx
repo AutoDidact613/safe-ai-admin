@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CreatableSelect from 'react-select/creatable';
+import type { MultiValue } from 'react-select';
 import { authFetch } from '../../utils/apiClient';
 interface AddPostModalProps {
   isOpen: boolean;
@@ -10,7 +11,7 @@ interface AddPostModalProps {
 
 export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onPostCreated }) => {
   const [formData, setFormData] = useState({ title: '', category: 'פיתוח', tags: '', content: '' });
-  const [similarPosts, setSimilarPosts] = useState([]);
+  const [similarPosts, setSimilarPosts] = useState<{ _id: string; title: string }[]>([]);
   const [showSimilar, setShowSimilar] = useState(false); 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,7 +34,7 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
     fetch('http://localhost:5000/api/tags')
       .then((res) => res.json())
       .then((data) => {
-        const formatted = Array.isArray(data) ? data.map((tag: any) => ({
+        const formatted = Array.isArray(data) ? data.map((tag: { _id?: string; name: string }) => ({
           value: tag._id || tag.name,
           label: tag.name
         })) : [];
@@ -108,9 +109,9 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
         setAiTags(data.tags || data.Tags || []);
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setValidationError(err.message || 'לא ניתן היה לקבל מענה מה-AI כרגע.');
+      setValidationError(err instanceof Error ? err.message : 'לא ניתן היה לקבל מענה מה-AI כרגע.');
     } finally {
       setIsAiLoading(false);
     }
@@ -284,7 +285,7 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
                       סגור ✖
                     </button>
                   </div>
-                  {similarPosts.map((post: any) => (
+                  {similarPosts.map((post) => (
                     <div key={post._id} style={{ marginBottom: '4px' }}>
                       <a href={`/forum/post/${post._id}`} target="_blank" rel="noreferrer" style={{ fontSize: '13px', color: '#059669', textDecoration: 'underline' }}>
                         {post.title}
@@ -412,7 +413,7 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
               isMulti
               options={allTags}
               value={selectedTags}
-              onChange={(newValue: any) => setSelectedTags(newValue || [])}
+              onChange={(newValue: MultiValue<{ value: string; label: string }>) => setSelectedTags(newValue ? [...newValue] : [])}
               inputValue={tagInputValue}
               onInputChange={(val) => setTagInputValue(val)}
               placeholder="נא להכניס לפחות 3 אותיות"

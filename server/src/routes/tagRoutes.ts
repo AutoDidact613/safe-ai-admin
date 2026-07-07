@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import Tag from '../models/Tag'; // ודאי שהנתיב למודל ה-Tag שלך מדויק
+import Tag from '../models/tag'; // ודאי שהנתיב למודל ה-Tag שלך מדויק
 
 const router = Router();
 

@@ -1,7 +1,7 @@
 import { resolveOrCreateTagByName, resolveOrCreateTagsByNames } from '../../services/tagService';
-import Tag from '../../models/Tag';
+import Tag from '../../models/tag';
 
-jest.mock('../../models/Tag');
+jest.mock('../../models/tag');
 
 describe('resolveOrCreateTagByName', () => {
   afterEach(() => {
