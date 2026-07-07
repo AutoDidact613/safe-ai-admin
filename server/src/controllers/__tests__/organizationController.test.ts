@@ -4,6 +4,7 @@ import {
   getOrganizationUsersHandler,
   updateOrganizationHandler,
   publicRequestOrganizationHandler,
+  topUpOrganizationWalletHandler,
 } from "../organizationController";
 import * as organizationService from "../../services/organizationService";
 
@@ -12,6 +13,7 @@ jest.mock("../../services/organizationService", () => ({
   getOrganizationUsers: jest.fn(),
   updateOrganization: jest.fn(),
   publicRequestOrganization: jest.fn(),
+  topUpOrganizationWallet: jest.fn(),
 }));
 
 const mockedService = jest.mocked(organizationService);
@@ -217,5 +219,63 @@ describe("organizationController.publicRequestOrganizationHandler", () => {
     await publicRequestOrganizationHandler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(201);
+  });
+});
+
+describe("organizationController.topUpOrganizationWalletHandler", () => {
+  it.each([0, -50, -0.01])(
+    "rejects a top-up amount of %p with 400 and does not touch the wallet",
+    async (amount) => {
+      const req = { params: { id: "org-A" }, user: { userId: "owner-A", role: "org_owner" }, body: { amount } } as any;
+      const res = mockRes();
+
+      await topUpOrganizationWalletHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(mockedService.getOrganizationById).not.toHaveBeenCalled();
+      expect(mockedService.topUpOrganizationWallet).not.toHaveBeenCalled();
+    }
+  );
+
+  it("rejects a non-numeric amount with 400", async () => {
+    const req = { params: { id: "org-A" }, user: { userId: "owner-A", role: "org_owner" }, body: { amount: "100" } } as any;
+    const res = mockRes();
+
+    await topUpOrganizationWalletHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(mockedService.topUpOrganizationWallet).not.toHaveBeenCalled();
+  });
+
+  it("tops up the wallet for a valid positive amount when the org_owner owns the organization", async () => {
+    mockedService.getOrganizationById.mockResolvedValue({
+      _id: "org-A",
+      ownerId: "owner-A",
+    } as any);
+    mockedService.topUpOrganizationWallet.mockResolvedValue({ _id: "org-A", walletBalance: 150 } as any);
+
+    const req = { params: { id: "org-A" }, user: { userId: "owner-A", role: "org_owner" }, body: { amount: 50 } } as any;
+    const res = mockRes();
+
+    await topUpOrganizationWalletHandler(req, res);
+
+    expect(mockedService.topUpOrganizationWallet).toHaveBeenCalledWith("org-A", 50);
+    expect(res.status).not.toHaveBeenCalledWith(400);
+    expect(res.status).not.toHaveBeenCalledWith(403);
+  });
+
+  it("returns 403 when an org_owner tries to top up a different organization's wallet", async () => {
+    mockedService.getOrganizationById.mockResolvedValue({
+      _id: "org-B",
+      ownerId: "owner-B",
+    } as any);
+
+    const req = { params: { id: "org-B" }, user: { userId: "owner-A", role: "org_owner" }, body: { amount: 50 } } as any;
+    const res = mockRes();
+
+    await topUpOrganizationWalletHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockedService.topUpOrganizationWallet).not.toHaveBeenCalled();
   });
 });
