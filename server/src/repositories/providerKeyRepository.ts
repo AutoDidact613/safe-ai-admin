@@ -17,13 +17,28 @@ export async function getProviderKeyByUserAndProvider(
 }
 
 export async function getSystemProviderKey(provider: string) {
-  
-  
+
+
   return ProviderKey.findOne({
     provider,
     isSystem: true,
     isActive: true,
   });
+}
+
+export async function getProviderKeyByOrgAndProvider(
+  organizationId: string,
+  provider: string,
+) {
+  return ProviderKey.findOne({
+    organizationId,
+    provider,
+    isActive: true,
+  });
+}
+
+export async function getProviderKeysByOrganization(organizationId: string) {
+  return ProviderKey.find({ organizationId }).lean();
 }
 
 export async function getProviderKeys() {

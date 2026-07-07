@@ -11,6 +11,7 @@ export async function addProviderKey(data: any) {
 
   return repo.createProviderKey({
     userId: data.userId,
+    organizationId: data.organizationId,
     provider: data.provider,
     apiKeyEncrypted: encryptSecret(apiKey),
     keyPrefix: getKeyPrefix(apiKey),
@@ -23,17 +24,20 @@ export async function listProviderKeys() {
   return repo.getProviderKeys();
 }
 
+export async function listProviderKeysForOrganization(organizationId: string) {
+  return repo.getProviderKeysByOrganization(organizationId);
+}
+
 export async function getProviderKeyById(keyId: string) {
   return repo.getProviderKeyById(keyId);
 }
 
 export async function updateProviderKey(keyId: string, data: any) {
-  // אם יש apiKey חדש, נצפין אותו
   if (data.apiKey) {
     const apiKey = data.apiKey.trim();
     data.apiKeyEncrypted = encryptSecret(apiKey);
     data.keyPrefix = getKeyPrefix(apiKey);
-    delete data.apiKey; // מוחקים את המפתח הגלוי מהנתונים
+    delete data.apiKey;
   }
 
   return repo.updateProviderKey(keyId, data);
