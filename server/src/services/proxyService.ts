@@ -3,7 +3,9 @@ import { decryptSecret } from "../utils/crypto";
 import {
   getProviderKeyByUserAndProvider,
   getSystemProviderKey,
+  getProviderKeyByOrgAndProvider,
 } from "../repositories/providerKeyRepository";
+import { getOrganizationForUser } from "./organizationService";
 import { OpenAI } from "openai";
 import { logUsage } from "./usageTracker";
 import { isProviderKeyFree } from "../middleware/rateLimiter";
@@ -17,11 +19,8 @@ import {
 import logger from "../logger";
 import { buildSystemPrompt } from "./promptBuilder";
 import { guardInput } from "../workflows/proxyFilter";
-/**
- * מזהה provider מתוך model
- */
+
 function getProviderFromModel(model: string): string {
-  // אם יש prefix → הכי אמין
   if (model.includes("/")) {
     return model.split("/")[0] || "unknown";
   }
@@ -48,21 +47,44 @@ function getProviderFromModel(model: string): string {
   throw new Error(`Unsupported model: ${model}`);
 }
 
-/**
- * נורמליזציה של שם המודל - מוסיף prefix של provider אם חסר
- */
 function normalizeModelName(model: string, provider: string): string {
-  // אם כבר יש prefix, החזר כמו שזה
   if (model.includes("/")) {
     return model;
   }
 
-  // אחרת, הוסף את ה-provider כ-prefix
   return `${provider}/${model}`;
 }
 
+export async function resolveProviderKeyForUser(
+  user: any,
+  provider: string,
+  model?: string,
+) {
+  if (user.mode === "MANAGED_ORG") {
+    const organization = await getOrganizationForUser(user._id.toString());
+    if (!organization) {
+      throw new Error("User is not linked to an organization");
+    }
+
+    const allowedModels = (organization as any).settings?.allowedModels;
+    if (model && allowedModels?.length && !allowedModels.includes(model)) {
+      throw new Error(`Model not allowed for your organization: ${model}`);
+    }
+
+    return getProviderKeyByOrgAndProvider(
+      (organization as any)._id.toString(),
+      provider,
+    );
+  }
+
+  if (user.mode === "MANAGED") {
+    return getSystemProviderKey(provider);
+  }
+
+  return getProviderKeyByUserAndProvider(user._id.toString(), provider);
+}
+
 function getLiteLLMCost(response: Response, data?: any): number | undefined {
-  // 1. הכי אמין - headers של LiteLLM
   const headerCost =
     response.headers.get("x-litellm-response-cost-original") ||
     response.headers.get("x-litellm-response-cost");
@@ -75,7 +97,6 @@ function getLiteLLMCost(response: Response, data?: any): number | undefined {
     }
   }
 
-  // 2. fallback - body
   const bodyCost = data?._hidden_params?.response_cost ?? data?.response_cost;
 
   if (bodyCost !== undefined && bodyCost !== null) {
@@ -101,7 +122,6 @@ function extractTextFromMessageContent(content: any): string {
           return part.text || "";
         }
 
-        // תוצאת כלי - יכולה להיות string או array של בלוקים
         if (part.type === "tool_result") {
           if (typeof part.content === "string") return part.content;
           if (Array.isArray(part.content)) {
@@ -112,7 +132,6 @@ function extractTextFromMessageContent(content: any): string {
           return "";
         }
 
-        // קריאה לכלי - שם + input, כדי שה-judge יראה קונטקסט
         if (part.type === "tool_use") {
           return `[tool_use: ${part.name || "unknown"}] ${JSON.stringify(part.input || {})}`;
         }
@@ -177,8 +196,6 @@ function extractUserIntentForFilter(messages: any[], count = 3): string {
     cleanUserMessages.length > 0
       ? cleanUserMessages.slice(-count)
       : messages
-          // 🎯 רק user/assistant בפולבאק - לא developer/system,
-          // כדי לא לחשוף system prompts של agents ל-judge
           .filter((msg: any) => msg.role === "user" || msg.role === "assistant")
           .map((msg: any) => {
             return {
@@ -227,7 +244,6 @@ function extractLastInputsForResponses(input: any[], count = 3): string {
     .join("\n\n---\n\n");
 }
 
-// ---------- proxies ---------------
 
 export async function proxyChatCompletion(user: any, body: any) {
   const model = body.model;
@@ -236,16 +252,11 @@ export async function proxyChatCompletion(user: any, body: any) {
     throw new Error("Model is required");
   }
 
-  // 1. זיהוי הספק
   const provider = getProviderFromModel(model);
 
   let providerKey;
 
-  // 2. השגת מפתח הספק של המשתמש
-  const providerKeyDoc =
-    user.mode === "MANAGED"
-      ? await getSystemProviderKey(provider)
-      : await getProviderKeyByUserAndProvider(user._id.toString(), provider);
+  const providerKeyDoc = await resolveProviderKeyForUser(user, provider, model);
 
   if (!providerKeyDoc) {
     throw new Error(`Provider key missing for provider: ${provider}`);
@@ -253,17 +264,14 @@ export async function proxyChatCompletion(user: any, body: any) {
 
   const providerApiKey = decryptSecret(providerKeyDoc.apiKeyEncrypted);
 
-  // Check if this provider key is free
   const isFree = isProviderKeyFree(user, providerKeyDoc._id.toString());
 
-  // 3. סינון טקסט (Content Filtering)
   const profile = await AIProfile.findById(user.profileId);
 
   if (!profile) {
     throw new Error("Profile not found");
   }
 
-  // חילוץ ההודעה האחרונה מהמערך
   const userQuery = extractLastMessagesForFilter(body.messages || [], 3);
 
   if (userQuery && userQuery.trim() !== "") {
@@ -280,7 +288,6 @@ export async function proxyChatCompletion(user: any, body: any) {
       "⚠️ No textual content to moderate (chat) - skipping guardInput",
     );
   }
-  // 4. הוספת system prompts
 
   const systemPrompt = await buildSystemPrompt(profile);
 
@@ -293,14 +300,11 @@ export async function proxyChatCompletion(user: any, body: any) {
     });
   }
 
-  // 5. קריאה ל-LiteLLM עם העברת API Key דינמית
-
   const decryptedLiteLLMKey = decryptSecret(user.litellmKeyEncrypted);
   if (!decryptedLiteLLMKey) {
     throw new Error("LiteLLM Proxy Key could not be decrypted or is missing");
   }
 
-  // --- לוגים לבדיקה (מומלץ להשאיר עד שהצ'אט עובד) ---
   const startTime = Date.now();
   const litellmResponse = await fetch(
     `${process.env.LITELLM_PROXY_URL}/v1/chat/completions`,
@@ -314,7 +318,6 @@ export async function proxyChatCompletion(user: any, body: any) {
         model: model,
         messages: messages,
         stream: body.stream ?? false,
-        // 🎯 המפתח של הספק
         api_key: providerApiKey,
       }),
     },
@@ -330,12 +333,9 @@ export async function proxyChatCompletion(user: any, body: any) {
     throw new Error(`LiteLLM request failed: ${errorText}`);
   }
 
-  // 6. 🎯 החזרת התשובה - זה הקריטי!
   if (body.stream) {
-    // החזר את ה-stream
     logger.debug("✅ Returning stream");
 
-    // For streaming, we need to intercept the stream to collect usage data
     const reader = litellmResponse.body?.getReader();
     if (!reader) {
       throw new Error("Failed to get stream reader");
@@ -350,7 +350,6 @@ export async function proxyChatCompletion(user: any, body: any) {
     let responseId = "streaming";
     let responseCost = 0;
 
-    // Create a new ReadableStream that we'll return to the client
     const stream = new ReadableStream({
       async start(controller) {
         try {
@@ -358,7 +357,6 @@ export async function proxyChatCompletion(user: any, body: any) {
             const { done, value } = await reader.read();
 
             if (done) {
-              // Stream finished - log the accumulated usage
               const responseTime = Date.now() - startTime;
               logger.info(
                 "📊 Logging usage for streaming request, user:",
@@ -369,8 +367,6 @@ export async function proxyChatCompletion(user: any, body: any) {
                 accumulatedUsage.total_tokens,
               );
 
-              // Fix: Calculate cost properly - if responseCost is 0, calculate from tokens
-              // Normalize model name to include provider prefix for cost calculation
               const normalizedModel = normalizeModelName(model, provider);
               let streamCost = responseCost;
               if (!streamCost || streamCost === 0) {
@@ -413,7 +409,6 @@ export async function proxyChatCompletion(user: any, body: any) {
               break;
             }
 
-            // Parse the chunk to extract usage information
             const chunk = decoder.decode(value, { stream: true });
             const lines = chunk.split("\n");
 
@@ -425,7 +420,6 @@ export async function proxyChatCompletion(user: any, body: any) {
                 try {
                   const parsed = JSON.parse(data);
 
-                  // Extract usage data if present
                   if (parsed.usage) {
                     accumulatedUsage.prompt_tokens +=
                       parsed.usage.prompt_tokens || 0;
@@ -434,22 +428,18 @@ export async function proxyChatCompletion(user: any, body: any) {
                     accumulatedUsage.total_tokens +=
                       parsed.usage.total_tokens || 0;
                   }
-                  // Extract cost if present
                   if (parsed._hidden_params?.response_cost) {
                     responseCost = parsed._hidden_params.response_cost;
                   }
 
-                  // Extract response ID
                   if (parsed.id) {
                     responseId = parsed.id;
                   }
                 } catch (e) {
-                  // Not valid JSON, skip
                 }
               }
             }
 
-            // Forward the chunk to the client
             controller.enqueue(value);
           }
         } catch (error: any) {
@@ -465,11 +455,8 @@ export async function proxyChatCompletion(user: any, body: any) {
     return stream;
   }
 
-  // החזר את ה-JSON
   const data: any = await litellmResponse.json();
 
-  // Fix: Calculate cost properly - if LiteLLM doesn't provide cost, calculate from tokens
-  // Normalize model name to include provider prefix for cost calculation
   const normalizedModel = normalizeModelName(model, provider);
   let cost = getLiteLLMCost(litellmResponse, data);
 
@@ -489,7 +476,6 @@ export async function proxyChatCompletion(user: any, body: any) {
   );
   logger.info("- Tokens:", data.usage?.total_tokens);
 
-  // 7. Log usage
   const responseTime = Date.now() - startTime;
   logger.debug("📊 Logging usage for user:", user._id);
   try {
@@ -513,7 +499,6 @@ export async function proxyChatCompletion(user: any, body: any) {
     });
   }
 
-  // 🚨 זה החלק הכי חשוב - להחזיר את הדאטה!
   return data;
 }
 
@@ -525,10 +510,7 @@ export async function proxyResponses(user: any, body: any) {
 
   const provider = getProviderFromModel(model);
 
-  const providerKeyDoc =
-    user.mode === "MANAGED"
-      ? await getSystemProviderKey(provider)
-      : await getProviderKeyByUserAndProvider(user._id.toString(), provider);
+  const providerKeyDoc = await resolveProviderKeyForUser(user, provider, model);
 
   if (!providerKeyDoc)
     throw new Error(`Provider key missing for provider: ${provider}`);
@@ -540,7 +522,6 @@ export async function proxyResponses(user: any, body: any) {
   if (!decryptedLiteLLMKey)
     throw new Error("LiteLLM Proxy Key could not be decrypted or is missing");
 
-  // Content filtering - אותו לוגיק כמו בchat completions
   const profile = await AIProfile.findById(user.profileId);
   if (!profile) throw new Error("Profile not found");
 
@@ -566,9 +547,7 @@ export async function proxyResponses(user: any, body: any) {
     );
   }
 
-  // System prompt מה-profile
   const systemPrompt = await buildSystemPrompt(profile);
-  // ב-Responses API - system prompt הולך בתוך instructions
   const requestBody: any = {
     ...body,
     api_key: providerApiKey,
@@ -601,7 +580,6 @@ export async function proxyResponses(user: any, body: any) {
     throw new Error(`LiteLLM responses request failed: ${errorText}`);
   }
 
-  // ========== STREAMING ==========
   if (body.stream) {
     const reader = litellmResponse.body?.getReader();
     if (!reader) throw new Error("Failed to get stream reader");
@@ -649,7 +627,6 @@ export async function proxyResponses(user: any, body: any) {
               break;
             }
 
-            // פרסור events מה-stream לחילוץ usage
             const chunk = decoder.decode(value, { stream: true });
             for (const line of chunk.split("\n")) {
               if (!line.startsWith("data: ")) continue;
@@ -659,7 +636,6 @@ export async function proxyResponses(user: any, body: any) {
               try {
                 const parsed = JSON.parse(data);
 
-                // Responses API - usage מגיע ב-response.completed event
                 if (
                   parsed.type === "response.completed" &&
                   parsed.response?.usage
@@ -679,7 +655,7 @@ export async function proxyResponses(user: any, body: any) {
                   responseId = parsed.response?.id || parsed.id;
                 }
               } catch (_) {
-                // not JSON, skip
+
               }
             }
 
@@ -695,10 +671,8 @@ export async function proxyResponses(user: any, body: any) {
     return stream;
   }
 
-  // ========== NON-STREAMING ==========
   const data: any = await litellmResponse.json();
 
-  // Responses API מחזיר usage עם input_tokens/output_tokens (לא prompt/completion)
   const usageNormalized = {
     prompt_tokens: data.usage?.input_tokens || 0,
     completion_tokens: data.usage?.output_tokens || 0,
@@ -752,10 +726,7 @@ export async function proxyAnthropicMessages(user: any, body: any) {
 
   const provider = getProviderFromModel(model);
 
-  const providerKeyDoc =
-    user.mode === "MANAGED"
-      ? await getSystemProviderKey(provider)
-      : await getProviderKeyByUserAndProvider(user._id.toString(), provider);
+  const providerKeyDoc = await resolveProviderKeyForUser(user, provider, model);
 
   if (!providerKeyDoc) {
     throw new Error(`Provider key missing for provider: ${provider}`);
@@ -887,7 +858,6 @@ export async function proxyAnthropicMessages(user: any, body: any) {
   return data;
 }
 
-// ========== IMAGE GENERATION ==========
 export async function proxyImageGeneration(user: any, body: any) {
   const startTime = Date.now();
   const model = body.model || "dall-e-3";
@@ -896,10 +866,7 @@ export async function proxyImageGeneration(user: any, body: any) {
 
   const provider = getProviderFromModel(model);
 
-  const providerKeyDoc =
-    user.mode === "MANAGED"
-      ? await getSystemProviderKey(provider)
-      : await getProviderKeyByUserAndProvider(user._id.toString(), provider);
+  const providerKeyDoc = await resolveProviderKeyForUser(user, provider, model);
 
   if (!providerKeyDoc) throw new Error(`Provider key missing for: ${provider}`);
 
@@ -941,7 +908,6 @@ export async function proxyImageGeneration(user: any, body: any) {
 
   const data: any = await litellmResponse.json();
 
-  // Calculate image cost based on request parameters
   const size = body.size || "1024x1024";
   const quality = body.quality || "standard";
   const n = body.n || 1;
@@ -964,19 +930,15 @@ export async function proxyImageGeneration(user: any, body: any) {
   return data;
 }
 
-// ========== AUDIO TRANSCRIPTION (Whisper) ==========
 export async function proxyAudioTranscription(
   user: any,
-  formData: FormData, // מגיע מה-multipart
+  formData: FormData, 
   model: string = "whisper-1",
 ) {
   const startTime = Date.now();
   const provider = getProviderFromModel(model);
 
-  const providerKeyDoc =
-    user.mode === "MANAGED"
-      ? await getSystemProviderKey(provider)
-      : await getProviderKeyByUserAndProvider(user._id.toString(), provider);
+  const providerKeyDoc = await resolveProviderKeyForUser(user, provider, model);
 
   if (!providerKeyDoc) throw new Error(`Provider key missing for: ${provider}`);
 
@@ -986,14 +948,12 @@ export async function proxyAudioTranscription(
 
   if (!decryptedLiteLLMKey) throw new Error("LiteLLM key missing");
 
-  // מעביר את ה-FormData ישירות ל-LiteLLM
   const litellmResponse = await fetch(
     `${process.env.LITELLM_PROXY_URL}/v1/audio/transcriptions`,
     {
       method: "POST",
       headers: {
         Authorization: `Bearer ${decryptedLiteLLMKey}`,
-        // Content-Type לא מוגדר - fetch יוסיף boundary אוטומטית ל-multipart
       },
       body: formData,
     },
@@ -1023,16 +983,12 @@ export async function proxyAudioTranscription(
   return data;
 }
 
-// ========== AUDIO SPEECH (TTS) ==========
 export async function proxyAudioSpeech(user: any, body: any) {
   const startTime = Date.now();
   const model = body.model || "tts-1";
   const provider = getProviderFromModel(model);
 
-  const providerKeyDoc =
-    user.mode === "MANAGED"
-      ? await getSystemProviderKey(provider)
-      : await getProviderKeyByUserAndProvider(user._id.toString(), provider);
+  const providerKeyDoc = await resolveProviderKeyForUser(user, provider, model);
 
   if (!providerKeyDoc) throw new Error(`Provider key missing for: ${provider}`);
 
@@ -1059,12 +1015,10 @@ export async function proxyAudioSpeech(user: any, body: any) {
     throw new Error(`LiteLLM TTS failed: ${err}`);
   }
 
-  // TTS מחזיר binary audio - לא JSON!
   const audioBuffer = await litellmResponse.arrayBuffer();
   const contentType =
     litellmResponse.headers.get("content-type") || "audio/mpeg";
 
-  // Calculate TTS cost based on input text
   const inputText = body.input || "";
   const ttsCost = calculateTTSCost(model, inputText);
 
