@@ -315,7 +315,11 @@ export async function deleteOrganizationProviderKeyHandler(
       return res.status(403).json({ error: "Access denied" });
     }
 
-    await deleteOrganizationProviderKey(req.params.keyId);
+    const deleted = await deleteOrganizationProviderKey(orgId, req.params.keyId);
+    if (!deleted) {
+      return res.status(404).json({ error: "Provider key not found" });
+    }
+
     res.json({ success: true });
   } catch (error) {
     logger.error("Failed to delete organization provider key", { error });

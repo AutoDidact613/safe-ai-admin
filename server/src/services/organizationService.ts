@@ -426,6 +426,14 @@ export async function listOrganizationProviderKeys(organizationId: string) {
   return providerKeyService.listProviderKeysForOrganization(organizationId);
 }
 
-export async function deleteOrganizationProviderKey(keyId: string) {
+export async function deleteOrganizationProviderKey(
+  organizationId: string,
+  keyId: string
+) {
+  const key = await providerKeyService.getProviderKeyById(keyId);
+  if (!key || String(key.organizationId) !== String(organizationId)) {
+    return null;
+  }
+
   return providerKeyService.deleteProviderKey(keyId);
 }
