@@ -6,6 +6,16 @@ import request from 'supertest';
 // עקיפה שאין לה שום קשר לפורום.
 jest.mock('../../config/openai', () => ({ openai: {} }));
 
+// utils/crypto.ts זורק שגיאה ברמת המודול אם ENCRYPTION_KEY לא מוגדר -
+// נטען בשרשרת דרך middleware/proxyAuth. אין קובץ .env ב-CI, אז מדמים אותו.
+jest.mock('../../utils/crypto', () => ({
+  generateApiKey: () => 'mock-key',
+  hashApiKey: () => 'mock-hash',
+  getKeyPrefix: () => 'mock-prefix',
+  encryptSecret: (v: string) => v,
+  decryptSecret: (v: string) => v,
+}));
+
 // requestLogger רץ על כל בקשה (גם בבדיקה הזו) ומנסה לשמור רשומת לוג
 // ב-MongoDB האמיתי. בסביבת בדיקות אין חיבור אמיתי, אז זה "נתקע" ל-10
 // שניות (timeout של Mongoose) ומדפיס שגיאה אחרי שהבדיקות כבר הסתיימו.

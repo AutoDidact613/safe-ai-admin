@@ -6,6 +6,16 @@ import request from 'supertest';
 // עקיפה שאין לה שום קשר לפורום.
 jest.mock('../../config/openai', () => ({ openai: {} }));
 
+// utils/crypto.ts זורק שגיאה ברמת המודול אם ENCRYPTION_KEY לא מוגדר -
+// נטען בשרשרת דרך middleware/proxyAuth. אין קובץ .env ב-CI, אז מדמים אותו.
+jest.mock('../../utils/crypto', () => ({
+  generateApiKey: () => 'mock-key',
+  hashApiKey: () => 'mock-hash',
+  getKeyPrefix: () => 'mock-prefix',
+  encryptSecret: (v: string) => v,
+  decryptSecret: (v: string) => v,
+}));
+
 jest.mock('uuid', () => ({ v4: () => 'mock-uuid-value' }));
 jest.mock('../../middleware/requestLogger', () => ({
   requestLogger: (_req: any, _res: any, next: any) => next(),
