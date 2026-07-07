@@ -10,7 +10,7 @@
 
 import { refreshAccessToken } from './tokenManager';
 
-const API_BASE_URL = 'http://localhost:5000';
+// const API_BASE_URL = 'http://localhost:5000';
 
 /**
  * מפענח את חלק ה-Payload של JWT (בלי אימות חתימה - זה נעשה בשרת בלבד).
