@@ -55,7 +55,7 @@ export async function submitContactForm(req: Request, res: Response) {
       userId,
     );
 
-    // Send contact email
+    // Send contact email (best-effort: the request is already saved, so a mail failure shouldn't fail the request)
     const payload: any = {
       userEmail: user.email,
       userName: user.name || user.email,
@@ -64,7 +64,14 @@ export async function submitContactForm(req: Request, res: Response) {
       requestType: requestType.trim(),
     };
 
-    await sendContactEmail(payload);
+    try {
+      await sendContactEmail(payload);
+    } catch (emailError) {
+      logger.error("Failed to send contact notification email:", {
+        error: emailError instanceof Error ? emailError.message : String(emailError),
+        userId,
+      });
+    }
 
     logger.info("Contact form submitted", {
       userId,

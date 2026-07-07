@@ -7,13 +7,19 @@ import {
   deleteOrganization,
   getOrganizationUsers,
   addUserToOrganization,
+  createOrganizationMember,
   removeUserFromOrganization,
   addUserToOrganizationByEmail,
+  getOrganizationForUser,
   topUpOrganizationWallet,
   getPendingOrganizationsForAdmin,
   listAllOrganizationsWithStats,
   setOrganizationActive,
   getOrganizationUsageSummary,
+  publicRequestOrganization,
+  approveOrganization,
+  rejectOrganization,
+  getMyOrganization,
 } from "../services/organizationService";
 import logger from "../logger";
 
@@ -41,23 +47,18 @@ export async function listOrganizationsHandler(req: Request, res: Response) {
   try {
     const user = (req as any).user;
 
-    // הגנה בסיסית: אם אין משתמש מחובר בכלל בטוקן
     if (!user) {
       return res.status(401).json({ error: "Unauthorized: No user token provided" });
     }
 
-    // שליפת כל הארגונים מהשירות
     const allOrganizations = await listOrganizations();
 
-    // 1. אם מדובר באדמין של המערכת - מחזירים לו את כל הארגונים
     if (user.role === "admin") {
       return res.status(200).json(allOrganizations);
     }
 
-    // 2. חילוץ ה-ID של המשתמש הנוכחי מהטוקן
     const currentUserId = user.userId || user.id || user._id;
 
-    // 3. סינון גמיש לבעל הארגון
     const userOrganizations = allOrganizations.filter((org: any) => {
       if (!org.ownerId) return false;
       const orgOwnerId = org.ownerId._id ? org.ownerId._id.toString() : org.ownerId.toString();
@@ -87,11 +88,9 @@ export async function getOrganizationHandler(
       return res.status(404).json({ error: "Organization not found" });
     }
 
-    // Check permissions (Admin or Organization Owner)
-    if (
-      user.role !== "admin" &&
-      organization.ownerId.toString() !== user.userId
-    ) {
+    const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
       return res.status(403).json({ error: "Access denied" });
     }
 
@@ -118,15 +117,21 @@ export async function updateOrganizationHandler(
       return res.status(404).json({ error: "Organization not found" });
     }
 
-    // Check permissions (Admin or Organization Owner)
-    if (
-      user.role !== "admin" &&
-      organization.ownerId.toString() !== user.userId
-    ) {
+    const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+    const isAdmin = user.role === "admin";
+
+    if (!isAdmin && ownerId.toString() !== user.userId) {
       return res.status(403).json({ error: "Access denied" });
     }
 
-    const updatedOrg = await updateOrganization(orgId, req.body);
+    // Non-admin owners may only edit their own profile fields - not status,
+    // walletBalance, isActive, ownerId, etc. Those go through their own
+    // dedicated admin-only routes (approve/reject/suspend/activate/top-up).
+    const updateData = isAdmin
+      ? req.body
+      : { name: req.body.name, description: req.body.description };
+
+    const updatedOrg = await updateOrganization(orgId, updateData);
     res.json({ success: true, organization: updatedOrg });
   } catch (error) {
     logger.error("Failed to update organization", { error });
@@ -158,7 +163,7 @@ export async function deleteOrganizationHandler(
 /**
  * Get users of an organization (Admin or Org Owner)
  */
- export async function getOrganizationUsersHandler(
+export async function getOrganizationUsersHandler(
   req: Request<{ id: string }>,
   res: Response
 ) {
@@ -171,8 +176,8 @@ export async function deleteOrganizationHandler(
       return res.status(404).json({ error: "Organization not found" });
     }
 
-    const orgOwnerId = organization.ownerId?._id 
-        ? organization.ownerId._id.toString() 
+    const orgOwnerId = organization.ownerId?._id
+        ? organization.ownerId._id.toString()
         : organization.ownerId.toString();
 
     if (user.role !== "admin" && orgOwnerId !== user.userId) {
@@ -204,11 +209,9 @@ export async function addUserToOrganizationHandler(
       return res.status(404).json({ error: "Organization not found" });
     }
 
-    // Check permissions
-    if (
-      user.role !== "admin" &&
-      organization.ownerId.toString() !== user.userId
-    ) {
+    const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
       return res.status(403).json({ error: "Access denied" });
     }
 
@@ -217,6 +220,51 @@ export async function addUserToOrganizationHandler(
   } catch (error: any) {
     logger.error("Failed to add user to organization", { error });
     res.status(400).json({ error: error.message || "Failed to add user" });
+  }
+}
+
+/**
+ * Create a brand-new user account directly inside an organization,
+ * with a generated temporary password (Admin or Org Owner)
+ */
+export async function createOrganizationMemberHandler(
+  req: Request<{ id: string }>,
+  res: Response
+) {
+  try {
+    const user = (req as any).user;
+    const orgId = req.params.id;
+    const { name, email, role } = req.body;
+
+    if (!name?.trim() || !email?.trim()) {
+      return res.status(400).json({ error: "יש למלא שם וכתובת אימייל" });
+    }
+
+    const organization = await getOrganizationById(orgId);
+    if (!organization) {
+      return res.status(404).json({ error: "Organization not found" });
+    }
+
+    const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const { user: newUser, temporaryPassword } = await createOrganizationMember(orgId, {
+      name: name.trim(),
+      email: email.trim(),
+      role,
+    });
+
+    res.status(201).json({
+      success: true,
+      user: { _id: newUser._id, name: newUser.name, email: newUser.email },
+      temporaryPassword,
+    });
+  } catch (error: any) {
+    logger.error("Failed to create organization member", { error });
+    res.status(400).json({ error: error.message || "Failed to create organization member" });
   }
 }
 
@@ -241,11 +289,9 @@ export async function addUserByEmailToOrganizationHandler(
       return res.status(404).json({ error: "Organization not found" });
     }
 
-    // Check permissions
-    if (
-      user.role !== "admin" &&
-      organization.ownerId.toString() !== user.userId
-    ) {
+    const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
       return res.status(403).json({ error: "Access denied" });
     }
 
@@ -278,8 +324,17 @@ export async function removeUserFromOrganizationHandler(
     const user = (req as any).user;
     const targetUserId = req.params.userId;
 
-    // missing checking logic if user belongs to an organization where the requester is owner.
-    // For now, simplify or allow admin/owner through service validation.
+    const targetOrg = await getOrganizationForUser(targetUserId);
+    if (!targetOrg) {
+      return res.status(404).json({ error: "User not found or not in an organization" });
+    }
+
+    const ownerId = (targetOrg.ownerId as any)?._id ?? targetOrg.ownerId;
+
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
     await removeUserFromOrganization(targetUserId);
     res.json({
       success: true,
@@ -335,10 +390,9 @@ export async function topUpOrganizationWalletHandler(
       return res.status(404).json({ error: "Organization not found" });
     }
 
-    if (
-      user.role !== "admin" &&
-      organization.ownerId.toString() !== user.userId
-    ) {
+    const ownerId = (organization.ownerId as any)?._id ?? organization.ownerId;
+
+    if (user.role !== "admin" && ownerId.toString() !== user.userId) {
       return res.status(403).json({ error: "Access denied" });
     }
 
@@ -428,5 +482,92 @@ export async function getOrganizationStatsHandler(
   } catch (error: any) {
     logger.error("Failed to get organization stats", { error });
     res.status(500).json({ error: "Failed to fetch organization stats" });
+  }
+}
+
+/**
+ * PUBLIC: create org-owner account + pending organization together.
+ * No authentication required — this IS the sign-up for org owners.
+ */
+export async function publicRequestOrganizationHandler(req: Request, res: Response) {
+  try {
+    const { ownerName, ownerEmail, ownerPassword, orgName, orgDescription } = req.body;
+
+    if (!ownerName?.trim() || !ownerEmail?.trim() || !ownerPassword || !orgName?.trim()) {
+      return res.status(400).json({ error: "יש למלא שם, אימייל, סיסמה ושם ארגון" });
+    }
+    if (ownerPassword.length < 6) {
+      return res.status(400).json({ error: "הסיסמה חייבת להכיל לפחות 6 תווים" });
+    }
+
+    const organization = await publicRequestOrganization({
+      ownerName: ownerName.trim(),
+      ownerEmail: ownerEmail.trim(),
+      ownerPassword,
+      orgName: orgName.trim(),
+      orgDescription: orgDescription?.trim(),
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "הבקשה נשלחה וממתינה לאישור מנהל המערכת",
+      organization,
+    });
+  } catch (error: any) {
+    logger.error("Failed public organization request", { error });
+    // register() ו-publicRequestOrganization() כבר זורקים הודעות עבריות ברורות
+    // ומובחנות עבור התנגשות אימייל לעומת התנגשות שם ארגון - מציגים אותן כמו
+    // שהן במקום למפות כל שגיאה גורפת ל"אימייל כבר רשום".
+    if (error?.message?.includes("אימייל") || error?.message?.includes("שם הארגון")) {
+      return res.status(409).json({ error: error.message });
+    }
+    res.status(400).json({ error: error.message || "שליחת הבקשה נכשלה" });
+  }
+}
+
+/**
+ * Get the current user's own organization (with status). Accessible to the owner
+ * regardless of approval state, so the frontend can show the right screen.
+ */
+export async function getMyOrganizationHandler(req: Request, res: Response) {
+  try {
+    const user = (req as any).user;
+    const organization = await getMyOrganization(user.userId);
+    res.json({ organization: organization || null });
+  } catch (error: any) {
+    logger.error("Failed to get user's organization", { error });
+    res.status(500).json({ error: "Failed to fetch organization" });
+  }
+}
+
+/**
+ * Approve a pending organization (Admin only) -> status=approved, isActive=true, email owner
+ */
+export async function approveOrganizationHandler(
+  req: Request<{ id: string }>,
+  res: Response
+) {
+  try {
+    const updated = await approveOrganization(req.params.id);
+    res.json({ success: true, message: "Organization approved", organization: updated });
+  } catch (error: any) {
+    logger.error("Failed to approve organization", { error });
+    res.status(400).json({ error: error.message || "Failed to approve organization" });
+  }
+}
+
+/**
+ * Reject a pending organization (Admin only) -> status=rejected, isActive=false
+ */
+export async function rejectOrganizationHandler(
+  req: Request<{ id: string }>,
+  res: Response
+) {
+  try {
+    const updated = await rejectOrganization(req.params.id);
+    res.json({ success: true, message: "Organization rejected", organization: updated });
+  } catch (error: any) {
+    logger.error("Failed to reject organization", { error });
+    res.status(400).json({ error: error.message || "Failed to reject organization" });
   }
 }

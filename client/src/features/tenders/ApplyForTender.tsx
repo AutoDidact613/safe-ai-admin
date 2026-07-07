@@ -1,27 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-
-interface Applicant {
-  name: string
-  email: string
-  details: string
-  proposal?: string
-  contactMethod?: string
-}
-
-interface Tender {
-  id: string
-  title: string
-  publisherUserCode?: string
-  shortDescription?: string
-  timeRequired?: string
-  budget?: string
-  domains?: string[]
-  agentsRequired?: string[]
-  wantsEmails?: boolean
-  additionalDetails?: string
-  applicants?: Applicant[]
-}
+import type { Applicant, Tender } from './types'
 
 interface Props {
   tender: Tender
@@ -29,17 +8,77 @@ interface Props {
   onCancel: () => void
 }
 
+type FormErrors = Partial<Record<'name' | 'email' | 'details' | 'proposal' | 'contactMethod', string>>
+
+const INPUT_LIMITS = {
+  name: 50,
+  email: 254,
+  details: 500,
+  contactMethod: 50,
+} as const
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [details, setDetails] = useState('')
-  const [proposal, setProposal] = useState('')
+  const [proposal, setProposal] = useState<number | undefined>(undefined)
   const [contactMethod, setContactMethod] = useState('')
+  const [errors, setErrors] = useState<FormErrors>({})
+
+  const validateForm = () => {
+    const nextErrors: FormErrors = {}
+
+    const trimmedName = name.trim()
+    if (!trimmedName) {
+      nextErrors.name = 'יש להזין שם'
+    } else if (trimmedName.length > INPUT_LIMITS.name) {
+      nextErrors.name = `שם יכול להכיל עד ${INPUT_LIMITS.name} תווים`
+    }
+
+    const trimmedEmail = email.trim()
+    if (!trimmedEmail) {
+      nextErrors.email = 'יש להזין אימייל'
+    } else if (!EMAIL_REGEX.test(trimmedEmail)) {
+      nextErrors.email = 'יש להזין כתובת אימייל תקינה'
+    } else if (trimmedEmail.length > INPUT_LIMITS.email) {
+      nextErrors.email = `אימייל יכול להכיל עד ${INPUT_LIMITS.email} תווים`
+    }
+
+    const trimmedDetails = details.trim()
+    if (!trimmedDetails) {
+      nextErrors.details = 'יש להזין פרטים'
+    } else if (trimmedDetails.length > INPUT_LIMITS.details) {
+      nextErrors.details = `פרטים יכולים להכיל עד ${INPUT_LIMITS.details} תווים`
+    }
+
+    if (proposal !== undefined && proposal < 0) {
+      nextErrors.proposal = 'ההצעה חייבת להיות מספר חיובי'
+    }
+
+    const trimmedContactMethod = contactMethod.trim()
+    if (trimmedContactMethod && trimmedContactMethod.length > INPUT_LIMITS.contactMethod) {
+      nextErrors.contactMethod = `אמצעי תקשורת יכול להכיל עד ${INPUT_LIMITS.contactMethod} תווים`
+    }
+
+    setErrors(nextErrors)
+    return nextErrors
+  }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!name || !email || !details) return
-    onSubmit({ name, email, details, proposal: proposal || undefined, contactMethod: contactMethod || undefined })
+
+    const nextErrors = validateForm()
+    if (Object.keys(nextErrors).length > 0) return
+
+    onSubmit({
+      name: name.trim(),
+      email: email.trim(),
+      details: details.trim(),
+      proposal: proposal !== undefined ? proposal : undefined,
+      contactMethod: contactMethod.trim() || undefined,
+    })
   }
 
   return (
@@ -65,10 +104,17 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 className="form-input"
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value)
+                  if (errors.name) {
+                    setErrors((prev) => ({ ...prev, name: undefined }))
+                  }
+                }}
                 placeholder="שם מלא"
+                maxLength={INPUT_LIMITS.name}
                 required
               />
+              {errors.name && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.name}</span>}
             </label>
 
             <label className="form-field">
@@ -77,10 +123,17 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 className="form-input"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  if (errors.email) {
+                    setErrors((prev) => ({ ...prev, email: undefined }))
+                  }
+                }}
                 placeholder="example@mail.com"
+                maxLength={INPUT_LIMITS.email}
                 required
               />
+              {errors.email && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.email}</span>}
             </label>
 
             <label className="form-field form-full">
@@ -88,22 +141,39 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
               <textarea
                 className="form-textarea"
                 value={details}
-                onChange={(e) => setDetails(e.target.value)}
+                onChange={(e) => {
+                  setDetails(e.target.value)
+                  if (errors.details) {
+                    setErrors((prev) => ({ ...prev, details: undefined }))
+                  }
+                }}
                 placeholder="ספר לנו על עצמך וההצעה שלך"
+                maxLength={INPUT_LIMITS.details}
                 required
                 rows={5}
               />
+              {errors.details && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.details}</span>}
             </label>
 
             <label className="form-field">
-              <span className="form-label">הצעה</span>
+              <span className="form-label">הצעה - בשקלים</span>
               <input
                 className="form-input"
-                type="text"
-                value={proposal}
-                onChange={(e) => setProposal(e.target.value)}
+                type="number"
+                value={proposal ?? ''}
+                onChange={(e) => {
+                  const nextValue = e.target.value === '' ? undefined : Number(e.target.value)
+                  setProposal(nextValue)
+                  if (errors.proposal) {
+                    setErrors((prev) => ({ ...prev, proposal: undefined }))
+                  }
+                }}
                 placeholder="כמה תרצה לגבות עבור העבודה"
+                min="0"
+                max="999999999"
+                inputMode="numeric"
               />
+              {errors.proposal && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.proposal}</span>}
             </label>
 
             <label className="form-field">
@@ -112,9 +182,16 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 className="form-input"
                 type="text"
                 value={contactMethod}
-                onChange={(e) => setContactMethod(e.target.value)}
+                onChange={(e) => {
+                  setContactMethod(e.target.value)
+                  if (errors.contactMethod) {
+                    setErrors((prev) => ({ ...prev, contactMethod: undefined }))
+                  }
+                }}
                 placeholder="טלפון / אימייל"
+                maxLength={INPUT_LIMITS.contactMethod}
               />
+              {errors.contactMethod && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.contactMethod}</span>}
             </label>
           </div>
 

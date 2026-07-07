@@ -1,5 +1,7 @@
+import { traceable } from 'langsmith/traceable';
+import { wrapOpenAI } from 'langsmith/wrappers';
 import { ZodSchema } from 'zod';
-import { geminiClient, DEFAULT_GEMINI_MODEL, FALLBACK_GEMINI_MODEL } from '../config/geminiclient';
+import { openaiClient, DEFAULT_OPENAI_MODEL, FALLBACK_OPENAI_MODEL } from '../config/openaiclient';
 
 interface CallAIOptions<T> {
   userPrompt: string;
@@ -7,50 +9,65 @@ interface CallAIOptions<T> {
   schema: ZodSchema<T>;
   temperature?: number;
   model?: string;
+  callName?: string;
 }
 
 export async function callAI<T>(options: CallAIOptions<T>): Promise<T> {
-  const {
-    userPrompt,
-    systemPrompt,
-    schema,
-    temperature = 0.2,
-    model = DEFAULT_GEMINI_MODEL,
-  } = options;
+  const { callName, ...rest } = options;
 
-  const messages = [
-    { role: "system" as const, content: systemPrompt },
-    { role: "user"   as const, content: userPrompt   },
-  ];
+  // traceable עוטף את כל הלוגיקה — כולל wrapOpenAI בפנים
+  // כך ב-LangSmith מופיע run אחד בשם callName עם nested span של קריאת OpenAI
+  const traced = traceable(
+    async function (opts: Omit<CallAIOptions<T>, 'callName'>): Promise<T> {
+      const {
+        userPrompt,
+        systemPrompt,
+        schema,
+        temperature = 0.2,
+        model = DEFAULT_OPENAI_MODEL,
+      } = opts;
 
-  try {
-    const response = await geminiClient.chat.completions.create({
-      model,
-      temperature,
-      response_format: { type: "json_object" },
-      messages,
-    });
-    const raw = response?.choices[0]?.message?.content ?? "{}";
-    return schema.parse(JSON.parse(raw));
+      // wrapOpenAI חייב להיות בתוך traceable כדי שהקריאה תופיע כ-nested span
+      const tracedOpenAI = wrapOpenAI(openaiClient);
 
-  } catch (error: any) {
-    // ✅ fallback על 429 (rate limit) ועל 503 (service unavailable)
-    const shouldFallback = (error?.status === 429 || error?.status === 503)
-      && model !== FALLBACK_GEMINI_MODEL;
+      const messages = [
+        { role: "system" as const, content: systemPrompt },
+        { role: "user"   as const, content: userPrompt   },
+      ];
 
-    if (shouldFallback) {
-      console.warn(`[callAI] ${error.status} on ${model}, retrying with ${FALLBACK_GEMINI_MODEL}...`);
+      try {
+        const response = await tracedOpenAI.chat.completions.create({
+          model,
+          temperature,
+          response_format: { type: "json_object" },
+          messages,
+        });
+        const raw = response?.choices[0]?.message?.content ?? "{}";
+        return schema.parse(JSON.parse(raw));
 
-      const fallbackResponse = await geminiClient.chat.completions.create({
-        model: FALLBACK_GEMINI_MODEL,
-        temperature,
-        response_format: { type: "json_object" },
-        messages,
-      });
-      const raw = fallbackResponse?.choices[0]?.message?.content ?? "{}";
-      return schema.parse(JSON.parse(raw));
-    }
+      } catch (error: any) {
+        // ✅ fallback על 429 (rate limit) ועל 503 (service unavailable)
+        const shouldFallback = (error?.status === 429 || error?.status === 503)
+          && model !== FALLBACK_OPENAI_MODEL;
 
-    throw error;
-  }
+        if (shouldFallback) {
+          console.warn(`[callAI] ${error.status} on ${model}, retrying with ${FALLBACK_OPENAI_MODEL}...`);
+
+          const fallbackResponse = await tracedOpenAI.chat.completions.create({
+            model: FALLBACK_OPENAI_MODEL,
+            temperature,
+            response_format: { type: "json_object" },
+            messages,
+          });
+          const raw = fallbackResponse?.choices[0]?.message?.content ?? "{}";
+          return schema.parse(JSON.parse(raw));
+        }
+
+        throw error;
+      }
+    },
+    { name: callName ?? "callAI" }
+  );
+
+  return traced(rest);
 }

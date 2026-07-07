@@ -6,10 +6,13 @@ import UsersManagement from "../features/safeai-ui/UsersManagement";
 import UserDashboard from "../features/safeai-ui/UserDashboard";
 import Statistics from "../features/safeai-ui/Statistics";
 import UserApiKeysPage from "../features/safeai-ui/UserApiKeysPage";
+import BillingPage from "../features/safeai-ui/BillingPage";
 import MyRequestsList from "../features/safeai-ui/MyRequestsList";
 import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
 import { apiCall, API_ENDPOINTS } from "../config/api";
 import { OrganizationsManagement } from "../features/organizations/OrganizationsManagement";
+import { PendingApprovalScreen } from "../features/organizations/PendingApprovalScreen";
+import { getMyOrganization } from "../features/organizations/api/organizationApi";
 import OrganizationUsersPage from "../pages/OrganizationUsersPage";
 
 type Reply = {
@@ -31,7 +34,8 @@ type Section =
   | "requests"
   | "adminRequests"
   | "org-statistics"
-  | "org-users";
+  | "org-users"
+  | "billing";
 
 type UserData = {
   email: string;
@@ -76,12 +80,40 @@ export default function SafeAIUIPage() {
   );
   const [newRequestCount, setNewRequestCount] = useState(0);
 
+  // Gate for org owners: block management until their org is approved
+  const [orgGate, setOrgGate] = useState<{ loading: boolean; pending: boolean; orgName?: string }>({
+    loading: initialState.role === "org_owner",
+    pending: false,
+  });
+
   // Redirect to landing page if not authenticated
   useEffect(() => {
     if (!userRole) {
       navigate("/");
     }
   }, [userRole, navigate]);
+
+// For org owners, check their organization's approval status
+  useEffect(() => {
+    if (userRole !== "org_owner") return;
+    let active = true;
+    getMyOrganization()
+      .then((res) => {
+        if (!active) return;
+        const org = res.organization;
+        setOrgGate({
+          loading: false,
+          pending: !!org && org.status !== "approved",
+          orgName: org?.name,
+        });
+      })
+      .catch(() => {
+        if (active) setOrgGate({ loading: false, pending: false });
+      });
+    return () => {
+      active = false;
+    };
+  }, [userRole]);
 
   useEffect(() => {
     const fetchNewRequestCount = async () => {
@@ -104,6 +136,11 @@ export default function SafeAIUIPage() {
   }, [userRole]);
 
   const renderSection = () => {
+    // Org owners whose org is not yet approved only see the pending screen
+    if (userRole === "org_owner") {
+      if (orgGate.loading) return <div className="orgs-loading">טוען...</div>;
+      if (orgGate.pending) return <PendingApprovalScreen orgName={orgGate.orgName} />;
+    }
     switch (activeSection) {
       case "profiles":
         return <ProfilesManagement />;
@@ -115,6 +152,8 @@ export default function SafeAIUIPage() {
         return <Statistics user={currentUser} />;
       case "apikeys":
         return <UserApiKeysPage />;
+      case "billing":
+        return <BillingPage />;
       case "organizations":
         return <OrganizationsManagement />;
       case "requests":
@@ -140,38 +179,75 @@ export default function SafeAIUIPage() {
             {userRole === "admin" && (
               <>
                 <button
-                  className={activeSection === "statistics" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  className={
+                    activeSection === "statistics"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
                   onClick={() => setActiveSection("statistics")}
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M2 14V8M8 14V2M14 14V6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path
+                      d="M2 14V8M8 14V2M14 14V6"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                   סטטיסטיקות
                 </button>
                 <button
-                  className={activeSection === "profiles" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  className={
+                    activeSection === "profiles"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
                   onClick={() => setActiveSection("profiles")}
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M8 8a3 3 0 100-6 3 3 0 000 6zM2 14c0-2.21 2.686-4 6-4s6 1.79 6 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    <path
+                      d="M8 8a3 3 0 100-6 3 3 0 000 6zM2 14c0-2.21 2.686-4 6-4s6 1.79 6 4"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
                   </svg>
                   ניהול פרופילים
                 </button>
                 <button
-                  className={activeSection === "users" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  className={
+                    activeSection === "users"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
                   onClick={() => setActiveSection("users")}
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M11 7a2 2 0 100-4 2 2 0 000 4zM13 13c0-1.657-1.343-3-3-3M5 7a2 2 0 100-4 2 2 0 000 4zM1 13c0-1.657 1.343-3 3-3s3 1.343 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    <path
+                      d="M11 7a2 2 0 100-4 2 2 0 000 4zM13 13c0-1.657-1.343-3-3-3M5 7a2 2 0 100-4 2 2 0 000 4zM1 13c0-1.657 1.343-3 3-3s3 1.343 3 3"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
                   </svg>
                   ניהול משתמשים
                 </button>
                 <button
-                  className={activeSection === "organizations" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  className={
+                    activeSection === "organizations"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
                   onClick={() => setActiveSection("organizations")}
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M3 3h10v10H3V3zm2 2v6m4-6v6m-4-3h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    <path
+                      d="M3 3h10v10H3V3zm2 2v6m4-6v6m-4-3h6"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
                   </svg>
                   ניהול ארגונים
                 </button>
@@ -204,16 +280,30 @@ export default function SafeAIUIPage() {
             {userRole === "user" && (
               <>
                 <button
-                  className={activeSection === "statistics" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  className={
+                    activeSection === "statistics"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
                   onClick={() => setActiveSection("statistics")}
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M2 14V8M8 14V2M14 14V6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path
+                      d="M2 14V8M8 14V2M14 14V6"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                   סטטיסטיקות
                 </button>
                 <button
-                  className={activeSection === "apikeys" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  className={
+                    activeSection === "apikeys"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
                   onClick={() => setActiveSection("apikeys")}
                 >
                   <svg
@@ -261,6 +351,17 @@ export default function SafeAIUIPage() {
                       <path d="M2 4h12v8H2zM2 4l6 4 6-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                     הפניות שלי
+                </button>
+                <button
+                  className={activeSection === "billing" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  onClick={() => setActiveSection("billing")}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <rect x="1" y="4" width="14" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M1 7h14" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M4 10.5h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                  חיובים
                 </button>
               </>
             )}

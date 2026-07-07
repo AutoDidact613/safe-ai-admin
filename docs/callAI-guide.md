@@ -8,25 +8,27 @@
 5. [דוגמאות מלאות](#דוגמאות-מלאות)
 6. [טיפול בשגיאות](#טיפול-בשגיאות)
 7. [מגבלות ידועות](#מגבלות-ידועות)
+8. [מעקב עם LangSmith](#מעקב-עם-langsmith)
 
 ---
 
 ## מה זה callAI
 
-`callAI` היא פונקציה גנרית ב-TypeScript המאפשרת לכל מפתח בצוות לפנות ל-AI (Gemini) בקלות.
+`callAI` היא פונקציה גנרית ב-TypeScript המאפשרת לכל מפתח בצוות לפנות ל-AI (OpenAI) בקלות.
 
 היא מטפלת עבורך ב:
-- התחברות ל-Gemini API
+- התחברות ל-OpenAI API
 - שליחת ה-prompt
 - קבלת תגובת JSON
 - אימות הפלט מול סכמת Zod
 - fallback אוטומטי במקרה של Rate Limit (429) או שגיאת שרת (503)
+- מעקב אוטומטי דרך LangSmith (אופציונלי)
 
 **מיקום הקבצים בפרויקט:**
 ```
 server/src/
 ├── config/
-│   └── geminiclient.ts     ← אובייקט החיבור (לא נוגעים!)
+│   └── openaiclient.ts     ← אובייקט החיבור (לא נוגעים!)
 └── services/
     └── aiService.ts        ← הפונקציה callAI (לא נוגעים!)
 ```
@@ -35,20 +37,14 @@ server/src/
 
 ## מה את צריכה ליצור
 
-### 1. משתנה סביבה — GEMINI_API_KEY
+### 1. משתנה סביבה — OPENAI_API_KEY
 
 בקובץ `server/.env` (לא מועלה ל-GitHub):
 ```env
-GEMINI_API_KEY=your_api_key_here
+OPENAI_API_KEY=your_api_key_here
 ```
 
-קבלת מפתח: [aistudio.google.com](https://aistudio.google.com) → **Get API Key** → **Create API key**
-
-> ⚠️ אם רואים את האזהרה הבאה בלוג — זה תקין, זה בגלל הגדרות ה-SSL של הסביבה:
-> ```
-> Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0'
-> ```
-> אין צורך לעשות שום דבר — זה מוגדר כבר בשרת.
+קבלת מפתח: [platform.openai.com](https://platform.openai.com) → **API keys** → **Create new secret key**
 
 ---
 
@@ -106,12 +102,12 @@ const MY_SYSTEM_PROMPT = `אתה עוזר לניתוח בקשות.
 
 | מה | למה לא |
 |----|--------|
-| אובייקט התחברות ל-Gemini | כבר קיים ב-`geminiclient.ts` |
+| אובייקט התחברות ל-OpenAI | כבר קיים ב-`openaiclient.ts` |
 | טיפול ב-Rate Limit (429) | מובנה ב-`callAI` עם fallback אוטומטי |
 | טיפול ב-503 | מובנה ב-`callAI` עם fallback אוטומטי |
 | `JSON.parse` על התגובה | `callAI` עושה את זה בפנים |
 | קריאה ישירה ל-`openai.chat.completions.create` | זה מה ש-`callAI` עושה עבורך |
-| הגדרת מודל Gemini | ברירת מחדל היא `gemini-2.5-flash`, fallback הוא `gemini-2.0-flash-lite` |
+| הגדרת מודל OpenAI | ברירת מחדל היא `gpt-4o`, fallback הוא `gpt-4o-mini` |
 
 ---
 
@@ -133,6 +129,7 @@ const result = await callAI({
   systemPrompt: `אתה עוזר. החזר JSON בלבד:
 {"title":"...","score":0}`,
   schema: MySchema,
+  callName: "analyzeFoo", // שם שיופיע ב-LangSmith (אופציונלי)
 });
 
 // 3. result מוקלד אוטומטית לפי הסכמה
@@ -167,6 +164,7 @@ export async function analyzeSentiment(text: string) {
 ערכי sentiment המותרים: "חיובי", "שלילי", "ניטרלי"`,
     schema: SentimentSchema,
     temperature: 0.1, // נמוך = תשובות עקביות יותר
+    callName: "analyzeSentiment", // ← ייראה כך ב-LangSmith
   });
 }
 ```
@@ -191,6 +189,7 @@ export async function buildSearchQuery(userText: string) {
 {"query": {"title": {"$regex": "foo", "$options": "i"}}}`,
     schema: z.record(z.string(), z.any()),
     temperature: 0.1,
+    callName: "buildSearchQuery",
   });
 
   // fallback אם ה-AI לא עטף ב-query
@@ -215,6 +214,7 @@ const result = await callAI({
     cta: z.string(),
   }),
   temperature: 0.8, // גבוה = תשובות יצירתיות יותר
+  callName: "generateProductDescription",
 });
 ```
 
@@ -228,7 +228,8 @@ const result = await callAI({
 | `systemPrompt` | `string` | ✅ | — | הנחיות לAI + מבנה JSON צפוי |
 | `schema` | `ZodSchema<T>` | ✅ | — | סכמה לאימות הפלט |
 | `temperature` | `number` | ❌ | `0.2` | 0 = עקבי, 1 = יצירתי |
-| `model` | `string` | ❌ | `gemini-2.5-flash` | מודל Gemini |
+| `model` | `string` | ❌ | `gpt-4o` | מודל OpenAI |
+| `callName` | `string` | ❌ | `"callAI"` | שם ה-run שיופיע ב-LangSmith |
 
 ---
 
@@ -257,8 +258,80 @@ try {
 
 ## מגבלות ידועות
 
-**Free Tier של Gemini:**
-- 10 בקשות לדקה
-- 500 בקשות ליום למפתח
+**תלוי בחבילה שנרכשה ב-OpenAI:**
+- מגבלות ה-Rate Limit משתנות לפי tier
+- פרטים עדכניים: [platform.openai.com/docs/guides/rate-limits](https://platform.openai.com/docs/guides/rate-limits)
 
-**המלצה לפיתוח:** כל מפתח יפתח מפתח API משלו ב-[aistudio.google.com](https://aistudio.google.com) — כך לא "מתאבקים" על מכסה משותפת.
+**המלצה לפיתוח:** כל מפתח יפתח מפתח API משלו ב-[platform.openai.com](https://platform.openai.com) — כך לא "מתאבקים" על מכסה משותפת.
+
+---
+
+## מעקב עם LangSmith
+
+הפונקציה `callAI` משולבת עם [LangSmith](https://smith.langchain.com) לצורך ניטור, דיבאג, ומדידת ביצועים של קריאות ל-AI.
+
+### מה LangSmith מספק?
+
+- **היסטוריית runs** — כל קריאה ל-`callAI` נשמרת עם ה-prompt, התגובה, זמן ריצה, וכמות טוקנים
+- **דיבאג נוח** — ניתן לראות בדיוק מה נשלח ל-OpenAI ומה חזר
+- **מעקב לפי שם** — הפרמטר `callName` מאפשר לזהות כל קריאה לפי שמה ב-dashboard
+
+### התקנה
+
+החבילה כבר מותקנת בפרויקט. אם צריך להתקין מחדש:
+
+```bash
+npm install langsmith
+```
+
+### יצירת מפתח API
+
+1. היכנסי ל-[smith.langchain.com](https://smith.langchain.com) וצרי חשבון
+2. עברי ל-**Settings** ← **API Keys**
+3. לחצי על **Create API Key**, תני לו שם תיאורי, ושמרי את המפתח במקום בטוח (לא יוצג שוב)
+
+### משתני סביבה
+
+הוסיפי לקובץ `server/.env`:
+
+```env
+# חובה — מפתח LangSmith
+LANGSMITH_API_KEY=your_langsmith_api_key_here
+
+# חובה — הפעלת המעקב
+LANGSMITH_TRACING=true
+
+# אופציונלי — שם הפרויקט שתחתיו יקובצו כל ה-runs (ברירת מחדל: "default")
+LANGSMITH_PROJECT=my-project-name
+
+# אופציונלי — רק אם חשבונך מכסה יותר מ-workspace אחד
+# LANGSMITH_WORKSPACE_ID=your_workspace_id
+```
+
+> **שים לב:** אם `LANGSMITH_TRACING` לא מוגדר או מוגדר כ-`false`, הקוד ימשיך לעבוד כרגיל — המעקב פשוט לא יישלח.
+
+### שימוש עם `callName`
+
+הפרמטר `callName` קובע את השם שתחתיו ה-run יופיע ב-LangSmith. מומלץ לתת שם שמתאר את הפונקציה הקוראת:
+
+```typescript
+// ב-LangSmith יופיע run בשם "analyzeSentiment"
+const result = await callAI({
+  userPrompt: text,
+  systemPrompt: "...",
+  schema: SentimentSchema,
+  callName: "analyzeSentiment",
+});
+```
+
+אם לא מעבירים `callName`, ה-run יופיע בשם הברירת מחדל `"callAI"`.
+
+### מה רואים ב-Dashboard?
+
+לאחר הגדרת המשתנים וביצוע קריאה, ניתן לראות ב-[smith.langchain.com](https://smith.langchain.com) תחת הפרויקט שהגדרת:
+
+- שם ה-run (לפי `callName`)
+- ה-system prompt וה-user prompt שנשלחו
+- התגובה הגולמית שחזרה מ-OpenAI
+- זמן ריצה וכמות טוקנים
+- האם הייתה שגיאה (כולל ZodError)

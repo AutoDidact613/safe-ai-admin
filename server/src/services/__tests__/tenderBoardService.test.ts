@@ -13,16 +13,7 @@ jest.mock("../../logger", () => ({
   info: jest.fn(),
   error: jest.fn(),
 }));
-jest.mock("../../config/geminiclient", () => ({
-  geminiClient: {
-    chat: {
-      completions: {
-        create: jest.fn(),
-      },
-    },
-  },
-}));
-jest.mock("../emailService", () => ({
+jest.mock("../../utils/email", () => ({
   sendApplicantRegisteredEmail: jest.fn(),
   sendTenderClosedEmail: jest.fn(),
 }));
@@ -42,9 +33,16 @@ jest.mock("mongoose", () => ({
 jest.mock("../aiService", () => ({
   callAI: jest.fn(),
 }));
-// 2. עקיפת ה-Middleware של האוונטיקציה לצורך בדיקות יחידה מבודדות
+// 2. עקיפת ה-Middleware של האוונטיקציה לצורך בדיקות יחידה מבודדות.
+// כדי לבדוק את בדיקות ההרשאה/בעלות (isOwnerOrAdmin) על update/close/delete,
+// מאפשרים לכל בקשה להעביר את זהות המשתמש המדומה בכותרת x-test-user (JSON),
+// בלי לשבור טסטים קיימים שלא מגדירים את הכותרת הזו כלל (req.user יישאר undefined).
 jest.mock("../../middleware/auth", () => ({
-  authenticateToken: (req: any, res: any, next: any) => next(),
+  authenticateToken: (req: any, res: any, next: any) => {
+    const testUser = req.headers["x-test-user"];
+    if (testUser) req.user = JSON.parse(testUser);
+    next();
+  },
 }));
 
 // אתחול אפליקציית Express פיקטיבית לצורך הבדיקה
@@ -170,6 +168,102 @@ describe("Tender Board Feature Tests", () => {
 
       expect(res.status).toBe(400);
       expect(res.body.error).toContain("Text description is required");
+    });
+  });
+
+  // ==========================================
+  // ה. בדיקות הרשאה/בעלות על עדכון/סגירה/מחיקת מכרז
+  // ==========================================
+  const OWNER_USER = JSON.stringify({ userId: "owner-1", role: "user" });
+  const OTHER_USER = JSON.stringify({ userId: "someone-else", role: "user" });
+  const ADMIN_USER = JSON.stringify({ userId: "admin-1", role: "admin" });
+  const existingTender = { _id: "123", title: "מכרז קיים", publisherUserCode: "owner-1" };
+
+  describe("PUT /tender-board/:id (ownership)", () => {
+    it("allows the publisher to update their own tender", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+      (service.updateTender as jest.Mock).mockResolvedValue({ ...existingTender, title: "עודכן" });
+
+      const res = await request(app)
+        .put("/tender-board/123")
+        .set("x-test-user", OWNER_USER)
+        .send({ title: "עודכן" });
+
+      expect(res.status).toBe(200);
+      expect(service.updateTender).toHaveBeenCalledWith("123", { title: "עודכן" });
+    });
+
+    it("allows an admin to update someone else's tender", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+      (service.updateTender as jest.Mock).mockResolvedValue({ ...existingTender, title: "עודכן" });
+
+      const res = await request(app)
+        .put("/tender-board/123")
+        .set("x-test-user", ADMIN_USER)
+        .send({ title: "עודכן" });
+
+      expect(res.status).toBe(200);
+    });
+
+    it("denies a non-owner, non-admin user with 403", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+
+      const res = await request(app)
+        .put("/tender-board/123")
+        .set("x-test-user", OTHER_USER)
+        .send({ title: "ניסיון השתלטות" });
+
+      expect(res.status).toBe(403);
+      expect(service.updateTender).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("PATCH /tender-board/:id/close (ownership)", () => {
+    it("denies a non-owner, non-admin user with 403", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+
+      const res = await request(app)
+        .patch("/tender-board/123/close")
+        .set("x-test-user", OTHER_USER);
+
+      expect(res.status).toBe(403);
+      expect(service.closeTender).not.toHaveBeenCalled();
+    });
+
+    it("allows the publisher to close their own tender", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+      (service.closeTender as jest.Mock).mockResolvedValue({ ...existingTender, isActive: false });
+
+      const res = await request(app)
+        .patch("/tender-board/123/close")
+        .set("x-test-user", OWNER_USER);
+
+      expect(res.status).toBe(200);
+      expect(service.closeTender).toHaveBeenCalledWith("123");
+    });
+  });
+
+  describe("DELETE /tender-board/:id (ownership)", () => {
+    it("denies a non-owner, non-admin user with 403", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+
+      const res = await request(app)
+        .delete("/tender-board/123")
+        .set("x-test-user", OTHER_USER);
+
+      expect(res.status).toBe(403);
+      expect(service.deleteTender).not.toHaveBeenCalled();
+    });
+
+    it("allows the publisher to delete their own tender", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+      (service.deleteTender as jest.Mock).mockResolvedValue(existingTender);
+
+      const res = await request(app)
+        .delete("/tender-board/123")
+        .set("x-test-user", OWNER_USER);
+
+      expect(res.status).toBe(200);
     });
   });
 

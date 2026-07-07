@@ -27,9 +27,9 @@ const SHEETS: SheetInfo[] = [
   { name: "Data Science (AI & ML)", gid: "0" },
   {
     name: "שימוש בכלי AI לפיתוח לעבודה יומיומית (Claude Code, Copilot)",
-    gid: "2",
+    gid: "825625850",
   },
-  { name: "ויב קודינג (Vibe Coding / בניית אתרים בקלטקס)", gid: "3" },
+  { name: "ויב קודינג (Vibe Coding / בניית אתרים בקלטקס)", gid: "1806937289" },
 ];
 
 export default function RecommendedGuidesPage() {
@@ -55,7 +55,17 @@ export default function RecommendedGuidesPage() {
           try {
             const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${sheet.gid}`;
             const response = await fetch(url);
+            if (!response.ok) {
+              console.warn(`Sheet ${sheet.name} returned ${response.status}`);
+              continue;
+            }
             const text = await response.text();
+
+            // Skip if Google returned an HTML error page instead of CSV
+            if (text.trimStart().startsWith("<!") || text.trimStart().startsWith("<html")) {
+              console.warn(`Sheet ${sheet.name} (gid=${sheet.gid}) returned HTML — invalid GID`);
+              continue;
+            }
 
             // Parse CSV
             const lines = text.split("\n");

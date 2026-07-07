@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import * as XLSX from "xlsx";
 import {
+  createOrganizationMember,
   getOrganizationDetail,
   getOrganizationStats,
   getOrganizationUsers,
@@ -21,6 +23,65 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
   const [users, setUsers] = useState<OrganizationUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [memberName, setMemberName] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
+  const [addMemberError, setAddMemberError] = useState<string | null>(null);
+  const [createdMembers, setCreatedMembers] = useState<
+    { name: string; email: string; password: string }[]
+  >([]);
+
+  const reloadUsers = async () => {
+    const usersData = await getOrganizationUsers(orgId);
+    setUsers(Array.isArray(usersData) ? usersData : []);
+  };
+
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!memberName.trim() || !memberEmail.trim()) {
+      setAddMemberError("יש למלא שם וכתובת אימייל");
+      return;
+    }
+    try {
+      setAddingMember(true);
+      setAddMemberError(null);
+      const result = await createOrganizationMember(orgId, {
+        name: memberName.trim(),
+        email: memberEmail.trim(),
+      });
+      setCreatedMembers((prev) => [
+        ...prev,
+        {
+          name: result.user.name || memberName.trim(),
+          email: result.user.email,
+          password: result.temporaryPassword,
+        },
+      ]);
+      setMemberName("");
+      setMemberEmail("");
+      await reloadUsers();
+    } catch (err: unknown) {
+      setAddMemberError(err instanceof Error ? err.message : "הוספת המשתמש נכשלה");
+    } finally {
+      setAddingMember(false);
+    }
+  };
+
+  const handleDownloadExcel = () => {
+    const loginUrl = `${window.location.origin}/login`;
+    const rows = createdMembers.map((m) => ({
+      "שם": m.name,
+      "אימייל": m.email,
+      "סיסמה זמנית": m.password,
+      "קישור להתחברות": loginUrl,
+      "סטטוס": "ממתין להתחברות ראשונה",
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "משתמשים חדשים");
+    XLSX.writeFile(workbook, `משתמשי-${org?.name || "ארגון"}.xlsx`);
+  };
 
   useEffect(() => {
     if (!orgId) return;
@@ -92,6 +153,54 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
         </div>
       </div>
 
+      <h3>הוספת משתמש חדש לארגון</h3>
+      <form onSubmit={handleAddMember} className="org-request-form">
+        <input
+          className="orgs-search"
+          value={memberName}
+          onChange={(e) => setMemberName(e.target.value)}
+          placeholder="שם מלא"
+        />
+        <input
+          type="email"
+          className="orgs-search"
+          value={memberEmail}
+          onChange={(e) => setMemberEmail(e.target.value)}
+          placeholder="כתובת אימייל"
+        />
+        {addMemberError && <div className="orgs-error">{addMemberError}</div>}
+        <button type="submit" className="orgs-btn orgs-btn-activate" disabled={addingMember}>
+          {addingMember ? "מוסיף..." : "הוסף משתמש"}
+        </button>
+      </form>
+
+      {createdMembers.length > 0 && (
+        <div className="org-pending-card">
+          <p>נוספו {createdMembers.length} משתמשים חדשים בסשן הזה. פרטי ההתחברות שיש למסור להם:</p>
+          <table className="orgs-table">
+            <thead>
+              <tr>
+                <th>שם</th>
+                <th>אימייל</th>
+                <th>סיסמה זמנית</th>
+              </tr>
+            </thead>
+            <tbody>
+              {createdMembers.map((m) => (
+                <tr key={m.email}>
+                  <td>{m.name}</td>
+                  <td>{m.email}</td>
+                  <td>{m.password}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button type="button" className="orgs-btn orgs-btn-activate" onClick={handleDownloadExcel}>
+            הורדת קובץ אקסל
+          </button>
+        </div>
+      )}
+
       <h3>משתמשי הארגון ({users.length})</h3>
       {users.length === 0 ? (
         <div className="orgs-empty">אין משתמשים בארגון זה</div>
@@ -103,7 +212,8 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
               <th>שם</th>
               <th>תפקיד</th>
               <th>פעילות</th>
-              <th>הצטרף</th>
+              <th>סטטוס הצטרפות</th>
+              <th>נוסף בתאריך</th>
             </tr>
           </thead>
           <tbody>
@@ -115,6 +225,11 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
                 <td>
                   <span className={`status-badge ${u.isActive ? "active" : "inactive"}`}>
                     {u.isActive ? "פעיל" : "לא פעיל"}
+                  </span>
+                </td>
+                <td>
+                  <span className={`status-badge ${u.lastLogin ? "active" : "inactive"}`}>
+                    {u.lastLogin ? "הצטרף" : "ממתין להתחברות ראשונה"}
                   </span>
                 </td>
                 <td>{new Date(u.createdAt).toLocaleDateString("he-IL")}</td>

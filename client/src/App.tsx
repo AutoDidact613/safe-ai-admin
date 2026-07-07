@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import "./styles/design-system.css";
 import './App.css'
 import AppRouter from './router/AppRouter'
+import { AuthProvider } from './context/AuthContext'
 import { initializeTokenManager, cleanupTokenManager } from './utils/tokenManager'
 
 function App() {
@@ -16,9 +17,9 @@ function App() {
   }, []);
 
   return (
-    <>
+    <AuthProvider>
       <AppRouter />
-    </>
+    </AuthProvider>
   );
 }
 
