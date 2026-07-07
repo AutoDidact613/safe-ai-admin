@@ -343,7 +343,7 @@ export const ForumPage: React.FC = () => {
                         {post.tags && Array.isArray(post.tags) && post.tags.map((tag: { _id: string; name: string } | string) => {
                           const tagName = typeof tag === 'object' && tag !== null ? tag.name : tag;
                           return (
-                            <span key={tag._id || tagName} onClick={(e) => { e.stopPropagation(); setSearchQuery(tagName); setCurrentPage(1); }} style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '1px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '500', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                            <span key={typeof tag === 'object' ? tag._id : tag} onClick={(e) => { e.stopPropagation(); setSearchQuery(tagName); setCurrentPage(1); }} style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '1px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '500', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
                              {tagName}
                             </span>
                           );

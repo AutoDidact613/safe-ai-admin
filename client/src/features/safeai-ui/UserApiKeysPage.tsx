@@ -153,7 +153,7 @@ export default function UserApiKeysPage() {
     return <div className="loading-state">טוען...</div>;
   }
 
-  if (!user) {
+  if (!user || !user._id) {
     return (
       <div className="empty-state">
         <h2>לא מחובר</h2>
@@ -161,6 +161,8 @@ export default function UserApiKeysPage() {
       </div>
     );
   }
+
+  const userId = user._id;
 
   return (
     <div>
@@ -330,11 +332,11 @@ export default function UserApiKeysPage() {
 
       {showAddModal && user && (
         <ProviderKeysManagement
-          userId={user._id}
+          userId={userId}
           userEmail={user.email}
           onClose={() => {
             setShowAddModal(false);
-            fetchKeys(user._id);
+            fetchKeys(userId);
           }}
         />
       )}
