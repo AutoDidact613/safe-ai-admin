@@ -9,6 +9,8 @@ import {
   rejectOrganizationHandler,
   suspendOrganizationHandler,
   activateOrganizationHandler,
+  addUserToOrganizationHandler,
+  removeUserFromOrganizationHandler,
 } from "../organizationController";
 import * as organizationService from "../../services/organizationService";
 
@@ -19,6 +21,9 @@ jest.mock("../../services/organizationService", () => ({
   publicRequestOrganization: jest.fn(),
   topUpOrganizationWallet: jest.fn(),
   approveOrganization: jest.fn(),
+  addUserToOrganization: jest.fn(),
+  getOrganizationForUser: jest.fn(),
+  removeUserFromOrganization: jest.fn(),
   rejectOrganization: jest.fn(),
   setOrganizationActive: jest.fn(),
 }));
@@ -408,5 +413,137 @@ describe("organizationController.suspend/activateOrganizationHandler (#231 ORG-0
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ success: true, organization: expect.objectContaining({ isActive: true }) })
     );
+  });
+});
+
+describe("organizationController.addUserToOrganizationHandler (#232 ORG-05)", () => {
+  it("adds a user when the org_owner owns the organization", async () => {
+    mockedService.getOrganizationById.mockResolvedValue({
+      _id: "org-A",
+      ownerId: "owner-A",
+    } as any);
+
+    const req = {
+      params: { id: "org-A" },
+      user: { userId: "owner-A", role: "org_owner" },
+      body: { userId: "user-1", role: "user" },
+    } as any;
+    const res = mockRes();
+
+    await addUserToOrganizationHandler(req, res);
+
+    expect(mockedService.addUserToOrganization).toHaveBeenCalledWith("org-A", "user-1", "user");
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
+  it("returns 403 when an org_owner tries to add a user to a different organization", async () => {
+    mockedService.getOrganizationById.mockResolvedValue({
+      _id: "org-B",
+      ownerId: "owner-B",
+    } as any);
+
+    const req = {
+      params: { id: "org-B" },
+      user: { userId: "owner-A", role: "org_owner" },
+      body: { userId: "user-1" },
+    } as any;
+    const res = mockRes();
+
+    await addUserToOrganizationHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockedService.addUserToOrganization).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when the organization already reached its maxUsers limit", async () => {
+    mockedService.getOrganizationById.mockResolvedValue({
+      _id: "org-A",
+      ownerId: "owner-A",
+    } as any);
+    mockedService.addUserToOrganization.mockRejectedValue(
+      new Error("הארגון הגיע למספר המשתמשים המרבי המותר (10)")
+    );
+
+    const req = {
+      params: { id: "org-A" },
+      user: { userId: "owner-A", role: "org_owner" },
+      body: { userId: "user-1" },
+    } as any;
+    const res = mockRes();
+
+    await addUserToOrganizationHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+});
+
+describe("organizationController.removeUserFromOrganizationHandler (#233 ORG-06)", () => {
+  it("removes a user when the org_owner owns the target user's organization", async () => {
+    mockedService.getOrganizationForUser.mockResolvedValue({
+      _id: "org-A",
+      ownerId: "owner-A",
+    } as any);
+
+    const req = {
+      params: { userId: "user-1" },
+      user: { userId: "owner-A", role: "org_owner" },
+    } as any;
+    const res = mockRes();
+
+    await removeUserFromOrganizationHandler(req, res);
+
+    expect(mockedService.removeUserFromOrganization).toHaveBeenCalledWith("user-1");
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
+  it("returns 403 when an org_owner tries to remove a user from a different organization (IDOR)", async () => {
+    mockedService.getOrganizationForUser.mockResolvedValue({
+      _id: "org-B",
+      ownerId: "owner-B",
+    } as any);
+
+    const req = {
+      params: { userId: "user-1" },
+      user: { userId: "owner-A", role: "org_owner" },
+    } as any;
+    const res = mockRes();
+
+    await removeUserFromOrganizationHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockedService.removeUserFromOrganization).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the target user is not in any organization", async () => {
+    mockedService.getOrganizationForUser.mockResolvedValue(null as any);
+
+    const req = {
+      params: { userId: "user-1" },
+      user: { userId: "owner-A", role: "org_owner" },
+    } as any;
+    const res = mockRes();
+
+    await removeUserFromOrganizationHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(mockedService.removeUserFromOrganization).not.toHaveBeenCalled();
+  });
+
+  it("allows an admin to remove a user from any organization", async () => {
+    mockedService.getOrganizationForUser.mockResolvedValue({
+      _id: "org-B",
+      ownerId: "owner-B",
+    } as any);
+
+    const req = {
+      params: { userId: "user-1" },
+      user: { userId: "admin-1", role: "admin" },
+    } as any;
+    const res = mockRes();
+
+    await removeUserFromOrganizationHandler(req, res);
+
+    expect(mockedService.removeUserFromOrganization).toHaveBeenCalledWith("user-1");
+    expect(res.status).not.toHaveBeenCalledWith(403);
   });
 });
