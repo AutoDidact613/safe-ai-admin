@@ -106,11 +106,7 @@ export async function register(data: {
     const litellmKeyEncrypted ="l"
 
     
-    //מילוי מחרוזות סתם
-    const key = "aa";
-    const token = "aa";
-    const key_name = "aa";
-    const litellmKeyEncrypted = "aa";
+
     // Create user in database
     const user = await User.create({
       email: data.email.toLowerCase(),
