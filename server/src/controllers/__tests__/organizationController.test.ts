@@ -1,12 +1,17 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { Request, Response } from "express";
-import { getOrganizationUsersHandler, updateOrganizationHandler } from "../organizationController";
+import {
+  getOrganizationUsersHandler,
+  updateOrganizationHandler,
+  publicRequestOrganizationHandler,
+} from "../organizationController";
 import * as organizationService from "../../services/organizationService";
 
 jest.mock("../../services/organizationService", () => ({
   getOrganizationById: jest.fn(),
   getOrganizationUsers: jest.fn(),
   updateOrganization: jest.fn(),
+  publicRequestOrganization: jest.fn(),
 }));
 
 const mockedService = jest.mocked(organizationService);
@@ -168,5 +173,49 @@ describe("organizationController.updateOrganizationHandler", () => {
       walletBalance: 999999,
       ownerId: "new-owner",
     });
+  });
+});
+
+describe("organizationController.publicRequestOrganizationHandler", () => {
+  it("rejects the request instead of creating an organization when the owner email is invalid", async () => {
+    mockedService.publicRequestOrganization.mockRejectedValue(
+      new Error("כתובת האימייל אינה תקינה")
+    );
+
+    const req = {
+      body: {
+        ownerName: "Owner",
+        ownerEmail: "not-an-email",
+        ownerPassword: "secret123",
+        orgName: "Acme",
+      },
+    } as any;
+    const res = mockRes();
+
+    await publicRequestOrganizationHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: "כתובת האימייל אינה תקינה" })
+    );
+    expect(res.status).not.toHaveBeenCalledWith(201);
+  });
+
+  it("creates the organization when the request is valid", async () => {
+    mockedService.publicRequestOrganization.mockResolvedValue({ _id: "org-1" } as any);
+
+    const req = {
+      body: {
+        ownerName: "Owner",
+        ownerEmail: "owner@example.com",
+        ownerPassword: "secret123",
+        orgName: "Acme",
+      },
+    } as any;
+    const res = mockRes();
+
+    await publicRequestOrganizationHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(201);
   });
 });
