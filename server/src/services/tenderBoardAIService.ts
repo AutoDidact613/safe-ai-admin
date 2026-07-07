@@ -1,8 +1,6 @@
 import { z } from 'zod';
-import mongoose from "mongoose";
-import logger from "../logger";
-import { TenderLog } from "../models/tendersBoardLog";
 import { callAI } from "./aiService"; // ← הפונקציה הגנרית
+import logger from "../logger";
 
 // ==========================================
 // פונקציית עזר — נרמול ערכי enum
@@ -95,42 +93,11 @@ title, shortDescription, productType, budget, timeRequired, aiApplicationType, a
 פלט: {"query": {"$or": [{"title": {"$regex": "bar", "$options": "i"}}, {"shortDescription": {"$regex": "bar", "$options": "i"}}]}}`;
 
 // ==========================================
-// פונקציית עזר — שמירת לוג
-// ==========================================
-async function saveTenderLog(params: {
-  action: "CREATE" | "UPDATE" | "DELETE" | "APPLY" | "SMART_CREATE" | "SMART_SEARCH";
-  status: "SUCCESS" | "FAILED";
-  tenderId?: string | mongoose.Types.ObjectId;
-  metaData?: any;
-  errorMessage?: string;
-}) {
-  try {
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 60);
-    const validTenderId = params.tenderId && mongoose.Types.ObjectId.isValid(params.tenderId)
-      ? new mongoose.Types.ObjectId(params.tenderId.toString())
-      : undefined;
-    await TenderLog.create({
-      action: params.action,
-      status: params.status,
-      tenderId: validTenderId,
-      metaData: params.metaData,
-      errorMessage: params.errorMessage,
-      timestamp: new Date(),
-      expiresAt,
-    } as any);
-  } catch (logError) {
-    logger.error("Failed to write Tender DB Log", { logError });
-  }
-}
-
-// ==========================================
 // מחלקת השירות — משתמשת ב-callAI
 // ==========================================
 export class TBAIService {
 
   static async generateTenderData(userDescription: string) {
-    const startTime = Date.now();
     try {
       logger.info("Starting AI tender data generation", {
         descriptionLength: userDescription?.length,
@@ -149,15 +116,6 @@ export class TBAIService {
         productType: parsedData.productType,
       });
 
-      await saveTenderLog({
-        action: "SMART_CREATE",
-        status: "SUCCESS",
-        metaData: {
-          textLength: userDescription?.length,
-          responseTime: Date.now() - startTime,
-        },
-      });
-
       return parsedData;
 
     } catch (error: any) {
@@ -165,21 +123,11 @@ export class TBAIService {
         err: error,
         descriptionLength: userDescription?.length,
       });
-      await saveTenderLog({
-        action: "SMART_CREATE",
-        status: "FAILED",
-        errorMessage: error?.message || String(error),
-        metaData: {
-          textLength: userDescription?.length,
-          responseTime: Date.now() - startTime,
-        },
-      });
       throw new Error("נכשלה יצירת המכרז החכמה באמצעות ה-AI");
     }
   }
 
   static async generateSearchQuery(userSearchText: string): Promise<Record<string, any>> {
-    const startTime = Date.now();
     try {
       logger.info("Starting AI search query generation", { searchText: userSearchText });
 
@@ -203,16 +151,6 @@ export class TBAIService {
         query: JSON.stringify(query),
       });
 
-      await saveTenderLog({
-        action: "SMART_SEARCH",
-        status: "SUCCESS",
-        metaData: {
-          searchText: userSearchText,
-          query,
-          responseTime: Date.now() - startTime,
-        },
-      });
-
       // Returns the raw (not-yet-sanitized) filter object — the caller
       // (tenderBoardService.smartSearchTenders) is responsible for sanitizing
       // it against an allowlist before executing it against the database.
@@ -222,12 +160,6 @@ export class TBAIService {
       logger.error("Error in AIService.generateSearchQuery", {
         error,
         searchText: userSearchText,
-      });
-      await saveTenderLog({
-        action: "SMART_SEARCH",
-        status: "FAILED",
-        errorMessage: error?.message || String(error),
-        metaData: { searchText: userSearchText, responseTime: Date.now() - startTime },
       });
       if (error?.status === 429) throw new Error("RATE_LIMIT");
       throw error;

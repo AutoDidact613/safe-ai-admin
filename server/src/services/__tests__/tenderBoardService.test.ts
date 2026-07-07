@@ -17,11 +17,6 @@ jest.mock("../../utils/email", () => ({
   sendApplicantRegisteredEmail: jest.fn(),
   sendTenderClosedEmail: jest.fn(),
 }));
-jest.mock("../../models/tendersBoardLog", () => ({
-  TenderLog: {
-    create: jest.fn(),
-  },
-}));
 jest.mock("mongoose", () => ({
   ...jest.requireActual("mongoose"),
   Types: {

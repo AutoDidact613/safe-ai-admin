@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import * as repo from "../repositories/tenderBoardRepository";
 import logger from "../logger";
 import { TBAIService } from "./tenderBoardAIService";
-import { TenderLog } from "../models/tendersBoardLog";
 import {
   sendApplicantRegisteredEmail,
   sendTenderClosedEmail,
@@ -27,38 +26,6 @@ const AI_ApplicationType_List = [
   'אייגנט',
   'מולטי אייגנט'
 ];
-
-/**
- * פונקציית עזר פנימית ליצירת לוג בבסיס הנתונים עם חישוב TTL של 60 יום מראש
- */
-async function saveTenderLog(params: {
-  action: "CREATE" | "UPDATE" | "DELETE" | "APPLY" | "SMART_CREATE" | "SMART_SEARCH";
-  status: "SUCCESS" | "FAILED";
-  tenderId?: string | mongoose.Types.ObjectId;
-  metaData?: any;
-  errorMessage?: string;
-}) {
-  try {
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 60);
-
-    const validTenderId = params.tenderId && mongoose.Types.ObjectId.isValid(params.tenderId)
-      ? new mongoose.Types.ObjectId(params.tenderId.toString())
-      : undefined;
-
-    await TenderLog.create({
-      action: params.action,
-      status: params.status,
-      tenderId: validTenderId,
-      metaData: params.metaData,
-      errorMessage: params.errorMessage,
-      timestamp: new Date(),
-      expiresAt
-    } as any);
-  } catch (logError) {
-    logger.error("Failed to write Tender DB Log", { logError });
-  }
-}
 
 /**
  * פונקציית עזר פנימית - שליפת המייל של מנהל המכרז מה-DB לפי publisherUserCode
@@ -89,27 +56,10 @@ export async function getAIApplicationTypeList() {
 export async function createTender(data: any) {
   try {
     const tender = await repo.createTender(data);
-
     logger.info("Tender created successfully", { tenderId: tender._id, title: data.title });
-
-    await saveTenderLog({
-      action: "CREATE",
-      status: "SUCCESS",
-      tenderId: tender._id,
-      metaData: { title: data.title }
-    });
-
     return tender;
   } catch (error: any) {
     logger.error("Failed to create tender", { error, title: data?.title });
-
-    await saveTenderLog({
-      action: "CREATE",
-      status: "FAILED",
-      errorMessage: error?.message || String(error),
-      metaData: { title: data?.title }
-    });
-
     throw error;
   }
 }
@@ -144,25 +94,9 @@ export async function updateTender(id: string, data: any) {
   try {
     const result = await repo.updateTender(id, data);
     logger.info("Tender updated successfully", { tenderId: id });
-
-    await saveTenderLog({
-      action: "UPDATE",
-      status: "SUCCESS",
-      tenderId: id,
-      metaData: { changes: Object.keys(data || {}) }
-    });
-
     return result;
   } catch (error: any) {
     logger.error("Failed to update tender", { error, tenderId: id });
-
-    await saveTenderLog({
-      action: "UPDATE",
-      status: "FAILED",
-      tenderId: id,
-      errorMessage: error?.message || String(error)
-    });
-
     throw error;
   }
 }
@@ -184,13 +118,6 @@ export async function closeTender(id: string) {
 
     logger.info("Tender closed successfully", { tenderId: id, title: tender.title });
 
-    await saveTenderLog({
-      action: "UPDATE",
-      status: "SUCCESS",
-      tenderId: id,
-      metaData: { changes: ["isActive"], closedAt: new Date() }
-    });
-
     // שליחת מייל למנהל המכרז - לא חוסמת את התוצאה
     if (tender.publisherUserCode && tender.wantsEmails) {
       const adminEmail = await getPublisherEmail(tender.publisherUserCode);
@@ -207,14 +134,6 @@ export async function closeTender(id: string) {
     return result;
   } catch (error: any) {
     logger.error("Failed to close tender", { error, tenderId: id });
-
-    await saveTenderLog({
-      action: "UPDATE",
-      status: "FAILED",
-      tenderId: id,
-      errorMessage: error?.message || String(error)
-    });
-
     throw error;
   }
 }
@@ -222,26 +141,10 @@ export async function closeTender(id: string) {
 export async function deleteTender(id: string) {
   try {
     const result = await repo.deleteTender(id);
-
     logger.info("Tender deleted successfully", { tenderId: id });
-
-    await saveTenderLog({
-      action: "DELETE",
-      status: "SUCCESS",
-      tenderId: id
-    });
-
     return result;
   } catch (error: any) {
     logger.error("Failed to delete tender", { error, tenderId: id });
-
-    await saveTenderLog({
-      action: "DELETE",
-      status: "FAILED",
-      tenderId: id,
-      errorMessage: error?.message || String(error)
-    });
-
     throw error;
   }
 }
@@ -313,13 +216,6 @@ export async function applyToTender(
     const result = await repo.updateTenderApplicants(tenderId, updatedApplicants);
     logger.info("Applicant registered successfully to tender", { tenderId, applicantEmail: normalizedEmail });
 
-    await saveTenderLog({
-      action: "APPLY",
-      status: "SUCCESS",
-      tenderId: tenderId,
-      metaData: { applicantEmail: normalizedEmail }
-    });
-
     // שליחת מייל למנהל המכרז לאחר רישום מוצלח - לא חוסמת את התוצאה
     if (tender.publisherUserCode && tender.wantsEmails) {
       const adminEmail = await getPublisherEmail(tender.publisherUserCode);
@@ -339,15 +235,6 @@ export async function applyToTender(
     return result;
   } catch (error: any) {
     logger.error("Failed to update tender applicants", { error, tenderId, applicantEmail: normalizedEmail });
-
-    await saveTenderLog({
-      action: "APPLY",
-      status: "FAILED",
-      tenderId: tenderId,
-      errorMessage: error?.message || String(error),
-      metaData: { applicantEmail: normalizedEmail }
-    });
-
     throw error;
   }
 }
