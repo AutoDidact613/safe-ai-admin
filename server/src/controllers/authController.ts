@@ -147,8 +147,10 @@ export async function verifyEmailHandler(req: Request, res: Response) {
 
     res.json({
       success: true,
-      message: "האימייל אומת בהצלחה! כעת תוכל להתחבר למערכת.",
+      message: "האימייל אומת בהצלחה!",
       user: result.user,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
     });
   } catch (error: any) {
     logger.error("Email verification error:", { error: error.message, stack: error.stack });

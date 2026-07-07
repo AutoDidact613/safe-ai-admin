@@ -2,6 +2,17 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiCall, API_ENDPOINTS } from "../../config/api";
+import { startActivityTracking } from "../../utils/tokenManager";
+import ProfileSelectionModal from "../../components/ProfileSelectionModal";
+
+interface VerifiedUser {
+  _id: string;
+  email: string;
+  name: string;
+  role: string;
+  mode: string;
+  profileId?: string;
+}
 
 export default function EmailVerification() {
   const { token } = useParams<{ token: string }>();
@@ -11,6 +22,8 @@ export default function EmailVerification() {
     "loading",
   );
   const [message, setMessage] = useState("");
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState<VerifiedUser | null>(null);
   const hasVerified = useRef(false);
   const verifyEmail = useCallback(
     async (verificationToken: string) => {
@@ -18,6 +31,9 @@ export default function EmailVerification() {
         const response = await apiCall<{
           success: boolean;
           message: string;
+          user?: VerifiedUser;
+          accessToken?: string;
+          refreshToken?: string;
         }>(API_ENDPOINTS.auth.verifyEmail(verificationToken), {
           method: "GET",
         });
@@ -25,10 +41,29 @@ export default function EmailVerification() {
         if (response.success) {
           setStatus("success");
           setMessage(response.message);
-          // Redirect to login after 3 seconds
-          setTimeout(() => {
-            navigate("/login");
-          }, 3000);
+
+          if (response.accessToken && response.refreshToken && response.user) {
+            // Log the user in automatically instead of sending them back to /login
+            localStorage.setItem("accessToken", response.accessToken);
+            localStorage.setItem("refreshToken", response.refreshToken);
+            localStorage.setItem("user", JSON.stringify(response.user));
+            localStorage.setItem("userRole", response.user.role);
+            startActivityTracking();
+
+            setTimeout(() => {
+              if (!response.user!.profileId) {
+                setLoggedInUser(response.user!);
+                setShowProfileModal(true);
+              } else {
+                navigate("/safeai-ui");
+              }
+            }, 1500);
+          } else {
+            // Fallback: no tokens returned, send the user to log in manually
+            setTimeout(() => {
+              navigate("/login");
+            }, 3000);
+          }
         }
       } catch (err: unknown) {
         console.error("Email verification error:", err);
@@ -55,7 +90,14 @@ export default function EmailVerification() {
   }, [token]);
 
   return (
-    <div className="auth-form-container">
+    <>
+      <ProfileSelectionModal
+        isOpen={showProfileModal}
+        onClose={() => {}}
+        userId={loggedInUser?._id || ""}
+        onProfileSelected={() => navigate("/safeai-ui")}
+      />
+      <div className="auth-form-container">
       <div className="auth-form-wrapper">
         {status === "loading" && (
           <div style={{ textAlign: "center", padding: "40px" }}>
@@ -80,7 +122,7 @@ export default function EmailVerification() {
             </h2>
             <p style={{ color: "#666", marginBottom: "20px" }}>{message}</p>
             <p style={{ color: "#999", fontSize: "14px" }}>
-              {t("resetPassword.redirectingMsg")}
+              {t("emailVerification.redirectingMsg")}
             </p>
           </div>
         )}
@@ -118,6 +160,7 @@ export default function EmailVerification() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

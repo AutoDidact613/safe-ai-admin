@@ -290,9 +290,25 @@ export async function verifyEmail(token: string) {
   user.emailVerified = true;
   user.verificationToken = null as any;
   user.verificationTokenExpires = null as any;
+
+  // Log the user in automatically now that their email is verified
+  const tokens = generateTokenPair({
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  });
+
+  if (!user.refreshTokens) {
+    user.refreshTokens = [];
+  }
+  user.refreshTokens.push(tokens.refreshToken);
+  if (user.refreshTokens.length > 5) {
+    user.refreshTokens = user.refreshTokens.slice(-5);
+  }
+
   await user.save();
 
-  return { user };
+  return { user, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken };
 }
 
 /**

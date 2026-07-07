@@ -822,6 +822,7 @@
     "verifyingTitle": "Verifying your email...",
     "pleaseWait": "Please wait",
     "successTitle": "Email verified successfully!",
+    "redirectingMsg": "Redirecting you automatically...",
     "backToLoginBtn": "Back to Login",
     "registerAgainBtn": "Register Again"
   },
