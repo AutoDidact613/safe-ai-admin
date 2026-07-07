@@ -248,6 +248,22 @@ export default function OrganizationUsersPage() {
     }
   };
 
+  const handleDownloadAllUsersExcel = () => {
+    const rows = users.map((u) => ({
+      "אימייל": u.email,
+      "שם": u.name || "",
+      "תפקיד":
+        u.role === "org_owner" ? "בעל ארגון" : u.role === "admin" ? "מנהל מערכת" : "משתמש",
+      "סטטוס": u.isActive ? "פעיל" : "לא פעיל",
+      "סטטוס הצטרפות": u.lastLogin ? "הצטרף" : "ממתין להתחברות ראשונה",
+      "תאריך הצטרפות": new Date(u.createdAt).toLocaleDateString(),
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "משתמשי הארגון");
+    XLSX.writeFile(workbook, `כל-משתמשי-${organization?.name || "ארגון"}.xlsx`);
+  };
+
   const handleDownloadExcel = () => {
     const loginUrl = `${window.location.origin}/login`;
     const rows = createdMembers.map((m) => ({
@@ -429,7 +445,14 @@ export default function OrganizationUsersPage() {
         </div>
       )}
 
-      <h3>משתמשים בארגון ({users.length})</h3>
+      <div className="org-info-header">
+        <h3>משתמשים בארגון ({users.length})</h3>
+        {users.length > 0 && (
+          <button type="button" className="topup-button" onClick={handleDownloadAllUsersExcel}>
+            ייצוא רשימת משתמשים לאקסל
+          </button>
+        )}
+      </div>
 
       {users.length === 0 ? (
         <p>לא נמצאו משתמשים בארגון זה.</p>
