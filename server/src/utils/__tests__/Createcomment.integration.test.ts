@@ -1,5 +1,11 @@
 import request from 'supertest';
 
+// src/config/openai.ts יוצר לקוח OpenAI ברמת המודול, וזה קורס אם
+// OPENAI_API_KEY לא מוגדר - וב-CI (GitHub Actions) אין קובץ .env בכלל,
+// אז המשתנה undefined. מדמים את המודול כדי שהבדיקה לא תיפול על תלות
+// עקיפה שאין לה שום קשר לפורום.
+jest.mock('../../config/openai', () => ({ openai: {} }));
+
 jest.mock('uuid', () => ({ v4: () => 'mock-uuid-value' }));
 jest.mock('../../middleware/requestLogger', () => ({
   requestLogger: (_req: any, _res: any, next: any) => next(),

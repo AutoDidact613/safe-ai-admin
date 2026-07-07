@@ -1,5 +1,11 @@
 import request from 'supertest';
 
+// src/config/openai.ts יוצר לקוח OpenAI ברמת המודול, וזה קורס אם
+// OPENAI_API_KEY לא מוגדר - וב-CI (GitHub Actions) אין קובץ .env בכלל,
+// אז המשתנה undefined. מדמים את המודול כדי שהבדיקה לא תיפול על תלות
+// עקיפה שאין לה שום קשר לפורום.
+jest.mock('../../config/openai', () => ({ openai: {} }));
+
 // requestLogger רץ על כל בקשה (גם בבדיקה הזו) ומנסה לשמור רשומת לוג
 // ב-MongoDB האמיתי. בסביבת בדיקות אין חיבור אמיתי, אז זה "נתקע" ל-10
 // שניות (timeout של Mongoose) ומדפיס שגיאה אחרי שהבדיקות כבר הסתיימו.
