@@ -6,6 +6,9 @@ import {
   publicRequestOrganizationHandler,
   topUpOrganizationWalletHandler,
   approveOrganizationHandler,
+  rejectOrganizationHandler,
+  suspendOrganizationHandler,
+  activateOrganizationHandler,
 } from "../organizationController";
 import * as organizationService from "../../services/organizationService";
 
@@ -16,6 +19,8 @@ jest.mock("../../services/organizationService", () => ({
   publicRequestOrganization: jest.fn(),
   topUpOrganizationWallet: jest.fn(),
   approveOrganization: jest.fn(),
+  rejectOrganization: jest.fn(),
+  setOrganizationActive: jest.fn(),
 }));
 
 const mockedService = jest.mocked(organizationService);
@@ -317,6 +322,91 @@ describe("organizationController.approveOrganizationHandler (#229 ORG-02)", () =
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ error: "ניתן לאשר רק ארגון שממתין לאישור" })
+    );
+  });
+});
+
+describe("organizationController.rejectOrganizationHandler (#230 ORG-03)", () => {
+  it("rejects a pending organization and returns the updated organization", async () => {
+    mockedService.rejectOrganization.mockResolvedValue({
+      _id: "org-A",
+      status: "rejected",
+      isActive: false,
+    } as any);
+
+    const req = { params: { id: "org-A" } } as any;
+    const res = mockRes();
+
+    await rejectOrganizationHandler(req, res);
+
+    expect(mockedService.rejectOrganization).toHaveBeenCalledWith("org-A");
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        organization: expect.objectContaining({ status: "rejected" }),
+      })
+    );
+  });
+
+  it("returns 400 when the organization is not pending", async () => {
+    mockedService.rejectOrganization.mockRejectedValue(
+      new Error("ניתן לדחות רק ארגון שממתין לאישור")
+    );
+
+    const req = { params: { id: "org-A" } } as any;
+    const res = mockRes();
+
+    await rejectOrganizationHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+});
+
+describe("organizationController.suspend/activateOrganizationHandler (#231 ORG-04)", () => {
+  it("suspends an active approved organization", async () => {
+    mockedService.setOrganizationActive.mockResolvedValue({
+      _id: "org-A",
+      isActive: false,
+    } as any);
+
+    const req = { params: { id: "org-A" } } as any;
+    const res = mockRes();
+
+    await suspendOrganizationHandler(req, res);
+
+    expect(mockedService.setOrganizationActive).toHaveBeenCalledWith("org-A", false);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true, organization: expect.objectContaining({ isActive: false }) })
+    );
+  });
+
+  it("returns 400 when suspending an organization that isn't approved", async () => {
+    mockedService.setOrganizationActive.mockRejectedValue(
+      new Error("ניתן להשעות או להפעיל מחדש רק ארגון מאושר")
+    );
+
+    const req = { params: { id: "org-A" } } as any;
+    const res = mockRes();
+
+    await suspendOrganizationHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it("reactivates a suspended organization", async () => {
+    mockedService.setOrganizationActive.mockResolvedValue({
+      _id: "org-A",
+      isActive: true,
+    } as any);
+
+    const req = { params: { id: "org-A" } } as any;
+    const res = mockRes();
+
+    await activateOrganizationHandler(req, res);
+
+    expect(mockedService.setOrganizationActive).toHaveBeenCalledWith("org-A", true);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true, organization: expect.objectContaining({ isActive: true }) })
     );
   });
 });
