@@ -46,6 +46,7 @@ const OrganizationSchema = new mongoose.Schema(
 );
 
 OrganizationSchema.index({ ownerId: 1 });
+OrganizationSchema.index({ status: 1 });
 
 OrganizationSchema.set("toJSON", {
   transform: (_doc, ret) => {
