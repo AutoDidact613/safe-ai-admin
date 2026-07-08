@@ -117,3 +117,25 @@ export const createOrganizationMember = async (
 export const getMyOrganization = async (): Promise<{ organization: AdminOrganization | null }> => {
   return apiCall(API_ENDPOINTS.adminOrganizations.my, { method: "GET" });
 };
+
+// עדכון שם/תיאור הארגון
+export const updateOrganizationDetails = async (
+  id: string,
+  data: { name: string; description: string }
+): Promise<{ organization: AdminOrganization }> => {
+  return apiCall(API_ENDPOINTS.adminOrganizations.detail(id), {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+};
+
+// טעינת ארנק הארגון (סימולציה)
+export const topUpOrganizationWallet = async (
+  id: string,
+  amount: number
+): Promise<{ organization: AdminOrganization }> => {
+  return apiCall(API_ENDPOINTS.adminOrganizations.topUp(id), {
+    method: "POST",
+    body: JSON.stringify({ amount }),
+  });
+};

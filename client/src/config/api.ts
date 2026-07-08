@@ -36,6 +36,7 @@ export const API_ENDPOINTS = {
     reject: (id: string) => `${API_BASE_URL}/organizations/${id}/reject`,
     publicRequest: `${API_BASE_URL}/organizations/public-request`,
     my: `${API_BASE_URL}/organizations/my`,
+    topUp: (id: string) => `${API_BASE_URL}/organizations/${id}/top-up`,
   },
   // Proxy key endpoints (user's own proxy key)
   proxyKey: {
