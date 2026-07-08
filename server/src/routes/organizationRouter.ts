@@ -61,7 +61,7 @@ router.get("/admin/all", requireAdmin, getAllOrganizationsHandler); // System Ad
 router.get("/my", getMyOrganizationHandler); // Current user's own organization (any status)
 
 // 2. GENERAL ORGANIZATION ROUTES
-router.post("/", createOrganizationHandler); // Admin only
+router.post("/", requireAdmin, createOrganizationHandler); // Admin only
 router.get("/", listOrganizationsHandler);    // Admin רואה הכל, Org Owner רואה את שלו
 
 // 3. PROTECTED DYNAMIC ROUTES (נתיבים עם מזהה דינמי תמיד בסוף)

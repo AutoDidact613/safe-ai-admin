@@ -11,6 +11,7 @@ import {
   verifyEmailHandler,
   forgotPasswordHandler,
   resetPasswordHandler,
+  changePasswordHandler,
   getCurrentUserHandler,
 } from "../controllers/authController";
 import {
@@ -35,6 +36,7 @@ router.get("/google/callback", googleCallbackHandler);
 
 // Protected routes (require JWT)
 router.post("/logout", authenticateToken, logoutHandler);
+router.post("/change-password", authenticateToken, changePasswordHandler);
 router.get("/me", authenticateToken, getCurrentUserHandler);
 
 export default router;

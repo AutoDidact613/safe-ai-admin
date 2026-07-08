@@ -45,6 +45,19 @@ export const forgotPasswordSchema = z.object({
 });
 
 /**
+ * Change password validation schema
+ */
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "נא להזין את הסיסמה הנוכחית"),
+  newPassword: z
+    .string()
+    .min(8, "הסיסמה חייבת להכיל לפחות 8 תווים")
+    .regex(/[A-Z]/, "הסיסמה חייבת להכיל לפחות אות גדולה אחת")
+    .regex(/[a-z]/, "הסיסמה חייבת להכיל לפחות אות קטנה אחת")
+    .regex(/[0-9]/, "הסיסמה חייבת להכיל לפחות ספרה אחת"),
+});
+
+/**
  * Reset password validation schema
  */
 export const resetPasswordSchema = z.object({
