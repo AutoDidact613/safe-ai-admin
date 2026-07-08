@@ -8,6 +8,7 @@ interface AuthUser {
   role?: string;
   profileId?: string;
   mode?: "BYOK" | "MANAGED";
+  mustChangePassword?: boolean;
 }
 
 interface AuthContextValue {

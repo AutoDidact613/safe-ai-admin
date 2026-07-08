@@ -277,6 +277,7 @@ export default function OrganizationUsersPage() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "משתמשים חדשים");
     XLSX.writeFile(workbook, `משתמשי-${organization?.name || "ארגון"}.xlsx`);
+    setCreatedMembers([]);
   };
 
   if (loading) {
@@ -421,6 +422,10 @@ export default function OrganizationUsersPage() {
       {createdMembers.length > 0 && (
         <div className="organization-info-card">
           <p>נוספו {createdMembers.length} משתמשים חדשים בסשן הזה. פרטי ההתחברות שיש למסור להם:</p>
+          <div className="simulation-warning">
+            ⚠️ הסיסמאות המוצגות כאן חד-פעמיות בלבד — כל משתמש חדש יידרש להחליף אותה בכניסה הראשונה.
+            מומלץ למסור אותן למשתמשים ולמחוק את קובץ האקסל מיד לאחר מכן.
+          </div>
           <table className="organization-table">
             <thead>
               <tr>
@@ -441,6 +446,9 @@ export default function OrganizationUsersPage() {
           </table>
           <button type="button" className="topup-button" onClick={handleDownloadExcel}>
             הורדת קובץ אקסל
+          </button>
+          <button type="button" className="retry-button" onClick={() => setCreatedMembers([])}>
+            סגירה ומחיקת הרשימה מהמסך
           </button>
         </div>
       )}
