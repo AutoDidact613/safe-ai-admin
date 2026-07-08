@@ -4,7 +4,12 @@ import * as userRepo from "../repositories/userRepository";
 import { UsageLog } from "../models";
 import { register } from "./authService";
 import * as providerKeyService from "./providerKeyService";
-import { sendOrgApprovalRequestEmail, sendOrgApprovedEmail, sendOrgStatusEmail } from "../utils/email";
+import {
+  sendOrgApprovalRequestEmail,
+  sendOrgApprovedEmail,
+  sendOrgStatusEmail,
+  sendOrgAdminActionEmail,
+} from "../utils/email";
 import logger from "../logger";
 
 function generateTemporaryPassword(): string {
@@ -283,7 +288,28 @@ export async function publicRequestOrganization(data: {
   return organization;
 }
 
-export async function approveOrganization(orgId: string) {
+async function notifyOtherAdmins(
+  kind: "approved" | "rejected" | "suspended" | "reactivated",
+  orgName: string,
+  actingAdminEmail?: string,
+) {
+  if (!actingAdminEmail) return;
+  try {
+    const users = await userRepo.getUsers();
+    const otherAdmins = users.filter(
+      (u: any) => u.role === "admin" && u.email !== actingAdminEmail
+    );
+    await Promise.all(
+      otherAdmins.map((admin: any) =>
+        sendOrgAdminActionEmail(admin.email, kind, orgName, actingAdminEmail)
+      )
+    );
+  } catch (error) {
+    logger.error("Failed to notify other admins about org action", { error, kind });
+  }
+}
+
+export async function approveOrganization(orgId: string, actingAdminEmail?: string) {
   const organization = await repo.getOrganizationById(orgId);
   if (!organization) {
     throw new Error("Organization not found");
@@ -305,12 +331,13 @@ export async function approveOrganization(orgId: string) {
   } catch (error) {
     logger.error("Failed to send org approved email", { error });
   }
+  await notifyOtherAdmins("approved", (organization as any).name, actingAdminEmail);
 
   logger.info("Organization approved", { orgId });
   return updated;
 }
 
-export async function rejectOrganization(orgId: string) {
+export async function rejectOrganization(orgId: string, actingAdminEmail?: string) {
   const organization = await repo.getOrganizationById(orgId);
   if (!organization) {
     throw new Error("Organization not found");
@@ -332,6 +359,7 @@ export async function rejectOrganization(orgId: string) {
   } catch (error) {
     logger.error("Failed to send org rejected email", { error });
   }
+  await notifyOtherAdmins("rejected", (organization as any).name, actingAdminEmail);
 
   logger.info("Organization rejected", { orgId });
   return updated;
@@ -349,7 +377,11 @@ export async function listAllOrganizationsWithStats() {
   return repo.getOrganizationsWithUserCount();
 }
 
-export async function setOrganizationActive(orgId: string, isActive: boolean) {
+export async function setOrganizationActive(
+  orgId: string,
+  isActive: boolean,
+  actingAdminEmail?: string,
+) {
   const organization = await repo.getOrganizationById(orgId);
   if (!organization) {
     throw new Error("Organization not found");
@@ -376,6 +408,11 @@ export async function setOrganizationActive(orgId: string, isActive: boolean) {
   } catch (error) {
     logger.error("Failed to send org active-state email", { error });
   }
+  await notifyOtherAdmins(
+    isActive ? "reactivated" : "suspended",
+    (organization as any).name,
+    actingAdminEmail,
+  );
 
   logger.info("Organization active state changed", { orgId, isActive });
   return updated;

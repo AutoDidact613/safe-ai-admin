@@ -315,13 +315,24 @@ describe("organizationController.approveOrganizationHandler (#229 ORG-02)", () =
 
     await approveOrganizationHandler(req, res);
 
-    expect(mockedService.approveOrganization).toHaveBeenCalledWith("org-A");
+    expect(mockedService.approveOrganization).toHaveBeenCalledWith("org-A", undefined);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
         organization: expect.objectContaining({ status: "approved", isActive: true }),
       })
     );
+  });
+
+  it("passes the acting admin's email through so other admins can be notified", async () => {
+    mockedService.approveOrganization.mockResolvedValue({ _id: "org-A" } as any);
+
+    const req = { params: { id: "org-A" }, user: { email: "admin1@safeai.com" } } as any;
+    const res = mockRes();
+
+    await approveOrganizationHandler(req, res);
+
+    expect(mockedService.approveOrganization).toHaveBeenCalledWith("org-A", "admin1@safeai.com");
   });
 
   it("returns 400 when the organization is not pending", async () => {
@@ -354,7 +365,7 @@ describe("organizationController.rejectOrganizationHandler (#230 ORG-03)", () =>
 
     await rejectOrganizationHandler(req, res);
 
-    expect(mockedService.rejectOrganization).toHaveBeenCalledWith("org-A");
+    expect(mockedService.rejectOrganization).toHaveBeenCalledWith("org-A", undefined);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
@@ -389,7 +400,7 @@ describe("organizationController.suspend/activateOrganizationHandler (#231 ORG-0
 
     await suspendOrganizationHandler(req, res);
 
-    expect(mockedService.setOrganizationActive).toHaveBeenCalledWith("org-A", false);
+    expect(mockedService.setOrganizationActive).toHaveBeenCalledWith("org-A", false, undefined);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ success: true, organization: expect.objectContaining({ isActive: false }) })
     );
@@ -419,7 +430,7 @@ describe("organizationController.suspend/activateOrganizationHandler (#231 ORG-0
 
     await activateOrganizationHandler(req, res);
 
-    expect(mockedService.setOrganizationActive).toHaveBeenCalledWith("org-A", true);
+    expect(mockedService.setOrganizationActive).toHaveBeenCalledWith("org-A", true, undefined);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ success: true, organization: expect.objectContaining({ isActive: true }) })
     );

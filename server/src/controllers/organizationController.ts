@@ -470,7 +470,8 @@ export async function suspendOrganizationHandler(
   res: Response
 ) {
   try {
-    const updated = await setOrganizationActive(req.params.id, false);
+    const actingAdminEmail = (req as any).user?.email;
+    const updated = await setOrganizationActive(req.params.id, false, actingAdminEmail);
     res.json({ success: true, message: "Organization suspended", organization: updated });
   } catch (error: any) {
     logger.error("Failed to suspend organization", { error });
@@ -483,7 +484,8 @@ export async function activateOrganizationHandler(
   res: Response
 ) {
   try {
-    const updated = await setOrganizationActive(req.params.id, true);
+    const actingAdminEmail = (req as any).user?.email;
+    const updated = await setOrganizationActive(req.params.id, true, actingAdminEmail);
     res.json({ success: true, message: "Organization reactivated", organization: updated });
   } catch (error: any) {
     logger.error("Failed to reactivate organization", { error });
@@ -569,7 +571,8 @@ export async function approveOrganizationHandler(
   res: Response
 ) {
   try {
-    const updated = await approveOrganization(req.params.id);
+    const actingAdminEmail = (req as any).user?.email;
+    const updated = await approveOrganization(req.params.id, actingAdminEmail);
     res.json({ success: true, message: "Organization approved", organization: updated });
   } catch (error: any) {
     logger.error("Failed to approve organization", { error });
@@ -582,7 +585,8 @@ export async function rejectOrganizationHandler(
   res: Response
 ) {
   try {
-    const updated = await rejectOrganization(req.params.id);
+    const actingAdminEmail = (req as any).user?.email;
+    const updated = await rejectOrganization(req.params.id, actingAdminEmail);
     res.json({ success: true, message: "Organization rejected", organization: updated });
   } catch (error: any) {
     logger.error("Failed to reject organization", { error });
