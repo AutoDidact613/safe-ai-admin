@@ -29,6 +29,7 @@ export async function register(data: {
   mode?: "BYOK" | "MANAGED" | "MANAGED_ORG";
   role?: string;
   skipEmailVerification?: boolean;
+  mustChangePassword?: boolean;
 }) {
   const existingUser = await User.findOne({ email: data.email.toLowerCase() });
   if (existingUser) {
@@ -85,6 +86,7 @@ export async function register(data: {
       emailVerified: !!data.skipEmailVerification,
       verificationToken,
       verificationTokenExpires,
+      mustChangePassword: !!data.mustChangePassword,
     });
 
     if (!data.skipEmailVerification) {
@@ -283,6 +285,28 @@ export async function resetPassword(token: string, newPassword: string) {
 
   user.refreshTokens = [];
 
+  await user.save();
+
+  return { success: true };
+}
+
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+) {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+  if (!isCurrentPasswordValid) {
+    throw { statusCode: 401, message: "הסיסמה הנוכחית שגויה" };
+  }
+
+  user.password = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  user.mustChangePassword = false;
   await user.save();
 
   return { success: true };

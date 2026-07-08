@@ -71,7 +71,11 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    
+    mustChangePassword: {
+      type: Boolean,
+      default: false,
+    },
+
     rateLimits: {
       requestsPerMinute: { type: Number, default: 60 },
       requestsPerDay: { type: Number, default: 10000 },
