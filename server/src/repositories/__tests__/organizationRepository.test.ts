@@ -13,7 +13,7 @@ const mockedOrganization = jest.mocked(Organization);
 function mockQuery(result: unknown) {
   const query = {
     populate: jest.fn().mockReturnThis(),
-    lean: jest.fn().mockResolvedValue(result),
+    lean: jest.fn<() => Promise<unknown>>().mockResolvedValue(result),
   };
   return query;
 }
