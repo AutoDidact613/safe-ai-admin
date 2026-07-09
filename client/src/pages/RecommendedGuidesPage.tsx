@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import "../styles/recommended-guides-page.css";
+import { SEO } from "../components/SEO";
 
 interface Guide {
   id: string;
@@ -195,6 +196,11 @@ export default function RecommendedGuidesPage() {
 
   return (
     <div className="recommended-guides-page">
+        <SEO
+        title="מדריכים והמלצות"
+        description="ריכוז מדריכים מומלצים, טיפים מעשיים וכלים איכותיים שיעזרו לכם לעבוד בצורה בטוחה, יעילה ומקצועית עם כלי בינה מלאכותית בסביבה נקייה."
+        canonicalUrl="https://safeai613.com/recommended"
+      />
       <div className="recommended-guides-container">
         {/* Header */}
         <div className="page-header">

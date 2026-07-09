@@ -14,33 +14,48 @@ services:
   #     - postgres_data:/var/lib/postgresql/data
 
   # 2. MongoDB
-  # mongodb:
-  #   image: mongo:7-jammy
-  #   container_name: safe-ai-mongodb
-  #   restart: unless-stopped
-  #   ports:
-  #     - "27017:27017"
-  #   volumes:
-  #     - mongodb_data:/data/db
+  mongodb:
+    image: mongo:7-jammy
+    container_name: safe-ai-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
 
   # 3. LiteLLM Proxy
+  # litellm:
+  #   image: ghcr.io/berriai/litellm:main-latest
+  #   container_name: litellm-proxy
+  #   restart: unless-stopped
+  #   # depends_on:
+  #   #   - db
+  #   ports:
+  #     - "4000:4000"
+  #   volumes:
+  #     - ./litellm_config.yaml:/app/config.yaml
+  #   environment:
+  #     - DATABASE_URL=postgresql://llm_user:llm_pass@db:5432/litellm_db
+  #     - LITELLM_MASTER_KEY=sk-safe-ai-master-123
+  #     - SSL_VERIFY=false
+  #     - HTTPX_SSL_VERIFY=false
+  #   command: ["--config", "/app/config.yaml", "--port", "4000"]
+
+# 3. LiteLLM Proxy
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
     container_name: litellm-proxy
     restart: unless-stopped
-    # depends_on:
-    #   - db
     ports:
       - "4000:4000"
     volumes:
       - ./litellm_config.yaml:/app/config.yaml
     environment:
-      - DATABASE_URL=postgresql://llm_user:llm_pass@db:5432/litellm_db
       - LITELLM_MASTER_KEY=sk-safe-ai-master-123
+      - GEMINI_API_KEY=AQ.Ab8RN6KDvbIZHf0pggSgy9qbgtITR7xDP4WGfhlCCxLgWYLUGw
       - SSL_VERIFY=false
       - HTTPX_SSL_VERIFY=false
     command: ["--config", "/app/config.yaml", "--port", "4000"]
-
   # 4. השרת שלך
   server:
     build:
@@ -70,5 +85,5 @@ services:
       - EMAIL_FROM=${EMAIL_FROM}
 volumes:
   postgres_data:
-  # mongodb_data:
+  mongodb_data:
   node_modules:

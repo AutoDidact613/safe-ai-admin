@@ -8,6 +8,7 @@ import { Highlight } from '@tiptap/extension-highlight';
 import { FontFamily } from '@tiptap/extension-font-family';
 import { TextAlign } from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
+import { SEO } from '../../components/SEO'; // עדכני נתיב זה בהתאם למיקום הקומפוננטה בפרויקט שלך
 
 interface Comment {
   _id: string;
@@ -333,6 +334,20 @@ export const PostThreadPage: React.FC = () => {
     });
     return `${hebrewDate} / ${gregoreanDate}`;
   };
+  // הופך HTML גולמי (מהעורך) לטקסט רגיל, נקי מתגיות, לשימוש בתיאור המטא
+  const stripHtmlToPlainText = (html: string): string => {
+    const withoutTags = html.replace(/<[^>]*>/g, ' ');
+    const withoutEntities = withoutTags.replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+    return withoutEntities;
+  };
+
+  // בונה תיאור מטא באורך מתאים (עד 160 תווים בקירוב) בלי לחתוך באמצע מילה
+  const buildMetaDescription = (rawContent: string): string => {
+    const plainText = stripHtmlToPlainText(rawContent);
+    if (plainText.length <= 160) return plainText;
+    return plainText.slice(0, 160).replace(/\s+\S*$/, '') + '...';
+  };
+
 const renderFileAttachment = (fileUrl: string, index: number) => {
     if (!fileUrl) return null;
     
@@ -442,9 +457,26 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: '#10b981', fontWeight: 'bold', direction: 'rtl' }}>טוען שרשור...</div>;
   if (!post) return <div style={{ textAlign: 'center', padding: '50px', direction: 'rtl' }}>הפוסט לא נמצא.</div>;
 
+  // תמונת השיתוף: התמונה הראשונה מבין הקבצים המצורפים (אם קיימת), אחרת ברירת המחדל של האתר תיכנס אוטומטית בקומפוננטת SEO
+  const firstImageAttachment = post.attachments?.find((url) =>
+    ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(url.split('?')[0].split('.').pop()?.toLowerCase() || '')
+  );
+
+  // מילות מפתח מתוך התגים שהפוסט עצמו סווג אליהם - רלוונטי הרבה יותר ממילות מפתח כלליות וקבועות
+  const postKeywords = post.tags?.map((tag) => tag.name).join(', ');
+
   return (
     <div style={{ padding: '20px', direction: 'rtl', maxWidth: '1100px', margin: '0 auto', fontFamily: 'Assistant, sans-serif' }}>
-      
+
+      <SEO
+        title={post.title}
+        description={buildMetaDescription(post.content)}
+        keywords={postKeywords}
+        canonicalUrl={`https://safeai613.com/forum/post/${post._id}`}
+        ogImage={firstImageAttachment}
+        noIndex={!!post.isLocked}
+      />
+
       <button 
         onClick={() => navigate('/forum')} 
         style={{ marginBottom: '15px', cursor: 'pointer', background: 'none', border: 'none', color: '#10b981', fontWeight: 'bold', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '5px' }}

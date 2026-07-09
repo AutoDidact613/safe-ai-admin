@@ -1,4 +1,5 @@
 // import { useState, useMemo } from "react";
+import { SEO } from "../components/SEO";
 import "../styles/docs-page.css";
 
 // interface GuideCard {
@@ -259,6 +260,12 @@ export default function DocsPage() {
 
   return (
     <div className="docs-page">
+      <SEO
+        title="תיעוד ומסמכים למפתחים (Docs)"
+        description="המדריך המלא לשילוב ה-API של SafeAI613. למדו כיצד לחבר את מערכות הפיתוח שלכם לספק מוגן ומסונן בצורה מאובטחת ויעילה."
+        keywords="SafeAI API, תיעוד מפתחים, אינטגרציה AI, מדריך למתכנתים נטפרי"
+        canonicalUrl="https://safeai613.com/docs"
+      />
       <div className="docs-container">
         <div className="docs-header">
           <h1>📚 מדריכי שימוש</h1>

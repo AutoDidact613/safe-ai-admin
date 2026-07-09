@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_ENDPOINTS, apiCall } from "../config/api";
 import "../styles/contact-page.css";
+import { SEO } from "../components/SEO";
 
 export default function ContactPage() {
   const navigate = useNavigate();
@@ -65,6 +66,11 @@ export default function ContactPage() {
   if (!isLoggedIn) {
     return (
       <div className="contact-page">
+        <SEO
+          title="צור קשר ותמיכה"
+          description="צריכים עזרה או תמיכה טכנית? מעוניינים להצטרף לצוות הפיתוח או לנהל קהילה? כתבו לנו ונשמח לעמוד לרשותכם בהקדם."
+          canonicalUrl="https://safeai613.com/contact"
+        />
         <div className="contact-container">
           <h1>צור קשר</h1>
           <div className="login-required">

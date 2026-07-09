@@ -1,8 +1,14 @@
+import { SEO } from "../components/SEO";
 import "../styles/about-page.css";
 
 export default function AboutPage() {
   return (
     <div className="about-page">
+      <SEO
+          title="מדריך למשתמש ואסטרטגיה"
+          description="למה הקמנו את הפלטפורמה? קראו על האסטרטגיה לניהול שימוש בטוח ומבוקר במודלי שפה (LLM), התקנת צ'אט מקומי והסברים על מערכת הסינון של SafeAI613."
+          canonicalUrl="https://safeai613.com/guide"
+        />
       <div className="about-container">
         <h1>AI 2026</h1>
 

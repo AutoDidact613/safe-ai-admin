@@ -1,8 +1,15 @@
+import { SEO } from "../components/SEO";
 import "../styles/courses-page.css";
 
 export default function CoursesPage() {
   return (
     <div className="courses-page">
+        <SEO
+        title="קורסים והדרכות AI"
+        description="למדו להפיק את המקסימום מ-SafeAI613. מגוון מסלולי הכשרה: קורס מתחילים, שימוש מתקדם בפילטרים, ניהול משתמשים ארגוני וחיבור מערכות דרך אינטגרציה ו-API."
+        keywords="קורס AI, לימודי בינה מלאכותית, מדריכי SafeAI, ניהול ארגוני SafeAI, קורס API"
+        canonicalUrl="https://safeai613.com/courses"
+      />
       <div className="courses-container">
         <div className="courses-header">
           <h1>🎓 קורסים והדרכות</h1>

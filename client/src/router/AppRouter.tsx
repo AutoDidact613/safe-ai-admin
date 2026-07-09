@@ -21,6 +21,7 @@ import BetaBanner from "../components/BetaBanner";
 import ForumPage  from '../features/forum/ForumPage';
 import { PostThreadPage } from '../features/forum/PostThreadPage';
 import { PendingOrganizationsPage } from "../features/organizations/pages/PendingOrganizationsPage";
+import { HelmetProvider } from 'react-helmet-async';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const accessToken = localStorage.getItem("accessToken");
@@ -50,6 +51,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 export default function AppRouter() {
   return (
+    <HelmetProvider>
     <BrowserRouter>
       {/* Global Top Navigation */}
       <TopNavigation />
@@ -162,5 +164,6 @@ export default function AppRouter() {
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
+    </HelmetProvider>
   );
 }

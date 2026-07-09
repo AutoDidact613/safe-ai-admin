@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AddPostModal } from './AddPostModal';
+import { SEO } from "../../components/SEO";
 
 
 interface Post {
@@ -253,7 +254,12 @@ export const ForumPage: React.FC = () => {
 
   return (
     <div style={{ padding: '20px', direction: 'rtl', maxWidth: '1100px', margin: '0 auto', fontFamily: 'Assistant, sans-serif' }}>
-      
+      <SEO 
+          title="פורום טכנולוגי מקצועי"
+          description="הצטרפו לקהילת המפתחים והמשתמשים של SafeAI613 בפורום הרשמי. מקום לדיונים מקצועיים, שאלות ותשובות, טיפים, ושיתוף מוצרים איכותיים בעולם ה-AI המסונן."
+          keywords="פורום SafeAI613, קהילת AI חרדית, שאלות ותשובות בינה מלאכותית, פורום מפתחים נטפרי"
+          canonicalUrl="https://safeai613.com/forum"
+        />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', gap: '20px' }}>
         <button 
           onClick={() => setIsModalOpen(true)}
