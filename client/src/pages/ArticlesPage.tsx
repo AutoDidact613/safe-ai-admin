@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { apiCall, API_ENDPOINTS } from "../config/api";
 import "./articles-page.css";
 
@@ -13,6 +14,7 @@ interface Article {
 }
 
 export default function ArticlesPage() {
+  const { t, i18n } = useTranslation();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,12 +30,12 @@ export default function ArticlesPage() {
       setArticles(data.articles);
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
-        setError("שגיאה בטעינת המאמרים");
+        setError(t("docs.loadArticlesError"));
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -52,28 +54,28 @@ export default function ArticlesPage() {
   const categories = [...new Set(articles.map((a) => a.category))];
 
   return (
-    <div className="articles-page" dir="rtl">
+    <div className="articles-page">
       <div className="articles-header">
-        <h1>📚 Docs</h1>
-        <p className="articles-subtitle">מרכז הידע של SafeAI</p>
+        <h1>📚 {t("docs.title")}</h1>
+        <p className="articles-subtitle">{t("docs.subtitle")}</p>
       </div>
 
       <div className="articles-search">
         <input
           type="text"
-          placeholder="חיפוש מאמרים..."
+          placeholder={t("docs.searchArticlesPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="articles-search-input"
         />
       </div>
 
-      {loading && <div className="articles-loading">טוען מאמרים...</div>}
+      {loading && <div className="articles-loading">{t("docs.loadingArticles")}</div>}
       {error && <div className="articles-error">{error}</div>}
 
       {!loading && !error && filtered.length === 0 && (
         <div className="articles-empty">
-          {search ? `לא נמצאו מאמרים עבור "${search}"` : "אין מאמרים עדיין"}
+          {search ? t("docs.noArticlesFoundFor", { query: search }) : t("docs.noArticlesYet")}
         </div>
       )}
 
@@ -97,9 +99,11 @@ export default function ArticlesPage() {
                   )}
                   <div className="article-card-footer">
                     <span className="article-card-date">
-                      {new Date(article.createdAt).toLocaleDateString("he-IL")}
+                      {new Date(article.createdAt).toLocaleDateString(
+                        i18n.language === "he" ? "he-IL" : "en-US"
+                      )}
                     </span>
-                    <span className="article-card-link">קרא עוד ←</span>
+                    <span className="article-card-link">{t("docs.readMoreLink")}</span>
                   </div>
                 </Link>
               ))}

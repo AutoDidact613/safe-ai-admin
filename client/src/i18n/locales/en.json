@@ -399,6 +399,12 @@
   "docs": {
     "title": "User Guides",
     "subtitle": "SafeAI Knowledge Center",
+    "searchArticlesPlaceholder": "Search articles...",
+    "loadingArticles": "Loading articles...",
+    "loadArticlesError": "Error loading articles",
+    "noArticlesYet": "No articles yet",
+    "noArticlesFoundFor": "No articles found for \"{{query}}\"",
+    "readMoreLink": "Read more →",
     "betaNoticeTitle": "The system is under construction",
     "betaNoticeLine1": "The guides are currently in our Google Drive folder in video format.",
     "betaNoticeLine2": "We are working on improving the user experience and will soon add more guides and advanced content.",

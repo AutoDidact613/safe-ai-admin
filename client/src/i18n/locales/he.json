@@ -399,6 +399,12 @@
   "docs": {
     "title": "מדריכי שימוש",
     "subtitle": "מרכז הידע של SafeAI",
+    "searchArticlesPlaceholder": "חיפוש מאמרים...",
+    "loadingArticles": "טוען מאמרים...",
+    "loadArticlesError": "שגיאה בטעינת המאמרים",
+    "noArticlesYet": "אין מאמרים עדיין",
+    "noArticlesFoundFor": "לא נמצאו מאמרים עבור \"{{query}}\"",
+    "readMoreLink": "קרא עוד ←",
     "betaNoticeTitle": "המערכת בשלב הקמה",
     "betaNoticeLine1": "כרגע המדריכים נמצאים בתיקיית Google Drive שלנו בפורמט וידאו.",
     "betaNoticeLine2": "אנחנו עובדים על שיפור חוויית המשתמש ובקרוב נוסיף מדריכים נוספים ותכנים מתקדמים.",
