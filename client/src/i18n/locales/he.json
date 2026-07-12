@@ -483,7 +483,8 @@
     "manageOrganizations": "ניהול ארגונים",
     "apiKeys": "מפתחות API",
     "allRequests": "כל הפניות",
-    "orgStatistics": "סטטיסטיקות של הארגון"
+    "orgStatistics": "סטטיסטיקות של הארגון",
+    "billing": "חיובים"
   },
   "userDashboard": {
     "loadingData": "טוען נתונים...",

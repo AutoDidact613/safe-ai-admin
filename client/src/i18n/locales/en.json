@@ -483,7 +483,8 @@
     "manageOrganizations": "Manage Organizations",
     "apiKeys": "API Keys",
     "allRequests": "All Requests",
-    "orgStatistics": "Organization Statistics"
+    "orgStatistics": "Organization Statistics",
+    "billing": "Billing"
   },
   "userDashboard": {
     "loadingData": "Loading data...",

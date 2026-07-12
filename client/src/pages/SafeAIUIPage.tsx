@@ -363,7 +363,7 @@ export default function SafeAIUIPage() {
                     <path d="M1 7h14" stroke="currentColor" strokeWidth="1.5" />
                     <path d="M4 10.5h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
-                  חיובים
+                  {t("safeaiNav.billing")}
                 </button>
               </>
             )}

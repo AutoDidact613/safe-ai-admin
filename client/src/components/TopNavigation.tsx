@@ -58,10 +58,10 @@ export default function TopNavigation() {
                {t("nav.courses")}
               </Link>
               <Link to="/docs" className="top-nav-link">
-                מדריך SafeAI
+                {t("nav.docs")}
               </Link>
               <Link to="/recommended-guides" className="top-nav-link">
-                מדריכים מומלצים
+                {t("nav.recommendedGuides")}
               </Link>
               <Link to="/contact" className="top-nav-link">
                 {t("nav.contact")}
@@ -94,10 +94,10 @@ export default function TopNavigation() {
                 {t("nav.courses")}
               </Link>
               <Link to="/docs" className="top-nav-link">
-                מדריך SafeAI
+                {t("nav.docs")}
               </Link>
               <Link to="/recommended-guides" className="top-nav-link">
-                מדריכים מומלצים
+                {t("nav.recommendedGuides")}
               </Link>
               <Link to="/contact" className="top-nav-link">
                 {t("nav.contact")}
