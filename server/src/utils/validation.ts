@@ -88,7 +88,7 @@ export function validateRequest<T>(schema: z.ZodSchema<T>, data: unknown): T {
       const validationError = new Error(messages.join(", ")) as Error & {
         code?: string;
       };
-      validationError.code = messages[0];
+      validationError.code = messages[0] ?? "VALIDATION_ERROR";
       throw validationError;
     }
     throw error;
