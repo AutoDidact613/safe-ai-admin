@@ -5,7 +5,7 @@ import { apiCall, API_ENDPOINTS } from "../../config/api";
 import { startActivityTracking } from "../../utils/tokenManager";
 import ProfileSelectionModal from "../../components/ProfileSelectionModal";
 import { AUTH_ERROR_CODE_KEYS } from "../../i18n/authErrorCodes";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 
 interface LoginFormData {
   email: string;

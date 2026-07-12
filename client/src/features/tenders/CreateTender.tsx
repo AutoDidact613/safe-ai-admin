@@ -123,10 +123,11 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value, type } = event.target
+    const fieldValue: string | boolean = type === 'checkbox' ? (event.target as HTMLInputElement).checked : value
     setFormData((current) => ({
       ...current,
-      [name]: type === 'checkbox' ? (event.target as HTMLInputElement).checked : value,
-    } as any))
+      [name]: fieldValue,
+    } as TenderFormData))
   }
 
   const handleAgentChange = (index: number, value: string) => {
@@ -451,7 +452,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
                 id="duration-unit"
                 name="duration-unit"
                 value={formData.duration.unit}
-                onChange={(e) => setFormData((c) => ({ ...c, duration: { ...c.duration, unit: e.target.value as any } }))}
+                onChange={(e) => setFormData((c) => ({ ...c, duration: { ...c.duration, unit: e.target.value as (typeof timeUnits)[number] } }))}
               >
                 {timeUnits.map((u) => (
                   <option key={u} value={u}>{u}</option>

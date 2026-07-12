@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import "../styles/top-navigation.css";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 export default function TopNavigation() {
   const location = useLocation();
@@ -25,10 +25,14 @@ export default function TopNavigation() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Close menus on navigation
-  useEffect(() => {
-    setShowUserMenu(false);
-  }, [location]);
+  // Close menus on navigation (state adjustment during render, not in an effect)
+  const [lastLocationKey, setLastLocationKey] = useState(location.key);
+  if (location.key !== lastLocationKey) {
+    setLastLocationKey(location.key);
+    if (showUserMenu) {
+      setShowUserMenu(false);
+    }
+  }
 
   const handleLogout = () => {
     logout();

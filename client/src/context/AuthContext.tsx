@@ -1,24 +1,6 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { useState, useCallback, type ReactNode } from "react";
 import { cleanupTokenManager } from "../utils/tokenManager";
-
-interface AuthUser {
-  _id?: string;
-  email: string;
-  name: string;
-  role?: string;
-  profileId?: string;
-  mode?: "BYOK" | "MANAGED";
-}
-
-interface AuthContextValue {
-  user: AuthUser | null;
-  userRole: "admin" | "user" | null;
-  isAuthenticated: boolean;
-  setUser: (user: AuthUser) => void;
-  logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
+import { AuthContext, type AuthUser } from "./AuthContextObject";
 
 function readFromStorage(): { user: AuthUser | null; userRole: "admin" | "user" | null } {
   try {
@@ -62,10 +44,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
-  return ctx;
 }

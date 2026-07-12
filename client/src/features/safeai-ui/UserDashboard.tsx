@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { format } from "date-fns";
 import { useUsageData } from "../../hooks/useUsageData";
 import { useProfiles, type Profile } from "../../hooks/useProfiles";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 
 interface UserDashboardProps {
   user: {

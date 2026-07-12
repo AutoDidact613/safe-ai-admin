@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CreatableSelect from 'react-select/creatable';
+import type { MultiValue } from 'react-select';
 
 interface AddPostModalProps {
   isOpen: boolean;
@@ -8,16 +9,31 @@ interface AddPostModalProps {
   onPostCreated: () => void;
 }
 
+interface TagOption {
+  value: string;
+  label: string;
+}
+
+interface TagFromServer {
+  _id?: string;
+  name: string;
+}
+
+interface SimilarPost {
+  _id: string;
+  title: string;
+}
+
 export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onPostCreated }) => {
   const [formData, setFormData] = useState({ title: '', category: 'פיתוח', tags: '', content: '' });
-  const [similarPosts, setSimilarPosts] = useState([]);
+  const [similarPosts, setSimilarPosts] = useState<SimilarPost[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
-  const [allTags, setAllTags] = useState<{ value: string; label: string }[]>([]);
-  const [selectedTags, setSelectedTags] = useState<{ value: string; label: string }[]>([]);
+  const [allTags, setAllTags] = useState<TagOption[]>([]);
+  const [selectedTags, setSelectedTags] = useState<TagOption[]>([]);
   const [tagInputValue, setTagInputValue] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -25,7 +41,7 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
     fetch('http://localhost:5000/api/tags')
       .then((res) => res.json())
       .then((data) => {
-        const formatted = Array.isArray(data) ? data.map((tag: any) => ({
+        const formatted = Array.isArray(data) ? data.map((tag: TagFromServer) => ({
           value: tag._id || tag.name,
           label: tag.name
         })) : [];
@@ -188,7 +204,7 @@ const response = await fetch('http://localhost:5000/api/posts', {
                   <small style={{ color: '#065f46', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>
                     💡 אולי כבר יש מענה לפוסט שלך? בדקי פוסטים דומים:
                   </small>
-                  {similarPosts.map((post: any) => (
+                  {similarPosts.map((post) => (
                     <div key={post._id} style={{ marginBottom: '4px' }}>
                       <a href={`/forum/post/${post._id}`} target="_blank" rel="noreferrer" style={{ fontSize: '13px', color: '#059669', textDecoration: 'underline' }}>
                         {post.title}
@@ -244,7 +260,7 @@ const response = await fetch('http://localhost:5000/api/posts', {
               isMulti
               options={allTags}
               value={selectedTags}
-              onChange={(newValue: any) => setSelectedTags(newValue || [])}
+              onChange={(newValue: MultiValue<TagOption>) => setSelectedTags(newValue ? [...newValue] : [])}
               inputValue={tagInputValue}
               onInputChange={(val) => setTagInputValue(val)}
               placeholder="נא להכניס לפחות 3 אותיות"
