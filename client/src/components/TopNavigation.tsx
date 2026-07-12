@@ -56,7 +56,7 @@ export default function TopNavigation() {
               {/* Public Navigation */}
 
               <Link to="/about" className="top-nav-link">
-                למה?
+                {t("nav.why")}
               </Link>
               <Link to="/courses" className="top-nav-link">
                {t("nav.courses")}
