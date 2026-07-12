@@ -7,6 +7,7 @@ import UsersManagement from "../features/safeai-ui/UsersManagement";
 import UserDashboard from "../features/safeai-ui/UserDashboard";
 import Statistics from "../features/safeai-ui/Statistics";
 import UserApiKeysPage from "../features/safeai-ui/UserApiKeysPage";
+import BillingPage from "../features/safeai-ui/BillingPage";
 import MyRequestsList from "../features/safeai-ui/MyRequestsList";
 import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
 import { apiCall, API_ENDPOINTS } from "../config/api";
@@ -34,7 +35,8 @@ type Section =
   | "requests"
   | "adminRequests"
   | "org-statistics"
-  | "org-users";
+  | "org-users"
+  | "billing";
 
 type UserData = {
   email: string;
@@ -152,6 +154,8 @@ export default function SafeAIUIPage() {
         return <Statistics user={currentUser} />;
       case "apikeys":
         return <UserApiKeysPage />;
+      case "billing":
+        return <BillingPage />;
       case "organizations":
         return <OrganizationsManagement />;
       case "requests":
@@ -349,6 +353,17 @@ export default function SafeAIUIPage() {
                       <path d="M2 4h12v8H2zM2 4l6 4 6-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                     {t("requests.myRequestsTitle")}
+                </button>
+                <button
+                  className={activeSection === "billing" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  onClick={() => setActiveSection("billing")}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <rect x="1" y="4" width="14" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M1 7h14" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M4 10.5h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                  חיובים
                 </button>
               </>
             )}

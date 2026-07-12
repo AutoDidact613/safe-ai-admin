@@ -56,36 +56,30 @@ export async function register(data: {
   const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
   try {
-    //בהערה בגלל ה Docker
     // Register with LiteLLM
-    // const response = await axios.post(
-    //   `${process.env.LITELLM_PROXY_URL}/key/generate`,
-    //   {
-    //     models: ["*"],
-    //     user_id: data.email,
-    //     duration: "30d",
-    //     metadata: {
-    //       source: "SafeAI_Registration",
-    //       user_email: data.email,
-    //     },
-    //   },
-    //   {
-    //     headers: {
-    //       Authorization: `Bearer ${process.env.LITELLM_MASTER_KEY}`,
-    //       "Content-Type": "application/json",
-    //     },
-    //     timeout: 5000,
-    //   },
-    // );
+    const response = await axios.post(
+      `${process.env.LITELLM_PROXY_URL}/key/generate`,
+      {
+        models: ["*"],
+        user_id: data.email,
+        duration: "30d",
+        metadata: {
+          source: "SafeAI_Registration",
+          user_email: data.email,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.LITELLM_MASTER_KEY}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 5000,
+      },
+    );
 
-    // const { key, token, key_name } = response.data;
-    // const litellmKeyEncrypted = encryptSecret(key);
+    const { key, token, key_name } = response.data;
+    const litellmKeyEncrypted = encryptSecret(key);
 
-    //מילוי מחרוזות סתם
-    const key = "aa";
-    const token = "aa";
-    const key_name = "aa";
-    const litellmKeyEncrypted = "aa";
     // Create user in database
     const user = await User.create({
       email: data.email.toLowerCase(),
@@ -243,7 +237,7 @@ export async function refreshAccessToken(refreshToken: string) {
     });
 
     // Replace old refresh token with new one
-    user.refreshTokens = user.refreshTokens.filter((t) => t !== refreshToken);
+    user.refreshTokens = user.refreshTokens.filter((t: string) => t !== refreshToken);
     user.refreshTokens.push(tokens.refreshToken);
     await user.save();
 
@@ -267,7 +261,7 @@ export async function logout(userId: string, refreshToken: string) {
 
   // Remove refresh token
   if (user.refreshTokens) {
-    user.refreshTokens = user.refreshTokens.filter((t) => t !== refreshToken);
+    user.refreshTokens = user.refreshTokens.filter((t: string) => t !== refreshToken);
     await user.save();
   }
 

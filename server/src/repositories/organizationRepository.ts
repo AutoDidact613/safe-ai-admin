@@ -42,6 +42,21 @@ export async function updateOrganization(orgId: string, data: any) {
   }
 }
 
+export async function incrementWalletBalance(orgId: string, amount: number) {
+  try {
+    const organization = await Organization.findByIdAndUpdate(
+      orgId,
+      { $inc: { walletBalance: amount } },
+      { new: true, runValidators: true }
+    ).lean();
+    logger.info("Organization wallet balance incremented in DB", { orgId, amount });
+    return organization;
+  } catch (error) {
+    logger.error("Failed to increment organization wallet balance in DB", { error, orgId, amount });
+    throw error;
+  }
+}
+
 export async function deleteOrganization(orgId: string) {
   try {
     const organization = await Organization.findByIdAndDelete(orgId).lean();

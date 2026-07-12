@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { API_ENDPOINTS, apiCall } from "../../config/api";
-import ArrayInput from "./ArrayInput";
-import ProfileTester from "./ProfileTester";
 
-interface Profile {
+import { API_ENDPOINTS, apiCall } from "../../config/api";
+import ProfileTester from "./ProfileTester";
+import ArrayInput from "./ArrayInput";
+
+
+export interface Profile {
   _id: string;
   name: string;
   allowedCategories?: string[];
@@ -17,44 +19,42 @@ interface Profile {
   contentPrompts?: string[];
   behaviorPrompts?: string[];
   knowledgePrompts?: string[];
-  approvalStatus: 'pending' | 'approved' | 'rejected';
-  visibility: 'public' | 'internal';
+  approvalStatus: "pending" | "approved" | "rejected";
+  visibility: "public" | "internal";
   createdAt?: string;
 }
+
+const EMPTY_FORM: Partial<Profile> = {
+  name: "",
+  allowedCategories: [],
+  blockedCategories: [],
+  thresholdAllowed: 0.25,
+  thresholdBlocked: 0.25,
+  similarityMargin: 0.05,
+  createdBy: "Admin",
+  creatorEmail: "admin@safeai.com",
+  contentPrompts: [],
+  behaviorPrompts: [],
+  knowledgePrompts: [],
+  approvalStatus: "pending",
+  visibility: "public",
+};
 
 export default function ProfilesManagement() {
   const { t } = useTranslation();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [saving, setSaving] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [saving, setSaving] = useState(false);
-  
-  const [formData, setFormData] = useState<Partial<Profile>>({
-    name: "",
-    allowedCategories: [],
-    blockedCategories: [],
-    thresholdAllowed: 0.25,
-    thresholdBlocked: 0.25,
-    similarityMargin: 0.05,
-    createdBy: "Admin",
-    creatorEmail: "admin@safeai.com",
-    contentPrompts: [],
-    behaviorPrompts: [],
-    knowledgePrompts: [],
-    approvalStatus: 'pending',
-    visibility: 'public',
-  });
+  const [formData, setFormData] = useState<Partial<Profile>>(EMPTY_FORM);
 
-  useEffect(() => {
-    fetchProfiles();
-  }, []);
+  useEffect(() => { fetchProfiles(); }, []);
 
-  const fetchProfiles = async () => {
+  async function fetchProfiles() {
     try {
-      // Admin should see all profiles with full details (categories and prompts)
       const data = await apiCall<Profile[]>(`${API_ENDPOINTS.profiles}/admin/full`);
       setProfiles(data);
     } catch (error) {
@@ -178,7 +178,6 @@ export default function ProfilesManagement() {
     return <div className="loading-state">{t("profilesManagement.loadingProfiles")}</div>;
   }
 
-
   return (
     <div>
       <div className="management-header">
@@ -188,7 +187,6 @@ export default function ProfilesManagement() {
         </button>
       </div>
 
-      {/* Profile Tester */}
       {profiles.length > 0 && <ProfileTester profiles={profiles} />}
 
       <div className="search-bar">

@@ -7,6 +7,7 @@ export const API_ENDPOINTS = {
   // Auth endpoints
   auth: {
     login: `${API_BASE_URL}/auth/login`,
+    refresh: `${API_BASE_URL}/auth/refresh`,
     register: `${API_BASE_URL}/auth/register`,
     verifyEmail: (token: string) =>
       `${API_BASE_URL}/auth/verify-email/${token}`,
@@ -68,7 +69,7 @@ export const API_ENDPOINTS = {
   tenders: {
     list: `${API_BASE_URL}/tender-board`,
     create: `${API_BASE_URL}/tender-board`,
-    smartCreate: `${API_BASE_URL}/tender-board/smart-create`, 
+    smartCreate: `${API_BASE_URL}/tender-board/smart-create`,
     smartSearch: `${API_BASE_URL}/tender-board/smart-search`,
     getAIApplicationTypes: `${API_BASE_URL}/tender-board/ai-application-types`,
     getProductTypes: `${API_BASE_URL}/tender-board/product-types`,
@@ -77,12 +78,18 @@ export const API_ENDPOINTS = {
     delete: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
     apply: (id: string) => `${API_BASE_URL}/tender-board/${id}/apply`,
   },
+  // Articles / Docs endpoints
+  articles: {
+    list: `${API_BASE_URL}/articles`,
+    all: `${API_BASE_URL}/articles/all`,
+    bySlug: (slug: string) => `${API_BASE_URL}/articles/${slug}`,
+  },
 } as const;
 
 // Helper function for API calls
 export async function apiCall<T>(
   endpoint: string,
-  options?: RequestInit,
+  options?: RequestInit & { signal?: AbortSignal },
 ): Promise<T> {
   // Get access token from localStorage
   const accessToken = localStorage.getItem("accessToken");
@@ -114,7 +121,7 @@ export async function apiCall<T>(
     if (refreshToken) {
       try {
         // Try to refresh the token
-        const refreshResponse = await fetch(API_ENDPOINTS.auth.login.replace('/login', '/refresh'), {
+        const refreshResponse = await fetch(API_ENDPOINTS.auth.refresh, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

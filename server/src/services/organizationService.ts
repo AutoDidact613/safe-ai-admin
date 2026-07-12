@@ -207,17 +207,12 @@ export async function topUpOrganizationWallet(orgId: string, amount: number) {
       throw new Error("Organization not found");
     }
 
-    const currentBalance = (organization as any).walletBalance || 0;
-    const newBalance = currentBalance + amount;
-
-    const updateOrg = await repo.updateOrganization(orgId, {
-      walletBalance: newBalance,
-    });
+    const updateOrg = await repo.incrementWalletBalance(orgId, amount);
 
     logger.info("Organization wallet topped up successfully (Mock)", {
       orgId,
       amount,
-      newBalance,
+      newBalance: (updateOrg as any)?.walletBalance,
     });
 
     return updateOrg;

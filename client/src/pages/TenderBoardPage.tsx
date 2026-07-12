@@ -6,84 +6,33 @@ import TenderDetails from '../features/tenders/TenderDetails.tsx'
 import ApplyForTender from './../features/tenders/ApplyForTender.tsx'
 import CreateTender from '../features/tenders/CreateTender.tsx'
 import ManageMyTenders from '../features/tenders/ManageMyTenders.tsx'
+import type { Applicant, RawTender, Tender, TenderTime } from '../features/tenders/types'
 import '../styles/tender-board-page.css'
-
-interface Applicant {
-  name: string
-  email: string
-  details: string
-  proposal?: string
-  contactMethod?: string
-}
-
-interface Tender {
-  id: string
-  title: string
-  publisherUserCode?: string
-  shortDescription?: string
-  timeRequired?: string
-  budget?: string
-  productType?: string
-  aiApplicationType?: string
-  isActive?: boolean
-  agentsRequired?: string[]
-  wantsEmails?: boolean
-  additionalDetails?: string
-  applicants?: Applicant[]
-}
-
-interface RawTender {
-  id?: string
-  _id?: string
-  title: string
-  publisherUserCode?: string
-  shortDescription?: string
-  timeRequired?: string
-  budget?: string
-  productType?: string
-  aiApplicationType?: string
-  isActive?: boolean
-  agentsRequired?: string[]
-  wantsEmails?: boolean
-  additionalDetails?: string
-  applicants?: Applicant[]
-}
+import AiThinkingLoader from '../features/tenders/AiThinkingLoader.tsx'
 
 const initialTenders: Tender[] = []
 
-// פונקציית עזר לחילוץ מספר מתוך מחרוזת תקציב
-const parseBudgetValue = (budgetStr: string | undefined): number => {
-  if (!budgetStr) return 0;
-  // הסרת פסיקים, סימני מטבע ומילים נפוצות
-  const cleanStr = budgetStr.replace(/[$,₪,.\s]|ש"ח|דולר|שקל/g, '');
-  const match = cleanStr.match(/\d+/);
-  return match ? parseInt(match[0], 10) : 0;
-};
+// Budget is now stored as a number; no string parsing helper required
 
-// פונקציית עזר להמרת מחרוזת זמן לימים (לצורך השוואה מספרית אחידה)
-const parseTimeToDays = (timeStr: string | undefined): number => {
-  if (!timeStr) return Infinity; // אם לא הוגדר זמן, לא נסנן אותו החוצה כברירת מחדל
-
-  const cleanStr = timeStr.toLowerCase().trim();
-  const numberMatch = cleanStr.match(/\d+/);
-  const number = numberMatch ? parseInt(numberMatch[0], 10) : 1;
-
-  if (cleanStr.includes('שנה') || cleanStr.includes('שנים') || cleanStr.includes('year')) {
-    return number * 365;
+// המרה של זמן מובנה לימים — מקבל רק מבנה `TenderTime`
+const parseTimeToDays = (time?: TenderTime): number => {
+  if (!time) return Infinity
+  const { value = 0, unit } = time
+  switch (unit) {
+    case 'שנים':
+      return value * 365
+    case 'חודשים':
+      return value * 30
+    case 'שבועות':
+      return value * 7
+    case 'ימים':
+      return value
+    case 'שעות':
+      return value / 24
+    default:
+      return Infinity
   }
-  if (cleanStr.includes('חודש') || cleanStr.includes('חודשים') || cleanStr.includes('month')) {
-    return number * 30;
-  }
-  if (cleanStr.includes('שבוע') || cleanStr.includes('שבועות') || cleanStr.includes('week')) {
-    return number * 7;
-  }
-  if (cleanStr.includes('יום') || cleanStr.includes('ימים') || cleanStr.includes('day')) {
-    return number;
-  }
-
-  // אם יש רק מספר ללא יחידה, נתייחס אליו כאל ימים
-  return numberMatch ? number : Infinity;
-};
+}
 
 export default function TenderBoardPage() {
   const { t } = useTranslation()
@@ -114,10 +63,24 @@ export default function TenderBoardPage() {
   const [selectedTender, setSelectedTender] = useState<Tender | null>(null)
   const [applyingTender, setApplyingTender] = useState<Tender | null>(null)
   const [successMessage, setSuccessMessage] = useState('')
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [activeScreen, setActiveScreen] = useState<'dashboard' | 'create' | 'manage'>('dashboard')
   const [currentUserCode, setCurrentUserCode] = useState('tnd-98234')
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  useEffect(() => {
+    if (!successMessage) return undefined
+
+    setShowSuccessOverlay(true)
+    const timer = window.setTimeout(() => {
+      setSuccessMessage('')
+      setShowSuccessOverlay(false)
+    }, 3000)
+
+    return () => window.clearTimeout(timer)
+  }, [successMessage])
 
   const normalizeTender = (tender: RawTender): Tender => ({
     id: tender.id ?? tender._id ?? '',
@@ -125,7 +88,7 @@ export default function TenderBoardPage() {
     publisherUserCode: tender.publisherUserCode,
     shortDescription: tender.shortDescription,
     timeRequired: tender.timeRequired,
-    budget: tender.budget,
+    budget: typeof tender.budget === 'number' ? tender.budget : 0,
     productType: tender.productType,
     aiApplicationType: tender.aiApplicationType,
     isActive: tender.isActive ?? true,
@@ -195,7 +158,7 @@ export default function TenderBoardPage() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [refreshKey])
 
   // פונקציה לביצוע חיפוש חכם מול השרת
   const handleSmartSearch = async () => {
@@ -237,7 +200,7 @@ export default function TenderBoardPage() {
       let matchBudget = true
       if (minBudget) {
         const parsedMinBudget = parseInt(minBudget, 10) || 0
-        const tenderBudget = parseBudgetValue(t.budget)
+        const tenderBudget = (t.budget ?? 0)
         matchBudget = tenderBudget >= parsedMinBudget
       }
 
@@ -258,6 +221,7 @@ export default function TenderBoardPage() {
     if (smartSearchResults) {
       setSmartSearchResults((prev) => prev ? prev.map((tender) => (tender.id === updatedTender.id ? updatedTender : tender)) : null)
     }
+    setRefreshKey((k) => k + 1)
   }
 
   const handleDeleteTender = (deletedTenderId: string) => {
@@ -326,7 +290,7 @@ export default function TenderBoardPage() {
 
   const renderScreen = () => {
     if (activeScreen === 'create') {
-      return <CreateTender onSuccess={() => setActiveScreen('dashboard')} />
+      return <CreateTender onSuccess={() => { setRefreshKey((k) => k + 1); setActiveScreen('dashboard') }} />
     }
     if (activeScreen === 'manage') {
       return (
@@ -355,14 +319,6 @@ export default function TenderBoardPage() {
             <div style={{ minWidth: 10 }} />
           </div>
         </section>
-
-        {isSmartSearching && (
-          <div className="loading-banner">{t('tenders.smartSearchingBanner')}</div>
-        )}
-        {errorMessage && (
-          <div className="error-banner">{errorMessage}</div>
-        )}
-
 
         {/* חלק הסינונים המעודכן - כולל חיפוש חכם עם AI, סוג מוצר, יישום AI, תקציב וזמן */}
         <section className="filters-section" style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
@@ -401,7 +357,16 @@ export default function TenderBoardPage() {
             )}
           </div>
 
-          <div className="filters-row" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', flexDirection: 'row', justifyContent: 'center', width: '100%' }}>
+          {isSmartSearching && (
+            <div style={{ display: 'flex', justifyContent: 'center', margin: '12px 0' }}>
+              <AiThinkingLoader color="#16a34a" />
+            </div>
+          )}
+          {errorMessage && (
+            <div className="error-banner">{errorMessage}</div>
+          )}
+
+          {!isSmartSearchOpen && <div className="filters-row" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', flexDirection: 'row', justifyContent: 'center', width: '100%' }}>
 
             {/* תיבה 1: סוג מוצר */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -522,7 +487,7 @@ export default function TenderBoardPage() {
               />
             </div>
 
-          </div>
+          </div>}
         </section>
 
         <section className="dashboard-metrics">
@@ -556,12 +521,19 @@ export default function TenderBoardPage() {
           )}
         </section>
 
-        {successMessage && <div className="success-banner">{successMessage}</div>}
-
         {applyingTender ? (
           <ApplyForTender tender={applyingTender} onSubmit={handleTenderApply} onCancel={() => setApplyingTender(null)} />
         ) : (
           selectedTender && <TenderDetails tender={selectedTender} onClose={() => setSelectedTender(null)} onApply={startApply} />
+        )}
+
+        {showSuccessOverlay && successMessage && (
+          <div className="success-modal-overlay" role="alert" aria-live="assertive">
+            <div className="success-modal">
+              <div className="success-modal__icon">✅</div>
+              <div className="success-modal__text">{successMessage}</div>
+            </div>
+          </div>
         )}
       </main>
     )

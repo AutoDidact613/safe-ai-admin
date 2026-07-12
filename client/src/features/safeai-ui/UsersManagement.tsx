@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { API_ENDPOINTS, apiCall } from "../../config/api";
 import ProviderKeysManagement from "./ProviderKeysManagement";
 
-interface User {
+export interface User {
   _id: string;
   email: string;
   name?: string;
@@ -22,20 +22,18 @@ interface User {
   };
 }
 
-interface Profile {
+export interface Profile {
   _id: string;
   name: string;
 }
 
-interface Organization {
+export interface Organization {
   _id: string;
   name: string;
-  description?: string;
-  ownerId: string;
-  isActive: boolean;
+  description: string;
 }
 
-interface OrganizationStats {
+export interface OrganizationStats {
   totalUsers: number;
   activeUsers: number;
   totalCost: number;
@@ -48,6 +46,9 @@ interface CreateUserResponse {
   proxyApiKey: string;
 }
 
+const EMPTY_CREATE = { email: "", name: "", profileId: "", mode: "MANAGED" as "BYOK" | "MANAGED", isActive: true };
+const EMPTY_EDIT = { name: "", profileId: "", organizationId: "", mode: "MANAGED" as "BYOK" | "MANAGED", isActive: true };
+
 export default function UsersManagement() {
   const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
@@ -55,48 +56,21 @@ export default function UsersManagement() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [generatedApiKey, setGeneratedApiKey] = useState("");
-  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [modal, setModal] = useState<"create" | "edit" | "apikey" | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [managingKeysUser, setManagingKeysUser] = useState<User | null>(null);
+  const [generatedApiKey, setGeneratedApiKey] = useState("");
+
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
   const [filterMode, setFilterMode] = useState<"all" | "BYOK" | "MANAGED">("all");
-  const [filterProfile, setFilterProfile] = useState<string>("all");
-  const [filterOrganization, setFilterOrganization] = useState<string>("all");
-  const [managingKeysUser, setManagingKeysUser] = useState<User | null>(null);
+  const [filterProfile, setFilterProfile] = useState("all");
+  const [filterOrganization, setFilterOrganization] = useState("all");
   const [organizationStats, setOrganizationStats] = useState<OrganizationStats | null>(null);
-  
-  const [createFormData, setCreateFormData] = useState({
-    email: "",
-    name: "",
-    profileId: "",
-    mode: "MANAGED" as "BYOK" | "MANAGED",
-    isActive: true,
-  });
 
-  const [editFormData, setEditFormData] = useState({
-    name: "",
-    profileId: "",
-    organizationId: "",
-    mode: "MANAGED" as "BYOK" | "MANAGED",
-    isActive: true,
-  });
-
-  useEffect(() => {
-    fetchUsers();
-    fetchProfiles();
-    fetchOrganizations();
-  }, []);
-
-  useEffect(() => {
-    if (filterOrganization && filterOrganization !== "all" && filterOrganization !== "none") {
-      calculateOrganizationStats(filterOrganization);
-    } else {
-      setOrganizationStats(null);
-    }
-  }, [filterOrganization, users]);
+  const [createFormData, setCreateFormData] = useState(EMPTY_CREATE);
+  const [editFormData, setEditFormData] = useState(EMPTY_EDIT);
 
   const fetchUsers = async () => {
     try {
@@ -111,45 +85,41 @@ export default function UsersManagement() {
   };
 
   const fetchProfiles = async () => {
-    try {
-      const data = await apiCall<Profile[]>(API_ENDPOINTS.profiles);
-      setProfiles(data);
-    } catch (error) {
-      console.error("Failed to fetch profiles:", error);
-    }
+    try { setProfiles(await apiCall<Profile[]>(API_ENDPOINTS.profiles)); }
+    catch (err) { console.error("Failed to fetch profiles:", err); }
   };
 
   const fetchOrganizations = async () => {
-    try {
-      const data = await apiCall<Organization[]>(API_ENDPOINTS.organizations);
-      setOrganizations(data);
-    } catch (error) {
-      console.error("Failed to fetch organizations:", error);
-    }
+    try { setOrganizations(await apiCall<Organization[]>(API_ENDPOINTS.organizations)); }
+    catch (err) { console.error("Failed to fetch organizations:", err); }
   };
 
-  const calculateOrganizationStats = (orgId: string) => {
+  const calculateOrganizationStats = useCallback((orgId: string) => {
     const orgUsers = users.filter(u => u.organizationId === orgId);
-    const activeUsers = orgUsers.filter(u => u.isActive).length;
-    const totalCost = orgUsers.reduce((sum, user) => {
-      return sum + (user.costLimits?.currentMonthSpent || 0);
-    }, 0);
-    const averageCostPerUser = orgUsers.length > 0 ? totalCost / orgUsers.length : 0;
-
+    const totalCost = orgUsers.reduce((sum, u) => sum + (u.costLimits?.currentMonthSpent ?? 0), 0);
     setOrganizationStats({
       totalUsers: orgUsers.length,
-      activeUsers,
+      activeUsers: orgUsers.filter(u => u.isActive).length,
       totalCost,
-      averageCostPerUser,
+      averageCostPerUser: orgUsers.length > 0 ? totalCost / orgUsers.length : 0,
     });
-  };
+  }, [users]);
 
-  const handleCreateUser = async (e: React.FormEvent) => {
+  useEffect(() => { fetchUsers(); fetchProfiles(); fetchOrganizations(); }, []);
+
+  useEffect(() => {
+    if (filterOrganization !== "all" && filterOrganization !== "none") {
+      calculateOrganizationStats(filterOrganization);
+    } else {
+      setOrganizationStats(null);
+    }
+  }, [filterOrganization, users, calculateOrganizationStats]);
+
+  const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSaving(true);
-
     try {
-      const response = await apiCall<CreateUserResponse>(API_ENDPOINTS.users, {
+      const res = await apiCall<CreateUserResponse>(API_ENDPOINTS.users, {
         method: "POST",
         body: JSON.stringify({
           email: createFormData.email,
@@ -159,11 +129,9 @@ export default function UsersManagement() {
           isActive: createFormData.isActive,
         }),
       });
-
-      setGeneratedApiKey(response.proxyApiKey);
-      setShowCreateModal(false);
-      setShowApiKeyModal(true);
-      resetCreateForm();
+      setGeneratedApiKey(res.proxyApiKey);
+      setModal("apikey");
+      setCreateFormData(EMPTY_CREATE);
       await fetchUsers();
     } catch (error: unknown) {
       console.error("Error creating user:", error);
@@ -174,12 +142,10 @@ export default function UsersManagement() {
     }
   };
 
-  const handleEditUser = async (e: React.FormEvent) => {
+  const handleEdit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingUser) return;
-
     setSaving(true);
-
     try {
       await apiCall(`${API_ENDPOINTS.users}/${editingUser._id}`, {
         method: "PUT",
@@ -191,8 +157,7 @@ export default function UsersManagement() {
           isActive: editFormData.isActive,
         }),
       });
-
-      setShowEditModal(false);
+      setModal(null);
       setEditingUser(null);
       await fetchUsers();
       alert(t("usersManagement.userUpdatedSuccess"));
@@ -211,10 +176,7 @@ export default function UsersManagement() {
     }
 
     try {
-      await apiCall(`${API_ENDPOINTS.users}/${userId}`, {
-        method: "DELETE",
-      });
-
+      await apiCall(`${API_ENDPOINTS.users}/${userId}`, { method: "DELETE" });
       await fetchUsers();
       alert(t("usersManagement.userDeletedSuccess"));
     } catch (error: unknown) {
@@ -224,26 +186,10 @@ export default function UsersManagement() {
     }
   };
 
-  const openEditModal = (user: User) => {
+  const openEdit = (user: User) => {
     setEditingUser(user);
-    setEditFormData({
-      name: user.name || "",
-      profileId: user.profileId || "",
-      organizationId: user.organizationId || "",
-      mode: user.mode,
-      isActive: user.isActive,
-    });
-    setShowEditModal(true);
-  };
-
-  const resetCreateForm = () => {
-    setCreateFormData({
-      email: "",
-      name: "",
-      profileId: "",
-      mode: "MANAGED",
-      isActive: true,
-    });
+    setEditFormData({ name: user.name ?? "", profileId: user.profileId ?? "", organizationId: user.organizationId ?? "", mode: user.mode, isActive: user.isActive });
+    setModal("edit");
   };
 
   const getProfileName = (profileId?: string) => {
@@ -263,31 +209,14 @@ export default function UsersManagement() {
     return org ? org.description : t("usersManagement.organizationNotFound");
   };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesStatus =
-      filterStatus === "all" ||
-      (filterStatus === "active" && user.isActive) ||
-      (filterStatus === "inactive" && !user.isActive);
-    
-    const matchesMode =
-      filterMode === "all" || user.mode === filterMode;
-    
-    const matchesProfile =
-      filterProfile === "all" ||
-      (filterProfile === "none" && !user.profileId) ||
-      user.profileId === filterProfile;
-
-    const matchesOrganization =
-      filterOrganization === "all" ||
-      (filterOrganization === "none" && !user.organizationId) ||
-      user.organizationId === filterOrganization;
-
-    return matchesSearch && matchesStatus && matchesMode && matchesProfile && matchesOrganization;
-  });
+  const filteredUsers = useMemo(() => users.filter((u) => {
+    const matchSearch = u.email.toLowerCase().includes(searchTerm.toLowerCase()) || (u.name ?? "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchStatus = filterStatus === "all" || (filterStatus === "active" ? u.isActive : !u.isActive);
+    const matchMode = filterMode === "all" || u.mode === filterMode;
+    const matchProfile = filterProfile === "all" || (filterProfile === "none" ? !u.profileId : u.profileId === filterProfile);
+    const matchOrg = filterOrganization === "all" || (filterOrganization === "none" ? !u.organizationId : u.organizationId === filterOrganization);
+    return matchSearch && matchStatus && matchMode && matchProfile && matchOrg;
+  }), [users, searchTerm, filterStatus, filterMode, filterProfile, filterOrganization]);
 
   if (loading) {
     return <div className="loading-state">{t("usersManagement.loadingUsers")}</div>;
@@ -299,7 +228,7 @@ export default function UsersManagement() {
         <h2>{t("safeaiNav.manageUsers")}</h2>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <div className="badge badge-info">{t("usersManagement.totalUsersCount", { count: users.length })}</div>
-          <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+          <button className="btn btn-primary" onClick={() => setModal("create")}>
             + {t("usersManagement.newUserTitle")}
           </button>
         </div>
@@ -379,12 +308,12 @@ export default function UsersManagement() {
 
       {/* Organization Statistics */}
       {organizationStats && filterOrganization !== "all" && filterOrganization !== "none" && (
-        <div style={{ 
-          backgroundColor: "#f8f9fa", 
-          border: "1px solid #dee2e6", 
-          borderRadius: "8px", 
-          padding: "20px", 
-          marginBottom: "20px" 
+        <div style={{
+          backgroundColor: "#f8f9fa",
+          border: "1px solid #dee2e6",
+          borderRadius: "8px",
+          padding: "20px",
+          marginBottom: "20px"
         }}>
           <h3 style={{ marginTop: 0, marginBottom: "15px", color: "#495057" }}>
             📊 {t("usersManagement.orgStatsTitle", { name: getOrganizationName(filterOrganization) })}
@@ -445,7 +374,7 @@ export default function UsersManagement() {
         <div className="empty-state">
           <p>{t("usersManagement.noUsersFound")}</p>
           {users.length === 0 && (
-            <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+            <button className="btn btn-primary" onClick={() => setModal("create")}>
               {t("usersManagement.createFirstUserButton")}
             </button>
           )}
@@ -529,7 +458,7 @@ export default function UsersManagement() {
               <div className="item-card-footer" style={{ display: "flex", gap: "10px", marginTop: "15px", flexWrap: "wrap" }}>
                 <button
                   className="btn btn-secondary"
-                  onClick={() => openEditModal(user)}
+                  onClick={() => openEdit(user)}
                   style={{ flex: 1, minWidth: "100px" }}
                 >
                   {t("common.edit")}
@@ -556,18 +485,18 @@ export default function UsersManagement() {
         </div>
       )}
 
-      {/* Create User Modal */}
-      {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+      {/* Create Modal */}
+      {modal === "create" && (
+        <div className="modal-overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{t("usersManagement.newUserTitle")}</h2>
-              <button className="modal-close" onClick={() => setShowCreateModal(false)}>
+              <button className="modal-close" onClick={() => setModal(null)}>
                 ×
               </button>
             </div>
 
-            <form onSubmit={handleCreateUser}>
+            <form onSubmit={handleCreate}>
               <div className="form-group">
                 <label>{t("register.emailLabel")}</label>
                 <input
@@ -615,7 +544,6 @@ export default function UsersManagement() {
                   <option value="BYOK">BYOK</option>
                 </select>
               </div>
-
               <div className="form-group">
                 <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <input
@@ -626,12 +554,11 @@ export default function UsersManagement() {
                   {t("usersManagement.activeUserCheckbox")}
                 </label>
               </div>
-
               <div className="modal-footer">
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => setModal(null)}
                   disabled={saving}
                 >
                   {t("common.cancel")}
@@ -645,18 +572,18 @@ export default function UsersManagement() {
         </div>
       )}
 
-      {/* Edit User Modal */}
-      {showEditModal && editingUser && (
-        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+      {/* Edit Modal */}
+      {modal === "edit" && editingUser && (
+        <div className="modal-overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{t("usersManagement.editUserTitle", { email: editingUser.email })}</h2>
-              <button className="modal-close" onClick={() => setShowEditModal(false)}>
+              <button className="modal-close" onClick={() => setModal(null)}>
                 ×
               </button>
             </div>
 
-            <form onSubmit={handleEditUser}>
+            <form onSubmit={handleEdit}>
               <div className="form-group">
                 <label>{t("usersManagement.emailNoChangeLabel")}</label>
                 <input
@@ -717,7 +644,6 @@ export default function UsersManagement() {
                   <option value="BYOK">BYOK</option>
                 </select>
               </div>
-
               <div className="form-group">
                 <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <input
@@ -728,12 +654,11 @@ export default function UsersManagement() {
                   {t("usersManagement.activeUserCheckbox")}
                 </label>
               </div>
-
               <div className="modal-footer">
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => setShowEditModal(false)}
+                  onClick={() => setModal(null)}
                   disabled={saving}
                 >
                   {t("common.cancel")}
@@ -747,33 +672,28 @@ export default function UsersManagement() {
         </div>
       )}
 
-      {/* Provider Keys Management Modal */}
       {managingKeysUser && (
-        <ProviderKeysManagement
-          userId={managingKeysUser._id}
-          userEmail={managingKeysUser.email}
-          onClose={() => setManagingKeysUser(null)}
-        />
+        <ProviderKeysManagement userId={managingKeysUser._id} userEmail={managingKeysUser.email} onClose={() => setManagingKeysUser(null)} />
       )}
 
       {/* API Key Display Modal */}
-      {showApiKeyModal && (
-        <div className="modal-overlay" onClick={() => setShowApiKeyModal(false)}>
+      {modal === "apikey" && (
+        <div className="modal-overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>🔑 {t("usersManagement.apiKeyCreatedTitle")}</h2>
-              <button className="modal-close" onClick={() => setShowApiKeyModal(false)}>
+              <button className="modal-close" onClick={() => setModal(null)}>
                 ×
               </button>
             </div>
 
             <div style={{ padding: "20px" }}>
-              <div style={{ 
-                backgroundColor: "#fff3cd", 
-                border: "1px solid #ffc107", 
-                borderRadius: "4px", 
-                padding: "15px", 
-                marginBottom: "20px" 
+              <div style={{
+                backgroundColor: "#fff3cd",
+                border: "1px solid #ffc107",
+                borderRadius: "4px",
+                padding: "15px",
+                marginBottom: "20px"
               }}>
                 <strong>⚠️ {t("usersManagement.importantWarningLabel")}</strong>
                 <p style={{ margin: "10px 0 0 0" }}>
@@ -787,9 +707,9 @@ export default function UsersManagement() {
                   value={generatedApiKey}
                   readOnly
                   rows={3}
-                  style={{ 
-                    width: "100%", 
-                    fontFamily: "monospace", 
+                  style={{
+                    width: "100%",
+                    fontFamily: "monospace",
                     fontSize: "14px",
                     backgroundColor: "#f8f9fa",
                     padding: "10px"
@@ -814,7 +734,7 @@ export default function UsersManagement() {
               <button
                 className="btn btn-secondary"
                 onClick={() => {
-                  setShowApiKeyModal(false);
+                  setModal(null);
                   setGeneratedApiKey("");
                 }}
               >

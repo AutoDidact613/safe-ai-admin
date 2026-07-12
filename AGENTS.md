@@ -1,5 +1,11 @@
 # Multi-Agent Team Charter for SafeAI-613
 
+Quick Agent Summary
+-------------------
+- **Purpose:** Rapid orientation for AI coding agents working in this monorepo (client + server).
+- **Key files:** See [.github/copilot-instructions.md](.github/copilot-instructions.md) for developer workflows and [README.md](README.md) for setup.
+- **Where to look first:** `client/src/config/api.ts`, `server/src/index.ts`, and `docs/` for domain-specific guides.
+
 This file defines the roles, responsibilities, and communication protocols for AI coding agents working on SafeAI-613. Use this to coordinate multi-agent work and ensure agents understand their boundaries and quality expectations.
 
 ## Team Roles

@@ -1,42 +1,17 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import "../styles/top-navigation.css";
-import { cleanupTokenManager } from "../utils/tokenManager";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../context/AuthContext";
 
 export default function TopNavigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<{ name: string; email: string } | null>(
-    null,
-  );
+  const { user, isAuthenticated, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Check authentication status
-    const accessToken = localStorage.getItem("accessToken");
-    const userStr = localStorage.getItem("user");
-
-    const checkAuth = () => {
-      if (accessToken && userStr) {
-        setIsAuthenticated(true);
-        try {
-          setUser(JSON.parse(userStr));
-        } catch (e) {
-          console.error("Error parsing user data:", e);
-        }
-      } else {
-        setIsAuthenticated(false);
-        setUser(null);
-      }
-    };
-
-    checkAuth();
-  }, [location]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -50,17 +25,13 @@ export default function TopNavigation() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    // Cleanup token manager
-    cleanupTokenManager();
-
-    // Clear local storage
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("user");
-    localStorage.removeItem("userRole");
-
+  // Close menus on navigation
+  useEffect(() => {
     setShowUserMenu(false);
+  }, [location]);
+
+  const handleLogout = () => {
+    logout();
     navigate("/");
   };
 
@@ -79,18 +50,18 @@ export default function TopNavigation() {
           {!isAuthenticated ? (
             <>
               {/* Public Navigation */}
-          
-       <Link to="/about" className="top-nav-link">
-                {t("nav.why")}
+
+              <Link to="/about" className="top-nav-link">
+                למה?
               </Link>
               <Link to="/courses" className="top-nav-link">
                {t("nav.courses")}
               </Link>
               <Link to="/docs" className="top-nav-link">
-                {t("nav.docs")}
+                מדריך SafeAI
               </Link>
               <Link to="/recommended-guides" className="top-nav-link">
-                {t("nav.recommendedGuides")}
+                מדריכים מומלצים
               </Link>
               <Link to="/contact" className="top-nav-link">
                 {t("nav.contact")}
@@ -123,10 +94,10 @@ export default function TopNavigation() {
                 {t("nav.courses")}
               </Link>
               <Link to="/docs" className="top-nav-link">
-                {t("nav.docs")}
+                מדריך SafeAI
               </Link>
               <Link to="/recommended-guides" className="top-nav-link">
-                {t("nav.recommendedGuides")}
+                מדריכים מומלצים
               </Link>
               <Link to="/contact" className="top-nav-link">
                 {t("nav.contact")}
@@ -177,12 +148,7 @@ export default function TopNavigation() {
                       className="user-menu-item"
                       onClick={() => setShowUserMenu(false)}
                     >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                      >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path
                           d="M2 8h12M8 2v12"
                           stroke="currentColor"
@@ -197,12 +163,7 @@ export default function TopNavigation() {
                       className="user-menu-item"
                       onClick={() => setShowUserMenu(false)}
                     >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                      >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path
                           d="M8 2v12M2 8h12"
                           stroke="currentColor"
@@ -214,12 +175,7 @@ export default function TopNavigation() {
                     </Link>
                     <div className="user-menu-divider"></div>
                     <button className="user-menu-item" onClick={handleLogout}>
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                      >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path
                           d="M6 14H3a1 1 0 01-1-1V3a1 1 0 011-1h3M11 11l3-3-3-3M14 8H6"
                           stroke="currentColor"

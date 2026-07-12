@@ -5,6 +5,7 @@ import { apiCall, API_ENDPOINTS } from "../../config/api";
 import { startActivityTracking } from "../../utils/tokenManager";
 import ProfileSelectionModal from "../../components/ProfileSelectionModal";
 import { AUTH_ERROR_CODE_KEYS } from "../../i18n/authErrorCodes";
+import { useAuth } from "../../context/AuthContext";
 
 interface LoginFormData {
   email: string;
@@ -16,7 +17,7 @@ interface User {
   email: string;
   name: string;
   role: string;
-  mode: string;
+  mode: "BYOK" | "MANAGED";
   profileId?: string;
 }
 
@@ -32,6 +33,7 @@ export default function LoginForm() {
   const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { setUser } = useAuth();
 
   // Handle Google OAuth callback
   useEffect(() => {
@@ -63,12 +65,11 @@ export default function LoginForm() {
         .then((res) => res.json())
         .then((data) => {
           if (data.success && data.user) {
-            localStorage.setItem("user", JSON.stringify(data.user));
-            localStorage.setItem("userRole", data.user.role);
-            
+            setUser(data.user);
+
             // Start activity tracking for token management
             startActivityTracking();
-            
+
             // Check if user has a profile
             if (!data.user.profileId) {
               setLoggedInUser(data.user);
@@ -102,11 +103,10 @@ export default function LoginForm() {
       });
 
       if (response.success) {
-        // Store tokens and user info
+        // Store tokens and update AuthContext
         localStorage.setItem("accessToken", response.accessToken);
         localStorage.setItem("refreshToken", response.refreshToken);
-        localStorage.setItem("user", JSON.stringify(response.user));
-        localStorage.setItem("userRole", response.user.role);
+        setUser(response.user);
 
         // Start activity tracking for token management
         startActivityTracking();

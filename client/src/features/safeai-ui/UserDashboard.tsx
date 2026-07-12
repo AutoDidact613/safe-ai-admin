@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { API_ENDPOINTS } from "../../config/api";
+import { API_ENDPOINTS, apiCall } from "../../config/api";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
+import { useUsageData } from "../../hooks/useUsageData";
+import { useProfiles, type Profile } from "../../hooks/useProfiles";
+import { useAuth } from "../../context/AuthContext";
 
 interface UserDashboardProps {
   user: {
@@ -13,188 +16,42 @@ interface UserDashboardProps {
   } | null;
 }
 
-interface Profile {
-  _id: string;
-  name: string;
-  createdBy: string;
-  creatorEmail: string;
-}
-
-interface DashboardStats {
-  totalRequests: number;
-  successfulRequests: number;
-  blockedRequests: number;
-  apiKeyStatus: "active" | "inactive";
-  lastActivity?: string;
-}
-
-interface UsageStats {
-  totalRequests: number;
-  successfulRequests: number;
-  totalTokens: number;
-  totalCost: number;
-  avgResponseTime: number;
-  failedRequests: number;
-}
-
-interface DailyUsage {
-  _id: string;
-  requests: number;
-  tokens: number;
-  cost: number;
-  avgResponseTime: number;
-}
-
-interface ModelUsage {
-  _id: {
-    model: string;
-    provider: string;
-  };
-  requests: number;
-  tokens: number;
-  cost: number;
-  avgTokensPerRequest: number;
-  isFree: boolean;
-}
-
-interface LimitsStatus {
-  rateLimits: {
-    perMinute: {
-      limit: number;
-      used: number;
-      remaining: number;
-    };
-    perDay: {
-      limit: number;
-      used: number;
-      remaining: number;
-    };
-  };
-  budget?: {
-    monthlyLimit: number;
-    currentSpent: number;
-    remaining: number;
-    percentUsed: number;
-    lastResetDate: string;
-  };
-}
-
 export default function UserDashboard({ user }: UserDashboardProps) {
   const { t } = useTranslation();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalRequests: 0,
-    successfulRequests: 0,
-    blockedRequests: 0,
-    apiKeyStatus: "active",
-  });
-  const [loading, setLoading] = useState(true);
+  const { setUser } = useAuth();
+  const { usageStats, dailyUsage, modelUsage, limitsStatus, loading: usageLoading } = useUsageData(!!user);
+  const { profiles: allProfiles } = useProfiles();
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
-  const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [selectedProfileId, setSelectedProfileId] = useState<string>("");
+  const [selectedProfileId, setSelectedProfileId] = useState<string>(user?.profileId ?? "");
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
-  
-  // Usage tracking state
-  const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
-  const [dailyUsage, setDailyUsage] = useState<DailyUsage[]>([]);
-  const [modelUsage, setModelUsage] = useState<ModelUsage[]>([]);
-  const [limitsStatus, setLimitsStatus] = useState<LimitsStatus | null>(null);
-  const [usageLoading, setUsageLoading] = useState(true);
 
-  // Fetch usage statistics
+  // Fetch fresh user data to ensure profileId is up-to-date (localStorage may be stale)
   useEffect(() => {
-    const fetchUsageData = async () => {
-      try {
-        const accessToken = localStorage.getItem("accessToken");
-        
-        const [statsRes, dailyRes, modelRes, limitsRes] = await Promise.all([
-          fetch(`${API_ENDPOINTS.usage.stats}?days=7`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }),
-          fetch(`${API_ENDPOINTS.usage.daily}?days=7`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }),
-          fetch(`${API_ENDPOINTS.usage.byModel}?days=30`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }),
-          fetch(API_ENDPOINTS.usage.limits, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }),
-        ]);
+    const controller = new AbortController();
+    apiCall<{ user: Record<string, unknown> }>(API_ENDPOINTS.auth.me, { signal: controller.signal })
+      .then((res) => {
+        if (!res?.user) return;
+        const u = res.user;
+        // profileId may be a populated object — normalize to its _id string
+        const profileId =
+          u.profileId && typeof u.profileId === "object"
+            ? String((u.profileId as { _id: unknown })._id)
+            : (u.profileId as string | undefined);
+        setUser({ ...(u as unknown as Parameters<typeof setUser>[0]), profileId });
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [setUser]);
 
-        if (statsRes.ok) {
-          const data = await statsRes.json();
-          setUsageStats(data);
-          setStats({
-            totalRequests: data.totalRequests,
-            successfulRequests: data.successfulRequests,
-            blockedRequests: data.failedRequests,
-            apiKeyStatus: "active",
-            lastActivity: new Date().toISOString(),
-          });
-        }
-
-        if (dailyRes.ok) {
-          const data = await dailyRes.json();
-          setDailyUsage(data);
-        }
-
-        if (modelRes.ok) {
-          const data = await modelRes.json();
-          setModelUsage(data);
-        }
-
-        if (limitsRes.ok) {
-          const data = await limitsRes.json();
-          setLimitsStatus(data);
-        }
-      } catch (err) {
-        console.error("Error fetching usage data:", err);
-      } finally {
-        setUsageLoading(false);
-        setLoading(false);
-      }
-    };
-
-    if (user) {
-      fetchUsageData();
-    }
-  }, [user]);
-
-  // Fetch current profile and all profiles
   useEffect(() => {
-    const fetchProfileData = async () => {
-      try {
-        const accessToken = localStorage.getItem("accessToken");
-        
-        // Fetch all profiles
-        const profilesResponse = await fetch(API_ENDPOINTS.profiles, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-        
-        if (profilesResponse.ok) {
-          const profiles = await profilesResponse.json();
-          setAllProfiles(profiles);
-          
-          // Find current profile if user has one
-          if (user?.profileId) {
-            const current = profiles.find((p: Profile) => p._id === user.profileId);
-            setCurrentProfile(current || null);
-            setSelectedProfileId(user.profileId);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching profiles:", err);
-      }
-    };
-
-    if (user) {
-      fetchProfileData();
+    if (user?.profileId && allProfiles.length > 0) {
+      const current = allProfiles.find(p => p._id === user.profileId);
+      setCurrentProfile(current ?? null);
+      setSelectedProfileId(user.profileId);
     }
-  }, [user]);
+  }, [allProfiles, user?.profileId]);
 
   const handleSaveProfile = async () => {
     if (!selectedProfileId || !user?._id) {
@@ -204,30 +61,13 @@ export default function UserDashboard({ user }: UserDashboardProps) {
 
     setSavingProfile(true);
     setProfileError(null);
-
     try {
-      const accessToken = localStorage.getItem("accessToken");
-      const response = await fetch(`${API_ENDPOINTS.users}/${user._id}`, {
+      const updatedUser = await apiCall<typeof user>(`${API_ENDPOINTS.users}/${user._id}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          profileId: selectedProfileId,
-        }),
+        body: JSON.stringify({ profileId: selectedProfileId }),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to save profile");
-      }
-
-      const updatedUser = await response.json();
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      
-      // Update current profile display
-      const newProfile = allProfiles.find(p => p._id === selectedProfileId);
-      setCurrentProfile(newProfile || null);
+      if (updatedUser) setUser(updatedUser);
+      setCurrentProfile(allProfiles.find(p => p._id === selectedProfileId) ?? null);
       setIsEditingProfile(false);
     } catch (err) {
       console.error("Error saving profile:", err);
@@ -237,9 +77,13 @@ export default function UserDashboard({ user }: UserDashboardProps) {
     }
   };
 
-  if (loading) {
+  if (usageLoading) {
     return <div className="loading-state">{t("userDashboard.loadingData")}</div>;
   }
+
+  const totalRequests = usageStats?.totalRequests ?? 0;
+  const successfulRequests = usageStats?.successfulRequests ?? 0;
+  const blockedRequests = usageStats?.failedRequests ?? 0;
 
   return (
     <div>
@@ -251,36 +95,31 @@ export default function UserDashboard({ user }: UserDashboardProps) {
       <div className="dashboard-grid">
         <div className="stat-card">
           <h3>{t("userDashboard.totalRequestsLabel")}</h3>
-          <p className="stat-value">{stats.totalRequests}</p>
+          <p className="stat-value">{totalRequests}</p>
         </div>
-
         <div className="stat-card">
           <h3>{t("userDashboard.successfulRequestsLabel")}</h3>
-          <p className="stat-value">{stats.successfulRequests}</p>
+          <p className="stat-value">{successfulRequests}</p>
           <p className="stat-change positive">
-            {t("userDashboard.successfulPercent", { percent: ((stats.successfulRequests / stats.totalRequests) * 100).toFixed(1) })}
+            {t("userDashboard.successfulPercent", { percent: (totalRequests > 0 ? (successfulRequests / totalRequests) * 100 : 0).toFixed(1) })}
           </p>
         </div>
-
         <div className="stat-card">
           <h3>{t("userDashboard.blockedRequestsLabel")}</h3>
-          <p className="stat-value">{stats.blockedRequests}</p>
+          <p className="stat-value">{blockedRequests}</p>
           <p className="stat-change negative">
-            {t("userDashboard.blockedPercent", { percent: ((stats.blockedRequests / stats.totalRequests) * 100).toFixed(1) })}
+            {t("userDashboard.blockedPercent", { percent: (totalRequests > 0 ? (blockedRequests / totalRequests) * 100 : 0).toFixed(1) })}
           </p>
         </div>
-
         <div className="stat-card">
           <h3>{t("userDashboard.apiKeyStatusLabel")}</h3>
           <p className="stat-value">
             <span className="badge badge-success">{t("orgUsers.active")}</span>
           </p>
-          <p className="stat-change">
-            {stats.lastActivity && t("userDashboard.lastActivityLabel", { date: new Date(stats.lastActivity).toLocaleString("he-IL") })}
-          </p>
         </div>
       </div>
 
+      {/* Account details */}
       <div className="card" style={{ marginTop: "24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
           <h3>{t("userDashboard.accountDetailsTitle")}</h3>
@@ -301,6 +140,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
         </div>
       </div>
 
+      {/* AI Profile */}
       <div className="card" style={{ marginTop: "24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
           <h3>{t("userDashboard.aiProfileTitle")}</h3>
@@ -365,13 +205,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
                 ))}
               </select>
             </div>
-
-            {profileError && (
-              <div className="alert alert-error" style={{ marginTop: "12px" }}>
-                {profileError}
-              </div>
-            )}
-
+            {profileError && <div className="alert alert-error" style={{ marginTop: "12px" }}>{profileError}</div>}
             <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
               <button
                 onClick={handleSaveProfile}
@@ -587,12 +421,6 @@ export default function UserDashboard({ user }: UserDashboardProps) {
             </div>
           )}
         </>
-      )}
-
-      {usageLoading && (
-        <div className="card" style={{ marginTop: "24px", textAlign: "center", padding: "40px" }}>
-          <p>{t("userDashboard.loadingUsageStats")}</p>
-        </div>
       )}
 
       <div className="alert alert-info" style={{ marginTop: "24px" }}>

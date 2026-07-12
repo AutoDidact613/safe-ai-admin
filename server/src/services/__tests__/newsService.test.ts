@@ -13,6 +13,14 @@ jest.mock("../../repositories/newsRepository", () => ({
   },
 }));
 
+// Without this, newsService's logger.info/error calls try to write to a real
+// MongoDB connection that doesn't exist in the test environment, causing each
+// test to hang for ~10s on a buffering-timeout error (see practicum-session-log.md).
+jest.mock("../../logger", () => ({
+  info: jest.fn(),
+  error: jest.fn(),
+}));
+
 describe("newsService.createNews", () => {
   beforeEach(() => {
     jest.clearAllMocks();

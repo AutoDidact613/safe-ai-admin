@@ -2,30 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Card from './Card'
 import ManageTenderDetails from './ManageTenderDetails.tsx'
-
-interface Applicant {
-  name: string
-  email: string
-  details: string
-  proposal?: string
-  contactMethod?: string
-}
-
-interface Tender {
-  id: string
-  title: string
-  publisherUserCode?: string
-  shortDescription?: string
-  timeRequired?: string
-  budget?: string
-  productType?: string
-  aiApplicationType?: string
-  isActive?: boolean
-  agentsRequired?: string[]
-  wantsEmails?: boolean
-  additionalDetails?: string
-  applicants?: Applicant[]
-}
+import type { Tender } from './types'
 
 interface Props {
   currentUserCode: string

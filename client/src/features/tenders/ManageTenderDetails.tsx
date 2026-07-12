@@ -1,30 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { apiCall, API_ENDPOINTS } from '../../config/api'
-
-interface Applicant {
-  name: string
-  email: string
-  details: string
-  proposal?: string
-  contactMethod?: string
-}
-
-interface Tender {
-  id: string
-  title: string
-  publisherUserCode?: string
-  shortDescription?: string
-  timeRequired?: string
-  budget?: string
-  productType?: string
-  aiApplicationType?: string
-  isActive?: boolean
-  agentsRequired?: string[]
-  wantsEmails?: boolean
-  additionalDetails?: string
-  applicants?: Applicant[]
-}
+import type { Tender } from './types'
 
 interface ManageTenderDetailsProps {
   tender: Tender
@@ -46,6 +23,8 @@ export default function ManageTenderDetails({
   
   const [productTypeOptions, setProductTypeOptions] = useState<string[]>([])
   const [aiApplicationOptions, setAiApplicationOptions] = useState<string[]>([])
+  
+  const timeUnits = ['שעות','ימים','שבועות','חודשים','שנים'] as const
   
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -312,20 +291,36 @@ export default function ManageTenderDetails({
         <div className="detail-row">
           <div className="detail-field">
             <label htmlFor="tender-timeRequired" style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>{t('tenders.durationLabel')}</label>
-            <input
-              id="tender-timeRequired"
-              value={draftTender.timeRequired ?? ''}
-              onChange={(e) => handleFieldChange('timeRequired', e.target.value)}
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
-            />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                id="tender-timeRequired-value"
+                value={(draftTender.timeRequired as any)?.value ?? 0}
+                onChange={(e) => handleFieldChange('timeRequired', { ...(draftTender.timeRequired as any), value: Number(e.target.value) } as any)}
+                style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', width: '40%' }}
+                type="number"
+                min={0}
+              />
+              <select
+                id="tender-timeRequired-unit"
+                value={(draftTender.timeRequired as any)?.unit ?? 'ימים'}
+                onChange={(e) => handleFieldChange('timeRequired', { ...(draftTender.timeRequired as any), unit: e.target.value } as any)}
+                style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', width: '60%' }}
+              >
+                {timeUnits.map((u) => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="detail-field">
             <label htmlFor="tender-budget" style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>{t('tenders.budgetLabel')}</label>
             <input
               id="tender-budget"
-              value={draftTender.budget ?? ''}
-              onChange={(e) => handleFieldChange('budget', e.target.value)}
+              value={(draftTender.budget as any) ?? 0}
+              onChange={(e) => handleFieldChange('budget', Number(e.target.value))}
               style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+              type="number"
+              min={0}
             />
           </div>
         </div>

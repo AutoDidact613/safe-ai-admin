@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { apiCall, API_ENDPOINTS } from '../../config/api'
+import AiThinkingLoader from './AiThinkingLoader.tsx'
+
 
 interface TenderFormData {
   tenderName: string
@@ -9,20 +11,24 @@ interface TenderFormData {
   productType: string
   aiApplicationType: string
   isActive: boolean
-  duration: string
-  budget: string
+  duration: { value: number; unit: 'שעות' | 'ימים' | 'שבועות' | 'חודשים' | 'שנים' }
+  budget: number
   additionalDetails: string
   wantsEmails: boolean
 }
 
 interface SmartCreateResponse {
-  product?: {
+  success: boolean
+  tender?: {
     title?: string
     shortDescription?: string
     productType?: string
     aiApplicationType?: string
-    budget?: string
-    timeRequired?: string
+    budget?: number | string
+    timeRequired?: {
+      value: number
+      unit: 'שעות' | 'ימים' | 'שבועות' | 'חודשים' | 'שנים'
+    }
     additionalDetails?: string
     agentsRequired?: string[]
   }
@@ -41,13 +47,15 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
     productType: '',
     aiApplicationType: '',
     isActive: true,
-    duration: '',
-    budget: '',
+    duration: { value: 0, unit: 'ימים' },
+    budget: 0,
     additionalDetails: '',
     wantsEmails: false,
   })
 
   const [formMessage, setFormMessage] = useState<string>('')
+  const [createSuccessMessage, setCreateSuccessMessage] = useState<string>('')
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string>('')
 
   const [productTypeOptions, setProductTypeOptions] = useState<string[]>([])
@@ -57,6 +65,9 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
   const [isSmartOpen, setIsSmartOpen] = useState<boolean>(false)
   const [smartText, setSmartText] = useState<string>('')
   const [isSmartLoading, setIsSmartLoading] = useState<boolean>(false)
+
+  // אפשרויות יחידות זמן
+  const timeUnits = ['שעות', 'ימים', 'שבועות', 'חודשים', 'שנים'] as const
 
   useEffect(() => {
     const fetchFilterOptions = async () => {
@@ -95,6 +106,19 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
     }
   }, [formData.aiApplicationType])
 
+  useEffect(() => {
+    if (!createSuccessMessage) return undefined
+
+    setShowSuccessOverlay(true)
+    const timer = window.setTimeout(() => {
+      setShowSuccessOverlay(false)
+      setCreateSuccessMessage('')
+      onSuccess()
+    }, 3000)
+
+    return () => window.clearTimeout(timer)
+  }, [createSuccessMessage, onSuccess])
+
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
@@ -102,7 +126,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
     setFormData((current) => ({
       ...current,
       [name]: type === 'checkbox' ? (event.target as HTMLInputElement).checked : value,
-    }))
+    } as any))
   }
 
   const handleAgentChange = (index: number, value: string) => {
@@ -157,15 +181,14 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
         console.log('Smart tender data received:', response)
         setFormData((current) => ({
           ...current,
-          tenderName: response.product?.title || current.tenderName,
-          explanation: response.product?.shortDescription || current.explanation,
-          productType: response.product?.productType || current.productType,
-          // השדה הזה לא מופיע בתמונה, נשאר כפי שהיה או שניתן להורידו במידת הצורך
-          aiApplicationType: response.product?.aiApplicationType || current.aiApplicationType,
-          budget: response.product?.budget || current.budget,
-          duration: response.product?.timeRequired || current.duration,
-          additionalDetails: response.product?.additionalDetails || current.additionalDetails,
-          agents: response.product?.agentsRequired || current.agents,
+          tenderName: response.tender?.title || current.tenderName,
+          explanation: response.tender?.shortDescription || current.explanation,
+          productType: response.tender?.productType || current.productType,
+          aiApplicationType: response.tender?.aiApplicationType || current.aiApplicationType,
+          budget: Number(response.tender?.budget ?? current.budget),
+          duration: response.tender?.timeRequired || current.duration,
+          additionalDetails: response.tender?.additionalDetails || current.additionalDetails,
+          agents: response.tender?.agentsRequired || current.agents,
         }))
         setFormMessage(t('tenders.smartCreateSuccessMsg'))
         setIsSmartOpen(false)
@@ -210,7 +233,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
         body: JSON.stringify(payload),
       })
 
-      setFormMessage(t('tenders.tenderSubmittedSuccessMsg'))
+      setCreateSuccessMessage(t('tenders.tenderSubmittedSuccessMsg'))
       setFormData({
         tenderName: '',
         explanation: '',
@@ -218,15 +241,11 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
         productType: '',
         aiApplicationType: '',
         isActive: true,
-        duration: '',
-        budget: '',
+        duration: { value: 0, unit: 'ימים' },
+        budget: 0,
         additionalDetails: '',
         wantsEmails: false,
       })
-
-      setTimeout(() => {
-        onSuccess()
-      }, 3000)
     } catch (error) {
       console.error('Failed to create tender', error)
       setErrorMessage(t('tenders.tenderSubmitErrorMsg'))
@@ -285,7 +304,10 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
                 disabled={isSmartLoading}
                 style={{ marginTop: '12px' }}
               >
-                {isSmartLoading ? t('tenders.smartCreateLoadingBtn') : t('tenders.smartCreateGenerateBtn')}
+                {isSmartLoading
+                  ? <AiThinkingLoader color="#ffffff" />
+                  : t('tenders.smartCreateGenerateBtn')
+                }
               </button>
             </div>
           )}
@@ -414,15 +436,28 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
         <div className="bottom-row" style={{ marginTop: '24px' }}>
           <div className="bottom-field">
             <label htmlFor="duration">{t('tenders.durationLabel')}</label>
-            <input
-              id="duration"
-              name="duration"
-              value={formData.duration}
-              onChange={handleInputChange}
-              className="input"
-              placeholder={t('tenders.durationPlaceholder')}
-              maxLength={50}
-            />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                id="duration-value"
+                name="duration-value"
+                value={formData.duration.value}
+                onChange={(e) => setFormData((c) => ({ ...c, duration: { ...c.duration, value: Number(e.target.value) } }))}
+                className="input"
+                placeholder="מספר"
+                type="number"
+                min={0}
+              />
+              <select
+                id="duration-unit"
+                name="duration-unit"
+                value={formData.duration.unit}
+                onChange={(e) => setFormData((c) => ({ ...c, duration: { ...c.duration, unit: e.target.value as any } }))}
+              >
+                {timeUnits.map((u) => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="bottom-field">
@@ -431,11 +466,11 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
               id="budget"
               name="budget"
               value={formData.budget}
-              onChange={handleInputChange}
-              type="text"
+              onChange={(e) => setFormData((c) => ({ ...c, budget: Number(e.target.value) }))}
+              type="number"
               placeholder={t('tenders.budgetPlaceholder')}
               className="input"
-              maxLength={50}
+              min={0}
             />
           </div>
         </div>
@@ -476,6 +511,15 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
           </button>
         </div>
       </form>
+
+      {showSuccessOverlay && createSuccessMessage && (
+        <div className="success-modal-overlay" role="alert" aria-live="assertive">
+          <div className="success-modal">
+            <div className="success-modal__icon">✅</div>
+            <div className="success-modal__text">{createSuccessMessage}</div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
