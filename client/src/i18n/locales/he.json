@@ -1229,5 +1229,36 @@
     "loadArticleErrorMsg": "שגיאה בטעינת הכתבה",
     "sourceLabel": "מקור: {{source}}",
     "backToNewsBtn": "חזרה לחדשות"
+  },
+  "billing": {
+    "title": "חיובים ויתרה",
+    "loadingData": "טוען נתונים...",
+    "availableMonthlyBalance": "יתרה חודשית זמינה",
+    "outOfMonthlyBudget": "מתוך ${{amount}} תקציב חודשי",
+    "topUpButton": "+ טעינת יתרה",
+    "budgetBreakdownTitle": "פירוט תקציב חודשי",
+    "monthlyBudgetLabel": "תקציב חודשי",
+    "usedSoFarLabel": "נוצל עד כה",
+    "remainingLabel": "נותרו",
+    "budgetUsageLabel": "ניצול תקציב",
+    "warningLabel": "⚠️ שים לב:",
+    "warningMessage": "ניצלת {{percent}}% מהתקציב החודשי שלך.",
+    "usageLimitsTitle": "מגבלות שימוש",
+    "perMinuteLabel": "בקשות לדקה",
+    "perDayLabel": "בקשות ליום",
+    "recentCostTitle": "עלות ב-7 ימים אחרונים",
+    "recentCostDescription": "עלות מצטברת של כל הבקשות שבוצעו ב-7 הימים האחרונים.",
+    "topUpModal": {
+      "title": "טעינת יתרה",
+      "description": "מערכת התשלומים בפיתוח. מלא את הפרטים ונחזור אליך בהקדם לביצוע הטעינה.",
+      "emailLabel": "אימייל",
+      "amountLabel": "סכום לטעינה (USD)",
+      "amountPlaceholder": "לדוגמה: 20",
+      "notesLabel": "הערות (אופציונלי)",
+      "notesPlaceholder": "כל מידע נוסף שתרצה להוסיף...",
+      "submitButton": "שלח בקשה לטעינה",
+      "successTitle": "הבקשה נשלחה!",
+      "successMessage": "קיבלנו את בקשת הטעינה שלך. נציג יצור איתך קשר בקרוב לסיום התהליך."
+    }
   }
 }

@@ -1229,5 +1229,36 @@
     "loadArticleErrorMsg": "Error loading the article",
     "sourceLabel": "Source: {{source}}",
     "backToNewsBtn": "Back to News"
+  },
+  "billing": {
+    "title": "Billing & Balance",
+    "loadingData": "Loading data...",
+    "availableMonthlyBalance": "Available monthly balance",
+    "outOfMonthlyBudget": "Out of ${{amount}} monthly budget",
+    "topUpButton": "+ Top up balance",
+    "budgetBreakdownTitle": "Monthly budget breakdown",
+    "monthlyBudgetLabel": "Monthly budget",
+    "usedSoFarLabel": "Used so far",
+    "remainingLabel": "Remaining",
+    "budgetUsageLabel": "Budget usage",
+    "warningLabel": "⚠️ Note:",
+    "warningMessage": "You've used {{percent}}% of your monthly budget.",
+    "usageLimitsTitle": "Usage limits",
+    "perMinuteLabel": "Requests per minute",
+    "perDayLabel": "Requests per day",
+    "recentCostTitle": "Cost in the last 7 days",
+    "recentCostDescription": "Cumulative cost of all requests made in the last 7 days.",
+    "topUpModal": {
+      "title": "Top up balance",
+      "description": "The payment system is under development. Fill in the details and we'll get back to you shortly to complete the top-up.",
+      "emailLabel": "Email",
+      "amountLabel": "Amount to top up (USD)",
+      "amountPlaceholder": "e.g. 20",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "Any additional information you'd like to add...",
+      "submitButton": "Submit top-up request",
+      "successTitle": "Request sent!",
+      "successMessage": "We've received your top-up request. A representative will contact you shortly to complete the process."
+    }
   }
 }
