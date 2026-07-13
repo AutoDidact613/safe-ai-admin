@@ -6,6 +6,7 @@ FROM node:20
 WORKDIR /app
 
 
+
 # התקנת תעודות מערכת
 RUN apt-get update && apt-get install -y ca-certificates
 

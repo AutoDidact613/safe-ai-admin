@@ -24,25 +24,6 @@ export async function getUserById(userId: string) {
   return User.findById(userId).lean();
 }
 
-export async function countUsersByOrganization(organizationId: string) {
-  return User.countDocuments({ organizationId });
-}
-
-export async function getUsersByOrganization(organizationId: string) {
-  return User.find({ organizationId }, { proxyKeyHash: 0 }).lean();
-}
-
-export async function removeUsersFromOrganization(organizationId: string) {
-  await User.updateMany(
-    { organizationId, role: "org_owner" },
-    { organizationId: null, role: "user" }
-  );
-  await User.updateMany(
-    { organizationId, role: { $ne: "org_owner" } },
-    { organizationId: null }
-  );
-}
-
 export async function updateUser(userId: string, data: any) {
   return User.findByIdAndUpdate(userId, data, {
     new: true,

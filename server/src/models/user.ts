@@ -122,5 +122,4 @@ UserSchema.set("toJSON", {
   },
 });
 
-// שני את השורה הזו בסוף הקובץ server/src/models/User.ts:
-export const User = mongoose.models.User || mongoose.model("User", UserSchema);
+export const User = mongoose.model("User", UserSchema);

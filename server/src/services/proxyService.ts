@@ -96,30 +96,8 @@ function extractTextFromMessageContent(content: any): string {
 
   if (Array.isArray(content)) {
     return content
-      .map((part: any) => {
-        if (part.type === "text" || part.type === "input_text") {
-          return part.text || "";
-        }
-
-        // תוצאת כלי - יכולה להיות string או array של בלוקים
-        if (part.type === "tool_result") {
-          if (typeof part.content === "string") return part.content;
-          if (Array.isArray(part.content)) {
-            return part.content
-              .map((c: any) => (typeof c === "string" ? c : c?.text || ""))
-              .join("\n");
-          }
-          return "";
-        }
-
-        // קריאה לכלי - שם + input, כדי שה-judge יראה קונטקסט
-        if (part.type === "tool_use") {
-          return `[tool_use: ${part.name || "unknown"}] ${JSON.stringify(part.input || {})}`;
-        }
-
-        return "";
-      })
-      .filter(Boolean)
+      .filter((part: any) => part.type === "text" || part.type === "input_text")
+      .map((part: any) => part.text || "")
       .join("\n");
   }
 
@@ -177,9 +155,6 @@ function extractUserIntentForFilter(messages: any[], count = 3): string {
     cleanUserMessages.length > 0
       ? cleanUserMessages.slice(-count)
       : messages
-          // 🎯 רק user/assistant בפולבאק - לא developer/system,
-          // כדי לא לחשוף system prompts של agents ל-judge
-          .filter((msg: any) => msg.role === "user" || msg.role === "assistant")
           .map((msg: any) => {
             return {
               role: msg.role || "unknown",
@@ -189,7 +164,6 @@ function extractUserIntentForFilter(messages: any[], count = 3): string {
           .filter((msg) => msg.text)
           .filter((msg) => !isAgentNoiseForFilter(msg.text))
           .slice(-count);
-
   logger.info(`Hello!!!!!!!!!!!!!!:`);
   selectedMessages.forEach((msg, index) =>
     logger.info(
@@ -203,7 +177,6 @@ function extractUserIntentForFilter(messages: any[], count = 3): string {
     })
     .join("\n\n---\n\n");
 }
-
 function extractLastInputsForResponses(input: any[], count = 3): string {
   return input
     .slice(-count)
@@ -227,9 +200,8 @@ function extractLastInputsForResponses(input: any[], count = 3): string {
     .join("\n\n---\n\n");
 }
 
-// ---------- proxies ---------------
-
 export async function proxyChatCompletion(user: any, body: any) {
+  
   const model = body.model;
 
   if (!model) {
@@ -264,22 +236,18 @@ export async function proxyChatCompletion(user: any, body: any) {
   }
 
   // חילוץ ההודעה האחרונה מהמערך
-  const userQuery = extractLastMessagesForFilter(body.messages || [], 3);
+  let userQuery = extractLastMessagesForFilter(body.messages || [], 3);
+  if (!userQuery || userQuery.trim() === "") userQuery = "No text content";
 
-  if (userQuery && userQuery.trim() !== "") {
-    const blocked = await guardInput({
-      profile,
-      text: userQuery,
-      model,
-      api: "chat",
-      stream: body.stream,
-    });
-    if (blocked) return blocked;
-  } else {
-    logger.info(
-      "⚠️ No textual content to moderate (chat) - skipping guardInput",
-    );
-  }
+  const blocked = await guardInput({
+    profile,
+    text: userQuery,
+    model,
+    api: "chat",
+    stream: body.stream,
+  });
+  if (blocked) return blocked;
+
   // 4. הוספת system prompts
 
   const systemPrompt = await buildSystemPrompt(profile);
@@ -301,6 +269,17 @@ export async function proxyChatCompletion(user: any, body: any) {
   }
 
   // --- לוגים לבדיקה (מומלץ להשאיר עד שהצ'אט עובד) ---
+  logger.debug("--- DEBUG PROXY REQUEST ---");
+  logger.debug("🔑 Provider:", provider);
+  logger.debug("🔑 Model:", model);
+  logger.debug("🔑 Provider API Key (last 4):", providerApiKey.slice(-4));
+
+  logger.debug("---------------------------");
+  logger.debug("🚀 DEPLOYMENT CHECK: Version 1.0.5 - Headers: api-key present");
+
+  logger.debug("🔑 LiteLLM URL:", process.env.LITELLM_PROXY_URL);
+  logger.debug("🔑 LiteLLM Key (last 4):", decryptedLiteLLMKey?.slice(-4));
+  logger.debug("🔑 LiteLLM Key length:", decryptedLiteLLMKey?.length);
   const startTime = Date.now();
   const litellmResponse = await fetch(
     `${process.env.LITELLM_PROXY_URL}/v1/chat/completions`,
@@ -525,6 +504,7 @@ export async function proxyResponses(user: any, body: any) {
 
   const provider = getProviderFromModel(model);
 
+
   const providerKeyDoc =
     user.mode === "MANAGED"
       ? await getSystemProviderKey(provider)
@@ -544,27 +524,22 @@ export async function proxyResponses(user: any, body: any) {
   const profile = await AIProfile.findById(user.profileId);
   if (!profile) throw new Error("Profile not found");
 
-  const userQuery =
+  let userQuery =
     typeof body.input === "string"
       ? body.input
       : Array.isArray(body.input)
         ? extractLastInputsForResponses(body.input, 3)
         : "";
+  if (!userQuery.trim()) userQuery = "No text content";
 
-  if (userQuery && userQuery.trim() !== "") {
-    const blocked = await guardInput({
-      profile,
-      text: userQuery,
-      model,
-      api: "responses",
-      stream: body.stream,
-    });
-    if (blocked) return blocked;
-  } else {
-    logger.info(
-      "⚠️ No textual content to moderate (responses) - skipping guardInput",
-    );
-  }
+  const blocked = await guardInput({
+    profile,
+    text: userQuery,
+    model,
+    api: "responses",
+    stream: body.stream,
+  });
+  if (blocked) return blocked;
 
   // System prompt מה-profile
   const systemPrompt = await buildSystemPrompt(profile);
@@ -737,151 +712,6 @@ export async function proxyResponses(user: any, body: any) {
     });
   } catch (logError: any) {
     logger.error("❌ Failed to log responses usage:", logError.message);
-  }
-
-  return data;
-}
-
-export async function proxyAnthropicMessages(user: any, body: any) {
-  const startTime = Date.now();
-  const model = body.model;
-
-  if (!model) {
-    throw new Error("Model is required");
-  }
-
-  const provider = getProviderFromModel(model);
-
-  const providerKeyDoc =
-    user.mode === "MANAGED"
-      ? await getSystemProviderKey(provider)
-      : await getProviderKeyByUserAndProvider(user._id.toString(), provider);
-
-  if (!providerKeyDoc) {
-    throw new Error(`Provider key missing for provider: ${provider}`);
-  }
-
-  const providerApiKey = decryptSecret(providerKeyDoc.apiKeyEncrypted);
-  const isFree = isProviderKeyFree(user, providerKeyDoc._id.toString());
-
-  const decryptedLiteLLMKey = decryptSecret(user.litellmKeyEncrypted);
-  if (!decryptedLiteLLMKey) {
-    throw new Error("LiteLLM Proxy Key could not be decrypted or is missing");
-  }
-
-  const profile = await AIProfile.findById(user.profileId);
-  if (!profile) {
-    throw new Error("Profile not found");
-  }
-
-  const userQuery = extractUserIntentForFilter(body.messages || [], 3);
-
-  if (userQuery && userQuery.trim() !== "") {
-    const blocked = await guardInput({
-      profile,
-      text: userQuery,
-      model,
-      api: "anthropic",
-      stream: body.stream,
-    });
-    if (blocked) return blocked;
-  } else {
-    logger.info(
-      "⚠️ No textual content to moderate (anthropic) - skipping guardInput",
-    );
-  }
-
-  const systemPrompt = await buildSystemPrompt(profile);
-
-  const requestBody: any = {
-    ...body,
-    model: normalizeModelName(model, provider),
-    api_key: providerApiKey,
-  };
-
-  if (systemPrompt) {
-    requestBody.system = body.system
-      ? `${systemPrompt}\n\n${body.system}`
-      : systemPrompt;
-  }
-
-  logger.debug("--- DEBUG ANTHROPIC MESSAGES REQUEST ---");
-  logger.debug("🔑 Provider:", provider);
-  logger.debug("🔑 Model:", requestBody.model);
-  logger.debug("🌊 Stream:", body.stream ?? false);
-
-  const litellmResponse = await fetch(
-    `${process.env.LITELLM_PROXY_URL}/v1/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${decryptedLiteLLMKey}`,
-        "Content-Type": "application/json",
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify(requestBody),
-    },
-  );
-
-  if (!litellmResponse.ok) {
-    const errorText = await litellmResponse.text();
-
-    logger.error("❌ LiteLLM Anthropic Messages Error:", {
-      error: errorText,
-      stack: errorText,
-    });
-
-    throw new Error(`LiteLLM anthropic messages request failed: ${errorText}`);
-  }
-
-  if (body.stream) {
-    const stream = litellmResponse.body;
-    if (!stream) {
-      throw new Error("Failed to get Anthropic stream body");
-    }
-
-    return stream;
-  }
-
-  const data: any = await litellmResponse.json();
-
-  const usageNormalized = {
-    prompt_tokens: data.usage?.input_tokens || 0,
-    completion_tokens: data.usage?.output_tokens || 0,
-    total_tokens:
-      (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
-  };
-
-  const normalizedModel = normalizeModelName(model, provider);
-
-  let cost = getLiteLLMCost(litellmResponse, data);
-
-  if (cost === undefined) {
-    logger.info("💰 LiteLLM cost missing, calculating from tokens");
-
-    cost = calculateCostFromTokens(usageNormalized, normalizedModel);
-  }
-
-  const responseTime = Date.now() - startTime;
-
-  try {
-    await logUsage({
-      userId: user._id.toString(),
-      profileId: user.profileId?.toString(),
-      provider,
-      modelName: model,
-      mode: user.mode,
-      response: { ...data, usage: usageNormalized },
-      responseTime,
-      success: true,
-      isFree,
-      cost,
-    });
-  } catch (logError: any) {
-    logger.error(
-      "❌ Failed to log anthropic messages usage:",
-      logError.message,
-    );
   }
 
   return data;
@@ -1083,4 +913,144 @@ export async function proxyAudioSpeech(user: any, body: any) {
   }).catch((err) => logger.error("Failed to log TTS usage:", err));
 
   return { buffer: audioBuffer, contentType };
+}
+
+export async function proxyAnthropicMessages(user: any, body: any) {
+  const startTime = Date.now();
+  const model = body.model;
+
+  if (!model) {
+    throw new Error("Model is required");
+  }
+
+  const provider = getProviderFromModel(model);
+
+  const providerKeyDoc =
+    user.mode === "MANAGED"
+      ? await getSystemProviderKey(provider)
+      : await getProviderKeyByUserAndProvider(user._id.toString(), provider);
+
+  if (!providerKeyDoc) {
+    throw new Error(`Provider key missing for provider: ${provider}`);
+  }
+
+  const providerApiKey = decryptSecret(providerKeyDoc.apiKeyEncrypted);
+  const isFree = isProviderKeyFree(user, providerKeyDoc._id.toString());
+
+  const decryptedLiteLLMKey = decryptSecret(user.litellmKeyEncrypted);
+  if (!decryptedLiteLLMKey) {
+    throw new Error("LiteLLM Proxy Key could not be decrypted or is missing");
+  }
+
+  const profile = await AIProfile.findById(user.profileId);
+  if (!profile) {
+    throw new Error("Profile not found");
+  }
+
+  let userQuery = extractUserIntentForFilter(body.messages || [], 3);
+  if (!userQuery || userQuery.trim() === "") userQuery = "No text content";
+
+  const blocked = await guardInput({
+    profile,
+    text: userQuery,
+    model,
+    api: "anthropic",
+    stream: body.stream,
+  });
+  if (blocked) return blocked;
+
+  const systemPrompt = await buildSystemPrompt(profile);
+
+  const requestBody: any = {
+    ...body,
+    model: normalizeModelName(model, provider),
+    api_key: providerApiKey,
+  };
+
+  if (systemPrompt) {
+    requestBody.system = body.system
+      ? `${systemPrompt}\n\n${body.system}`
+      : systemPrompt;
+  }
+
+  logger.debug("--- DEBUG ANTHROPIC MESSAGES REQUEST ---");
+  logger.debug("🔑 Provider:", provider);
+  logger.debug("🔑 Model:", requestBody.model);
+  logger.debug("🌊 Stream:", body.stream ?? false);
+
+  const litellmResponse = await fetch(
+    `${process.env.LITELLM_PROXY_URL}/v1/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${decryptedLiteLLMKey}`,
+        "Content-Type": "application/json",
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify(requestBody),
+    },
+  );
+
+  if (!litellmResponse.ok) {
+    const errorText = await litellmResponse.text();
+
+    logger.error("❌ LiteLLM Anthropic Messages Error:", {
+      error: errorText,
+      stack: errorText,
+    });
+
+    throw new Error(`LiteLLM anthropic messages request failed: ${errorText}`);
+  }
+
+  if (body.stream) {
+    const stream = litellmResponse.body;
+    if (!stream) {
+      throw new Error("Failed to get Anthropic stream body");
+    }
+
+    return stream;
+  }
+
+  const data: any = await litellmResponse.json();
+
+  const usageNormalized = {
+    prompt_tokens: data.usage?.input_tokens || 0,
+    completion_tokens: data.usage?.output_tokens || 0,
+    total_tokens:
+      (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
+  };
+
+  const normalizedModel = normalizeModelName(model, provider);
+
+  let cost = getLiteLLMCost(litellmResponse, data);
+
+  if (cost === undefined) {
+    logger.info("💰 LiteLLM cost missing, calculating from tokens");
+
+    cost = calculateCostFromTokens(usageNormalized, normalizedModel);
+  }
+
+  const responseTime = Date.now() - startTime;
+
+  try {
+    await logUsage({
+      userId: user._id.toString(),
+      profileId: user.profileId?.toString(),
+      provider,
+      modelName: model,
+      mode: user.mode,
+      response: { ...data, usage: usageNormalized },
+      responseTime,
+      success: true,
+      isFree,
+      cost,
+    });
+  } catch (logError: any) {
+    logger.error(
+      "❌ Failed to log anthropic messages usage:",
+      logError.message,
+    );
+  }
+
+  return data;
 }

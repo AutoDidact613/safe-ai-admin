@@ -1,4 +1,4 @@
-import { useState, type FormEvent, useEffect } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_ENDPOINTS, apiCall } from "../config/api";
 import "../styles/contact-page.css";
@@ -9,22 +9,7 @@ export default function ContactPage() {
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
-  const [requestType, setRequestType] = useState("כללי"); // ערך ברירת מחדל
-  const [contactTypes, setContactTypes] = useState<{ label: string; value: string }[]>([]);
-  
-  // הוספת useEffect לטעינת הנתונים מהשרת
-useEffect(() => {
-  const fetchTypes = async () => {
-    try {
-      const response = await apiCall<{ data: {label: string, value: string}[] }>(API_ENDPOINTS.contactTypes);
-      setContactTypes(response.data);
-    } catch (e) {
-      console.error("Failed to load types", e);
-    }
-  };
-  fetchTypes();
-}, []);
-  
+
   // Check if user is logged in
   const accessToken = localStorage.getItem("accessToken");
   const user = localStorage.getItem("user");
@@ -33,10 +18,10 @@ useEffect(() => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-     if (!isLoggedIn) {
-       setMessage("עליך להתחבר כדי לשלוח הודעה");
-       return;
-     }
+    if (!isLoggedIn) {
+      setMessage("עליך להתחבר כדי לשלוח הודעה");
+      return;
+    }
 
     if (!title.trim() || !description.trim()) {
       setMessage("נא למלא את כל השדות");
@@ -55,7 +40,6 @@ useEffect(() => {
           body: JSON.stringify({
             title: title.trim(),
             description: description.trim(),
-            requestType: requestType.trim(),
           }),
         }
       );
@@ -147,26 +131,10 @@ useEffect(() => {
               placeholder="נושא ההודעה"
               disabled={isSubmitting}
               required
-              maxLength={100}
             />
           </div>
-          <div className="form-group">
-        <label htmlFor="requestType">סוג הפנייה</label>
-        <select
-  id="requestType"
-  value={requestType}
-  onChange={(e) => setRequestType(e.target.value)}
-  disabled={isSubmitting}
-  required
->
-  <option value="" hidden>בחר סוג פנייה</option>
-  {contactTypes.map((t) => (
-    <option key={t.value} value={t.value}>{t.label}</option>
-  ))}
-</select>
-        </div>
 
-              <div className="form-group">
+          <div className="form-group">
             <label htmlFor="description">תיאור</label>
             <textarea
               id="description"
@@ -176,7 +144,6 @@ useEffect(() => {
               rows={8}
               disabled={isSubmitting}
               required
-              maxLength={1000}
             />
           </div>
 

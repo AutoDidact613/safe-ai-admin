@@ -6,12 +6,11 @@
     "outDir": "./dist",
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "target": "ES2020",
     "module": "CommonJS",
+    "target": "ES2020",
     "moduleResolution": "node",
-    "ignoreDeprecations": "5.0",
-    "esModuleInterop": true,
     "types": ["node", "jest"],
+    "esModuleInterop": true,
     // For nodejs:
     "lib": ["ES2020"],
     // Other Outputs
@@ -28,6 +27,6 @@
     "moduleDetection": "force"  ,
   },
 
-  "include": ["src/**/*", "src/seedTags.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

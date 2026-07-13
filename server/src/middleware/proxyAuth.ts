@@ -7,7 +7,6 @@
 
 import { Request, Response, NextFunction } from "express";
 import { getUserByProxyKeyHash } from "../repositories/userRepository";
-import { getOrganizationById } from "../repositories/organizationRepository";
 import { hashApiKey } from "../utils/crypto";
 
 // Placeholder auth middleware. Extend with real auth logic as needed.
@@ -33,14 +32,6 @@ export  async function proxyAuth(
 
   if (!user) {
     return res.status(401).json({ error: "Invalid API key" });
-  }
-
-  // חסימת משתמשים ששייכים לארגון שהושעה ע"י מנהל
-  if (user.organizationId) {
-    const organization = await getOrganizationById(user.organizationId.toString());
-    if (organization && organization.isActive === false) {
-      return res.status(403).json({ error: "Organization suspended" });
-    }
   }
 
   (req as any).user = user;

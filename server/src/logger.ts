@@ -23,18 +23,16 @@ class MongoDBTransport extends Transport {
       this.emit("logged", info);
     });
 
-    const { level, message, timestamp, stack, userId, requestId, context, ...rest } = info;
-
     // Save to MongoDB asynchronously
     const logEntry = new ApplicationLog({
-      level,
-      message,
-      context: { ...rest, ...context }, // ✅ גמיש לשני המקרים
-      userId,
-      requestId,
-      stack,
+      level: info.level,
+      message: info.message,
+      context: info.context || {},
+      userId: info.userId,
+      requestId: info.requestId,
+      stack: info.stack,
       timestamp: new Date(),
-      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
     });
 
     logEntry.save().catch((err) => {

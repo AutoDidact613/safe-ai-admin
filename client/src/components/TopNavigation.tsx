@@ -1,33 +1,45 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import "../styles/top-navigation.css";
-import { useAuth } from "../context/authStore";
+import { cleanupTokenManager } from "../utils/tokenManager";
 
 export default function TopNavigation() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, userRole, isAuthenticated, logout } = useAuth();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<{ name: string; email: string } | null>(
+    null,
+  );
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showDevMenu, setShowDevMenu] = useState(false);
-  const [prevLocationKey, setPrevLocationKey] = useState(location.key);
   const menuRef = useRef<HTMLDivElement>(null);
-  const devMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close menus on navigation
-  if (location.key !== prevLocationKey) {
-    setPrevLocationKey(location.key);
-    setShowUserMenu(false);
-    setShowDevMenu(false);
-  }
+  useEffect(() => {
+    // Check authentication status
+    const accessToken = localStorage.getItem("accessToken");
+    const userStr = localStorage.getItem("user");
+
+    const checkAuth = () => {
+      if (accessToken && userStr) {
+        setIsAuthenticated(true);
+        try {
+          setUser(JSON.parse(userStr));
+        } catch (e) {
+          console.error("Error parsing user data:", e);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    };
+
+    checkAuth();
+  }, [location]);
 
   // Close menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
-      }
-      if (devMenuRef.current && !devMenuRef.current.contains(event.target as Node)) {
-        setShowDevMenu(false);
       }
     }
 
@@ -36,9 +48,35 @@ export default function TopNavigation() {
   }, []);
 
   const handleLogout = () => {
-    logout();
+    // Cleanup token manager
+    cleanupTokenManager();
+
+    // Clear local storage
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+    localStorage.removeItem("userRole");
+
+    setShowUserMenu(false);
     navigate("/");
   };
+
+  // const scrollToSection = (sectionId: string) => {
+  //   if (location.pathname !== "/") {
+  //     navigate("/");
+  //     setTimeout(() => {
+  //       const element = document.getElementById(sectionId);
+  //       if (element) {
+  //         element.scrollIntoView({ behavior: "smooth" });
+  //       }
+  //     }, 100);
+  //   } else {
+  //     const element = document.getElementById(sectionId);
+  //     if (element) {
+  //       element.scrollIntoView({ behavior: "smooth" });
+  //     }
+  //   }
+  // };
 
   return (
     <nav className="top-navigation">
@@ -55,54 +93,23 @@ export default function TopNavigation() {
           {!isAuthenticated ? (
             <>
               {/* Public Navigation */}
-              <Link to="/about" className="top-nav-link">
-                למה?
+          
+       <Link to="/about" className="top-nav-link">
+למה?
               </Link>
               <Link to="/courses" className="top-nav-link">
                 קורסים
               </Link>
-
-              {/* Developers Dropdown */}
-              <div className="dev-menu-container" ref={devMenuRef}>
-                <button
-                  className="top-nav-link dev-menu-trigger"
-                  onClick={() => setShowDevMenu(!showDevMenu)}
-                >
-                  Developers
-                  <svg
-                    className={`dropdown-arrow ${showDevMenu ? "open" : ""}`}
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                  >
-                    <path
-                      d="M2.5 4.5L6 8L9.5 4.5"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-                {showDevMenu && (
-                  <div className="dev-menu-dropdown">
-                    <Link to="/docs" className="dev-menu-item" onClick={() => setShowDevMenu(false)}>
-                      Docs
-                    </Link>
-                    <Link to="/docs-old" className="dev-menu-item" onClick={() => setShowDevMenu(false)}>
-                      מדריך SafeAI
-                    </Link>
-                    <Link to="/recommended-guides" className="dev-menu-item" onClick={() => setShowDevMenu(false)}>
-                      מדריכים מומלצים
-                    </Link>
-                  </div>
-                )}
-              </div>
-
+              <Link to="/docs" className="top-nav-link">
+                מדריך SafeAI
+              </Link>
+              <Link to="/recommended-guides" className="top-nav-link">
+                מדריכים מומלצים
+              </Link>
               <Link to="/contact" className="top-nav-link">
                 צור קשר
               </Link>
+       
 
               {/* Auth Buttons */}
               <Link to="/login" className="top-nav-btn top-nav-btn-secondary">
@@ -121,70 +128,17 @@ export default function TopNavigation() {
               >
                 איזור אישי
               </Link>
-              <Link
-                to="/ai-news"
-                className={`top-nav-link ${location.pathname === "/ai-news" ? "active" : ""}`}
-              >
-                חדשות
-              </Link>
               <Link to="/courses" className="top-nav-link">
                 קורסים
               </Link>
-              <Link to="/forum" className="top-nav-link">
-                פורום
+              <Link to="/docs" className="top-nav-link">
+                מדריך SafeAI
               </Link>
-
-              {/* Developers Dropdown */}
-              <div className="dev-menu-container" ref={devMenuRef}>
-                <button
-                  className="top-nav-link dev-menu-trigger"
-                  onClick={() => setShowDevMenu(!showDevMenu)}
-                >
-                  Developers
-                  <svg
-                    className={`dropdown-arrow ${showDevMenu ? "open" : ""}`}
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                  >
-                    <path
-                      d="M2.5 4.5L6 8L9.5 4.5"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-                {showDevMenu && (
-                  <div className="dev-menu-dropdown">
-                    <Link to="/docs" className="dev-menu-item" onClick={() => setShowDevMenu(false)}>
-                      Docs
-                    </Link>
-                    <Link to="/docs-old" className="dev-menu-item" onClick={() => setShowDevMenu(false)}>
-                      מדריך SafeAI
-                    </Link>
-                    <Link to="/recommended-guides" className="dev-menu-item" onClick={() => setShowDevMenu(false)}>
-                      מדריכים מומלצים
-                    </Link>
-                    {userRole === "admin" && (
-                      <Link to="/admin/articles" className="dev-menu-item" onClick={() => setShowDevMenu(false)}>
-                        ניהול Docs
-                      </Link>
-                    )}
-                  </div>
-                )}
-              </div>
-
+              <Link to="/recommended-guides" className="top-nav-link">
+                מדריכים מומלצים
+              </Link>
               <Link to="/contact" className="top-nav-link">
                 צור קשר
-              </Link>
-              <Link to="/tender-board" className="top-nav-link">
-                לוח פרוייקטים
-              </Link>
-              <Link to="/download-agents" className="top-nav-link">
-                הורדת אג'נטים כDesktop
               </Link>
 
               {/* User Menu */}
@@ -226,7 +180,12 @@ export default function TopNavigation() {
                       className="user-menu-item"
                       onClick={() => setShowUserMenu(false)}
                     >
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                      >
                         <path
                           d="M2 8h12M8 2v12"
                           stroke="currentColor"
@@ -234,14 +193,19 @@ export default function TopNavigation() {
                           strokeLinecap="round"
                         />
                       </svg>
-                      איזור אישי
+                      איזור אישי  
                     </Link>
                     <Link
                       to="/api-key-display"
                       className="user-menu-item"
                       onClick={() => setShowUserMenu(false)}
                     >
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                      >
                         <path
                           d="M8 2v12M2 8h12"
                           stroke="currentColor"
@@ -253,7 +217,12 @@ export default function TopNavigation() {
                     </Link>
                     <div className="user-menu-divider"></div>
                     <button className="user-menu-item" onClick={handleLogout}>
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                      >
                         <path
                           d="M6 14H3a1 1 0 01-1-1V3a1 1 0 011-1h3M11 11l3-3-3-3M14 8H6"
                           stroke="currentColor"

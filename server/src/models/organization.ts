@@ -21,10 +21,6 @@ const OrganizationSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    walletBalance: {
-      type: Number,
-      default: 0,
-    },
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
@@ -42,9 +38,9 @@ const OrganizationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Index for faster lookups (name's unique index is already created by
-// `unique: true` on the field above - no need to declare it again here)
+// Index for faster lookups
 OrganizationSchema.index({ ownerId: 1 });
+OrganizationSchema.index({ name: 1 });
 
 OrganizationSchema.set("toJSON", {
   transform: (_doc, ret) => {
