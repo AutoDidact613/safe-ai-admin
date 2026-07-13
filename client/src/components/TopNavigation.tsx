@@ -28,10 +28,12 @@ export default function TopNavigation() {
   }, []);
 
   // Close menus on navigation
-  useEffect(() => {
+  const [lastLocation, setLastLocation] = useState(location.pathname + location.search);
+  if (location.pathname + location.search !== lastLocation) {
+    setLastLocation(location.pathname + location.search);
     setShowUserMenu(false);
     setShowDevMenu(false);
-  }, [location]);
+  }
 
   const handleLogout = () => {
     logout();

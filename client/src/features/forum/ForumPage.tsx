@@ -1,11 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AddPostModal } from './AddPostModal';
-import TextStyle from '@tiptap/extension-text-style';
-import Color from '@tiptap/extension-color';
-import Highlight from '@tiptap/extension-highlight';
-import FontFamily from '@tiptap/extension-font-family';
-import TextAlign from '@tiptap/extension-text-align';
 
 interface Post {
   _id: string;
@@ -68,7 +63,7 @@ export const ForumPage: React.FC = () => {
           setCurrentPage(data.currentPage || page);
           setTotalPages(data.totalPages || 1);
 
-          localStorage.setItem('user_posts_backup', JSON.stringify(data.posts.map((p: any) => ({ _id: p._id, title: p.title }))));
+          localStorage.setItem('user_posts_backup', JSON.stringify(data.posts.map((p: Post) => ({ _id: p._id, title: p.title }))));
         } else {
           setPosts(Array.isArray(data) ? data : []);
           setCurrentPage(1);
@@ -89,6 +84,7 @@ export const ForumPage: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, currentPage]);
 
   // אפקט חכם המושך המלצות ומסנן כפילויות - מעודכן לשימוש ב-postId מהיר
@@ -118,12 +114,12 @@ export const ForumPage: React.FC = () => {
             const currentPostIds = posts.map(p => p._id);
             
             // 1. סינון פוסטים שמוצגים כרגע בעמוד
-            let filtered = data.filter((p: any) => !currentPostIds.includes(p._id));
+            const filtered = data.filter((p: { _id: string }) => !currentPostIds.includes(p._id));
 
             // 2. מניעת כפילויות פנימיות
             const uniqueMap = new Map();
             filtered.forEach(p => uniqueMap.set(p._id, p));
-            let finalRecommendations = Array.from(uniqueMap.values());
+            const finalRecommendations = Array.from(uniqueMap.values());
 
             // 3. מנגנון השלמה (Fallback): אם נשארו פחות מ-3 פוסטים לאחר הסינון,
             // ניקח פוסטים אחרים מהעמוד הנוכחי כדי להשלים לשלשה קבועה
@@ -345,7 +341,7 @@ export const ForumPage: React.FC = () => {
                         {post.isLocked && <span style={{ backgroundColor: '#f59e0b', color: 'white', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold' }}>🔒 נעול</span>}
 
                         <h3 style={{ margin: 0, fontSize: '21px', color: '#0f172a', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.title}</h3>
-                        {post.tags && Array.isArray(post.tags) && post.tags.map((tag: any) => {
+                        {post.tags && Array.isArray(post.tags) && post.tags.map((tag: { _id: string; name: string }) => {
                           const tagName = typeof tag === 'object' && tag !== null ? tag.name : tag;
                           return (
                             <span key={tag._id || tagName} onClick={(e) => { e.stopPropagation(); setSearchQuery(tagName); setCurrentPage(1); }} style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '1px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '500', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
