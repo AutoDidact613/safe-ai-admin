@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import "../styles/top-navigation.css";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/authStore";
 
 export default function TopNavigation() {
   const location = useLocation();
@@ -9,8 +9,16 @@ export default function TopNavigation() {
   const { user, userRole, isAuthenticated, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showDevMenu, setShowDevMenu] = useState(false);
+  const [prevLocationKey, setPrevLocationKey] = useState(location.key);
   const menuRef = useRef<HTMLDivElement>(null);
   const devMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close menus on navigation
+  if (location.key !== prevLocationKey) {
+    setPrevLocationKey(location.key);
+    setShowUserMenu(false);
+    setShowDevMenu(false);
+  }
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -26,12 +34,6 @@ export default function TopNavigation() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // Close menus on navigation
-  useEffect(() => {
-    setShowUserMenu(false);
-    setShowDevMenu(false);
-  }, [location]);
 
   const handleLogout = () => {
     logout();

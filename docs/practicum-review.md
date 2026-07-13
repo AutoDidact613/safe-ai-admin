@@ -216,3 +216,37 @@ touches the same organization files Esti and grinsh have been iterating on, so t
 it stays unmerged, the more it will conflict. This is the one piece of practicum work at
 real risk of being lost or requiring a costly rebase — worth prioritizing a conversation
 with her about integrating it, even if the org-file overlap has to be resolved by hand.
+
+**Update (2026-07-07):** Margalit's forum branch has since been merged into `develop`.
+
+## 6. QA process setup (2026-07-07)
+
+Moved from ad-hoc solo testing (grinsh testing everything before handoff) to a
+structured QA process, tracked in GitHub rather than a separate tool.
+
+**Artifacts produced:**
+- A full spec/use-case doc (screens, roles, navigation, API map, entities) — built by
+  scanning the current `client`/`server` code, not from a pre-existing spec (none existed).
+- A Test Plan + ~47 Test Cases doc, covering Auth, RBAC (cross-role access checks, tested
+  via both UI and direct API calls), Organizations/Wallet, AI Profiles/Filter, Forum,
+  Contact/Support, and Tender Board.
+
+**GitHub tracking (`SafeAI613/SafeAI-613`):**
+- New labels: `priority:critical/high/normal`, `area:auth/rbac/org/filter/forum/content/support/tender`.
+- New Project (org-level, #7, "QA — Test Cases"): Status field customized to
+  `To Test → Passed/Failed → Retest → Done`; custom `Area` and `Role` fields added.
+- All 47 test cases filed as issues (`#204`–`#250`) and added to the board.
+
+**Assignment model — cross-testing, not self-testing:** each junior tests a feature area
+she did not build, round-robin: Esti (Organizations) tested by Margalit; Tamar (Tender
+Board) tested by Esti; Malki (Contact/Support) tested by Tamar; Margalit (Forum) tested
+by Malki. The 24 test cases in shared/admin territory (Auth, RBAC, AI Filter, Articles)
+were split evenly across all four rather than owned by one person.
+
+**Note for next session:** an early attempt at bulk-creating these issues via `gh issue
+create` in a loop was interrupted mid-run twice before a clean full run succeeded,
+which silently left ~45 duplicate issues (`#159`–`203`) in the repo — caught by comparing
+issue counts against the project board (30 items instead of 47) and cleaned up by
+deleting the duplicates. Lesson: when a bulk-creation loop is interrupted, verify the
+actual repo state (`gh issue list`) before assuming a clean retry — don't just re-run
+from scratch, since GitHub Issues have no idempotency key and every rerun creates new ones.

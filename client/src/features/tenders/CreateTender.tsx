@@ -124,7 +124,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
     setFormData((current) => ({
       ...current,
       [name]: type === 'checkbox' ? (event.target as HTMLInputElement).checked : value,
-    } as any))
+    } as TenderFormData))
   }
 
   const handleAgentChange = (index: number, value: string) => {
@@ -449,7 +449,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
                 id="duration-unit"
                 name="duration-unit"
                 value={formData.duration.unit}
-                onChange={(e) => setFormData((c) => ({ ...c, duration: { ...c.duration, unit: e.target.value as any } }))}
+                onChange={(e) => setFormData((c) => ({ ...c, duration: { ...c.duration, unit: e.target.value as 'שעות' | 'ימים' | 'שבועות' | 'חודשים' | 'שנים' } }))}
               >
                 {timeUnits.map((u) => (
                   <option key={u} value={u}>{u}</option>

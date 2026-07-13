@@ -25,7 +25,7 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
     fetch('http://localhost:5000/api/tags')
       .then((res) => res.json())
       .then((data) => {
-        const formatted = Array.isArray(data) ? data.map((tag: any) => ({
+        const formatted = Array.isArray(data) ? data.map((tag: { _id?: string; name: string }) => ({
           value: tag._id || tag.name,
           label: tag.name
         })) : [];
@@ -188,7 +188,7 @@ const response = await fetch('http://localhost:5000/api/posts', {
                   <small style={{ color: '#065f46', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>
                     💡 אולי כבר יש מענה לפוסט שלך? בדקי פוסטים דומים:
                   </small>
-                  {similarPosts.map((post: any) => (
+                  {similarPosts.map((post: { _id: string; title: string }) => (
                     <div key={post._id} style={{ marginBottom: '4px' }}>
                       <a href={`/forum/post/${post._id}`} target="_blank" rel="noreferrer" style={{ fontSize: '13px', color: '#059669', textDecoration: 'underline' }}>
                         {post.title}
@@ -244,7 +244,7 @@ const response = await fetch('http://localhost:5000/api/posts', {
               isMulti
               options={allTags}
               value={selectedTags}
-              onChange={(newValue: any) => setSelectedTags(newValue || [])}
+              onChange={(newValue: readonly { value: string; label: string }[] | null) => setSelectedTags(newValue ? [...newValue] : [])}
               inputValue={tagInputValue}
               onInputChange={(val) => setTagInputValue(val)}
               placeholder="נא להכניס לפחות 3 אותיות"

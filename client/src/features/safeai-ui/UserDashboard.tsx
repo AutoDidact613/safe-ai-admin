@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { API_ENDPOINTS, apiCall } from "../../config/api";
 import { useUsageData } from "../../hooks/useUsageData";
 import { useProfiles, type Profile } from "../../hooks/useProfiles";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authStore";
 import BudgetCard from "./BudgetCard";
 import UsageChart from "./UsageChart";
 
@@ -38,7 +38,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
           u.profileId && typeof u.profileId === "object"
             ? String((u.profileId as { _id: unknown })._id)
             : (u.profileId as string | undefined);
-        setUser({ ...(u as Parameters<typeof setUser>[0]), profileId });
+        setUser({ ...(u as unknown as Parameters<typeof setUser>[0]), profileId });
       })
       .catch(() => {});
     return () => controller.abort();

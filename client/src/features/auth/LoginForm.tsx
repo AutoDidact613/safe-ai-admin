@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiCall, API_ENDPOINTS } from "../../config/api";
 import { startActivityTracking } from "../../utils/tokenManager";
 import ProfileSelectionModal from "../../components/ProfileSelectionModal";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authStore";
 
 interface LoginFormData {
   email: string;
@@ -15,7 +15,7 @@ interface User {
   email: string;
   name: string;
   role: string;
-  mode: string;
+  mode: "BYOK" | "MANAGED";
   profileId?: string;
 }
 

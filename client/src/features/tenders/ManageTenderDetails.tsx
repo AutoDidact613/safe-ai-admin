@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { apiCall, API_ENDPOINTS } from '../../config/api'
-import type { Tender } from './types'
+import type { Tender, TenderTime } from './types'
 
 interface ManageTenderDetailsProps {
   tender: Tender
@@ -292,16 +292,16 @@ export default function ManageTenderDetails({
             <div style={{ display: 'flex', gap: '8px' }}>
               <input
                 id="tender-timeRequired-value"
-                value={(draftTender.timeRequired as any)?.value ?? 0}
-                onChange={(e) => handleFieldChange('timeRequired', { ...(draftTender.timeRequired as any), value: Number(e.target.value) } as any)}
+                value={draftTender.timeRequired?.value ?? 0}
+                onChange={(e) => handleFieldChange('timeRequired', { ...draftTender.timeRequired, value: Number(e.target.value) } as TenderTime)}
                 style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', width: '40%' }}
                 type="number"
                 min={0}
               />
               <select
                 id="tender-timeRequired-unit"
-                value={(draftTender.timeRequired as any)?.unit ?? 'ימים'}
-                onChange={(e) => handleFieldChange('timeRequired', { ...(draftTender.timeRequired as any), unit: e.target.value } as any)}
+                value={draftTender.timeRequired?.unit ?? 'ימים'}
+                onChange={(e) => handleFieldChange('timeRequired', { ...draftTender.timeRequired, unit: e.target.value } as TenderTime)}
                 style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', width: '60%' }}
               >
                 {timeUnits.map((u) => (
@@ -314,7 +314,7 @@ export default function ManageTenderDetails({
             <label htmlFor="tender-budget" style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>תקציב</label>
             <input
               id="tender-budget"
-              value={(draftTender.budget as any) ?? 0}
+              value={draftTender.budget ?? 0}
               onChange={(e) => handleFieldChange('budget', Number(e.target.value))}
               style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
               type="number"

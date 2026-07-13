@@ -12,7 +12,9 @@
       "Read(//c/Users/chaya/.claude/projects/c--safe-ai-admin/**)",
       "Bash(docker compose *)",
       "Bash(curl -s http://localhost:3001/organizations)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(gh issue *)",
+      "Bash(gh project *)"
     ],
     "additionalDirectories": [
       "c:\\safe-ai-admin"
