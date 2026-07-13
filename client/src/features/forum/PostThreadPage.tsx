@@ -8,6 +8,7 @@ import { Highlight } from '@tiptap/extension-highlight';
 import { FontFamily } from '@tiptap/extension-font-family';
 import { TextAlign } from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
+import { apiCall } from '../../config/api'; // התאימי את הנתיב היחסי לקובץ ה-API.ts שלך בפרויקט
 
 interface Comment {
   _id: string;
@@ -31,6 +32,20 @@ interface Post {
   ratingCount: number;
   averageRating: number;
   ratedBy: string[];
+}
+
+interface PostAndCommentsResponse {
+  post: Post;
+  comments: Comment[];
+}
+
+interface ViewResponse {
+  viewsCount: number;
+}
+
+interface RatingResponse {
+  averageRating: number;
+  ratingCount: number;
 }
 
 export const PostThreadPage: React.FC = () => {
@@ -72,8 +87,9 @@ export const PostThreadPage: React.FC = () => {
 
   const loadPostAndComments = () => {
     if (!id) return;
-    fetch(`http://localhost:5000/api/posts/${id}`)
-      .then((res) => res.json())
+    
+    // שימוש ב-apiCall לטעינת הפוסט והתגובות
+    apiCall<PostAndCommentsResponse>(`/api/posts/${id}`)
       .then((data) => {
         setPost(data.post);
         setComments(data.comments || []);
@@ -88,9 +104,8 @@ export const PostThreadPage: React.FC = () => {
           if (updatedHistory.length > 5) updatedHistory.pop();
           localStorage.setItem('viewed_titles', JSON.stringify(updatedHistory));
 
-          // שימוש בפרמטר postId המהיר ב-100% מול ה-Backend
-          fetch(`http://localhost:5000/api/posts/search-similar?postId=${data.post._id}`)
-            .then((res) => res.json())
+          // שימוש ב-apiCall לחיפוש פוסטים דומים
+          apiCall<any[]>(`/api/posts/search-similar?postId=${data.post._id}`)
             .then((similarData) => {
               if (Array.isArray(similarData)) {
                 const filtered = similarData.filter((p: { _id: string }) => p._id !== data.post._id);
@@ -136,16 +151,12 @@ export const PostThreadPage: React.FC = () => {
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'auto' }), 300);
     }
 
-    const userStr = localStorage.getItem('user');
-    const user = userStr ? JSON.parse(userStr) : null;
-
-    if (user) {
-      fetch(`http://localhost:5000/api/posts/${id}/view`, {
+    if (currentUser) {
+      // שימוש ב-apiCall לעדכון מונה הצפיות
+      apiCall<ViewResponse>(`/api/posts/${id}/view`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user._id })
+        body: JSON.stringify({ userId: currentUser._id })
       })
-        .then((res) => res.json())
         .then((viewData) => {
           if (viewData && viewData.viewsCount !== undefined) {
             setPost((prev) => prev ? { ...prev, viewsCount: viewData.viewsCount } : null);
@@ -159,21 +170,16 @@ export const PostThreadPage: React.FC = () => {
     if (!window.confirm('האם את בטוחה שברצונך למחוק תגובה זו לצמיתות?')) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/comment/${commentId}`, {
+      // שימוש ב-apiCall למחיקת תגובה
+      await apiCall(`/api/posts/comment/${commentId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: currentUser?._id })
       });
 
-      if (response.ok) {
-        setComments((prev) => prev.filter((comment) => comment._id !== commentId));
-      } else {
-        const errData = await response.json();
-        alert(errData.message || 'שגיאה במחיקת התגובה');
-      }
-    } catch (err) {
+      setComments((prev) => prev.filter((comment) => comment._id !== commentId));
+    } catch (err: any) {
       console.error('Error deleting comment:', err);
-      alert('שגיאה בתקשורת עם השרת');
+      alert(err.message || 'שגיאה במחיקת התגובה');
     }
   };
 
@@ -189,18 +195,16 @@ export const PostThreadPage: React.FC = () => {
 
     if (selectedFile) {
       try {
-        const urlResponse = await fetch('http://localhost:5000/api/upload/get-url', {
+        // קבלת Pre-signed URL מהשרת הפנימי באמצעות apiCall
+        const { uploadUrl, fileUrl } = await apiCall<{ uploadUrl: string; fileUrl: string }>('/upload/get-url', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             fileName: selectedFile.name,
             fileType: selectedFile.type,
           }),
         });
 
-        if (!urlResponse.ok) throw new Error('נכשלה קבלת קישור מאובטח לתגובה');
-        const { uploadUrl, fileUrl } = await urlResponse.json();
-
+        // העלאה ישירה ל-AWS S3 באמצעות fetch חיצוני
         const awsResponse = await fetch(uploadUrl, {
           method: 'PUT',
           headers: { 'Content-Type': selectedFile.type },
@@ -226,24 +230,19 @@ export const PostThreadPage: React.FC = () => {
     };
 
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/${id}/comment`, {
+      // יצירת תגובה חדשה דרך השרת בעזרת apiCall
+      const savedComment = await apiCall<Comment>(`/api/posts/${id}/comment`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(commentPayload)
       });
 
-      if (response.ok) {
-        const savedComment = await response.json();
-        setComments((prevComments) => [...prevComments, savedComment]);
-        editor.commands.clearContent(); 
-        setSelectedFile(null);
-        navigate('/forum');
-      } else {
-        const errData = await response.json();
-        alert(`שגיאת שרת: ${errData.message || 'לא ניתן לשמור תגובה'}`);
-      }
-    } catch (err) {
+      setComments((prevComments) => [...prevComments, savedComment]);
+      editor.commands.clearContent(); 
+      setSelectedFile(null);
+      navigate('/forum');
+    } catch (err: any) {
       console.error('Error submitting comment:', err);
+      alert(`שגיאה בשמירת התגובה: ${err.message || 'לא ניתן לשמור תגובה'}`);
     } finally {
       setCommentLoading(false);
     }
@@ -254,20 +253,16 @@ export const PostThreadPage: React.FC = () => {
     setUserRating(selectedRating);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/${post._id}/rate`, {
+      // שימוש ב-apiCall לדירוג הפוסט
+      const data = await apiCall<RatingResponse>(`/api/posts/${post._id}/rate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           userId: currentUser?._id,
           rating: selectedRating
         })
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setPost((prev) => prev ? { ...prev, averageRating: data.averageRating, ratingCount: data.ratingCount } : null);
-      }
+      setPost((prev) => prev ? { ...prev, averageRating: data.averageRating, ratingCount: data.ratingCount } : null);
     } catch (error) {
       console.error('Failed to save rating:', error);
     }

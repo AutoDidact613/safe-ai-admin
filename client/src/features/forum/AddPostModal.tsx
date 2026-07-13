@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CreatableSelect from 'react-select/creatable';
+import { apiCall } from '../../config/api'; // ייבוא פונקציית השרת המרכזית בהתאם למיקום הקובץ בפרויקט
 
 interface AddPostModalProps {
   isOpen: boolean;
@@ -8,9 +9,25 @@ interface AddPostModalProps {
   onPostCreated: () => void;
 }
 
+// הגדרת טיפוסים בסיסיים שמתקבלים מה-API
+interface TagOption {
+  _id?: string;
+  name: string;
+}
+
+interface SimilarPost {
+  _id: string;
+  title: string;
+}
+
+interface UploadUrlResponse {
+  uploadUrl: string;
+  fileUrl: string;
+}
+
 export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onPostCreated }) => {
   const [formData, setFormData] = useState({ title: '', category: 'פיתוח', tags: '', content: '' });
-  const [similarPosts, setSimilarPosts] = useState([]);
+  const [similarPosts, setSimilarPosts] = useState<SimilarPost[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -21,11 +38,11 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
   const [tagInputValue, setTagInputValue] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
+  // טעינת תגיות באמצעות ה-apiCall המרכזי
   const loadTagsFromServer = () => {
-    fetch('http://localhost:5000/api/tags')
-      .then((res) => res.json())
+    apiCall<TagOption[]>('/api/tags')
       .then((data) => {
-        const formatted = Array.isArray(data) ? data.map((tag: { _id?: string; name: string }) => ({
+        const formatted = Array.isArray(data) ? data.map((tag) => ({
           value: tag._id || tag.name,
           label: tag.name
         })) : [];
@@ -34,11 +51,11 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
       .catch((err) => console.error('Error fetching tags:', err));
   };
 
+  // חיפוש פוסטים דומים בזמן אמת
   useEffect(() => {
     if (formData.title.length >= 3) {
       const timer = setTimeout(() => {
-        fetch(`http://localhost:5000/api/posts/search-similar?title=${formData.title}`)
-          .then((res) => res.json())
+        apiCall<SimilarPost[]>(`/api/posts/search-similar?title=${encodeURIComponent(formData.title)}`)
           .then((data) => setSimilarPosts(data))
           .catch((err) => console.error('Error fetching similar posts:', err));
       }, 500);
@@ -54,78 +71,69 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
 
   if (!isOpen) return null;
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (isSubmitting) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) return;
 
-  if (!selectedTags || selectedTags.length === 0) {
-    setValidationError('חובה לבחור או ליצור לפחות תגית אחת עבור הפוסט!');
-    return;
-  }
-  setValidationError(null);
-  setIsSubmitting(true);
-
-  const { title, content, category } = formData;
-  let finalFileUrl = ""; 
-
-  // --- שלב א': העלאת הקובץ ל-S3 ---
-  if (selectedFile) {
-    try {
-      const urlResponse = await fetch('http://localhost:5000/api/upload/get-url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: selectedFile.name,
-          fileType: selectedFile.type,
-        }),
-      });
-
-      if (!urlResponse.ok) throw new Error('נכשלה קבלת קישור מאובטח מהשרת');
-      const { uploadUrl, fileUrl } = await urlResponse.json();
-
-      const awsResponse = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': selectedFile.type },
-        body: selectedFile,
-      });
-
-      if (!awsResponse.ok) throw new Error('העלאת הקובץ ל-S3 נכשלה');
-      finalFileUrl = fileUrl;
-
-    } catch (error) {
-      console.error('Error uploading file to S3:', error);
-      setValidationError('נכשלה העלאת הקובץ המצורף לענן. אנא נסה שוב.');
-      setIsSubmitting(false);
+    if (!selectedTags || selectedTags.length === 0) {
+      setValidationError('חובה לבחור או ליצור לפחות תגית אחת עבור הפוסט!');
       return;
     }
-  }
+    setValidationError(null);
+    setIsSubmitting(true);
 
-  // --- שלב ב': שליחת הפוסט ל-Database ---
-  const tagsPayload = selectedTags.map(t => ({ id: t.value, name: t.label }));
+    const { title, content, category } = formData;
+    let finalFileUrl = ""; 
 
-  const postPayload = {
-    title,
-    content,
-    category,
-    tags: tagsPayload,
-    fileUrl: finalFileUrl // אין כאן userId! השרת יקרא אותו לבד מהקוקי
-  };
+    // --- שלב א': העלאת קובץ ל-S3 (במידה וקיים) ---
+    if (selectedFile) {
+      try {
+        // שימוש ב-apiCall לקבלת ה-Pre-signed URL מהשרת שלנו
+        const { uploadUrl, fileUrl } = await apiCall<UploadUrlResponse>('/upload/get-url', {
+          method: 'POST',
+          body: JSON.stringify({
+            fileName: selectedFile.name,
+            fileType: selectedFile.type,
+          }),
+        });
 
-  try {
-const token = localStorage.getItem('token') || localStorage.getItem('accessToken'); 
+        // העלאה ישירה ל-S3 (כאן נשארים עם fetch רגיל מכיוון שמדובר ביעד חיצוני של AWS ולא בשרת המערכת)
+        const awsResponse = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': selectedFile.type },
+          body: selectedFile,
+        });
 
-const response = await fetch('http://localhost:5000/api/posts', {
-  method: 'POST',
-  headers: { 
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}` // <-- הזרקת הטוקן בצורה שהשרת שלך אוהב ומכיר!
-  },
-  body: JSON.stringify(postPayload)
-});
+        if (!awsResponse.ok) throw new Error('העלאת הקובץ ל-S3 נכשלה');
+        finalFileUrl = fileUrl;
 
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        setValidationError('נכשלה העלאת הקובץ המצורף לענן. אנא נסה שוב.');
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
-    if (response.ok) {
-      setFormData({ title: '', category: 'כללי', tags: '', content: '' });
+    // --- שלב ב': יצירת הפוסט במערכת ---
+    const tagsPayload = selectedTags.map(t => ({ id: t.value, name: t.label }));
+    const postPayload = {
+      title,
+      content,
+      category,
+      tags: tagsPayload,
+      fileUrl: finalFileUrl
+    };
+
+    try {
+      // יצירת הפוסט בעזרת apiCall
+      await apiCall('/api/posts', {
+        method: 'POST',
+        body: JSON.stringify(postPayload),
+      });
+
+      // איפוס והצלחה
+      setFormData({ title: '', category: 'פיתוח', tags: '', content: '' });
       setSelectedTags([]);
       setSelectedFile(null);
       setTagInputValue('');
@@ -133,15 +141,13 @@ const response = await fetch('http://localhost:5000/api/posts', {
       onClose(); 
       if (onPostCreated) onPostCreated();
       navigate('/forum');
-    } else {
-      console.error('Failed to create post');
+    } catch (error) {
+      console.error('Error creating post:', error);
+      setValidationError('אירעה שגיאה בשמירת הפוסט בשרת.');
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (error) {
-    console.error('Error creating post:', error);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   const handleClipClick = () => {
     fileInputRef.current?.click();
@@ -153,11 +159,7 @@ const response = await fetch('http://localhost:5000/api/posts', {
         <h2 style={{ color: '#064e3b', textAlign: 'center', marginBottom: '25px', fontWeight: 'bold' }}>הוסף תוכן חדש</h2>
         
         <form onSubmit={handleSubmit}>
-          
-          {/* שורה עליונה: קטגוריה וכותרת */}
           <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', alignItems: 'flex-end', width: '100%' }}>
-            
-            {/* קטגוריה */}
             <div style={{ width: '160px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
               <label style={{ fontWeight: 'bold', color: '#064e3b', fontSize: '14px' }}>קטגוריה/מקדם</label>
               <select 
@@ -171,7 +173,6 @@ const response = await fetch('http://localhost:5000/api/posts', {
               </select>
             </div>
 
-            {/* כותרת + תיבת הצעות פוסטים דומים */}
             <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', gap: '5px' }}>
               <label style={{ fontWeight: 'bold', color: '#064e3b', fontSize: '14px' }}>כותרת</label>
               <input 
@@ -188,7 +189,7 @@ const response = await fetch('http://localhost:5000/api/posts', {
                   <small style={{ color: '#065f46', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>
                     💡 אולי כבר יש מענה לפוסט שלך? בדקי פוסטים דומים:
                   </small>
-                  {similarPosts.map((post: { _id: string; title: string }) => (
+                  {similarPosts.map((post) => (
                     <div key={post._id} style={{ marginBottom: '4px' }}>
                       <a href={`/forum/post/${post._id}`} target="_blank" rel="noreferrer" style={{ fontSize: '13px', color: '#059669', textDecoration: 'underline' }}>
                         {post.title}
@@ -200,7 +201,6 @@ const response = await fetch('http://localhost:5000/api/posts', {
             </div>
           </div>
 
-          {/* תוכן הפוסט + לחצן קבצים מובנה - תוקן עם boxSizing ורוחב מאוזן לחלוטין */}
           <div style={{ position: 'relative', marginBottom: '20px', width: '100%' }}>
             <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#064e3b' }}>תוכן</label>
             <textarea 
@@ -215,7 +215,7 @@ const response = await fetch('http://localhost:5000/api/posts', {
                 border: '1px solid #ddd', 
                 fontSize: '15px', 
                 outline: 'none',
-                boxSizing: 'border-box' // תיקון קריטי: מונע מהשוליים השמאליים לחרוג מהאיזון של המודאל
+                boxSizing: 'border-box'
               }}
               required
             />
@@ -237,7 +237,6 @@ const response = await fetch('http://localhost:5000/api/posts', {
             </button>
           </div>
 
-          {/* תגיות נושא - פתיחה כלפי מעלה ושוליים מאוזנים */}
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '25px' }}>
             <label style={{ fontWeight: 'bold', color: '#064e3b', fontSize: '14px' }}>תגיות נושא </label>
             <CreatableSelect
@@ -249,21 +248,16 @@ const response = await fetch('http://localhost:5000/api/posts', {
               onInputChange={(val) => setTagInputValue(val)}
               placeholder="נא להכניס לפחות 3 אותיות"
               formatCreateLabel={(inputValue) => `${inputValue}`}
-              
               menuPlacement="top"
-              
               noOptionsMessage={() => 
                 tagInputValue.length < 3 
                   ? "נא להקליד לפחות 3 אותיות..." 
                   : "לא נמצאה תגית מתאימה"
               }
-              
               filterOption={(option, rawInput) => {
                 if (rawInput.length < 3) return false;
                 return option.label.toLowerCase().includes(rawInput.toLowerCase());
               }}
-
-              
               isSearchable
               styles={{
                 control: (base) => ({
@@ -328,26 +322,12 @@ const response = await fetch('http://localhost:5000/api/posts', {
               }}
             />
           </div>
-          {/* חיווי ויזואלי נקי ומעוצב להודעת השגיאה ישירות על המסך */}
-              {validationError && (
-                <div style={{ 
-                  backgroundColor: '#fef2f2', 
-                  color: '#991b1b', 
-                  border: '1px solid #fca5a5', 
-                  borderRadius: '4px', 
-                  padding: '10px 12px', 
-                  marginBottom: '12px', 
-                  fontSize: '13px', 
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}>
-                  ⚠️ {validationError}
-                </div>
-              )}
+          {validationError && (
+            <div style={{ backgroundColor: '#fef2f2', color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '4px', padding: '10px 12px', marginBottom: '12px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              ⚠️ {validationError}
+            </div>
+          )}
 
-          {/* כפתורי שליטה */}
           <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '10px', alignItems: 'center' }}>
             <button 
               type="submit" 

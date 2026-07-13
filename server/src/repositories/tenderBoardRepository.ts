@@ -64,4 +64,37 @@ export async function deleteTender(id: string) {
   return Tender.findOneAndDelete({ id }).lean();
 }
 
+const VECTOR_INDEX_NAME = process.env.TENDER_VECTOR_INDEX_NAME || "tender_vector_index";
+
+/**
+ * Semantic search over tenders using MongoDB Atlas Vector Search.
+ * Requires the Atlas Search index named VECTOR_INDEX_NAME to exist on the
+ * `contentEmbedding` field of the tenders collection (created in the Atlas UI).
+ */
+export async function vectorSearchTenders(queryVector: number[], limit = 10, minScore = 0) {
+  return Tender.aggregate([
+    {
+      $vectorSearch: {
+        index: VECTOR_INDEX_NAME,
+        path: "contentEmbedding",
+        queryVector,
+        exact: false,
+        numCandidates: Math.max(limit * 10, 100),
+        limit,
+      },
+    },
+    {
+      $project: {
+        contentEmbedding: 0,
+        score: { $meta: "vectorSearchScore" },
+      },
+    },
+    {
+      $match: {
+        score: { $gte: minScore },
+      },
+    },
+  ]);
+}
+
 export default getTenders

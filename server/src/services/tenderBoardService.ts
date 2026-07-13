@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import * as repo from "../repositories/tenderBoardRepository";
 import logger from "../logger";
 import { TBAIService } from "./tenderBoardAIService";
+import { getEmbedding } from "./embeddingService";
 import { TenderLog } from "../models/tendersBoardLog";
 import {
   sendApplicantRegisteredEmail,
@@ -86,9 +87,44 @@ export async function getAIApplicationTypeList() {
   return AI_ApplicationType_List;
 }
 
+/**
+ * Builds the text that gets embedded for vector search — combines the
+ * free-text and enum fields a user is likely to search by.
+ */
+function buildEmbeddingText(data: any): string {
+  return [
+    data.title,
+    data.shortDescription,
+    data.productType,
+    data.aiApplicationType,
+    data.additionalDetails,
+  ]
+    .filter(Boolean)
+    .join(". ");
+}
+
+/**
+ * Computes and attaches the contentEmbedding for a tender payload, used before
+ * create/update so the document stays searchable via $vectorSearch. Failures
+ * are logged and swallowed — losing semantic search on one tender must not
+ * block create/update of the tender itself.
+ */
+async function withEmbedding(data: any): Promise<any> {
+  const text = buildEmbeddingText(data);
+  if (!text) return data;
+
+  try {
+    const contentEmbedding = await getEmbedding(text);
+    return { ...data, contentEmbedding };
+  } catch (error) {
+    logger.error("Failed to compute tender embedding; saving without it", { error });
+    return data;
+  }
+}
+
 export async function createTender(data: any) {
   try {
-    const tender = await repo.createTender(data);
+    const tender = await repo.createTender(await withEmbedding(data));
 
     logger.info("Tender created successfully", { tenderId: tender._id, title: data.title });
 
@@ -140,9 +176,14 @@ export async function getTenderById(id: string) {
   }
 }
 
+const EMBEDDING_TEXT_FIELDS = ["title", "shortDescription", "productType", "aiApplicationType", "additionalDetails"];
+
 export async function updateTender(id: string, data: any) {
   try {
-    const result = await repo.updateTender(id, data);
+    const needsReembedding = Object.keys(data || {}).some((key) => EMBEDDING_TEXT_FIELDS.includes(key));
+    const payload = needsReembedding ? await withEmbedding({ ...(await repo.getTenderById(id)), ...data }) : data;
+
+    const result = await repo.updateTender(id, payload);
     logger.info("Tender updated successfully", { tenderId: id });
 
     await saveTenderLog({
@@ -377,68 +418,44 @@ export async function createSmartTender(text: string) {
   }
 }
 
-// Only these tender fields, and only these operators on them, may appear in an
-// AI-generated search filter — blocks $where/$expr/$function-style NoSQL injection
-// via prompt injection in the free-text search box.
-const SEARCHABLE_TENDER_FIELDS = [
-  "title",
-  "shortDescription",
-  "productType",
-  "budget",
-  "timeRequired",
-  "aiApplicationType",
-  "additionalDetails",
-];
+const MIN_VECTOR_SEARCH_SCORE = Number(process.env.TENDER_VECTOR_MIN_SCORE ?? 0.7);
 
-function isAllowedFieldValue(value: unknown): boolean {
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-    return true;
-  }
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return Object.keys(value).every((key) => key === "$regex" || key === "$options");
-  }
-  return false;
-}
-
-function sanitizeSearchFilter(filter: unknown): Record<string, any> {
-  if (!filter || typeof filter !== "object" || Array.isArray(filter)) return {};
-
-  const sanitized: Record<string, any> = {};
-
-  for (const [key, value] of Object.entries(filter as Record<string, unknown>)) {
-    if (key === "$or" || key === "$and") {
-      if (Array.isArray(value)) {
-        const clauses = value.map(sanitizeSearchFilter).filter((clause) => Object.keys(clause).length > 0);
-        if (clauses.length > 0) sanitized[key] = clauses;
-      }
-      continue;
-    }
-
-    if (SEARCHABLE_TENDER_FIELDS.includes(key) && isAllowedFieldValue(value)) {
-      sanitized[key] = value;
-    }
-  }
-
-  return sanitized;
-}
-
-export async function smartSearchTenders(searchText: string) {
+export async function smartSearchTenders(searchText: string, limit = 10) {
   try {
     logger.info("Received search text for smart search", { searchText });
 
-    const mongoFilter = await TBAIService.generateSearchQuery(searchText);
+    const queryVector = await getEmbedding(searchText);
 
-    const safeFilter = sanitizeSearchFilter(mongoFilter);
+    const candidates = await repo.vectorSearchTenders(queryVector, limit);
+    const scores = candidates.map((c: any) => c.score);
 
-    logger.info("Executing smart search with filter", { filter: JSON.stringify(safeFilter) });
-    console.log("Executing smart search with filter:", JSON.stringify(safeFilter));
-    return await repo.getTenders(safeFilter);
+    logger.info("Vector search candidate scores", {
+      searchText,
+      minScoreThreshold: MIN_VECTOR_SEARCH_SCORE,
+      scores,
+    });
+
+    const results = candidates.filter((c: any) => c.score >= MIN_VECTOR_SEARCH_SCORE);
+
+    logger.info("Executed vector search", { searchText, resultCount: results.length });
+
+    await saveTenderLog({
+      action: "SMART_SEARCH",
+      status: "SUCCESS",
+      metaData: { searchText, resultCount: results.length },
+    });
+
+    return results;
   } catch (error: any) {
-    if (error?.message === "RATE_LIMIT") {
-      logger.warn("Rate limit reached on AI search", { searchText });
-      throw Object.assign(new Error("שירות החיפוש החכם עמוס כרגע, נסה שוב בעוד מספר שניות"), { statusCode: 429 });
-    }
     logger.error("Failed to process smartSearchTenders", { error, searchText });
+
+    await saveTenderLog({
+      action: "SMART_SEARCH",
+      status: "FAILED",
+      errorMessage: error?.message || String(error),
+      metaData: { searchText },
+    });
+
     throw error;
   }
 }

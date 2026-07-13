@@ -8,3 +8,6 @@ export const openaiClient = new OpenAI({
 
 export const DEFAULT_OPENAI_MODEL  = "gpt-4o";
 export const FALLBACK_OPENAI_MODEL = "gpt-4o-mini";
+
+export const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "text-embedding-3-small";
+export const EMBEDDING_DIMENSIONS = 1536;

@@ -12,7 +12,8 @@
     "lint": "eslint . --ext .ts",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "backfill:tender-embeddings": "ts-node src/scripts/backfillTenderEmbeddings.ts"
   },
   "keywords": [],
   "author": "",

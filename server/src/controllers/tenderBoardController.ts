@@ -244,7 +244,7 @@ export async function smartSearchTendersHandler(req: Request, res: Response) {
       return res.status(400).json({ error: "Search query param 'q' is required" });
     }
 
-    // קריאה לפונקציית השירות שתמיר את הטקסט לשאילתת מונגו ותשלוף מה-DB
+    // קריאה לפונקציית השירות שתמיר את הטקסט לוקטור ותבצע $vectorSearch מול Atlas
     const tenders = await smartSearchTenders(searchText);
 
     res.json(tenders);

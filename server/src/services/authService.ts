@@ -57,27 +57,31 @@ export async function register(data: {
 
   try {
     // Register with LiteLLM
-    const response = await axios.post(
-      `${process.env.LITELLM_PROXY_URL}/key/generate`,
-      {
-        models: ["*"],
-        user_id: data.email,
-        duration: "30d",
-        metadata: {
-          source: "SafeAI_Registration",
-          user_email: data.email,
-        },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.LITELLM_MASTER_KEY}`,
-          "Content-Type": "application/json",
-        },
-        timeout: 5000,
-      },
-    );
+    // const response = await axios.post(
+    //   `${process.env.LITELLM_PROXY_URL}/key/generate`,
+    //   {
+    //     models: ["*"],
+    //     user_id: data.email,
+    //     duration: "30d",
+    //     metadata: {
+    //       source: "SafeAI_Registration",
+    //       user_email: data.email,
+    //     },
+    //   },
+    //   {
+    //     headers: {
+    //       Authorization: `Bearer ${process.env.LITELLM_MASTER_KEY}`,
+    //       "Content-Type": "application/json",
+    //     },
+    //     timeout: 5000,
+    //   },
+    // );
 
-    const { key, token, key_name } = response.data;
+    // const { key, token, key_name } = response.data;
+
+    const key = 'try'
+    const token = 'try'
+    const key_name = 'try'  
     const litellmKeyEncrypted = encryptSecret(key);
 
     // Create user in database

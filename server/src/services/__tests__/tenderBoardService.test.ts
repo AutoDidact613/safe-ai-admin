@@ -268,11 +268,9 @@ describe("Tender Board Feature Tests", () => {
   });
 
   describe("GET /tender-board/smart-search", () => {
-    it("should perform smart search using AI mongo query translation", async () => {
-      const mockMongoQuery = { productType: "אפליקציה" };
-      const mockTendersResult = [{ _id: "1", title: "מכרז אפליקציה בצפון" }];
+    it("should perform smart search using vector search results", async () => {
+      const mockTendersResult = [{ _id: "1", title: "מכרז אפליקציה בצפון", score: 0.93 }];
 
-      AIService.generateSearchQuery = jest.fn().mockResolvedValue(mockMongoQuery);
       (service.smartSearchTenders as jest.Mock).mockResolvedValue(mockTendersResult);
 
       const res = await request(app)
@@ -281,6 +279,14 @@ describe("Tender Board Feature Tests", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockTendersResult);
+      expect(service.smartSearchTenders).toHaveBeenCalledWith("מכרזים של אפליקציות");
+    });
+
+    it("should return 400 if the q param is missing", async () => {
+      const res = await request(app).get("/tender-board/smart-search");
+
+      expect(res.status).toBe(400);
+      expect(service.smartSearchTenders).not.toHaveBeenCalled();
     });
   });
 });

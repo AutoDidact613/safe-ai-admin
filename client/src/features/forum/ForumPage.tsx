@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AddPostModal } from './AddPostModal';
+import { apiCall } from '../../config/api'; // התאימי את הנתיב היחסי לקובץ ה-API.ts שלך בפרויקט
 
 interface Post {
   _id: string;
@@ -19,6 +20,12 @@ interface Post {
   isLocked?: boolean;
   ratingCount: number;
   averageRating: number;
+}
+
+interface PostsResponse {
+  posts: Post[];
+  currentPage: number;
+  totalPages: number;
 }
 
 export const ForumPage: React.FC = () => {
@@ -44,19 +51,16 @@ export const ForumPage: React.FC = () => {
     setLoading(true);
     const userRole = currentUser?.role || 'user';
 
-    const baseUrl = search.trim() 
-      ? `http://localhost:5000/api/posts/search?query=${search}`
-      : `http://localhost:5000/api/posts?page=${page}`;
+    const baseEndpoint = search.trim()
+      ? `/api/posts/search?query=${encodeURIComponent(search)}`
+      : `/api/posts?page=${page}`;
     
-    const url = baseUrl.includes('?') 
-      ? `${baseUrl}&userRole=${userRole}${!search.trim() ? '' : `&page=${page}`}` 
-      : `${baseUrl}?userRole=${userRole}&page=${page}`;
+    const endpoint = baseEndpoint.includes('?') 
+      ? `${baseEndpoint}&userRole=${userRole}${!search.trim() ? '' : `&page=${page}`}` 
+      : `${baseEndpoint}?userRole=${userRole}&page=${page}`;
 
-    fetch(url)
-      .then((res) => {
-        if (!res.ok) throw new Error('שרת הפורום החזיר שגיאה');
-        return res.json();
-      })
+    // שימוש ב-apiCall המרכזי במקום fetch גנרי
+    apiCall<any>(endpoint)
       .then((data) => {
         if (data && data.posts) {
           setPosts(data.posts);
@@ -86,7 +90,7 @@ export const ForumPage: React.FC = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, currentPage]);
 
-  // אפקט חכם המושך המלצות ומסנן כפילויות - מעודכן לשימוש ב-postId מהיר
+  // אפקט חכם המושך המלצות ומסנן כפילויות
   useEffect(() => {
     const userHistory = JSON.parse(localStorage.getItem('viewed_titles') || '[]');
     let targetTitle = '';
@@ -97,7 +101,6 @@ export const ForumPage: React.FC = () => {
       targetTitle = posts[0].title;
     }
 
-    // שינוי: בניית ה-queryParam בצורה חכמה. עדיפות עליונה ל-postId של פוסט קיים למהירות שיא
     let queryParam = '';
     if (posts.length > 0) {
       queryParam = `postId=${posts[0]._id}`;
@@ -106,8 +109,8 @@ export const ForumPage: React.FC = () => {
     }
 
     if (queryParam) {
-      fetch(`http://localhost:5000/api/posts/search-similar?${queryParam}`)
-        .then((res) => res.json())
+      // מעבר ל-apiCall עבור חיפוש פוסטים דומים
+      apiCall<any[]>(`/api/posts/search-similar?${queryParam}`)
         .then((data) => {
           if (Array.isArray(data)) {
             const currentPostIds = posts.map(p => p._id);
@@ -120,8 +123,7 @@ export const ForumPage: React.FC = () => {
             filtered.forEach(p => uniqueMap.set(p._id, p));
             const finalRecommendations = Array.from(uniqueMap.values());
 
-            // 3. מנגנון השלמה (Fallback): אם נשארו פחות מ-3 פוסטים לאחר הסינון,
-            // ניקח פוסטים אחרים מהעמוד הנוכחי כדי להשלים לשלשה קבועה
+            // 3. מנגנון השלמה (Fallback)
             if (finalRecommendations.length < 3 && posts.length > 0) {
               for (const postItem of posts) {
                 if (finalRecommendations.length >= 3) break;
@@ -168,24 +170,19 @@ export const ForumPage: React.FC = () => {
     if (!currentUser?._id) return alert('משתמש לא מחובר');
 
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/${postId}/moderation`, {
+      // שימוש ב-apiCall עבור פעולות ניהול ומודרציה
+      await apiCall(`/api/posts/${postId}/moderation`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: currentUser._id,
           actionType: actionType
         })
       });
 
-      if (response.ok) {
-        fetchPosts(searchQuery, currentPage);
-      } else {
-        const errData = await response.json();
-        alert(errData.message || 'שגיאה בביצוע הפעולה');
-      }
-    } catch (error) {
+      fetchPosts(searchQuery, currentPage);
+    } catch (error: any) {
       console.error('Error moderating post:', error);
-      alert('שגיאה בתקשורת עם השרת');
+      alert(error.message || 'שגיאה בביצוע הפעולה');
     }
   };
 
@@ -450,7 +447,7 @@ export const ForumPage: React.FC = () => {
             </div>
           )}
 
-          {/* רכיב המלצות אישיות מבוסס AI עם מניעת כפילויות מלאה */}
+          {/* רכיב המלצות אישיות מבוסס AI */}
           {recommendedPosts.length > 0 && (
             <div style={{ marginTop: '45px', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
               <h3 style={{ color: '#064e3b', margin: '0 0 15px 0', fontSize: '15px', fontWeight: 'bold' }}>

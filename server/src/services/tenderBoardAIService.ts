@@ -31,12 +31,6 @@ const TenderZodSchema = z.object({
   additionalDetails: z.string(),
 });
 
-// ✅ הסכמה מצפה ל-{ query: {...} }
-const SearchQueryZodSchema = z.object({
-  query: z.record(z.string(), z.any())
-    .describe("אובייקט שאילתת MongoDB תקני"),
-});
-
 // ==========================================
 // System Prompts
 // ==========================================
@@ -63,36 +57,6 @@ const TENDER_SYSTEM_PROMPT = `אתה מנתח מכרזים. תפקידך: לקב
 
 == דוגמה לפלט תקין ==
 {"title":"foo","shortDescription":"bar baz","timeRequired":{"value":30,"unit":"ימים"},"budget":50000,"productType":"אפליקציה","aiApplicationType":"צאטבוט","agentsRequired":["foo agent"],"wantsEmails":false,"additionalDetails":""}`;
-
-const SEARCH_SYSTEM_PROMPT = `אתה מנוע חיפוש MongoDB. תפקידך: לקבל בקשת חיפוש בשפה חופשית ולהחזיר JSON בלבד — שאילתת filter תקנית עבור Mongoose.
-
-== כללי פלט ==
-- החזר JSON בלבד. אסור להוסיף הסבר, כותרת, markdown, קוד-בלוק או כל טקסט אחר.
-- חובה לעטוף את השאילתה תחת המפתח "query" — תמיד, ללא יוצא מן הכלל.
-- מבנה הפלט: {"query": { ...שאילתת MongoDB... }}
-
-== השדות הזמינים לחיפוש ==
-title, shortDescription, productType, budget, timeRequired, aiApplicationType, additionalDetails
-
-== חוקי בניית השאילתה ==
-1. חיפוש טקסט חופשי — השתמש ב-$regex עם $options:"i". חלץ מילות מפתח בלבד, אל תשים את הבקשה המלאה.
-2. חיפוש במספר שדות במקביל — השתמש ב-$or.
-3. התאמה לשדות enum — השתמש בערך העברי המדויק בלבד, ללא $regex, ללא שינוי תו אחד:
-   aiApplicationType: "התממשקות פשוטה" | "צאטבוט" | "אייגנט" | "מולטי אייגנט"
-   productType: "אפליקציה" | "אתר" | "תוכנת desktop" | "הטמעה של פיצר במערכת קיימת" | "ייעוץ" | "הקמת תשתית לאייגנט" | "אחר"
-4. אם הבקשה מתאימה לערך enum — השתמש בהתאמה מדויקת בלבד, לא ב-$regex.
-5. אם אין מספיק מידע לבניית שאילתה — החזר: {"query": {}}
-
-== דוגמאות ==
-
-בקשה: "אני רוצה צאטבוטים"
-פלט: {"query": {"aiApplicationType": "צאטבוט"}}
-
-בקשה: "אייגנטים לניהול foo"
-פלט: {"query": {"aiApplicationType": "אייגנט", "$or": [{"title": {"$regex": "foo", "$options": "i"}}, {"shortDescription": {"$regex": "foo", "$options": "i"}}]}}
-
-בקשה: "מערכת לניהול bar"
-פלט: {"query": {"$or": [{"title": {"$regex": "bar", "$options": "i"}}, {"shortDescription": {"$regex": "bar", "$options": "i"}}]}}`;
 
 // ==========================================
 // פונקציית עזר — שמירת לוג
@@ -178,61 +142,6 @@ export class TBAIService {
     }
   }
 
-  static async generateSearchQuery(userSearchText: string): Promise<Record<string, any>> {
-    const startTime = Date.now();
-    try {
-      logger.info("Starting AI search query generation", { searchText: userSearchText });
-
-      // ← קריאה ל-callAI הגנרי
-      const raw = await callAI({
-        userPrompt: `בקשת החיפוש: "${userSearchText}"`,
-        systemPrompt: SEARCH_SYSTEM_PROMPT,
-        schema: z.record(z.string(), z.any()), // מקבלים any object — נעשה normalize בעצמנו
-        temperature: 0.1,
-      });
-
-      // ✅ תיקון 2: fallback — אם Gemini לא עטף ב-query, עוטפים בעצמנו
-      const normalized = (raw as any).query !== undefined
-        ? (raw as any)
-        : { query: raw };
-
-      const parsedData = SearchQueryZodSchema.parse(normalized);
-      const query = parsedData?.query && Object.keys(parsedData.query).length > 0 ? parsedData.query : {};
-
-      logger.info("AI search query generation completed", {
-        query: JSON.stringify(query),
-      });
-
-      await saveTenderLog({
-        action: "SMART_SEARCH",
-        status: "SUCCESS",
-        metaData: {
-          searchText: userSearchText,
-          query,
-          responseTime: Date.now() - startTime,
-        },
-      });
-
-      // Returns the raw (not-yet-sanitized) filter object — the caller
-      // (tenderBoardService.smartSearchTenders) is responsible for sanitizing
-      // it against an allowlist before executing it against the database.
-      return query;
-
-    } catch (error: any) {
-      logger.error("Error in AIService.generateSearchQuery", {
-        error,
-        searchText: userSearchText,
-      });
-      await saveTenderLog({
-        action: "SMART_SEARCH",
-        status: "FAILED",
-        errorMessage: error?.message || String(error),
-        metaData: { searchText: userSearchText, responseTime: Date.now() - startTime },
-      });
-      if (error?.status === 429) throw new Error("RATE_LIMIT");
-      throw error;
-    }
-  }
 }
 
 export const AIService = TBAIService;

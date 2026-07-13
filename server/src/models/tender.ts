@@ -30,6 +30,10 @@ const TenderSchema = new Schema(
 
     additionalDetails: { type: String },
 
+    // Vector embedding of title + shortDescription + additionalDetails + productType + aiApplicationType,
+    // used by the $vectorSearch aggregation stage in tenderBoardRepository. Not returned by default queries.
+    contentEmbedding: { type: [Number], select: false },
+
     applicants: {
         type: [
             {
