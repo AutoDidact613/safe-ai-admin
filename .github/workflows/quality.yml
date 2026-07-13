@@ -1,72 +1,86 @@
-name: Quality Checks
+name: Quality Checks & Deployment
 
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, develop] # מקשיב עכשיו גם לדחיפות ל-develop
 
 jobs:
   frontend:
     name: client – lint / typecheck / build
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: client
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "npm"
           cache-dependency-path: client/package-lock.json
-
       - name: Install dependencies
         run: npm ci
-
       - name: TypeScript typecheck
         run: npm run typecheck
-
       - name: ESLint
         run: npm run lint
-
       - name: Build (Vite)
         run: npm run build
 
   backend:
     name: server – lint / typecheck / test / build
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: server
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "npm"
           cache-dependency-path: server/package-lock.json
-
       - name: Install dependencies
         run: npm install
-
       - name: ESLint
         run: npm run lint || true
-        
       - name: TypeScript typecheck
         run: npm run typecheck
-
       - name: Run tests
         run: npm test
-
       - name: Build
         run: npm run build
+
+  deploy:
+    name: Deploy to AWS EC2
+    runs-on: ubuntu-latest
+    # השלב הזה ירוץ רק אם ה-Backend וה-Frontend הצליחו, ורק אם מדובר בענף develop
+    needs: [frontend, backend]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+
+    steps:
+      - name: Execute remote SSH commands to deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            # 1. ניווט לתיקיית הפרויקט בשרת (שני את הנתיב לנתיב האמיתי בשרת שלך)
+            cd /path/to/your/project/folder 
+            
+            # 2. משיכת הקוד המעודכן מהענף הנכון
+            git checkout develop
+            git pull origin develop
+            
+            # 3. עדכון והרצה של השרת (דוגמה לשרת Node)
+            cd server
+            npm install --production
+            
+            # 4. הפעלה מחדש של תהליך השרת (למשל בעזרת pm2)
+            pm2 restart all || npm run start &

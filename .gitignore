@@ -105,3 +105,5 @@ server/litellm_config.yaml
 
 # Custom project files
 project_tree.txt
+
+.cloude/worktrees/
