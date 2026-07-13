@@ -15,7 +15,7 @@ interface User {
   email: string;
   name: string;
   role: string;
-  mode: string;
+  mode: "BYOK" | "MANAGED";
   profileId?: string;
 }
 

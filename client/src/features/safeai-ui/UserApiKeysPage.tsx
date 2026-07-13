@@ -328,13 +328,13 @@ export default function UserApiKeysPage() {
         </div>
       )}
 
-      {showAddModal && user && (
+      {showAddModal && user?._id && (
         <ProviderKeysManagement
           userId={user._id}
           userEmail={user.email}
           onClose={() => {
             setShowAddModal(false);
-            fetchKeys(user._id);
+            fetchKeys(user._id!);
           }}
         />
       )}
