@@ -19,6 +19,7 @@ import {
 } from "../utils/crypto";
 import axios from "axios";
 import logger from "../logger";
+import { nonnegative } from "zod";
 
 const SALT_ROUNDS = 10;
 
@@ -33,6 +34,8 @@ export async function register(data: {
   organizationId?: string;
   profileId?: string;
   mode?: "BYOK" | "MANAGED";
+  role?: string;
+  skipEmailVerification?: boolean;
 }) {
   // Check if user already exists
   const existingUser = await User.findOne({ email: data.email.toLowerCase() });
@@ -53,36 +56,30 @@ export async function register(data: {
   const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
   try {
-    //בהערה בגלל ה Docker
     // Register with LiteLLM
-    // const response = await axios.post(
-    //   `${process.env.LITELLM_PROXY_URL}/key/generate`,
-    //   {
-    //     models: ["*"],
-    //     user_id: data.email,
-    //     duration: "30d",
-    //     metadata: {
-    //       source: "SafeAI_Registration",
-    //       user_email: data.email,
-    //     },
-    //   },
-    //   {
-    //     headers: {
-    //       Authorization: `Bearer ${process.env.LITELLM_MASTER_KEY}`,
-    //       "Content-Type": "application/json",
-    //     },
-    //     timeout: 5000,
-    //   },
-    // );
+    const response = await axios.post(
+      `${process.env.LITELLM_PROXY_URL}/key/generate`,
+      {
+        models: ["*"],
+        user_id: data.email,
+        duration: "30d",
+        metadata: {
+          source: "SafeAI_Registration",
+          user_email: data.email,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.LITELLM_MASTER_KEY}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 5000,
+      },
+    );
 
-    // const { key, token, key_name } = response.data;
-    // const litellmKeyEncrypted = encryptSecret(key);
-    
-    //מילוי מחרוזות סתם
-    const key = "aa";
-    const token = "aa";
-    const key_name = "aa";
-    const litellmKeyEncrypted = "aa";
+    const { key, token, key_name } = response.data;
+    const litellmKeyEncrypted = encryptSecret(key);
+
     // Create user in database
     const user = await User.create({
       email: data.email.toLowerCase(),
@@ -92,33 +89,36 @@ export async function register(data: {
       ...(data.organizationId && { organizationId: data.organizationId }),
       ...(data.profileId && { profileId: data.profileId }),
       mode: data.mode || "BYOK",
-      role: "user", // Always start as user, admin can promote later
+      role: data.role || "user", // Always "user" unless caller specifies (e.g. org_owner)
       proxyKeyHash,
       proxyKeyPrefix,
       litellmKeyEncrypted,
       litellmPrefix: key_name,
       litellmToken: token,
-      emailVerified: false,
+      emailVerified: !!data.skipEmailVerification,
       verificationToken,
       verificationTokenExpires,
     });
 
-    logger.info("Before sending verification email", {
-      email: user.email,
-    });
+    // Only send the verification email for the normal self-registration flow.
+    // Flows where a different gate exists (e.g. admin approval for org owners)
+    // can skip it via skipEmailVerification.
+    if (!data.skipEmailVerification) {
+      logger.info("Before sending verification email", {
+        email: user.email,
+      });
 
-    // Send verification email
-    await sendVerificationEmail(
-      user.email,
-      verificationToken,
-      user.name || undefined,
-    );
+      await sendVerificationEmail(
+        user.email,
+        verificationToken,
+        user.name || undefined,
+      );
 
-    logger.info("After sending verification email", {
-      email: user.email,
-    });
+      logger.info("After sending verification email", {
+        email: user.email,
+      });
+    }
 
-    // Don't generate tokens yet - user must verify email first
     await user.save();
 
     return {
@@ -149,7 +149,6 @@ export async function login(email: string, password: string) {
       code: "INVALID_CREDENTIALS",
       message: "אימייל או סיסמה שגויים",
     };
-    // throw new Error("אימייל או סיסמה שגויים");
   }
 
   // Check password
@@ -160,7 +159,6 @@ export async function login(email: string, password: string) {
       code: "INVALID_CREDENTIALS",
       message: "אימייל או סיסמה שגויים",
     };
-    // throw new Error("אימייל או סיסמה שגויים");
   }
 
   // Check if email is verified
@@ -170,7 +168,6 @@ export async function login(email: string, password: string) {
       code: "EMAIL_NOT_VERIFIED",
       message: "נא לאמת את כתובת האימייל שלך לפני ההתחברות",
     };
-    // throw new Error("נא לאמת את כתובת האימייל שלך לפני ההתחברות");
   }
 
   // Check if user is active
@@ -239,7 +236,7 @@ export async function refreshAccessToken(refreshToken: string) {
     });
 
     // Replace old refresh token with new one
-    user.refreshTokens = user.refreshTokens.filter((t) => t !== refreshToken);
+    user.refreshTokens = user.refreshTokens.filter((t: string) => t !== refreshToken);
     user.refreshTokens.push(tokens.refreshToken);
     await user.save();
 
@@ -263,7 +260,7 @@ export async function logout(userId: string, refreshToken: string) {
 
   // Remove refresh token
   if (user.refreshTokens) {
-    user.refreshTokens = user.refreshTokens.filter((t) => t !== refreshToken);
+    user.refreshTokens = user.refreshTokens.filter((t: string) => t !== refreshToken);
     await user.save();
   }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import ProviderKeysManagement from "./ProviderKeysManagement";
 import { API_ENDPOINTS, apiCall } from "../../config/api";
+import { useAuth } from "../../context/authStore";
 
 interface ProviderKey {
   _id: string;
@@ -20,7 +21,7 @@ interface ProxyKeyInfo {
 }
 
 export default function UserApiKeysPage() {
-  const [user, setUser] = useState<{ _id: string; email: string; name: string; role: string; mode: string } | null>(null);
+  const { user } = useAuth();
   const [keys, setKeys] = useState<ProviderKey[]>([]);
   const [proxyKey, setProxyKey] = useState<ProxyKeyInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,17 +31,13 @@ export default function UserApiKeysPage() {
   const [newProxyKey, setNewProxyKey] = useState<string>("");
 
   useEffect(() => {
-    // Load user from localStorage
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      fetchKeys(parsedUser._id);
+    if (user?._id) {
+      fetchKeys(user._id);
       fetchProxyKey();
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [user?._id]);
 
   const fetchKeys = async (userId: string) => {
     try {
@@ -333,11 +330,11 @@ export default function UserApiKeysPage() {
 
       {showAddModal && user && (
         <ProviderKeysManagement
-          userId={user._id}
+          userId={user._id ?? ""}
           userEmail={user.email}
           onClose={() => {
             setShowAddModal(false);
-            fetchKeys(user._id);
+            fetchKeys(user._id ?? "");
           }}
         />
       )}

@@ -1,0 +1,218 @@
+.admin-articles-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.admin-articles-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.admin-articles-header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.admin-articles-new-btn {
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.admin-articles-new-btn:hover {
+  background: #4f46e5;
+}
+
+.admin-articles-error {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.admin-articles-loading {
+  text-align: center;
+  padding: 3rem;
+  color: #6b7280;
+}
+
+.admin-articles-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+
+.admin-articles-table th {
+  background: #f9fafb;
+  padding: 0.75rem 1rem;
+  text-align: right;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-articles-table td {
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+}
+
+.admin-articles-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-articles-empty {
+  text-align: center;
+  color: #9ca3af;
+  padding: 2rem;
+}
+
+.admin-articles-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.admin-articles-actions button,
+.admin-articles-view-link {
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.admin-articles-actions button:hover,
+.admin-articles-view-link:hover {
+  background: #f3f4f6;
+}
+
+.admin-articles-delete-btn {
+  color: #ef4444 !important;
+  border-color: #fca5a5 !important;
+}
+
+.admin-articles-delete-btn:hover {
+  background: #fee2e2 !important;
+}
+
+/* Form overlay */
+.admin-articles-form-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem;
+  overflow-y: auto;
+}
+
+.admin-articles-form {
+  background: #fff;
+  border-radius: 14px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.admin-articles-form h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.admin-articles-form label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin-top: 0.4rem;
+}
+
+.admin-articles-form input,
+.admin-articles-form textarea {
+  width: 100%;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.admin-articles-form textarea {
+  resize: vertical;
+  font-family: monospace;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.admin-articles-form input:focus,
+.admin-articles-form textarea:focus {
+  border-color: #6366f1;
+}
+
+.admin-articles-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.admin-articles-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.admin-articles-save-btn {
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  padding: 0.65rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-articles-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-articles-cancel-btn {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 0.65rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}

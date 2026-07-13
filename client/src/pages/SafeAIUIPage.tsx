@@ -6,7 +6,23 @@ import UsersManagement from "../features/safeai-ui/UsersManagement";
 import UserDashboard from "../features/safeai-ui/UserDashboard";
 import Statistics from "../features/safeai-ui/Statistics";
 import UserApiKeysPage from "../features/safeai-ui/UserApiKeysPage";
-import AdminOrganizationsPage from "./AdminOrganizationsPage";
+import BillingPage from "../features/safeai-ui/BillingPage";
+import MyRequestsList from "../features/safeai-ui/MyRequestsList";
+import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
+import { apiCall, API_ENDPOINTS } from "../config/api";
+import { OrganizationsManagement } from "../features/organizations/OrganizationsManagement";
+import { PendingApprovalScreen } from "../features/organizations/PendingApprovalScreen";
+import { getMyOrganization } from "../features/organizations/api/organizationApi";
+import OrganizationUsersPage from "../pages/OrganizationUsersPage";
+
+type Reply = {
+  senderRole: string;
+};
+
+type Request = {
+  status: string;
+  replies?: Reply[];
+};
 
 type Section =
   | "profiles"
@@ -14,13 +30,18 @@ type Section =
   | "dashboard"
   | "statistics"
   | "apikeys"
-  | "organizations";
+  | "organizations"
+  | "requests"
+  | "adminRequests"
+  | "org-statistics"
+  | "org-users"
+  | "billing";
 
-interface UserData {
+type UserData = {
   email: string;
   name: string;
   _id?: string;
-}
+};
 
 export default function SafeAIUIPage() {
   const navigate = useNavigate();
@@ -32,10 +53,11 @@ export default function SafeAIUIPage() {
 
     if (storedUser && storedRole) {
       const parsedUser = JSON.parse(storedUser);
+      const defaultSection: Section = storedRole === "org_owner" ? "org-statistics" : "statistics";
       return {
         user: parsedUser,
-        role: storedRole as "admin" | "user",
-        section: "statistics" as Section,
+        role: storedRole as "admin" | "user" | "org_owner",
+        section: defaultSection,
       };
     }
 
@@ -50,12 +72,19 @@ export default function SafeAIUIPage() {
   const [activeSection, setActiveSection] = useState<Section>(
     initialState.section,
   );
-  const [userRole] = useState<"admin" | "user" | null>(
+  const [userRole] = useState<"admin" | "user" | "org_owner" | null>(
     initialState.role,
   );
   const [currentUser] = useState<UserData | null>(
     initialState.user,
   );
+  const [newRequestCount, setNewRequestCount] = useState(0);
+
+  // Gate for org owners: block management until their org is approved
+  const [orgGate, setOrgGate] = useState<{ loading: boolean; pending: boolean; orgName?: string }>({
+    loading: initialState.role === "org_owner",
+    pending: false,
+  });
 
   // Redirect to landing page if not authenticated
   useEffect(() => {
@@ -64,7 +93,54 @@ export default function SafeAIUIPage() {
     }
   }, [userRole, navigate]);
 
+// For org owners, check their organization's approval status
+  useEffect(() => {
+    if (userRole !== "org_owner") return;
+    let active = true;
+    getMyOrganization()
+      .then((res) => {
+        if (!active) return;
+        const org = res.organization;
+        setOrgGate({
+          loading: false,
+          pending: !!org && org.status !== "approved",
+          orgName: org?.name,
+        });
+      })
+      .catch(() => {
+        if (active) setOrgGate({ loading: false, pending: false });
+      });
+    return () => {
+      active = false;
+    };
+  }, [userRole]);
+
+  useEffect(() => {
+    const fetchNewRequestCount = async () => {
+      if (userRole !== "admin") return;
+
+      try {
+        const requests = await apiCall<Request[]>(API_ENDPOINTS.allRequests, { method: "GET" });
+        const count = requests.filter((req) => {
+          const hasAdminReply = req.replies?.some((reply: Reply) => reply.senderRole === "admin");
+          return req.status === "open" && !hasAdminReply;
+        }).length;
+
+        setNewRequestCount(count);
+      } catch (err) {
+        console.error("שגיאה בטעינת מספר הפניות החדשות:", err);
+      }
+    };
+
+    fetchNewRequestCount();
+  }, [userRole]);
+
   const renderSection = () => {
+    // Org owners whose org is not yet approved only see the pending screen
+    if (userRole === "org_owner") {
+      if (orgGate.loading) return <div className="orgs-loading">טוען...</div>;
+      if (orgGate.pending) return <PendingApprovalScreen orgName={orgGate.orgName} />;
+    }
     switch (activeSection) {
       case "profiles":
         return <ProfilesManagement />;
@@ -76,8 +152,18 @@ export default function SafeAIUIPage() {
         return <Statistics user={currentUser} />;
       case "apikeys":
         return <UserApiKeysPage />;
+      case "billing":
+        return <BillingPage />;
       case "organizations":
-        return <AdminOrganizationsPage />;
+        return <OrganizationsManagement />;
+      case "requests":
+        return <MyRequestsList activeSection={activeSection} />;
+      case "adminRequests":
+        return <AdminRequestsList />;
+      case "org-statistics":
+        return <Statistics user={currentUser} />;
+      case "org-users":
+        return <OrganizationUsersPage />;
       default:
         return <UserDashboard user={currentUser} />;
     }
@@ -88,6 +174,8 @@ export default function SafeAIUIPage() {
       {userRole && (
         <nav className="dashboard-sub-nav">
           <div className="sub-nav-container">
+
+            {/* מנהל ראשי */}
             {userRole === "admin" && (
               <>
                 <button
@@ -163,8 +251,32 @@ export default function SafeAIUIPage() {
                   </svg>
                   ניהול ארגונים
                 </button>
+                <button
+                  className={
+                    activeSection === "adminRequests"
+                      ? "sub-nav-btn active"
+                      : "sub-nav-btn"
+                  }
+                  onClick={() => setActiveSection("adminRequests")}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path
+                      d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h12v2H2v-2z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  כל הפניות
+                  {newRequestCount > 0 && (
+                    <span className="sub-nav-badge">({newRequestCount})</span>
+                  )}
+                </button>
               </>
             )}
+
+            {/* משתמש רגיל */}
             {userRole === "user" && (
               <>
                 <button
@@ -206,33 +318,78 @@ export default function SafeAIUIPage() {
                       cy="8"
                       r="2"
                       stroke="currentColor"
-                      stroke-width="1.5"
+                      strokeWidth="1.5"
                     />
 
                     <path
                       d="M6 8H13"
                       stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
                     />
 
                     <path
                       d="M10 8V10"
                       stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
                     />
                     <path
                       d="M12 8V10"
                       stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
                     />
                   </svg>
                   מפתחות API
                 </button>
+                <button
+                    className={activeSection === "requests" ? "sub-nav-btn active" : "sub-nav-btn"}
+                    onClick={() => setActiveSection("requests")}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M2 4h12v8H2zM2 4l6 4 6-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    הפניות שלי
+                </button>
+                <button
+                  className={activeSection === "billing" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  onClick={() => setActiveSection("billing")}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <rect x="1" y="4" width="14" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M1 7h14" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M4 10.5h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                  חיובים
+                </button>
               </>
             )}
+
+            {/* מנהל ארגון */}
+            {userRole === "org_owner" && (
+              <>
+                <button
+                  className={activeSection === "org-statistics" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  onClick={() => setActiveSection("org-statistics")}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M2 14V8M8 14V2M14 14V6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  סטטיסטיקות של הארגון
+                </button>
+                <button
+                  className={activeSection === "org-users" ? "sub-nav-btn active" : "sub-nav-btn"}
+                  onClick={() => setActiveSection("org-users")}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M11 7a2 2 0 100-4 2 2 0 000 4zM13 13c0-1.657-1.343-3-3-3M5 7a2 2 0 100-4 2 2 0 000 4zM1 13c0-1.657 1.343-3 3-3s3 1.343 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                  ניהול משתמשים
+                </button>
+              </>
+            )}
+
           </div>
         </nav>
       )}

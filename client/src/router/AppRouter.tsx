@@ -5,10 +5,15 @@ import NotFound from "../pages/NotFound";
 import OrganizationUsersPage from "../pages/OrganizationUsersPage";
 import ContactPage from "../pages/ContactPage";
 import DocsPage from "../pages/DocsPage";
+import ArticlesPage from "../pages/ArticlesPage";
+import ArticlePage from "../pages/ArticlePage";
+import AdminArticlesPage from "../pages/AdminArticlesPage";
 import RecommendedGuidesPage from "../pages/RecommendedGuidesPage";
 import CoursesPage from "../pages/CoursesPage";
 import ActivityLogPage from "../pages/ActivityLogPage";
 import AboutPage from "../pages/AboutPage";
+import TenderBoardPage from "../pages/TenderBoardPage";
+import DownloadAgentsPage from "../pages/AgentDownloadsPage";
 import LoginForm from "../features/auth/LoginForm";
 import RegisterForm from "../features/auth/RegisterForm";
 import ApiKeyDisplay from "../features/auth/ApiKeyDisplay";
@@ -18,7 +23,14 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
-import { PendingOrganizationsPage } from "../features/organizations/pages/PendingOrganizationsPage";
+import { PublicOrgOwnerSignup } from "../features/organizations/PublicOrgOwnerSignup";
+import RequestDetails from "../features/safeai-ui/RequestDetails";
+import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
+import AiNewsPage from "../pages/AiNewsPage";
+import AiNewsDetailsPage from "../pages/AiNewsDetailsPage";
+import ErrorBoundary from "../components/ErrorBoundary";
+import ForumPage from '../features/forum/ForumPage';
+import { PostThreadPage } from '../features/forum/PostThreadPage';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -47,19 +59,22 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+const ROUTER_BASE = import.meta.env.VITE_BASE_PATH?.replace(/\/$/, "") || "";
+
 export default function AppRouter() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={ROUTER_BASE}>
       {/* Global Top Navigation */}
       <TopNavigation />
-      
+
       {/* Beta Banner */}
       <BetaBanner />
-      
+
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
-        
+        <Route path="/become-org-owner" element={<PublicOrgOwnerSignup />} />
+
         <Route
           path="/login"
           element={
@@ -68,7 +83,7 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
-        
+
         <Route
           path="/register"
           element={
@@ -85,9 +100,9 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
-        
+
         <Route path="/verify-email/:token" element={<EmailVerification />} />
-        
+
         <Route
           path="/forgot-password"
           element={
@@ -96,25 +111,74 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
-        
+
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-        
+
         {/* Protected Routes */}
         <Route
           path="/api-key-display"
           element={
             <ProtectedRoute>
-              <ApiKeyDisplay />
+              <ErrorBoundary>
+                <ApiKeyDisplay />
+              </ErrorBoundary>
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/safeai-ui"
           element={
             <ProtectedRoute>
-              <SafeAIUIPage />
+              <ErrorBoundary>
+                <SafeAIUIPage />
+              </ErrorBoundary>
             </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/request/:id"
+          element={
+            <ProtectedRoute>
+              <RequestDetails />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/all-requests"
+          element={
+            <ProtectedRoute>
+              <AdminRequestsList />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/forum"
+          element={
+            <ProtectedRoute>
+              <ForumPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Organization Routes */}
+         <Route
+          path="/ai-news"
+          element={
+           <ProtectedRoute>
+             <AiNewsPage />
+           </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ai-news/:id"
+          element={
+           <ProtectedRoute>
+             <AiNewsDetailsPage />
+           </ProtectedRoute>
           }
         />
 
@@ -123,27 +187,40 @@ export default function AppRouter() {
           path="/organization/users"
           element={
             <ProtectedRoute>
-              <OrganizationUsersPage />
+              <ErrorBoundary>
+                <OrganizationUsersPage />
+              </ErrorBoundary>
             </ProtectedRoute>
           }
         />
 
+        <Route path="/admin/organizations" element={<Navigate to="/safeai-ui" replace />} />
+
         <Route
-          path="/admin/organizations"
+          path="/admin/articles"
           element={
             <ProtectedRoute>
-              <PendingOrganizationsPage />
+              <ErrorBoundary>
+                <AdminArticlesPage />
+              </ErrorBoundary>
             </ProtectedRoute>
           }
         />
+
+
 
         {/* New Pages Routes */}
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
-        <Route path="/docs" element={<DocsPage />} />
+        <Route path="/docs" element={<ArticlesPage />} />
+        <Route path="/docs/:slug" element={<ArticlePage />} />
+        <Route path="/docs-old" element={<DocsPage />} />
         <Route path="/recommended-guides" element={<RecommendedGuidesPage />} />
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/activity-log" element={<ActivityLogPage />} />
+        <Route path="/tender-board" element={<TenderBoardPage />} />
+        <Route path="/download-agents" element={<DownloadAgentsPage />} />
+        <Route path="/forum/post/:id" element={<ProtectedRoute><PostThreadPage /></ProtectedRoute>} />
 
         {/* Catch all - 404 */}
         <Route path="*" element={<NotFound />} />

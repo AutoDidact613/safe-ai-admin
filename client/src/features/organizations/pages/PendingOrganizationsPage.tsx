@@ -62,7 +62,7 @@ export const PendingOrganizationsPage = () => {
 
   return (
     <div className="pending-orgs-container">
-      <h1 className="pending-orgs-title">אישור ארגונים (System Admin)</h1>
+      <h1 className="pending-orgs-title">אישור ארגונים</h1>
       <p className="pending-orgs-subtitle">לפניך רשימת הארגונים הממתינים לאישור הגישה שלהם.</p>
       
       <PendingOrganizationsTable 
