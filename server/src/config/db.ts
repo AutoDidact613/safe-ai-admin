@@ -2,11 +2,13 @@
  * server/src/config/database.ts
  */
 
+import dns from "dns";
 import mongoose from "mongoose";
 import logger from "../logger";
 
- //'mongodb+srv://malkydickman192_db_user:vof1DpEBG0MKQSDj@cluster0.ox5pbiz.mongodb.net/safeai?appName=Cluster0';
- const MONGO_URI =process.env.MONGO_URI || 'mongodb://localhost:27017/safeai';
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
+
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/safeai';
 console.log("MONGO_URI:", MONGO_URI);
 export async function connectDatabase(): Promise<void> {
   try {

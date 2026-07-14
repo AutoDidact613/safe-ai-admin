@@ -309,17 +309,65 @@ function sanitizeSearchFilter(filter: unknown): Record<string, any> {
   return sanitized;
 }
 
+/**
+ * ⚠️ ירוק (מנוטרל) — לוגיקת החיפוש הישנה: ה-AI בונה שאילתת MongoDB filter,
+ * והשאילתה מורצת ישירות על ה-DB. לא נמחק — נשמר כרפרנס / לשימוש עתידי אפשרי.
+ * הוחלף ע"י smartSearchTenders (למטה) שמבוסס על רשימת מועמדים + החזרת IDים.
+ */
+// export async function smartSearchTendersLegacy(searchText: string) {
+//   try {
+//     logger.info("Received search text for smart search", { searchText });
+//
+//     const mongoFilter = await TBAIService.generateSearchQuery(searchText);
+//
+//     const safeFilter = sanitizeSearchFilter(mongoFilter);
+//
+//     logger.info("Executing smart search with filter", { filter: JSON.stringify(safeFilter) });
+//     return await repo.getTenders(safeFilter);
+//   } catch (error: any) {
+//     if (error?.message === "RATE_LIMIT") {
+//       logger.warn("Rate limit reached on AI search", { searchText });
+//       throw Object.assign(new Error("שירות החיפוש החכם עמוס כרגע, נסה שוב בעוד מספר שניות"), { statusCode: 429 });
+//     }
+//     logger.error("Failed to process smartSearchTenders", { error, searchText });
+//     throw error;
+//   }
+// }
+
+/**
+ * לוגיקת חיפוש חדשה:
+ * 1. שולפים את 100 המכרזים הראשונים מהרשימה.
+ * 2. שולחים ל-AI רק את ה-id והשדות התיאוריים הרלוונטיים של כל מכרז + טקסט החיפוש של הלקוח.
+ * 3. ה-AI מחזיר מערך של IDים בלבד (לא אובייקטים מלאים — חיסכון בטוקנים).
+ * 4. עוברים על המערך ומחזירים ללקוח את המכרזים המלאים המתאימים, לפי סדר ההתאמה שה-AI החזיר.
+ */
+const SEARCH_CANDIDATE_LIMIT = 100;
+
 export async function smartSearchTenders(searchText: string) {
   try {
     logger.info("Received search text for smart search", { searchText });
 
-    const mongoFilter = await TBAIService.generateSearchQuery(searchText);
+    const allTenders = await repo.getTenders();
+    const candidateTenders = allTenders.slice(0, SEARCH_CANDIDATE_LIMIT);
 
-    const safeFilter = sanitizeSearchFilter(mongoFilter);
+    const tendersForAI = candidateTenders.map((t: any) => ({
+      id: String(t._id),
+      title: t.title,
+      shortDescription: t.shortDescription,
+      productType: t.productType,
+      aiApplicationType: t.aiApplicationType,
+      budget: t.budget,
+      additionalDetails: t.additionalDetails,
+    }));
 
-    logger.info("Executing smart search with filter", { filter: JSON.stringify(safeFilter) });
-    console.log("Executing smart search with filter:", JSON.stringify(safeFilter));
-    return await repo.getTenders(safeFilter);
+    const matchedIds = await TBAIService.generateSearchResultIds(searchText, tendersForAI);
+
+    logger.info("Smart search matched tender ids", { count: matchedIds.length });
+
+    const tenderById = new Map(candidateTenders.map((t: any) => [String(t._id), t]));
+    return matchedIds
+      .map((id) => tenderById.get(id))
+      .filter(Boolean);
   } catch (error: any) {
     if (error?.message === "RATE_LIMIT") {
       logger.warn("Rate limit reached on AI search", { searchText });

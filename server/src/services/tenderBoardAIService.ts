@@ -62,6 +62,11 @@ const TENDER_SYSTEM_PROMPT = `אתה מנתח מכרזים. תפקידך: לקב
 == דוגמה לפלט תקין ==
 {"title":"foo","shortDescription":"bar baz","timeRequired":{"value":30,"unit":"ימים"},"budget":50000,"productType":"אפליקציה","aiApplicationType":"צאטבוט","agentsRequired":["foo agent"],"wantsEmails":false,"additionalDetails":""}`;
 
+// ==========================================
+// ⚠️ ירוק (מנוטרל) — לוגיקת החיפוש הישנה שבנתה שאילתת MongoDB באמצעות ה-AI.
+// לא נמחק — נשמר כרפרנס / לשימוש עתידי אפשרי.
+// הוחלף ע"י SEARCH_BY_ID_SYSTEM_PROMPT + TBAIService.generateSearchResultIds.
+// ==========================================
 const SEARCH_SYSTEM_PROMPT = `אתה מנוע חיפוש MongoDB. תפקידך: לקבל בקשת חיפוש בשפה חופשית ולהחזיר JSON בלבד — שאילתת filter תקנית עבור Mongoose.
 
 == כללי פלט ==
@@ -91,6 +96,28 @@ title, shortDescription, productType, budget, timeRequired, aiApplicationType, a
 
 בקשה: "מערכת לניהול bar"
 פלט: {"query": {"$or": [{"title": {"$regex": "bar", "$options": "i"}}, {"shortDescription": {"$regex": "bar", "$options": "i"}}]}}`;
+
+// ==========================================
+// לוגיקת חיפוש חדשה — ה-AI מקבל רשימת מכרזים (id + שדות רלוונטיים)
+// ואת טקסט החיפוש של הלקוח, ומחזיר מערך של IDים בלבד (חיסכון בטוקנים).
+// ==========================================
+const SearchResultIdsZodSchema = z.object({
+  ids: z.array(z.string()).describe("מערך של IDים של המכרזים הרלוונטיים לבקשת החיפוש"),
+});
+
+const SEARCH_BY_ID_SYSTEM_PROMPT = `אתה מנוע חיפוש מכרזים. תפקידך: לקבל רשימת מכרזים (כל מכרז עם id ושדות תיאוריים) ובקשת חיפוש בשפה חופשית, ולהחזיר JSON בלבד עם מערך של IDים של המכרזים הרלוונשולים ביותר לבקשה.
+
+== כללי פלט ==
+- החזר JSON בלבד. אסור להוסיף הסבר, כותרת, markdown, קוד-בלוק או כל טקסט אחר.
+- מבנה הפלט: {"ids": ["<id1>", "<id2>", ...]}
+- החזר אך ורק IDים שמופיעים ברשימה שקיבלת — אסור להמציא ID.
+- אל תחזיר את פרטי המכרז עצמו, רק את ה-ID שלו.
+- אם אין מכרזים מתאימים — החזר: {"ids": []}
+- סדר את ה-IDים לפי רמת ההתאמה לבקשה, מהמתאים ביותר למתאים פחות.
+
+== דוגמה ==
+בקשה: "אני רוצה צאטבוטים"
+פלט: {"ids": ["foo123", "bar456"]}`;
 
 // ==========================================
 // מחלקת השירות — משתמשת ב-callAI
@@ -158,6 +185,44 @@ export class TBAIService {
 
     } catch (error: any) {
       logger.error("Error in AIService.generateSearchQuery", {
+        error,
+        searchText: userSearchText,
+      });
+      if (error?.status === 429) throw new Error("RATE_LIMIT");
+      throw error;
+    }
+  }
+
+  /**
+   * לוגיקת חיפוש חדשה — מקבלת את רשימת המכרזים (id + שדות רלוונטיים בלבד,
+   * עד 100 מכרזים ראשונים) ואת טקסט החיפוש של הלקוח, ומחזירה אך ורק
+   * מערך של IDים של המכרזים המבוקשים (חיסכון בטוקנים — לא מוחזר האובייקט המלא).
+   */
+  static async generateSearchResultIds(
+    userSearchText: string,
+    tenders: Array<{ id: string; [key: string]: any }>
+  ): Promise<string[]> {
+    try {
+      logger.info("Starting AI search-by-id generation", {
+        searchText: userSearchText,
+        tendersCount: tenders.length,
+      });
+
+      const raw = await callAI({
+        userPrompt: `בקשת החיפוש: "${userSearchText}"\n\nרשימת המכרזים:\n${JSON.stringify(tenders)}`,
+        systemPrompt: SEARCH_BY_ID_SYSTEM_PROMPT,
+        schema: SearchResultIdsZodSchema,
+        temperature: 0.1,
+      });
+
+      const validIds = new Set(tenders.map((t) => t.id));
+      const ids = (raw?.ids || []).filter((id: string) => validIds.has(id));
+
+      logger.info("AI search-by-id generation completed", { count: ids.length });
+
+      return ids;
+    } catch (error: any) {
+      logger.error("Error in AIService.generateSearchResultIds", {
         error,
         searchText: userSearchText,
       });
