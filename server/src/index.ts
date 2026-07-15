@@ -23,7 +23,7 @@ import articlesRouter from "./routes/articlesRouter";
 import { requestLogger } from "./middleware/requestLogger";
 import { errorHandler } from "./middleware/errorHandler";
 import { connectDatabase } from "./config/db";
-import { authenticateToken, requireAdmin } from "./middleware/auth";
+import { authenticateToken } from "./middleware/auth";
 import postRoutes from './routes/postRoutes';
 import logger from "./logger";
 import path from 'path';
