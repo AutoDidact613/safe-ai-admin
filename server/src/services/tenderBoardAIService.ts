@@ -154,8 +154,14 @@ async function saveTenderLog(params: {
       timestamp: new Date(),
       expiresAt,
     } as any);
-  } catch (logError) {
-    logger.error("Failed to write Tender DB Log", { logError });
+  } catch (err) {
+    const error = err as Error;
+    logger.error("Failed to write Tender DB Log", {
+      error: error.message,
+      stack: error.stack,
+      action: params.action,
+      tenderId: params.tenderId,
+    });
   }
 }
 
@@ -195,15 +201,17 @@ export class TBAIService {
 
       return parsedData;
 
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as Error;
       logger.error("Error in AIService.generateTenderData", {
-        err: error,
+        error: error.message,
+        stack: error.stack,
         descriptionLength: userDescription?.length,
       });
       await saveTenderLog({
         action: "SMART_CREATE",
         status: "FAILED",
-        errorMessage: error?.message || String(error),
+        errorMessage: error.message,
         metaData: {
           textLength: userDescription?.length,
           responseTime: Date.now() - startTime,
@@ -248,9 +256,11 @@ export class TBAIService {
 
       const relevantIdSet = new Set(relevantTenderIds);
       return tenders.filter((t) => relevantIdSet.has(String(t._id ?? t.id)));
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as Error;
       logger.error("Error in AIService.filterRelevantTenders", {
-        err: error,
+        error: error.message,
+        stack: error.stack,
         searchText,
         candidateCount: tenders.length,
       });

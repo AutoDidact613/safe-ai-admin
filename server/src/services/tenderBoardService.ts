@@ -56,8 +56,14 @@ async function saveTenderLog(params: {
       timestamp: new Date(),
       expiresAt
     } as any);
-  } catch (logError) {
-    logger.error("Failed to write Tender DB Log", { logError });
+  } catch (err) {
+    const error = err as Error;
+    logger.error("Failed to write Tender DB Log", {
+      error: error.message,
+      stack: error.stack,
+      action: params.action,
+      tenderId: params.tenderId,
+    });
   }
 }
 
@@ -73,8 +79,13 @@ async function getPublisherEmail(publisherUserCode: string): Promise<string | nu
       return null;
     }
     return publisher.email;
-  } catch (error) {
-    logger.error("Failed to fetch publisher email", { error, publisherUserCode });
+  } catch (err) {
+    const error = err as Error;
+    logger.error("Failed to fetch publisher email", {
+      error: error.message,
+      stack: error.stack,
+      publisherUserCode,
+    });
     return null;
   }
 }
@@ -116,8 +127,12 @@ async function withEmbedding(data: any): Promise<any> {
   try {
     const contentEmbedding = await getEmbedding(text);
     return { ...data, contentEmbedding };
-  } catch (error) {
-    logger.error("Failed to compute tender embedding; saving without it", { error });
+  } catch (err) {
+    const error = err as Error;
+    logger.error("Failed to compute tender embedding; saving without it", {
+      error: error.message,
+      stack: error.stack,
+    });
     return data;
   }
 }
@@ -126,24 +141,32 @@ export async function createTender(data: any) {
   try {
     const tender = await repo.createTender(await withEmbedding(data));
 
-    logger.info("Tender created successfully", { tenderId: tender._id, title: data.title });
+    // contentEmbedding is a large numeric vector with no business value in a log entry, so it's excluded here.
+    const { contentEmbedding, ...tenderForLog } = tender.toObject();
+
+    logger.info("Tender created successfully", { tenderId: tender._id, tender: tenderForLog });
 
     await saveTenderLog({
       action: "CREATE",
       status: "SUCCESS",
       tenderId: tender._id,
-      metaData: { title: data.title }
+      metaData: { tender: tenderForLog }
     });
 
     return tender;
-  } catch (error: any) {
-    logger.error("Failed to create tender", { error, title: data?.title });
+  } catch (err) {
+    const error = err as Error;
+    logger.error("Failed to create tender", {
+      error: error.message,
+      stack: error.stack,
+      tender: data,
+    });
 
     await saveTenderLog({
       action: "CREATE",
       status: "FAILED",
-      errorMessage: error?.message || String(error),
-      metaData: { title: data?.title }
+      errorMessage: error.message,
+      metaData: { tender: data }
     });
 
     throw error;
@@ -155,8 +178,12 @@ export async function listTenders() {
     const tenders = await repo.getTenders();
     logger.info("Fetched tenders list", { count: tenders?.length || 0 });
     return tenders;
-  } catch (error) {
-    logger.error("Failed to list tenders", { error });
+  } catch (err) {
+    const error = err as Error;
+    logger.error("Failed to list tenders", {
+      error: error.message,
+      stack: error.stack,
+    });
     throw error;
   }
 }
@@ -170,8 +197,13 @@ export async function getTenderById(id: string) {
       logger.info("Fetched tender details", { tenderId: id });
     }
     return tender;
-  } catch (error) {
-    logger.error("Failed to get tender by ID", { error, tenderId: id });
+  } catch (err) {
+    const error = err as Error;
+    logger.error("Failed to get tender by ID", {
+      error: error.message,
+      stack: error.stack,
+      tenderId: id,
+    });
     throw error;
   }
 }
@@ -194,14 +226,19 @@ export async function updateTender(id: string, data: any) {
     });
 
     return result;
-  } catch (error: any) {
-    logger.error("Failed to update tender", { error, tenderId: id });
+  } catch (err) {
+    const error = err as Error;
+    logger.error("Failed to update tender", {
+      error: error.message,
+      stack: error.stack,
+      tenderId: id,
+    });
 
     await saveTenderLog({
       action: "UPDATE",
       status: "FAILED",
       tenderId: id,
-      errorMessage: error?.message || String(error)
+      errorMessage: error.message
     });
 
     throw error;
@@ -246,14 +283,19 @@ export async function closeTender(id: string) {
     }
 
     return result;
-  } catch (error: any) {
-    logger.error("Failed to close tender", { error, tenderId: id });
+  } catch (err) {
+    const error = err as Error;
+    logger.error("Failed to close tender", {
+      error: error.message,
+      stack: error.stack,
+      tenderId: id,
+    });
 
     await saveTenderLog({
       action: "UPDATE",
       status: "FAILED",
       tenderId: id,
-      errorMessage: error?.message || String(error)
+      errorMessage: error.message
     });
 
     throw error;
@@ -273,14 +315,19 @@ export async function deleteTender(id: string) {
     });
 
     return result;
-  } catch (error: any) {
-    logger.error("Failed to delete tender", { error, tenderId: id });
+  } catch (err) {
+    const error = err as Error;
+    logger.error("Failed to delete tender", {
+      error: error.message,
+      stack: error.stack,
+      tenderId: id,
+    });
 
     await saveTenderLog({
       action: "DELETE",
       status: "FAILED",
       tenderId: id,
-      errorMessage: error?.message || String(error)
+      errorMessage: error.message
     });
 
     throw error;
@@ -378,14 +425,20 @@ export async function applyToTender(
     }
 
     return result;
-  } catch (error: any) {
-    logger.error("Failed to update tender applicants", { error, tenderId, applicantEmail: normalizedEmail });
+  } catch (err) {
+    const error = err as Error;
+    logger.error("Failed to update tender applicants", {
+      error: error.message,
+      stack: error.stack,
+      tenderId,
+      applicantEmail: normalizedEmail,
+    });
 
     await saveTenderLog({
       action: "APPLY",
       status: "FAILED",
       tenderId: tenderId,
-      errorMessage: error?.message || String(error),
+      errorMessage: error.message,
       metaData: { applicantEmail: normalizedEmail }
     });
 
@@ -412,8 +465,12 @@ export async function createSmartTender(text: string) {
     };
 
     return fullTenderData;
-  } catch (error) {
-    logger.error("Failed to process createSmartTender", { error });
+  } catch (err) {
+    const error = err as Error;
+    logger.error("Failed to process createSmartTender", {
+      error: error.message,
+      stack: error.stack,
+    });
     throw error;
   }
 }
@@ -448,13 +505,18 @@ export async function smartSearchTenders(searchText: string, limit = 10) {
     });
 
     return limitedResults;
-  } catch (error: any) {
-    logger.error("Failed to process smartSearchTenders", { error, searchText });
+  } catch (err) {
+    const error = err as Error;
+    logger.error("Failed to process smartSearchTenders", {
+      error: error.message,
+      stack: error.stack,
+      searchText,
+    });
 
     await saveTenderLog({
       action: "SMART_SEARCH",
       status: "FAILED",
-      errorMessage: error?.message || String(error),
+      errorMessage: error.message,
       metaData: { searchText },
     });
 
