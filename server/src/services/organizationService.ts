@@ -33,8 +33,11 @@ export async function createOrganization(data: any) {
     });
 
     return organization;
-  } catch (error) {
-    logger.error("Failed to create organization", { error });
+  } catch (error: any) {
+    logger.error("Failed to create organization", {
+      error: error.message,
+      stack: error.stack,
+    });
     throw error;
   }
 }
@@ -66,8 +69,12 @@ export async function deleteOrganization(orgId: string) {
     logger.info("Organization deleted", { organizationId: orgId });
 
     return result;
-  } catch (error) {
-    logger.error("Failed to delete organization", { error });
+  } catch (error: any) {
+    logger.error("Failed to delete organization", {
+      error: error.message,
+      stack: error.stack,
+      organizationId: orgId,
+    });
     throw error;
   }
 }
@@ -75,8 +82,12 @@ export async function deleteOrganization(orgId: string) {
 export async function getOrganizationUsers(orgId: string) {
   try {
     return await userRepo.getUsersByOrganization(orgId);
-  } catch (error) {
-    logger.error("Failed to get organization users", { error });
+  } catch (error: any) {
+    logger.error("Failed to get organization users", {
+      error: error.message,
+      stack: error.stack,
+      organizationId: orgId,
+    });
     throw error;
   }
 }
@@ -108,11 +119,16 @@ export async function addUserToOrganization(orgId: string, userId: string, role:
       role: role,
     });
 
-    logger.info("User added to organization", { userId, orgId, role });
+    logger.info("User added to organization", { userId, organizationId: orgId, role });
 
     return user;
-  } catch (error) {
-    logger.error("Failed to add user to organization", { error });
+  } catch (error: any) {
+    logger.error("Failed to add user to organization", {
+      error: error.message,
+      stack: error.stack,
+      userId,
+      organizationId: orgId,
+    });
     throw error;
   }
 }
@@ -140,8 +156,12 @@ export async function removeUserFromOrganization(userId: string) {
     logger.info("User removed from organization", { userId });
 
     return user;
-  } catch (error) {
-    logger.error("Failed to remove user from organization", { error });
+  } catch (error: any) {
+    logger.error("Failed to remove user from organization", {
+      error: error.message,
+      stack: error.stack,
+      userId,
+    });
     throw error;
   }
 }
@@ -191,11 +211,15 @@ export async function createOrganizationMember(
       skipEmailVerification: true,
     });
 
-    logger.info("Organization member created", { orgId, userId: user._id });
+    logger.info("Organization member created", { organizationId: orgId, userId: user._id });
 
     return { user, temporaryPassword };
-  } catch (error) {
-    logger.error("Failed to create organization member", { error, orgId });
+  } catch (error: any) {
+    logger.error("Failed to create organization member", {
+      error: error.message,
+      stack: error.stack,
+      organizationId: orgId,
+    });
     throw error;
   }
 }
@@ -210,14 +234,19 @@ export async function topUpOrganizationWallet(orgId: string, amount: number) {
     const updateOrg = await repo.incrementWalletBalance(orgId, amount);
 
     logger.info("Organization wallet topped up successfully (Mock)", {
-      orgId,
+      organizationId: orgId,
       amount,
       newBalance: (updateOrg as any)?.walletBalance,
     });
 
     return updateOrg;
-  } catch (error) {
-    logger.error("Failed to top up organization wallet", { error });
+  } catch (error: any) {
+    logger.error("Failed to top up organization wallet", {
+      error: error.message,
+      stack: error.stack,
+      organizationId: orgId,
+      amount,
+    });
     throw error;
   }
 }
@@ -300,8 +329,12 @@ export async function publicRequestOrganization(data: {
         sendOrgApprovalRequestEmail(admin.email, data.orgName, data.ownerEmail)
       )
     );
-  } catch (error) {
-    logger.error("Failed to notify admins about org request", { error });
+  } catch (error: any) {
+    logger.error("Failed to notify admins about org request", {
+      error: error.message,
+      stack: error.stack,
+      organizationId: organization._id,
+    });
   }
 
   return organization;
@@ -327,11 +360,15 @@ export async function approveOrganization(orgId: string) {
     if (owner?.email) {
       await sendOrgApprovedEmail(owner.email, (organization as any).name, owner.name);
     }
-  } catch (error) {
-    logger.error("Failed to send org approved email", { error });
+  } catch (error: any) {
+    logger.error("Failed to send org approved email", {
+      error: error.message,
+      stack: error.stack,
+      organizationId: orgId,
+    });
   }
 
-  logger.info("Organization approved", { orgId });
+  logger.info("Organization approved", { organizationId: orgId });
   return updated;
 }
 
@@ -355,11 +392,15 @@ export async function rejectOrganization(orgId: string) {
     if (owner?.email) {
       await sendOrgStatusEmail("rejected", owner.email, (organization as any).name, owner.name);
     }
-  } catch (error) {
-    logger.error("Failed to send org rejected email", { error });
+  } catch (error: any) {
+    logger.error("Failed to send org rejected email", {
+      error: error.message,
+      stack: error.stack,
+      organizationId: orgId,
+    });
   }
 
-  logger.info("Organization rejected", { orgId });
+  logger.info("Organization rejected", { organizationId: orgId });
   return updated;
 }
 
@@ -405,11 +446,15 @@ export async function setOrganizationActive(orgId: string, isActive: boolean) {
         owner.name
       );
     }
-  } catch (error) {
-    logger.error("Failed to send org active-state email", { error });
+  } catch (error: any) {
+    logger.error("Failed to send org active-state email", {
+      error: error.message,
+      stack: error.stack,
+      organizationId: orgId,
+    });
   }
 
-  logger.info("Organization active state changed", { orgId, isActive });
+  logger.info("Organization active state changed", { organizationId: orgId, isActive });
   return updated;
 }
 
