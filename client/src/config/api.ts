@@ -94,9 +94,9 @@ export async function apiCall<T>(
   // Get access token from localStorage
   const accessToken = localStorage.getItem("accessToken");
 
-  // If a relative endpoint is provided (starts with '/'), prepend the API base URL
+  // Endpoint values in API_ENDPOINTS already include API_BASE_URL, so just return them as-is
   const resolveUrl = (ep: string) =>
-    ep.startsWith("http") ? ep : `${API_BASE_URL}${ep}`;
+    ep;
 
   const makeRequest = async (token: string | null) => {
     const url = resolveUrl(endpoint);

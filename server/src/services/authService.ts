@@ -55,6 +55,11 @@ export async function register(data: {
   const verificationToken = generateRandomToken();
   const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
+  let key: string | undefined;
+  let token: string | undefined;
+  let key_name: string | undefined;
+  let litellmKeyEncrypted: string | undefined;
+
   try {
     // Register with LiteLLM
     const response = await axios.post(
@@ -77,9 +82,17 @@ export async function register(data: {
       },
     );
 
-    const { key, token, key_name } = response.data;
-    const litellmKeyEncrypted = encryptSecret(key);
+    ({ key, token, key_name } = response.data);
+    if (key) {
+      litellmKeyEncrypted = encryptSecret(key);
+    }
+  } catch (error: any) {
+    logger.warn("LiteLLM registration failed, continuing without proxy key:", {
+      error: error.response?.data || error.message,
+    });
+  }
 
+  try {
     // Create user in database
     const user = await User.create({
       email: data.email.toLowerCase(),

@@ -59,24 +59,24 @@ app.get("/health", (_req, res) => {
 });
 
 // ===== Public Routes (No Authentication) =====
-app.use("/auth", authRouter);
+app.use("/api/auth", authRouter);
 
 // ===== JWT Protected Routes (User Self-Management) =====
 // Import the handler for self-profile updates
 import { updateOwnProfileHandler } from "./controllers/userController";
 app.patch("/users/:id", authenticateToken, updateOwnProfileHandler);
-app.use("/usage", usageRouter); // Already has authenticateToken inside
+app.use("/api/usage", usageRouter); // Already has authenticateToken inside
 
 
 // ===== JWT Protected Routes (Admin Panel & Management) =====
-app.use("/users", authenticateToken, requireAdmin, userRouter);
-app.use("/profiles", authenticateToken, profileRouter);
-app.use("/provider-keys", authenticateToken, providerKeyRouter);
+app.use("/api/users", authenticateToken, userRouter);
+app.use("/api/profiles", authenticateToken, profileRouter);
+app.use("/api/provider-keys", authenticateToken, providerKeyRouter);
 app.use("/proxy-key", proxyKeyRouter); // User's own proxy key management
-app.use("/admin/stats", adminStatsRouter); // Admin stats already has auth middleware
-app.use("/prompts", authenticateToken, promptRouter); // Prompt management (admin routes protected in router)
-app.use("/organizations", organizationRouter); // Organization management (auth middleware in router)
-app.use("/contact", contactRouter); // Contact form (requires authentication)
+app.use("/api/admin/stats", adminStatsRouter); // Admin stats already has auth middleware
+app.use("/api/prompts", authenticateToken, promptRouter); // Prompt management (admin routes protected in router)
+app.use("/api/organizations", organizationRouter); // Organization management (auth middleware in router)
+app.use("/api/contact", contactRouter); // Contact form (requires authentication)
 app.use("/contact-types", contactTypeRoutes); // Contact form types
 app.use("/articles", articlesRouter);
 
