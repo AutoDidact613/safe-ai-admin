@@ -289,7 +289,7 @@ export async function deleteTender(id: string) {
 
 /**
  * Apply to a tender as an applicant
- * Validates that applicant details are provided and prevents duplicate applications
+ * Validates that applicant details are provided and prevents duplicate applications by email
  * לאחר רישום מוצלח - שולח מייל למנהל המכרז עם פרטי המועמד
  */
 export async function applyToTender(
@@ -327,14 +327,14 @@ export async function applyToTender(
   const normalizedEmail = applicant.email.trim().toLowerCase();
 
   const alreadyApplied = tender.applicants?.some(
-    (a: any) =>
-      a.name?.trim() === normalizedName &&
-      a.email?.trim().toLowerCase() === normalizedEmail
+    (a: any) => a.email?.trim().toLowerCase() === normalizedEmail
   );
 
   if (alreadyApplied) {
     logger.warn("Duplicate application attempt", { tenderId, applicantEmail: normalizedEmail });
-    throw new Error("Applicant already exists");
+    const duplicateError = new Error("You have already registered for this tender") as Error & { code?: string };
+    duplicateError.code = "ALREADY_APPLIED";
+    throw duplicateError;
   }
 
   const normalizedApplicant = {
@@ -418,34 +418,36 @@ export async function createSmartTender(text: string) {
   }
 }
 
-const MIN_VECTOR_SEARCH_SCORE = Number(process.env.TENDER_VECTOR_MIN_SCORE ?? 0.7);
-
 export async function smartSearchTenders(searchText: string, limit = 10) {
   try {
     logger.info("Received search text for smart search", { searchText });
 
     const queryVector = await getEmbedding(searchText);
 
-    const candidates = await repo.vectorSearchTenders(queryVector, limit);
-    const scores = candidates.map((c: any) => c.score);
+    // שולפים בור מועמדים רחב לפי דמיון סמנטי בלבד (contentEmbedding לא מכיל timeRequired/budget),
+    // כדי שהחיפוש לא יחמיץ מכרזים רלוונטיים רק בגלל ניקוד וקטורי נמוך על שאילתה שמבוססת על זמן/תקציב.
+    const candidatePoolSize = Math.max(limit * 5, 30);
+    const candidates = await repo.vectorSearchTenders(queryVector, candidatePoolSize);
 
-    logger.info("Vector search candidate scores", {
+    logger.info("Vector search candidates", {
       searchText,
-      minScoreThreshold: MIN_VECTOR_SEARCH_SCORE,
-      scores,
+      candidateCount: candidates.length,
+      scores: candidates.map((c: any) => c.score),
     });
 
-    const results = candidates.filter((c: any) => c.score >= MIN_VECTOR_SEARCH_SCORE);
+    const results = await TBAIService.filterRelevantTenders(searchText, candidates);
 
-    logger.info("Executed vector search", { searchText, resultCount: results.length });
+    logger.info("Executed AI relevance filtering", { searchText, resultCount: results.length });
+
+    const limitedResults = results.slice(0, limit);
 
     await saveTenderLog({
       action: "SMART_SEARCH",
       status: "SUCCESS",
-      metaData: { searchText, resultCount: results.length },
+      metaData: { searchText, resultCount: limitedResults.length },
     });
 
-    return results;
+    return limitedResults;
   } catch (error: any) {
     logger.error("Failed to process smartSearchTenders", { error, searchText });
 

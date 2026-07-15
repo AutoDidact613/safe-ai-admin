@@ -62,6 +62,7 @@ export default function TenderBoardPage() {
   const [applyingTender, setApplyingTender] = useState<Tender | null>(null)
   const [successMessage, setSuccessMessage] = useState('')
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false)
+  const [showAlreadyAppliedNotice, setShowAlreadyAppliedNotice] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [activeScreen, setActiveScreen] = useState<'dashboard' | 'create' | 'manage'>('dashboard')
@@ -79,6 +80,16 @@ export default function TenderBoardPage() {
 
     return () => window.clearTimeout(timer)
   }, [successMessage])
+
+  useEffect(() => {
+    if (!showAlreadyAppliedNotice) return undefined
+
+    const timer = window.setTimeout(() => {
+      setShowAlreadyAppliedNotice(false)
+    }, 3000)
+
+    return () => window.clearTimeout(timer)
+  }, [showAlreadyAppliedNotice])
 
   const normalizeTender = (tender: RawTender): Tender => ({
     id: tender.id ?? tender._id ?? '',
@@ -281,6 +292,14 @@ export default function TenderBoardPage() {
       setApplyingTender(null)
       setSuccessMessage('הגשת מועמדות בוצעה בהצלחה')
     } catch (error) {
+      const apiError = error as Error & { code?: string }
+
+      if (apiError.code === 'ALREADY_APPLIED') {
+        setApplyingTender(null)
+        setShowAlreadyAppliedNotice(true)
+        return
+      }
+
       console.error('Failed to submit application', error)
       setErrorMessage('הגישה למכרז נכשלה. בדוק את הנתונים ונסה שוב.')
     }
@@ -530,6 +549,15 @@ export default function TenderBoardPage() {
             <div className="success-modal">
               <div className="success-modal__icon">✅</div>
               <div className="success-modal__text">{successMessage}</div>
+            </div>
+          </div>
+        )}
+
+        {showAlreadyAppliedNotice && (
+          <div className="success-modal-overlay" role="alert" aria-live="assertive">
+            <div className="success-modal">
+              <div className="success-modal__text">כבר נרשמת למכרז זה בעבר</div>
+              <div className="success-modal__text">הרישום בוטל</div>
             </div>
           </div>
         )}

@@ -59,6 +59,77 @@ const TENDER_SYSTEM_PROMPT = `אתה מנתח מכרזים. תפקידך: לקב
 {"title":"foo","shortDescription":"bar baz","timeRequired":{"value":30,"unit":"ימים"},"budget":50000,"productType":"אפליקציה","aiApplicationType":"צאטבוט","agentsRequired":["foo agent"],"wantsEmails":false,"additionalDetails":""}`;
 
 // ==========================================
+// סכמה + פרומפט — סינון רלוונטיות בחיפוש חכם
+// ==========================================
+const SearchRelevanceZodSchema = z.object({
+  relevantTenderIds: z.array(z.string()).describe("מזהי המכרזים הרלוונטיים בלבד, מתוך רשימת הקלט"),
+});
+
+const SEARCH_RELEVANCE_SYSTEM_PROMPT = `אתה מנוע התאמה למכרזים. תפקידך: לקבל טקסט חיפוש חופשי של לקוח, ורשימת מכרזים מועמדים, ולהחזיר אך ורק את ה-id של המכרזים שבאמת רלוונטיים לבקשה.
+
+== קלט שתקבל (בגוף ההודעה, כ-JSON) ==
+{"searchText":"<טקסט חיפוש חופשי>","tenders":[<רשימת אובייקטי מכרז>]}
+
+== מבנה מדויק של כל אובייקט מכרז ברשימה ==
+- id: string — מזהה המכרז. יש להעתיקו תו-תו בפלט אם המכרז רלוונטי, ואסור להמציא id שלא הופיע בקלט.
+- title: string — כותרת המכרז.
+- shortDescription: string — תיאור תמציתי של מהות המכרז.
+- timeRequired: { value: number, unit: "שעות"|"ימים"|"שבועות"|"חודשים"|"שנים" } — לוח הזמנים הנדרש להשלמת המכרז.
+- budget: number — תקציב מוערך.
+- productType: string — אחד מ: "אפליקציה" | "אתר" | "תוכנת desktop" | "הטמעה של פיצר במערכת קיימת" | "ייעוץ" | "הקמת תשתית לאייגנט" | "אחר".
+- aiApplicationType: string — אחד מ: "התממשקות פשוטה" | "צאטבוט" | "אייגנט" | "מולטי אייגנט".
+- agentsRequired: string[] — סוגי אייגנטים נדרשים.
+- wantsEmails: boolean — האם המכרז דורש שילוח מיילים.
+- additionalDetails: string — פרטים נוספים חופשיים.
+
+== פלט נדרש ==
+JSON בלבד, במבנה: {"relevantTenderIds":["id1","id2"]}
+- אסור להוסיף טקסט, הסבר, markdown או code block מסביב ל-JSON.
+- אם אין אף מכרז רלוונטי, החזר מערך ריק: {"relevantTenderIds":[]}
+
+== התאמת זמן (timeRequired) — הכלל הקריטי ביותר ==
+טקסט החיפוש עשוי לתאר מגבלת זמן בדרכים שונות: מספרים, מילים כתובות, יחידות שונות, ולעיתים בצורת סמיכות ("שבועיים", "חודש וחצי").
+המר תמיד את timeRequired של כל מכרז למספר ימים, לפי הטבלה הבאה:
+- "שעות" -> value / 24
+- "ימים" -> value
+- "שבועות" -> value * 7
+- "חודשים" -> value * 30
+- "שנים" -> value * 365
+
+וכך גם פרש את מגבלת הזמן מטקסט החיפוש עצמו לימים, כולל ניסוחים כמו:
+- "לא יותר מחודש" / "עד חודש" -> מגבלה של 30 ימים
+- "שבועיים" / "14 יום" / "2 שבועות" -> 14 ימים
+- "עד שבוע" / "שבוע ימים" -> 7 ימים
+- "חודש וחצי" -> 45 ימים
+- "רבעון" / "3 חודשים" -> 90 ימים
+- "שנה" -> 365 ימים
+
+מכרז נחשב רלוונטי מבחינת זמן אם timeRequired שלו (מומר לימים) עומד בתנאי שצוין בטקסט החיפוש (לדוגמה: פחות או שווה למגבלה שנאמרה). אם טקסט החיפוש לא מזכיר זמן בכלל — אל תסנן לפי זמן, והתבסס רק על קריטריונים אחרים.
+
+== דוגמאות מפורשות ==
+דוגמה 1:
+searchText: "אני רוצה foo שהזמן שלו לא יותר מחודש"
+tenders: [{"id":"1","timeRequired":{"value":14,"unit":"ימים"}}, {"id":"2","timeRequired":{"value":2,"unit":"חודשים"}}, {"id":"3","timeRequired":{"value":2,"unit":"שבועות"}}]
+חישוב: מכרז 1 = 14 ימים <= 30 -> רלוונטי. מכרז 2 = 60 ימים > 30 -> לא רלוונטי. מכרז 3 = 14 ימים <= 30 -> רלוונטי.
+פלט: {"relevantTenderIds":["1","3"]}
+
+דוגמה 2:
+searchText: "מחפש bar לביצוע תוך שבועיים בלבד"
+tenders: [{"id":"5","timeRequired":{"value":10,"unit":"ימים"}}, {"id":"6","timeRequired":{"value":21,"unit":"ימים"}}]
+חישוב: מגבלת הטקסט = שבועיים = 14 ימים. מכרז 5 = 10 ימים <= 14 -> רלוונטי. מכרז 6 = 21 ימים > 14 -> לא רלוונטי.
+פלט: {"relevantTenderIds":["5"]}
+
+דוגמה 3:
+searchText: "baz בתחום productType אפליקציה, בלי הגבלת זמן"
+tenders: [{"id":"7","productType":"אפליקציה","timeRequired":{"value":6,"unit":"חודשים"}}, {"id":"8","productType":"אתר","timeRequired":{"value":5,"unit":"ימים"}}]
+חישוב: אין הגבלת זמן בטקסט -> זמן לא משפיע על הסינון. מכרז 7 מתאים ב-productType -> רלוונטי. מכרז 8 לא מתאים -> לא רלוונטי.
+פלט: {"relevantTenderIds":["7"]}
+
+== כללים נוספים ==
+- שקול גם התאמה סמנטית כללית (productType, aiApplicationType, agentsRequired, מילות מפתח בכותרת/תיאור) בנוסף לזמן — לא רק זמן.
+- אם הטקסט מנוסח כהערכה גסה ("בערך חודש", "סביב שבוע") — התייחס למגבלה בגמישות קלה. אם הטקסט מנוסח כתנאי מדויק ("לא יותר מ-", "עד") — אכוף אותו במדויק.`;
+
+// ==========================================
 // פונקציית עזר — שמירת לוג
 // ==========================================
 async function saveTenderLog(params: {
@@ -139,6 +210,51 @@ export class TBAIService {
         },
       });
       throw new Error("נכשלה יצירת המכרז החכמה באמצעות ה-AI");
+    }
+  }
+
+  static async filterRelevantTenders(searchText: string, tenders: any[]) {
+    if (!tenders.length) return tenders;
+
+    const startTime = Date.now();
+    try {
+      const tendersForPrompt = tenders.map((t) => ({
+        id: String(t._id ?? t.id),
+        title: t.title,
+        shortDescription: t.shortDescription,
+        timeRequired: t.timeRequired,
+        budget: t.budget,
+        productType: t.productType,
+        aiApplicationType: t.aiApplicationType,
+        agentsRequired: t.agentsRequired,
+        wantsEmails: t.wantsEmails,
+        additionalDetails: t.additionalDetails,
+      }));
+
+      const { relevantTenderIds } = await callAI({
+        userPrompt: JSON.stringify({ searchText, tenders: tendersForPrompt }),
+        systemPrompt: SEARCH_RELEVANCE_SYSTEM_PROMPT,
+        schema: SearchRelevanceZodSchema,
+        temperature: 0,
+        callName: "filterRelevantTenders",
+      });
+
+      logger.info("AI search relevance filtering completed", {
+        searchText,
+        candidateCount: tenders.length,
+        relevantCount: relevantTenderIds.length,
+        responseTime: Date.now() - startTime,
+      });
+
+      const relevantIdSet = new Set(relevantTenderIds);
+      return tenders.filter((t) => relevantIdSet.has(String(t._id ?? t.id)));
+    } catch (error: any) {
+      logger.error("Error in AIService.filterRelevantTenders", {
+        err: error,
+        searchText,
+        candidateCount: tenders.length,
+      });
+      throw new Error("נכשל סינון הרלוונטיות של המכרזים באמצעות ה-AI");
     }
   }
 

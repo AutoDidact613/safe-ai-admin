@@ -168,10 +168,18 @@ export async function applyToTenderHandler(req: Request, res: Response) {
       tender: result,
     });
   } catch (error: any) {
-    logger.error("Apply to tender failed", { 
-      error: error.message, 
-      tenderId: req.params.id 
+    logger.error("Apply to tender failed", {
+      error: error.message,
+      tenderId: req.params.id
     });
+
+    if (error.code === "ALREADY_APPLIED") {
+      return res.status(409).json({
+        error: error.message,
+        code: error.code,
+      });
+    }
+
     res.status(400).json({
       error: error.message || "Failed to apply to tender",
     });
