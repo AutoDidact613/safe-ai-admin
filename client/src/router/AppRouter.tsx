@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import LandingPage from "../pages/LandingPage";
 import SafeAIUIPage from "../pages/SafeAIUIPage";
 import NotFound from "../pages/NotFound";
@@ -31,6 +31,11 @@ import AiNewsDetailsPage from "../pages/AiNewsDetailsPage";
 import ErrorBoundary from "../components/ErrorBoundary";
 import ForumPage from '../features/forum/ForumPage';
 import { PostThreadPage } from '../features/forum/PostThreadPage';
+import "../styles/app-content.css";
+
+// עמודים שאינם לוח הפרוייקטים מוצגים בעמעום חזותי קל, כדי שיהיה ברור
+// בהגשת הפרוייקט מה נבנה במסגרת הפיצ'ר של לוח הפרוייקטים ומה לא.
+const TENDER_BOARD_PATH_PREFIX = "/tender-board";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -61,15 +66,13 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 const ROUTER_BASE = import.meta.env.VITE_BASE_PATH?.replace(/\/$/, "") || "";
 
-export default function AppRouter() {
+// עוטף את שאר העמודים בעמעום חזותי, פרט ללוח הפרוייקטים עצמו
+function AppContent() {
+  const location = useLocation();
+  const isTenderBoard = location.pathname.startsWith(TENDER_BOARD_PATH_PREFIX);
+
   return (
-    <BrowserRouter basename={ROUTER_BASE}>
-      {/* Global Top Navigation */}
-      <TopNavigation />
-
-      {/* Beta Banner */}
-      <BetaBanner />
-
+    <div className={isTenderBoard ? undefined : "app-content-dimmed"}>
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
@@ -225,6 +228,20 @@ export default function AppRouter() {
         {/* Catch all - 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+    </div>
+  );
+}
+
+export default function AppRouter() {
+  return (
+    <BrowserRouter basename={ROUTER_BASE}>
+      {/* Global Top Navigation */}
+      <TopNavigation />
+
+      {/* Beta Banner */}
+      <BetaBanner />
+
+      <AppContent />
     </BrowserRouter>
   );
 }

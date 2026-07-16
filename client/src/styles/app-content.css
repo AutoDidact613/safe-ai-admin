@@ -1,0 +1,5 @@
+/* עמעום חזותי לכל עמודי האתר, פרט ללוח הפרוייקטים */
+.app-content-dimmed {
+  opacity: 0.55;
+  filter: grayscale(65%) contrast(0.9);
+}

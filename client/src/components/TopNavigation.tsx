@@ -183,9 +183,9 @@ export default function TopNavigation() {
               <Link to="/tender-board" className="top-nav-link">
                 לוח פרוייקטים
               </Link>
-              <Link to="/download-agents" className="top-nav-link">
+              {/* <Link to="/download-agents" className="top-nav-link">
                 הורדת אג'נטים כDesktop
-              </Link>
+              </Link> */}
 
               {/* User Menu */}
               <div className="user-menu-container" ref={menuRef}>
