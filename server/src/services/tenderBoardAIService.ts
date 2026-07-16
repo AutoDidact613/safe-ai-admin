@@ -1,8 +1,11 @@
 import { z } from 'zod';
 import mongoose from "mongoose";
 import logger from "../logger";
-import { TenderLog } from "../models/tendersBoardLog";
+// import { TenderLog } from "../models/tendersBoardLog";
 import { callAI } from "./aiService"; // ← הפונקציה הגנרית
+// Type-only import: erased at compile time, so this doesn't create a runtime
+// circular dependency with tenderBoardService.ts (which imports TBAIService from here).
+import type { LogActor } from "./tenderBoardService";
 
 // ==========================================
 // פונקציית עזר — נרמול ערכי enum
@@ -145,15 +148,15 @@ async function saveTenderLog(params: {
     const validTenderId = params.tenderId && mongoose.Types.ObjectId.isValid(params.tenderId)
       ? new mongoose.Types.ObjectId(params.tenderId.toString())
       : undefined;
-    await TenderLog.create({
-      action: params.action,
-      status: params.status,
-      tenderId: validTenderId,
-      metaData: params.metaData,
-      errorMessage: params.errorMessage,
-      timestamp: new Date(),
-      expiresAt,
-    } as any);
+    // await TenderLog.create({
+    //   action: params.action,
+    //   status: params.status,
+    //   tenderId: validTenderId,
+    //   metaData: params.metaData,
+    //   errorMessage: params.errorMessage,
+    //   timestamp: new Date(),
+    //   expiresAt,
+    // } as any);
   } catch (err) {
     const error = err as Error;
     logger.error("Failed to write Tender DB Log", {
@@ -170,11 +173,13 @@ async function saveTenderLog(params: {
 // ==========================================
 export class TBAIService {
 
-  static async generateTenderData(userDescription: string) {
+  static async generateTenderData(userDescription: string, actor: LogActor = {}) {
     const startTime = Date.now();
     try {
       logger.info("Starting AI tender data generation", {
         descriptionLength: userDescription?.length,
+        userId: actor.userId,
+        organizationId: actor.organizationId,
       });
 
       // ← קריאה ל-callAI הגנרי
@@ -188,6 +193,8 @@ export class TBAIService {
       logger.info("AI tender data generation completed", {
         title: parsedData.title,
         productType: parsedData.productType,
+        userId: actor.userId,
+        organizationId: actor.organizationId,
       });
 
       await saveTenderLog({
@@ -207,6 +214,8 @@ export class TBAIService {
         error: error.message,
         stack: error.stack,
         descriptionLength: userDescription?.length,
+        userId: actor.userId,
+        organizationId: actor.organizationId,
       });
       await saveTenderLog({
         action: "SMART_CREATE",
@@ -221,7 +230,7 @@ export class TBAIService {
     }
   }
 
-  static async filterRelevantTenders(searchText: string, tenders: any[]) {
+  static async filterRelevantTenders(searchText: string, tenders: any[], actor: LogActor = {}) {
     if (!tenders.length) return tenders;
 
     const startTime = Date.now();
@@ -252,6 +261,8 @@ export class TBAIService {
         candidateCount: tenders.length,
         relevantCount: relevantTenderIds.length,
         responseTime: Date.now() - startTime,
+        userId: actor.userId,
+        organizationId: actor.organizationId,
       });
 
       const relevantIdSet = new Set(relevantTenderIds);
@@ -263,6 +274,8 @@ export class TBAIService {
         stack: error.stack,
         searchText,
         candidateCount: tenders.length,
+        userId: actor.userId,
+        organizationId: actor.organizationId,
       });
       throw new Error("נכשל סינון הרלוונטיות של המכרזים באמצעות ה-AI");
     }

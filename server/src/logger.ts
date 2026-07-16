@@ -8,9 +8,15 @@
 
 import winston from "winston";
 import Transport from "winston-transport";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { ApplicationLog } from "./models/applicationLog";
 
 const isProd = process.env.NODE_ENV === "production";
+
+// Populated once per request by the middleware registered in index.ts, so that
+// every logger.* call made anywhere during that request's async chain — without
+// having to thread requestId through every function signature — can attach it.
+export const requestContext = new AsyncLocalStorage<{ requestId: string }>();
 
 // Custom MongoDB transport
 class MongoDBTransport extends Transport {
@@ -23,7 +29,7 @@ class MongoDBTransport extends Transport {
       this.emit("logged", info);
     });
 
-    const { level, message, timestamp, stack, userId, requestId, context, ...rest } = info;
+    const { level, message, timestamp, stack, userId, organizationId, requestId, context, ...rest } = info;
 
     // Save to MongoDB asynchronously
     const logEntry = new ApplicationLog({
@@ -31,6 +37,7 @@ class MongoDBTransport extends Transport {
       message,
       context: { ...rest, ...context }, // ✅ גמיש לשני המקרים
       userId,
+      organizationId,
       requestId,
       stack,
       timestamp: new Date(),
@@ -58,5 +65,27 @@ const logger = winston.createLogger({
     new MongoDBTransport(), // Save all logs to MongoDB
   ],
 });
+
+// Wrap the leveled log methods so every call site automatically picks up the
+// current request's requestId from AsyncLocalStorage, instead of every caller
+// across the codebase having to pass it in explicitly.
+const originalInfo = logger.info.bind(logger);
+const originalWarn = logger.warn.bind(logger);
+const originalError = logger.error.bind(logger);
+
+logger.info = ((message: string, meta: any = {}) => {
+  const ctx = requestContext.getStore();
+  return originalInfo(message, ctx ? { ...meta, requestId: ctx.requestId } : meta);
+}) as typeof logger.info;
+
+logger.warn = ((message: string, meta: any = {}) => {
+  const ctx = requestContext.getStore();
+  return originalWarn(message, ctx ? { ...meta, requestId: ctx.requestId } : meta);
+}) as typeof logger.warn;
+
+logger.error = ((message: string, meta: any = {}) => {
+  const ctx = requestContext.getStore();
+  return originalError(message, ctx ? { ...meta, requestId: ctx.requestId } : meta);
+}) as typeof logger.error;
 
 export default logger;

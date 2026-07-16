@@ -3,13 +3,22 @@ import * as repo from "../repositories/tenderBoardRepository";
 import logger from "../logger";
 import { TBAIService } from "./tenderBoardAIService";
 import { getEmbedding } from "./embeddingService";
-import { TenderLog } from "../models/tendersBoardLog";
+// import { TenderLog } from "../models/tendersBoardLog";
 import {
   sendApplicantRegisteredEmail,
   sendTenderClosedEmail,
 } from "../utils/email";
 
 const aiService = new TBAIService();
+
+/**
+ * Identity of whoever triggered the action, threaded in from the controller
+ * (resolved from the authenticated request) purely for audit logging.
+ */
+export interface LogActor {
+  userId?: string;
+  organizationId?: string;
+}
 
 // הרשימה הסטטית של התחומים 
 const Static_ProductType_List = [
@@ -35,7 +44,8 @@ const AI_ApplicationType_List = [
 async function saveTenderLog(params: {
   action: "CREATE" | "UPDATE" | "DELETE" | "APPLY" | "SMART_CREATE" | "SMART_SEARCH";
   status: "SUCCESS" | "FAILED";
-  tenderId?: string | mongoose.Types.ObjectId;
+  tenderId?: string | mongoose.Types.ObjectId | undefined;
+  userId?: string | undefined;
   metaData?: any;
   errorMessage?: string;
 }) {
@@ -47,15 +57,20 @@ async function saveTenderLog(params: {
       ? new mongoose.Types.ObjectId(params.tenderId.toString())
       : undefined;
 
-    await TenderLog.create({
-      action: params.action,
-      status: params.status,
-      tenderId: validTenderId,
-      metaData: params.metaData,
-      errorMessage: params.errorMessage,
-      timestamp: new Date(),
-      expiresAt
-    } as any);
+    const validUserId = params.userId && mongoose.Types.ObjectId.isValid(params.userId)
+      ? new mongoose.Types.ObjectId(params.userId)
+      : undefined;
+
+    // await TenderLog.create({
+    //   action: params.action,
+    //   status: params.status,
+    //   tenderId: validTenderId,
+    //   userId: validUserId,
+    //   metaData: params.metaData,
+    //   errorMessage: params.errorMessage,
+    //   timestamp: new Date(),
+    //   expiresAt
+    // } as any);
   } catch (err) {
     const error = err as Error;
     logger.error("Failed to write Tender DB Log", {
@@ -137,19 +152,30 @@ async function withEmbedding(data: any): Promise<any> {
   }
 }
 
-export async function createTender(data: any) {
+export async function createTender(data: any, actor: LogActor = {}) {
+  // publisherUserCode is set by the controller from the authenticated user, so it already
+  // IS the acting userId here — no need to thread a separate value through for this case.
+  const userId = actor.userId ?? data?.publisherUserCode;
+
   try {
     const tender = await repo.createTender(await withEmbedding(data));
 
     // contentEmbedding is a large numeric vector with no business value in a log entry, so it's excluded here.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { contentEmbedding, ...tenderForLog } = tender.toObject();
 
-    logger.info("Tender created successfully", { tenderId: tender._id, tender: tenderForLog });
+    logger.info("Tender created successfully", {
+      tenderId: tender._id,
+      tender: tenderForLog,
+      userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "CREATE",
       status: "SUCCESS",
       tenderId: tender._id,
+      userId,
       metaData: { tender: tenderForLog }
     });
 
@@ -160,11 +186,14 @@ export async function createTender(data: any) {
       error: error.message,
       stack: error.stack,
       tender: data,
+      userId,
+      organizationId: actor.organizationId,
     });
 
     await saveTenderLog({
       action: "CREATE",
       status: "FAILED",
+      userId,
       errorMessage: error.message,
       metaData: { tender: data }
     });
@@ -173,28 +202,42 @@ export async function createTender(data: any) {
   }
 }
 
-export async function listTenders() {
+export async function listTenders(actor: LogActor = {}) {
   try {
     const tenders = await repo.getTenders();
-    logger.info("Fetched tenders list", { count: tenders?.length || 0 });
+    logger.info("Fetched tenders list", {
+      count: tenders?.length || 0,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
     return tenders;
   } catch (err) {
     const error = err as Error;
     logger.error("Failed to list tenders", {
       error: error.message,
       stack: error.stack,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
     });
     throw error;
   }
 }
 
-export async function getTenderById(id: string) {
+export async function getTenderById(id: string, actor: LogActor = {}) {
   try {
     const tender = await repo.getTenderById(id);
     if (!tender) {
-      logger.warn(`Tender with ID ${id} not found`);
+      logger.warn(`Tender with ID ${id} not found`, {
+        tenderId: id,
+        userId: actor.userId,
+        organizationId: actor.organizationId,
+      });
     } else {
-      logger.info("Fetched tender details", { tenderId: id });
+      logger.info("Fetched tender details", {
+        tenderId: id,
+        userId: actor.userId,
+        organizationId: actor.organizationId,
+      });
     }
     return tender;
   } catch (err) {
@@ -203,6 +246,8 @@ export async function getTenderById(id: string) {
       error: error.message,
       stack: error.stack,
       tenderId: id,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
     });
     throw error;
   }
@@ -210,18 +255,23 @@ export async function getTenderById(id: string) {
 
 const EMBEDDING_TEXT_FIELDS = ["title", "shortDescription", "productType", "aiApplicationType", "additionalDetails"];
 
-export async function updateTender(id: string, data: any) {
+export async function updateTender(id: string, data: any, actor: LogActor = {}) {
   try {
     const needsReembedding = Object.keys(data || {}).some((key) => EMBEDDING_TEXT_FIELDS.includes(key));
     const payload = needsReembedding ? await withEmbedding({ ...(await repo.getTenderById(id)), ...data }) : data;
 
     const result = await repo.updateTender(id, payload);
-    logger.info("Tender updated successfully", { tenderId: id });
+    logger.info("Tender updated successfully", {
+      tenderId: id,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "UPDATE",
       status: "SUCCESS",
       tenderId: id,
+      userId: actor.userId,
       metaData: { changes: Object.keys(data || {}) }
     });
 
@@ -232,12 +282,15 @@ export async function updateTender(id: string, data: any) {
       error: error.message,
       stack: error.stack,
       tenderId: id,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
     });
 
     await saveTenderLog({
       action: "UPDATE",
       status: "FAILED",
       tenderId: id,
+      userId: actor.userId,
       errorMessage: error.message
     });
 
@@ -249,7 +302,7 @@ export async function updateTender(id: string, data: any) {
  * סגירת מכרז - מעדכן isActive=false ושולח מייל למנהל המכרז
  * שולף את המייל של המנהל לפי publisherUserCode השמור במכרז
  */
-export async function closeTender(id: string) {
+export async function closeTender(id: string, actor: LogActor = {}) {
   try {
     // שליפת המכרז לפני הסגירה כדי לקבל את publisherUserCode והכותרת
     const tender = await repo.getTenderById(id);
@@ -260,12 +313,18 @@ export async function closeTender(id: string) {
     // עדכון isActive=false בבסיס הנתונים
     const result = await repo.updateTender(id, { isActive: false });
 
-    logger.info("Tender closed successfully", { tenderId: id, title: tender.title });
+    logger.info("Tender closed successfully", {
+      tenderId: id,
+      title: tender.title,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "UPDATE",
       status: "SUCCESS",
       tenderId: id,
+      userId: actor.userId,
       metaData: { changes: ["isActive"], closedAt: new Date() }
     });
 
@@ -289,12 +348,15 @@ export async function closeTender(id: string) {
       error: error.message,
       stack: error.stack,
       tenderId: id,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
     });
 
     await saveTenderLog({
       action: "UPDATE",
       status: "FAILED",
       tenderId: id,
+      userId: actor.userId,
       errorMessage: error.message
     });
 
@@ -302,16 +364,21 @@ export async function closeTender(id: string) {
   }
 }
 
-export async function deleteTender(id: string) {
+export async function deleteTender(id: string, actor: LogActor = {}) {
   try {
     const result = await repo.deleteTender(id);
 
-    logger.info("Tender deleted successfully", { tenderId: id });
+    logger.info("Tender deleted successfully", {
+      tenderId: id,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "DELETE",
       status: "SUCCESS",
-      tenderId: id
+      tenderId: id,
+      userId: actor.userId,
     });
 
     return result;
@@ -321,12 +388,15 @@ export async function deleteTender(id: string) {
       error: error.message,
       stack: error.stack,
       tenderId: id,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
     });
 
     await saveTenderLog({
       action: "DELETE",
       status: "FAILED",
       tenderId: id,
+      userId: actor.userId,
       errorMessage: error.message
     });
 
@@ -347,26 +417,49 @@ export async function applyToTender(
     details: string;
     proposal?: number;
     contactMethod?: string;
-  }
+  },
+  actor: LogActor = {}
 ) {
-  logger.info("Processing application to tender", { tenderId, applicantEmail: applicant?.email });
+  logger.info("Processing application to tender", {
+    tenderId,
+    applicantEmail: applicant?.email,
+    userId: actor.userId,
+    organizationId: actor.organizationId,
+  });
 
   if (!applicant.name || !applicant.name.trim()) {
-    logger.warn("Validation failed: Applicant name is required", { tenderId });
+    logger.warn("Validation failed: Applicant name is required", {
+      tenderId,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
     throw new Error("Applicant name is required");
   }
   if (!applicant.email || !applicant.email.trim()) {
-    logger.warn("Validation failed: Applicant email is required", { tenderId });
+    logger.warn("Validation failed: Applicant email is required", {
+      tenderId,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
     throw new Error("Applicant email is required");
   }
   if (!applicant.details || !applicant.details.trim()) {
-    logger.warn("Validation failed: Applicant details are required", { tenderId, applicantEmail: applicant.email });
+    logger.warn("Validation failed: Applicant details are required", {
+      tenderId,
+      applicantEmail: applicant.email,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
     throw new Error("Applicant details are required");
   }
 
   const tender = await repo.getTenderById(tenderId);
   if (!tender) {
-    logger.error("Tender not found for application", { tenderId });
+    logger.error("Tender not found for application", {
+      tenderId,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
     throw new Error("Tender not found");
   }
 
@@ -378,7 +471,12 @@ export async function applyToTender(
   );
 
   if (alreadyApplied) {
-    logger.warn("Duplicate application attempt", { tenderId, applicantEmail: normalizedEmail });
+    logger.warn("Duplicate application attempt", {
+      tenderId,
+      applicantEmail: normalizedEmail,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
     const duplicateError = new Error("You have already registered for this tender") as Error & { code?: string };
     duplicateError.code = "ALREADY_APPLIED";
     throw duplicateError;
@@ -399,12 +497,18 @@ export async function applyToTender(
 
   try {
     const result = await repo.updateTenderApplicants(tenderId, updatedApplicants);
-    logger.info("Applicant registered successfully to tender", { tenderId, applicantEmail: normalizedEmail });
+    logger.info("Applicant registered successfully to tender", {
+      tenderId,
+      applicantEmail: normalizedEmail,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "APPLY",
       status: "SUCCESS",
       tenderId: tenderId,
+      userId: actor.userId,
       metaData: { applicantEmail: normalizedEmail }
     });
 
@@ -432,12 +536,15 @@ export async function applyToTender(
       stack: error.stack,
       tenderId,
       applicantEmail: normalizedEmail,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
     });
 
     await saveTenderLog({
       action: "APPLY",
       status: "FAILED",
       tenderId: tenderId,
+      userId: actor.userId,
       errorMessage: error.message,
       metaData: { applicantEmail: normalizedEmail }
     });
@@ -452,11 +559,15 @@ export async function applyToTender(
  * ========================================================
  */
 
-export async function createSmartTender(text: string) {
+export async function createSmartTender(text: string, actor: LogActor = {}) {
   try {
-    logger.info("Processing createSmartTender requested", { textLength: text?.length });
+    logger.info("Processing createSmartTender requested", {
+      textLength: text?.length,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
-    const aiTenderData = await TBAIService.generateTenderData(text);
+    const aiTenderData = await TBAIService.generateTenderData(text, actor);
 
     const fullTenderData = {
       ...aiTenderData,
@@ -470,14 +581,20 @@ export async function createSmartTender(text: string) {
     logger.error("Failed to process createSmartTender", {
       error: error.message,
       stack: error.stack,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
     });
     throw error;
   }
 }
 
-export async function smartSearchTenders(searchText: string, limit = 10) {
+export async function smartSearchTenders(searchText: string, limit = 10, actor: LogActor = {}) {
   try {
-    logger.info("Received search text for smart search", { searchText });
+    logger.info("Received search text for smart search", {
+      searchText,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     const queryVector = await getEmbedding(searchText);
 
@@ -490,17 +607,25 @@ export async function smartSearchTenders(searchText: string, limit = 10) {
       searchText,
       candidateCount: candidates.length,
       scores: candidates.map((c: any) => c.score),
+      userId: actor.userId,
+      organizationId: actor.organizationId,
     });
 
-    const results = await TBAIService.filterRelevantTenders(searchText, candidates);
+    const results = await TBAIService.filterRelevantTenders(searchText, candidates, actor);
 
-    logger.info("Executed AI relevance filtering", { searchText, resultCount: results.length });
+    logger.info("Executed AI relevance filtering", {
+      searchText,
+      resultCount: results.length,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     const limitedResults = results.slice(0, limit);
 
     await saveTenderLog({
       action: "SMART_SEARCH",
       status: "SUCCESS",
+      userId: actor.userId,
       metaData: { searchText, resultCount: limitedResults.length },
     });
 
@@ -511,11 +636,14 @@ export async function smartSearchTenders(searchText: string, limit = 10) {
       error: error.message,
       stack: error.stack,
       searchText,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
     });
 
     await saveTenderLog({
       action: "SMART_SEARCH",
       status: "FAILED",
+      userId: actor.userId,
       errorMessage: error.message,
       metaData: { searchText },
     });

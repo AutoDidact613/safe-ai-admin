@@ -13,6 +13,7 @@ export interface ApplicationLogDoc extends mongoose.Document {
   message: string;
   context?: Record<string, any>;
   userId?: mongoose.Types.ObjectId;
+  organizationId?: mongoose.Types.ObjectId;
   requestId?: string;
   stack?: string;
   timestamp: Date;
@@ -39,6 +40,11 @@ const ApplicationLogSchema = new mongoose.Schema(
       ref: "User",
       index: true,
     },
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Organization",
+      index: true,
+    },
     requestId: {
       type: String,
       index: true,
@@ -63,6 +69,7 @@ ApplicationLogSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 // Compound indexes for common queries
 ApplicationLogSchema.index({ level: 1, timestamp: -1 });
 ApplicationLogSchema.index({ userId: 1, timestamp: -1 });
+ApplicationLogSchema.index({ organizationId: 1, timestamp: -1 });
 ApplicationLogSchema.index({ requestId: 1, timestamp: -1 });
 
 export const ApplicationLog = mongoose.model<ApplicationLogDoc>(
