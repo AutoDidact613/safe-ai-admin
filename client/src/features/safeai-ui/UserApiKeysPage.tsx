@@ -332,19 +332,11 @@ export default function UserApiKeysPage() {
 
       {showAddModal && user && (
         <ProviderKeysManagement
-<<<<<<< HEAD
-          userId={userId}
-          userEmail={user.email}
-          onClose={() => {
-            setShowAddModal(false);
-            fetchKeys(userId);
-=======
           userId={user._id ?? ""}
           userEmail={user.email}
           onClose={() => {
             setShowAddModal(false);
             fetchKeys(user._id ?? "");
->>>>>>> 6712f2c47113a453ec92d49e84e85ab3cea82ef2
           }}
         />
       )}
