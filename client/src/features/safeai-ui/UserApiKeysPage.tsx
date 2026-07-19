@@ -162,7 +162,7 @@ export default function UserApiKeysPage() {
     );
   }
 
-  const userId = user._id;
+  //const userId = user._id;
 
   return (
     <div>

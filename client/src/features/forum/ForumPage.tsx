@@ -22,11 +22,11 @@ interface Post {
   averageRating: number;
 }
 
-interface PostsResponse {
-  posts: Post[];
-  currentPage: number;
-  totalPages: number;
-}
+// interface PostsResponse {
+//   posts: Post[];
+//   currentPage: number;
+//   totalPages: number;
+// }
 
 export const ForumPage: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
