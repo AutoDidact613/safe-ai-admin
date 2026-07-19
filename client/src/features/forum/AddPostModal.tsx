@@ -55,7 +55,7 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
   useEffect(() => {
     if (formData.title.length >= 3) {
       const timer = setTimeout(() => {
-        apiCall<SimilarPost[]>(`/api/posts/search-similar?title=${encodeURIComponent(formData.title)}`)
+        apiCall<SimilarPost[]>(`/posts/search-similar?title=${encodeURIComponent(formData.title)}`)
           .then((data) => setSimilarPosts(data))
           .catch((err) => console.error('Error fetching similar posts:', err));
       }, 500);
@@ -127,7 +127,7 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
 
     try {
       // יצירת הפוסט בעזרת apiCall
-      await apiCall('/api/posts', {
+      await apiCall('/posts', {
         method: 'POST',
         body: JSON.stringify(postPayload),
       });

@@ -89,7 +89,7 @@ export const PostThreadPage: React.FC = () => {
     if (!id) return;
     
     // שימוש ב-apiCall לטעינת הפוסט והתגובות
-    apiCall<PostAndCommentsResponse>(`/api/posts/${id}`)
+    apiCall<PostAndCommentsResponse>(`/posts/${id}`)
       .then((data) => {
         setPost(data.post);
         setComments(data.comments || []);
@@ -105,7 +105,7 @@ export const PostThreadPage: React.FC = () => {
           localStorage.setItem('viewed_titles', JSON.stringify(updatedHistory));
 
           // שימוש ב-apiCall לחיפוש פוסטים דומים
-          apiCall<any[]>(`/api/posts/search-similar?postId=${data.post._id}`)
+          apiCall<any[]>(`/posts/search-similar?postId=${data.post._id}`)
             .then((similarData) => {
               if (Array.isArray(similarData)) {
                 const filtered = similarData.filter((p: { _id: string }) => p._id !== data.post._id);
@@ -153,7 +153,7 @@ export const PostThreadPage: React.FC = () => {
 
     if (currentUser) {
       // שימוש ב-apiCall לעדכון מונה הצפיות
-      apiCall<ViewResponse>(`/api/posts/${id}/view`, {
+      apiCall<ViewResponse>(`/posts/${id}/view`, {
         method: 'POST',
         body: JSON.stringify({ userId: currentUser._id })
       })
@@ -171,7 +171,7 @@ export const PostThreadPage: React.FC = () => {
 
     try {
       // שימוש ב-apiCall למחיקת תגובה
-      await apiCall(`/api/posts/comment/${commentId}`, {
+      await apiCall(`/posts/comment/${commentId}`, {
         method: 'DELETE',
         body: JSON.stringify({ userId: currentUser?._id })
       });
@@ -231,7 +231,7 @@ export const PostThreadPage: React.FC = () => {
 
     try {
       // יצירת תגובה חדשה דרך השרת בעזרת apiCall
-      const savedComment = await apiCall<Comment>(`/api/posts/${id}/comment`, {
+      const savedComment = await apiCall<Comment>(`/posts/${id}/comment`, {
         method: 'POST',
         body: JSON.stringify(commentPayload)
       });
@@ -254,7 +254,7 @@ export const PostThreadPage: React.FC = () => {
 
     try {
       // שימוש ב-apiCall לדירוג הפוסט
-      const data = await apiCall<RatingResponse>(`/api/posts/${post._id}/rate`, {
+      const data = await apiCall<RatingResponse>(`/posts/${post._id}/rate`, {
         method: 'POST',
         body: JSON.stringify({
           userId: currentUser?._id,

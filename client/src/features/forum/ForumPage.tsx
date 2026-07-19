@@ -52,8 +52,8 @@ export const ForumPage: React.FC = () => {
     const userRole = currentUser?.role || 'user';
 
     const baseEndpoint = search.trim()
-      ? `/api/posts/search?query=${encodeURIComponent(search)}`
-      : `/api/posts?page=${page}`;
+      ? `/posts/search?query=${encodeURIComponent(search)}`
+      : `/posts?page=${page}`;
     
     const endpoint = baseEndpoint.includes('?') 
       ? `${baseEndpoint}&userRole=${userRole}${!search.trim() ? '' : `&page=${page}`}` 
@@ -110,7 +110,7 @@ export const ForumPage: React.FC = () => {
 
     if (queryParam) {
       // מעבר ל-apiCall עבור חיפוש פוסטים דומים
-      apiCall<any[]>(`/api/posts/search-similar?${queryParam}`)
+      apiCall<any[]>(`/posts/search-similar?${queryParam}`)
         .then((data) => {
           if (Array.isArray(data)) {
             const currentPostIds = posts.map(p => p._id);
@@ -171,7 +171,7 @@ export const ForumPage: React.FC = () => {
 
     try {
       // שימוש ב-apiCall עבור פעולות ניהול ומודרציה
-      await apiCall(`/api/posts/${postId}/moderation`, {
+      await apiCall(`/posts/${postId}/moderation`, {
         method: 'PATCH',
         body: JSON.stringify({
           userId: currentUser._id,
