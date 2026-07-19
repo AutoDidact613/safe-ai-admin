@@ -349,7 +349,7 @@ export default function TenderBoardPage() {
               style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontWeight: 'bold', cursor: 'pointer' }}
             >
               <span>✨</span>
-              <span>חיפוש חכם</span>
+              {isSmartSearchOpen ? <span>סגור חיפוש חכם</span> : <span>חיפוש חכם</span>}
             </button>
 
             {isSmartSearchOpen && (
