@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import ProviderKeysManagement from "./ProviderKeysManagement";
 import { API_ENDPOINTS, apiCall } from "../../config/api";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authStore";
 
 interface ProviderKey {
   _id: string;
@@ -332,11 +332,19 @@ export default function UserApiKeysPage() {
 
       {showAddModal && user && (
         <ProviderKeysManagement
+<<<<<<< HEAD
           userId={userId}
           userEmail={user.email}
           onClose={() => {
             setShowAddModal(false);
             fetchKeys(userId);
+=======
+          userId={user._id ?? ""}
+          userEmail={user.email}
+          onClose={() => {
+            setShowAddModal(false);
+            fetchKeys(user._id ?? "");
+>>>>>>> 6712f2c47113a453ec92d49e84e85ab3cea82ef2
           }}
         />
       )}

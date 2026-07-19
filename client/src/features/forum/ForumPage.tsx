@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AddPostModal } from './AddPostModal';
-import { apiCall } from '../../config/api'; // התאימי את הנתיב היחסי לקובץ ה-API.ts שלך בפרויקט
+import { apiCall } from '../../config/api';
 
 interface Post {
   _id: string;
@@ -337,10 +337,11 @@ export const ForumPage: React.FC = () => {
                         {post.isLocked && <span style={{ backgroundColor: '#f59e0b', color: 'white', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold' }}>🔒 נעול</span>}
 
                         <h3 style={{ margin: 0, fontSize: '21px', color: '#0f172a', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.title}</h3>
-                        {post.tags && Array.isArray(post.tags) && post.tags.map((tag: { _id: string; name: string } | string) => {
+                        {post.tags && Array.isArray(post.tags) && post.tags.map((tag: string | { _id: string; name: string }) => {
                           const tagName = typeof tag === 'object' && tag !== null ? tag.name : tag;
+                          const tagKey = typeof tag === 'object' && tag !== null ? tag._id : tagName;
                           return (
-                            <span key={typeof tag === 'object' ? tag._id : tag} onClick={(e) => { e.stopPropagation(); setSearchQuery(tagName); setCurrentPage(1); }} style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '1px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '500', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                            <span key={tagKey} onClick={(e) => { e.stopPropagation(); setSearchQuery(tagName); setCurrentPage(1); }} style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '1px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '500', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
                              {tagName}
                             </span>
                           );

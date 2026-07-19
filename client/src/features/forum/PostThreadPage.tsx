@@ -383,7 +383,7 @@ export const PostThreadPage: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
             {post.tags && post.tags.length > 0 && (
               <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                {post.tags.map((tag: { name: string } | string, idx: number) => {
+                {post.tags.map((tag: string | { name: string }, idx) => {
                   const tagName = typeof tag === 'object' && tag !== null ? tag.name : tag;
                   return (
                     <span key={idx} style={{ backgroundColor: '#f0fdf4', color: '#16a34a', padding: '1px 6px', borderRadius: '4px', fontSize: '11px', border: '1px solid #bbf7d0', fontWeight: 'bold' }}>

@@ -4,9 +4,16 @@
       "Bash(npm install *)",
       "Bash(npm run *)",
       "Bash(npx tsc *)",
-      "Bash(git status)",
-      "Bash(git diff)",
-      "Bash(git log *)"
+      "Bash(ls \"c:/Users/chaya/.claude/projects/c--safe-ai-admin/memory/\" 2>/dev/null || echo \"empty\")",
+      "Read(//c/Users/chaya/.claude/projects/c--safe-ai-admin/**)",
+      "Bash(docker compose *)",
+      "Bash(curl -s http://localhost:3001/organizations)",
+      "Bash(node -e ' *)",
+      "Bash(gh issue *)",
+      "Bash(gh project *)"
+    ],
+    "additionalDirectories": [
+      "c:\\safe-ai-admin"
     ]
   }
 }

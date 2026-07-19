@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { apiCall, API_ENDPOINTS } from '../../config/api'
-import type { Tender, TenderTime, TenderTimeUnit } from './types'
+import type { Tender, TenderTime } from './types'
 
 interface ManageTenderDetailsProps {
   tender: Tender
@@ -301,7 +301,7 @@ export default function ManageTenderDetails({
               <select
                 id="tender-timeRequired-unit"
                 value={draftTender.timeRequired?.unit ?? 'ימים'}
-                onChange={(e) => handleFieldChange('timeRequired', { ...draftTender.timeRequired, unit: e.target.value as TenderTimeUnit } as TenderTime)}
+                onChange={(e) => handleFieldChange('timeRequired', { ...draftTender.timeRequired, unit: e.target.value } as TenderTime)}
                 style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', width: '60%' }}
               >
                 {timeUnits.map((u) => (
