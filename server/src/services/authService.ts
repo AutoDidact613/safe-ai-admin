@@ -56,7 +56,7 @@ export async function register(data: {
   const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
   try {
-    Register with LiteLLM
+    // Register with LiteLLM
     const response = await axios.post(
       `${process.env.LITELLM_PROXY_URL}/key/generate`,
       {
@@ -78,6 +78,8 @@ export async function register(data: {
     );
 
     const { key, token, key_name } = response.data;
+    const litellmKeyEncrypted = encryptSecret(key);
+    
     // Create user in database
     const user = await User.create({
       email: data.email.toLowerCase(),
