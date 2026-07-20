@@ -67,6 +67,27 @@ def cmd_process(args: argparse.Namespace) -> None:
             print(f"\nטוקנים בריצה זו: {usage_tracker.get_total_tokens()}")
 
         elif "send_node" in next_nodes:
+            if args.edit:
+                inquiry_id = args.edit
+                drafts = snapshot.values.get("drafts", {})
+                current_draft = drafts.get(inquiry_id, {})
+
+                print(f"טיוטה נוכחית עבור {inquiry_id}:")
+                print(current_draft.get("text", ""))
+                print("\nהקלד את הטיוטה החדשה, ואז שורה ריקה לסיום:")
+
+                lines = []
+                while True:
+                    line = input()
+                    if line == "":
+                        break
+                    lines.append(line)
+
+                drafts[inquiry_id] = {"inquiry_id": inquiry_id, "text": "\n".join(lines)}
+                graph.update_state(thread_config, {"drafts": drafts})
+                print("הטיוטה עודכנה")
+                return
+
             if not args.approve:
                 raise SystemExit("--approve is required to send replies at this stage")
             approved_ids = args.approve.split(",")
@@ -94,10 +115,12 @@ def main() -> None:
     list_parser.set_defaults(func=cmd_list)
 
     process_parser = subparsers.add_parser(
-        "process", help="resume a paused run: select inquiries to draft, or approve drafts to send"
+        "process",
+        help="resume a paused run: select inquiries to draft, edit a draft, or approve drafts to send",
     )
     process_parser.add_argument("--thread-id", required=True)
     process_parser.add_argument("--ids", help="comma-separated inquiry IDs to draft replies for")
+    process_parser.add_argument("--edit", help="inquiry ID to edit the draft for")
     process_parser.add_argument("--approve", help="comma-separated inquiry IDs to approve and send")
     process_parser.set_defaults(func=cmd_process)
 
