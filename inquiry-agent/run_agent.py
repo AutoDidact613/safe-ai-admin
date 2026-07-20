@@ -43,10 +43,7 @@ def cmd_process(args: argparse.Namespace) -> None:
 
         print(f"thread-id: {args.thread_id}")
         for inquiry_id, draft in state.get("drafts", {}).items():
-            result = state.get("guardrail_results", {}).get(inquiry_id, {})
-            print(f"--- {inquiry_id} (guardrails passed: {result.get('passed')}) ---")
-            if result.get("reasons"):
-                print(f"reasons: {result['reasons']}")
+            print(f"--- {inquiry_id} ---")
             print(draft["text"])
 
     elif "send_node" in next_nodes:

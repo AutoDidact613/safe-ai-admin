@@ -1,8 +1,7 @@
 # SafeAI Inquiry Agent
 
 Standalone LangGraph agent that classifies user support inquiries (category + urgency),
-drafts replies, runs drafts through a GuardRails check, and sends a reply only after
-explicit admin approval (human-in-the-loop).
+drafts replies, and sends a reply only after explicit admin approval (human-in-the-loop).
 
 This agent has no direct dependency on `client/` or `server/` code and no shared
 database. It integrates with the existing SafeAI-613 site exclusively through the
@@ -22,14 +21,12 @@ cp .env.example .env     # then fill in real values
 ```
 fetch_node -> classify_node -> present_node
   -> [GATE 1: selection_gate, HITL - admin picks inquiry IDs]
-  -> draft_node -> guardrails_node
-       -> [GATE 2: guardrails_gate, automated - fail loops back to draft_node]
-  -> evaluator_node
-       -> [GATE 3: evaluator_gate, HITL - admin approves/edits/rejects]
+  -> draft_node -> evaluator_node
+       -> [GATE 2: evaluator_gate, HITL - admin approves/edits/rejects]
   -> send_node
 ```
 
-The graph compiles with a checkpointer keyed by `thread_id`, since gates 1 and 3
+The graph compiles with a checkpointer keyed by `thread_id`, since gates 1 and 2
 pause execution across separate CLI invocations.
 
 ## CLI usage
@@ -40,8 +37,8 @@ python run_agent.py process --thread-id <id> --ids 12,7,3
 ```
 
 `list` runs the graph up to gate 1 and prints inquiries sorted by urgency.
-`process` resumes a paused run with the selected IDs, drafts + guardrails-checks
-replies, and pauses again at gate 3 for admin review/approval.
+`process` resumes a paused run with the selected IDs, drafts replies, and
+pauses again at gate 2 for admin review/approval.
 
 ## Evals
 
