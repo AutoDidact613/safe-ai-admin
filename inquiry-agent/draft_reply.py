@@ -1,4 +1,5 @@
 from google import genai
+from langsmith import traceable
 
 from config import Config
 from graph_state import Inquiry
@@ -12,6 +13,7 @@ Description: {description}
 """
 
 
+@traceable
 def _call_gemini(prompt: str, config: Config) -> str:
     client = genai.Client(api_key=config.gemini_api_key)
     response = client.models.generate_content(model=config.llm_model, contents=prompt)

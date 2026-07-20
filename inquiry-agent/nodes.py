@@ -44,6 +44,9 @@ def draft_node(state: GraphState, agent_config: Config) -> GraphState:
 
 
 def evaluator_node(state: GraphState) -> GraphState:
+    """No-op by design: the admin *is* the evaluator (per spec).
+    This node exists as the graph's HITL pause point before send_node -
+    no automated evaluation happens here."""
     return state
 
 
