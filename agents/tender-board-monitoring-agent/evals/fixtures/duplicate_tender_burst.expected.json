@@ -2,6 +2,6 @@
   "expected_counts": {"create": 2},
   "expected_duplicates": 1,
   "expected_guardrail_triggered": false,
-  "expected_analysis_keywords": ["duplicate"],
+  "expected_analysis_keywords": ["כפול"],
   "expect_evaluator_pass": true
 }

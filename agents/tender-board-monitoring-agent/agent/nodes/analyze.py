@@ -25,11 +25,17 @@ REQUIRED_ANALYSIS_KEYS = {"business_logic_notes", "error_patterns", "anomalies",
 
 _SCHEMA_INSTRUCTIONS = (
     "Respond with ONLY a JSON object of this exact shape, no other text, "
-    "no markdown code fences:\n"
-    '{"business_logic_notes": "<1-3 sentences>", '
-    '"error_patterns": ["<short phrase>", ...], '
-    '"anomalies": ["<short phrase>", ...], '
-    '"confidence": <float between 0 and 1>}'
+    "no markdown code fences. Keep the JSON keys exactly as shown (in "
+    "English) and 'confidence' as a plain number, but write every text "
+    "VALUE in Hebrew:\n"
+    '{"business_logic_notes": "<1-3 sentences, in Hebrew>", '
+    '"error_patterns": ["<short phrase, in Hebrew>", ...], '
+    '"anomalies": ["<short phrase, in Hebrew>", ...], '
+    '"confidence": <float between 0 and 1>}\n\n'
+    'When narrating a duplicate-submission anomaly, include the word '
+    '"כפול" or "כפיל" (covers כפולה/כפולות/כפילות/כפילה). When narrating '
+    'a recurring or spiking error pattern, include the word "שגיאות" '
+    'together with one of חוזרות/חוזר/דפוס/עלייה/ריבוי.'
 )
 
 

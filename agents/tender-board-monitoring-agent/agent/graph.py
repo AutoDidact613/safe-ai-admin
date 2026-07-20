@@ -68,7 +68,7 @@ from agent.llm import get_chat_openai
 from agent.nodes.analyze import analyze_records
 from agent.nodes.classify import count_tender_events
 from agent.nodes.errors import summarize_errors
-from agent.nodes.evaluator import MAX_ANALYSIS_ATTEMPTS, evaluate_analysis
+from agent.nodes.evaluator import MAX_ANALYSIS_ATTEMPTS, evaluate_analysis, format_unavailable_reason
 from agent.nodes.fetch import fetch_tender_board_activity_logs
 from agent.nodes.guardrail import collect_and_screen_samples, screen_free_text
 from agent.nodes.report import format_error_report, format_report
@@ -229,10 +229,7 @@ def build_graph(
                 state["counts"],
                 error_summary=state["errors"],
                 anomalies=state["anomalies"],
-                analysis_unavailable_reason=(
-                    f"evaluator could not validate the analysis after "
-                    f"{state.get('analysis_attempts', 0)} attempt(s)"
-                ),
+                analysis_unavailable_reason=format_unavailable_reason(state.get("analysis_attempts", 0)),
             )
         return {"report": report}
 

@@ -25,6 +25,8 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 from agent.graph import build_chat_graph, build_graph
+from agent.nodes.evaluator import format_unavailable_reason
+from agent.nodes.html_report import format_error_report_html, format_report_html
 
 DATE_FORMAT = "%Y-%m-%d"
 CHAT_EXIT_COMMANDS = {"exit", "quit"}
@@ -60,6 +62,13 @@ def _build_parser() -> argparse.ArgumentParser:
         type=str,
         default=None,
         help=f"End date, format {DATE_FORMAT.replace('%', '%%')} (requires --start).",
+    )
+    report_parser.add_argument(
+        "--html",
+        type=str,
+        default=None,
+        metavar="PATH",
+        help="Also write a styled HTML version of the report to PATH.",
     )
 
     subparsers.add_parser("chat", help="Start an interactive chat session over the logs.")
@@ -103,6 +112,29 @@ def resolve_date_range(args: argparse.Namespace) -> tuple[datetime, datetime]:
     return start_date, end_date
 
 
+def _write_html_report(path: str, start_date: datetime, end_date: datetime, result: dict) -> None:
+    if result.get("error"):
+        html_report = format_error_report_html(start_date, end_date, result["error"])
+    else:
+        html_report = format_report_html(
+            start_date,
+            end_date,
+            result["counts"],
+            error_summary=result["errors"],
+            anomalies=result["anomalies"],
+            analysis=result["analysis"] if result.get("analysis_ok") else None,
+            analysis_unavailable_reason=(
+                None if result.get("analysis_ok") else format_unavailable_reason(result.get("analysis_attempts", 0))
+            ),
+        )
+
+    try:
+        with open(path, "w", encoding="utf-8") as html_file:
+            html_file.write(html_report)
+    except OSError as exc:
+        print(f"Warning: could not write HTML report to {path}: {exc}", file=sys.stderr)
+
+
 def run_report(args: argparse.Namespace) -> int:
     start_date, end_date = resolve_date_range(args)
 
@@ -110,6 +142,9 @@ def run_report(args: argparse.Namespace) -> int:
     result = app.invoke({"start_date": start_date, "end_date": end_date})
 
     print(result["report"])
+
+    if args.html:
+        _write_html_report(args.html, start_date, end_date, result)
 
     # Non-zero exit code when the fetch failed, so shell scripts / cron
     # jobs calling this CLI can detect failure without parsing the text.

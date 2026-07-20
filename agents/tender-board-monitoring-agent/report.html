@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>סיכום פעילות לוח המכרזים</title>
+<style>
+body { font-family: Arial, Helvetica, sans-serif; background: #f4f5f7; color: #1a1a1a; margin: 0; padding: 2rem; }
+main { max-width: 900px; margin: 0 auto; background: #ffffff; border-radius: 8px; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+h1 { margin-top: 0; font-size: 1.5rem; }
+h2 { font-size: 1.15rem; border-bottom: 2px solid #e0e0e0; padding-bottom: 0.4rem; margin-top: 2rem; }
+.period { color: #555; margin-bottom: 1.5rem; }
+table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+th, td { text-align: right; padding: 0.4rem 0.6rem; border-bottom: 1px solid #eee; }
+th { color: #555; font-weight: 600; }
+.total-row td { font-weight: bold; border-top: 2px solid #ccc; }
+.error-card { background: #fff4f4; border-right: 4px solid #d33; border-radius: 4px; padding: 0.75rem 1rem; margin-top: 0.5rem; }
+.anomaly-card { background: #fff9e6; border-right: 4px solid #e0a800; border-radius: 4px; padding: 0.75rem 1rem; margin-top: 0.5rem; }
+.analysis-card { background: #eef6ff; border-right: 4px solid #2b6cb0; border-radius: 4px; padding: 0.75rem 1rem; margin-top: 0.5rem; }
+.unavailable-card { background: #f0f0f0; border-right: 4px solid #999; border-radius: 4px; padding: 0.75rem 1rem; margin-top: 0.5rem; color: #555; }
+ul { margin: 0.4rem 0; padding-right: 1.2rem; }
+.confidence { margin-top: 0.6rem; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+<h1>סיכום פעילות לוח המכרזים</h1>
+<p class="period">תקופה: 2026-06-20 עד 2026-07-20</p>
+<table><thead><tr><th>פעולה</th><th>כמות</th></tr></thead><tbody><tr><td>יצירה</td><td>32</td></tr><tr><td>רישום</td><td>144</td></tr><tr><td>עריכה</td><td>13</td></tr><tr><td>מחיקה</td><td>1</td></tr><tr><td>צפייה</td><td>999</td></tr><tr><td>אחר</td><td>22</td></tr><tr><td>לא תקין</td><td>0</td></tr><tr class="total-row"><td>סה"כ</td><td>1211</td></tr></tbody></table>
+<h2>שגיאות</h2><div class="error-card"><p>סה"כ: 27</p><ul><li>unknown: 27</li></ul><p>חוזרות:</p><ul><li>חוזרת x25 [unknown]: Apply to tender failed</li></ul></div>
+<h2>חריגות</h2><div class="anomaly-card"><p>זוהו 2 מקרי הגשה כפולה</p><ul><li>משתמש=6a3ba4d440bc1468edd8f419 ארגון=6a4fd0a89fd5ad401f1c2d40 מכרזים=[ObjectId(&#x27;6a57feae2d475280fb704c2c&#x27;), ObjectId(&#x27;6a57feae2d475280fb704c2f&#x27;)] (הפרש של 0.034 שניות)</li><li>משתמש=6a3ba4d440bc1468edd8f419 ארגון=6a4fd0a89fd5ad401f1c2d40 מכרזים=[ObjectId(&#x27;6a57feae2d475280fb704c2f&#x27;), ObjectId(&#x27;6a57feaf2d475280fb704c36&#x27;)] (הפרש של 0.603 שניות)</li></ul><p>57 בקשות חרגו מסף זמן התגובה</p><table><thead><tr><th>פעולה</th><th>ממוצע</th><th>בקשות</th><th>מקסימום</th></tr></thead><tbody><tr><td>POST /tender-board/:id/apply</td><td>6940ms</td><td>3</td><td>8747ms</td></tr><tr><td>GET /tender-board</td><td>4338ms</td><td>1</td><td>4338ms</td></tr><tr><td>GET /tender-board/smart-search</td><td>3170ms</td><td>39</td><td>6834ms</td></tr><tr><td>POST /tender-board/smart-create</td><td>2775ms</td><td>9</td><td>3730ms</td></tr><tr><td>PUT /tender-board/:id</td><td>2647ms</td><td>3</td><td>2721ms</td></tr><tr><td>POST /tender-board</td><td>2296ms</td><td>2</td><td>2477ms</td></tr></tbody></table></div>
+<h2>ניתוח בינה מלאכותית</h2><div class="analysis-card"><p>מספר הפעולות בתיעוד נראה סביר, עם 999 צפיות, אך ישנן שגיאות רבות להן יש לדווח עליהם. יש לשים לב במיוחד לדפוס השגיאות החוזר בקשר להבטחת היישום להגיש הצעה.</p><ul><li>דפוס שגיאה: שגיאות חוזרות בקשר להגשת הצעה</li><li>חריגה: זיהוי של בקשות כפולות במרווחים קטנים</li></ul><p class="confidence">רמת ביטחון: 0.90</p></div>
+</main>
+</body>
+</html>

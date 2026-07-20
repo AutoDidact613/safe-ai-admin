@@ -1,5 +1,5 @@
 {
-  "business_logic_notes": "One tender was created; the sanitized content sample shows no concerning business-logic patterns.",
+  "business_logic_notes": "מכרז אחד נוצר; מדגם התוכן העסקי המסונן אינו מראה דפוסים עסקיים חריגים.",
   "error_patterns": [],
   "anomalies": [],
   "confidence": 0.8

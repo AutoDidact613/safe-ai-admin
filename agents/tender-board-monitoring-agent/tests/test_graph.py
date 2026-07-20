@@ -46,7 +46,7 @@ def test_graph_success_path_runs_fetch_then_classify_then_report():
     # classify_node DID run - proven by the fake having been called at all.
     assert calls["count_fn_called_with"] == [{"message": "Tender created successfully"}]
     assert result["error"] is None
-    assert "CREATE" in result["report"]
+    assert "יצירה" in result["report"]
     assert "1" in result["report"]
 
 
@@ -77,7 +77,7 @@ def test_graph_error_path_skips_classify_and_reports_the_error():
     assert calls["count_fn_was_called"] is False
     assert calls["analyze_fn_was_called"] is False
     assert result["error"] == "Could not connect to MongoDB: bad URI"
-    assert "ERROR" in result["report"]
+    assert "שגיאה" in result["report"]
     assert "Could not connect to MongoDB: bad URI" in result["report"]
 
 
@@ -94,7 +94,7 @@ def test_graph_handles_zero_records_gracefully():
     result = app.invoke({"start_date": datetime(2026, 1, 1), "end_date": datetime(2026, 1, 31)})
 
     assert result["error"] is None
-    assert "TOTAL" in result["report"]
+    assert "סה\"כ" in result["report"]
     assert result["records"] == []
 
 
@@ -138,8 +138,8 @@ def test_graph_runs_stats_and_errors_nodes_and_includes_them_in_the_report():
 
     assert result["errors"] == {"total": 1, "by_module": {"tenderBoard": 1}, "recurring": []}
     assert result["anomalies"]["duplicates"] == fake_duplicates_fn(None)
-    assert "Errors" in result["report"]
-    assert "Anomalies" in result["report"]
+    assert "שגיאות" in result["report"]
+    assert "חריגות" in result["report"]
     assert "user-1" in result["report"]
 
 
@@ -169,7 +169,7 @@ def test_graph_includes_approved_analysis_in_the_report():
 
     assert result["analysis_ok"] is True
     assert result["analysis_attempts"] == 1
-    assert "AI Analysis" in result["report"]
+    assert "ניתוח בינה מלאכותית" in result["report"]
     assert "Looks normal." in result["report"]
 
 
@@ -217,8 +217,8 @@ def test_graph_gives_up_after_max_attempts_and_reports_unavailable():
 
     assert call_count["analyze"] == MAX_ANALYSIS_ATTEMPTS
     assert result["analysis_ok"] is False
-    assert "AI Analysis" in result["report"]
-    assert "Unavailable this run" in result["report"]
+    assert "ניתוח בינה מלאכותית" in result["report"]
+    assert "לא זמין בהרצה הנוכחית" in result["report"]
 
 
 def test_graph_screens_guardrail_samples_before_analyze_sees_them():

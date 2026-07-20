@@ -115,7 +115,10 @@ def score_run(result: dict[str, Any], expected: dict[str, Any]) -> tuple[bool, l
             notes.append(f"guardrail_triggered expected {expected_guardrail}, got {actual_guardrail}")
 
     expected_keywords = expected.get("expected_analysis_keywords") or []
-    analysis_text = json.dumps(result.get("analysis") or {}).lower()
+    # ensure_ascii=False - the default would escape non-ASCII characters
+    # (e.g. Hebrew) into literal "\uXXXX" sequences, which would never
+    # contain a real Hebrew keyword as a substring.
+    analysis_text = json.dumps(result.get("analysis") or {}, ensure_ascii=False).lower()
     for keyword in expected_keywords:
         if keyword.lower() not in analysis_text:
             notes.append(f"analysis missing expected keyword '{keyword}'")

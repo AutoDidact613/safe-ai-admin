@@ -17,6 +17,45 @@ REQUIRED_KEYS = {"business_logic_notes", "error_patterns", "anomalies", "confide
 CONFIDENCE_THRESHOLD = 0.5
 MAX_ANALYSIS_ATTEMPTS = 3
 
+# analyze_node's prompt (agent.nodes.analyze) instructs the model to
+# narrate in Hebrew using these canonical words/phrases - but the
+# English forms are kept here too, and checked in addition to (not
+# instead of) the Hebrew ones: if the model ever ignores that
+# instruction and answers in English anyway, this hallucination guard
+# must still catch it rather than silently going blind.
+_DUPLICATE_KEYWORDS_HE = ("כפול", "כפיל")  # covers כפולה/כפולות/כפילות/כפילה
+_DUPLICATE_KEYWORDS_EN = ("duplicate",)
+
+# "עלייה בשגיאות" as one rigid phrase would miss e.g. "עלייה חדה
+# בשגיאות" (extra word in between) - checked instead as two independent
+# substrings, which also covers word-order variations the model might use.
+_ERROR_PATTERN_INDICATOR_HE = "שגיאות"
+_ERROR_PATTERN_QUALIFIERS_HE = ("חוזרות", "חוזר", "דפוס", "עלייה", "ריבוי")
+_ERROR_PATTERN_KEYWORDS_EN = ("error spike", "error pattern")
+
+
+def _claims_duplicate(anomaly_text: str) -> bool:
+    return any(keyword in anomaly_text for keyword in _DUPLICATE_KEYWORDS_HE) or any(
+        keyword in anomaly_text for keyword in _DUPLICATE_KEYWORDS_EN
+    )
+
+
+def _claims_error_pattern(anomaly_text: str) -> bool:
+    has_he_pattern = _ERROR_PATTERN_INDICATOR_HE in anomaly_text and any(
+        qualifier in anomaly_text for qualifier in _ERROR_PATTERN_QUALIFIERS_HE
+    )
+    return has_he_pattern or any(keyword in anomaly_text for keyword in _ERROR_PATTERN_KEYWORDS_EN)
+
+
+def format_unavailable_reason(attempts: int) -> str:
+    """
+    The message shown in place of the AI Analysis section when no
+    response passed evaluate_analysis() within MAX_ANALYSIS_ATTEMPTS.
+    Shared by agent.graph (text report) and agent.cli (HTML report) so
+    the wording can't drift between the two renderers.
+    """
+    return f"ה-evaluator לא הצליח לאמת את הניתוח לאחר {attempts} ניסיונות"
+
 
 def evaluate_analysis(
     analysis: dict[str, Any],
@@ -46,9 +85,9 @@ def evaluate_analysis(
         return False
 
     anomaly_text = " ".join(str(item) for item in analysis["anomalies"]).lower()
-    if "duplicate" in anomaly_text and not anomalies.get("duplicates"):
+    if _claims_duplicate(anomaly_text) and not anomalies.get("duplicates"):
         return False
-    if ("error spike" in anomaly_text or "error pattern" in anomaly_text) and errors.get("total", 0) == 0:
+    if _claims_error_pattern(anomaly_text) and errors.get("total", 0) == 0:
         return False
 
     if analysis["confidence"] < CONFIDENCE_THRESHOLD:

@@ -30,21 +30,38 @@ def test_evaluate_analysis_fails_when_confidence_below_threshold():
 
 
 def test_evaluate_analysis_fails_on_hallucinated_duplicate_claim():
-    analysis = _valid_analysis(anomalies=["duplicate tender submissions detected"])
+    analysis = _valid_analysis(anomalies=["זוהתה הגשה כפולה של מכרזים"])
     # No real duplicates were found - the model invented this.
     assert evaluate_analysis(analysis, errors={"total": 0}, anomalies={"duplicates": []}) is False
 
 
 def test_evaluate_analysis_passes_duplicate_claim_when_actually_backed_by_data():
-    analysis = _valid_analysis(anomalies=["duplicate tender submissions detected"])
+    analysis = _valid_analysis(anomalies=["זוהתה הגשה כפולה של מכרזים"])
     assert evaluate_analysis(analysis, errors={"total": 0}, anomalies={"duplicates": [{"tender_ids": ["a", "b"]}]}) is True
 
 
 def test_evaluate_analysis_fails_on_hallucinated_error_pattern_claim():
-    analysis = _valid_analysis(anomalies=["a clear error spike this week"])
+    analysis = _valid_analysis(anomalies=["השבוע ניכרת עלייה חדה בשגיאות"])
     assert evaluate_analysis(analysis, errors={"total": 0}, anomalies={"duplicates": []}) is False
 
 
 def test_evaluate_analysis_passes_error_pattern_claim_when_backed_by_data():
-    analysis = _valid_analysis(anomalies=["a clear error spike this week"])
+    analysis = _valid_analysis(anomalies=["השבוע ניכרת עלייה חדה בשגיאות"])
     assert evaluate_analysis(analysis, errors={"total": 5}, anomalies={"duplicates": []}) is True
+
+
+# --- mixed-language safety net --------------------------------------------
+# analyze_node's prompt instructs the model to answer in Hebrew, but if it
+# ever ignores that instruction, the hallucination guard must still catch
+# an invented anomaly - the English keywords are checked in ADDITION to the
+# Hebrew ones for exactly this reason.
+
+
+def test_evaluate_analysis_fails_on_hallucinated_duplicate_claim_in_english():
+    analysis = _valid_analysis(anomalies=["duplicate submission detected"])
+    assert evaluate_analysis(analysis, errors={"total": 0}, anomalies={"duplicates": []}) is False
+
+
+def test_evaluate_analysis_fails_on_hallucinated_error_pattern_claim_in_english():
+    analysis = _valid_analysis(anomalies=["a clear error spike this week"])
+    assert evaluate_analysis(analysis, errors={"total": 0}, anomalies={"duplicates": []}) is False
