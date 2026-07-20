@@ -3,6 +3,7 @@ from langsmith import traceable
 
 from config import Config
 from graph_state import Inquiry
+from usage_tracker import add_tokens
 
 _PROMPT_TEMPLATE = """Write a helpful, professional reply to the following user support
 inquiry (category: {category}). Do not reveal information about other users, and do not
@@ -17,6 +18,8 @@ Description: {description}
 def _call_gemini(prompt: str, config: Config) -> str:
     client = genai.Client(api_key=config.gemini_api_key)
     response = client.models.generate_content(model=config.llm_model, contents=prompt)
+    if response.usage_metadata:
+        add_tokens(response.usage_metadata.total_token_count)
     return response.text
 
 

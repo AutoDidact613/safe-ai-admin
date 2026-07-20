@@ -5,6 +5,8 @@ from langsmith import traceable
 
 from config import Config
 from graph_state import Classification
+from usage_tracker import add_tokens
+
 
 _VALID_CATEGORIES = {"bug", "feature", "feedback"}
 _VALID_URGENCIES = {"urgent", "normal", "low"}
@@ -23,6 +25,8 @@ Inquiry:
 def _call_gemini(prompt: str, config: Config) -> str:
     client = genai.Client(api_key=config.gemini_api_key)
     response = client.models.generate_content(model=config.llm_model, contents=prompt)
+    if response.usage_metadata:
+        add_tokens(response.usage_metadata.total_token_count)
     return response.text
 
 

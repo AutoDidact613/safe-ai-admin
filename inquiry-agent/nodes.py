@@ -6,13 +6,16 @@ from graph_state import GraphState
 
 
 def fetch_node(state: GraphState, client: SafeAIClient) -> GraphState:
+    print("שולף פניות מהאתר...")
     state["inquiries"] = client.fetch_open_inquiries()
     return state
 
 
 def classify_node(state: GraphState, agent_config: Config) -> GraphState:
+    inquiries = state.get("inquiries", [])
+    print(f"מסווג {len(inquiries)} פניות...")
     classified = {}
-    for inquiry in state.get("inquiries", []):
+    for inquiry in inquiries:
         classified[inquiry["id"]] = classify_inquiry(inquiry["description"], agent_config)
     state["classified"] = classified
     return state
@@ -30,9 +33,11 @@ def present_node(state: GraphState) -> GraphState:
 
 
 def draft_node(state: GraphState, agent_config: Config) -> GraphState:
+    selected = state.get("selected_ids", [])
+    print(f"מנסח {len(selected)} טיוטות תשובה...")
     drafts = state.get("drafts", {})
     by_id = {inquiry["id"]: inquiry for inquiry in state.get("inquiries", [])}
-    for inquiry_id in state.get("selected_ids", []):
+    for inquiry_id in selected:
         inquiry = by_id[inquiry_id]
         category = state["classified"][inquiry_id]["category"]
         drafts[inquiry_id] = {
@@ -51,7 +56,9 @@ def evaluator_node(state: GraphState) -> GraphState:
 
 
 def send_node(state: GraphState, client: SafeAIClient) -> GraphState:
-    for inquiry_id in state.get("approved_ids", []):
+    approved = state.get("approved_ids", [])
+    print(f"שולח {len(approved)} תשובות...")
+    for inquiry_id in approved:
         draft = state["drafts"][inquiry_id]
         client.post_reply(inquiry_id, draft["text"])
         client.mark_handled(inquiry_id)
