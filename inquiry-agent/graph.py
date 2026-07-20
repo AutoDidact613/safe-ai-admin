@@ -1,7 +1,8 @@
 from functools import partial
 
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.mongodb import MongoDBSaver
 from langgraph.graph import END, StateGraph
+from pymongo import MongoClient
 
 from api_client import SafeAIClient
 from config import Config
@@ -38,7 +39,13 @@ def build_graph(config: Config, client: SafeAIClient):
     builder.add_edge("evaluator_node", "send_node")
     builder.add_edge("send_node", END)
 
+    # MongoClient is created directly (not via from_conn_string, a generator-based
+    # @contextmanager) so it stays referenced as a plain variable and isn't closed
+    # by the garbage collector while the graph is still using it.
+    mongo_client = MongoClient(config.mongodb_atlas_uri)
+    checkpointer = MongoDBSaver(mongo_client, db_name="inquiry_agent_checkpoints")
+
     return builder.compile(
-        checkpointer=MemorySaver(),
+        checkpointer=checkpointer,
         interrupt_before=["draft_node", "send_node"],
     )

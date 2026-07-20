@@ -1,15 +1,14 @@
-_total_tokens = 0
+_tokens_by_thread = {}
 
 
-def add_tokens(count: int) -> None:
-    global _total_tokens
-    _total_tokens += count
+def add_tokens(count: int, thread_id: str) -> None:
+    _tokens_by_thread[thread_id] = _tokens_by_thread.get(thread_id, 0) + count
 
 
-def get_total_tokens() -> int:
-    return _total_tokens
+def get_total_tokens(thread_id: str) -> int:
+    return _tokens_by_thread.get(thread_id, 0)
 
 
 def reset() -> None:
-    global _total_tokens
-    _total_tokens = 0
+    global _tokens_by_thread
+    _tokens_by_thread = {}

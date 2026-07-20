@@ -19,7 +19,7 @@ def _call_gemini(prompt: str, config: Config) -> str:
     client = genai.Client(api_key=config.gemini_api_key)
     response = client.models.generate_content(model=config.llm_model, contents=prompt)
     if response.usage_metadata:
-        add_tokens(response.usage_metadata.total_token_count)
+        add_tokens(response.usage_metadata.total_token_count, config.thread_id)
     return response.text
 
 

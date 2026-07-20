@@ -23,6 +23,11 @@ class Config:
         self.gemini_api_key = _require("GEMINI_API_KEY")
         self.llm_model = os.environ.get("LLM_MODEL", "gemini-flash-latest")
         self.langchain_project = os.environ.get("LANGCHAIN_PROJECT", "safeai-inquiry-agent")
+        self.mongodb_atlas_uri = _require("MONGODB_ATLAS_URI")
+        # Set by the CLI per-invocation (not from env) - lets classify/draft_reply's
+        # _call_gemini() key usage_tracker calls by thread_id without threading it
+        # through every function signature.
+        self.thread_id = None
 
 
 def load_config() -> Config:

@@ -24,6 +24,7 @@ def cmd_list(_args: argparse.Namespace) -> None:
         graph = build_graph(config, client)
 
         thread_id = str(uuid.uuid4())
+        config.thread_id = thread_id
         state = graph.invoke({}, _thread_config(thread_id))
     except ConfigError as e:
         sys.exit(f"שגיאת הגדרות: {e}")
@@ -38,13 +39,14 @@ def cmd_list(_args: argparse.Namespace) -> None:
         urgency = state["classified"].get(inquiry["id"], {}).get("urgency", "?")
         print(f"{inquiry['id']:<10}{urgency:<10}{inquiry['title']}")
 
-    print(f"\nטוקנים בריצה זו: {usage_tracker.get_total_tokens()}")
+    print(f"\nטוקנים בריצה זו: {usage_tracker.get_total_tokens(thread_id)}")
 
 
 def cmd_process(args: argparse.Namespace) -> None:
     usage_tracker.reset()
     try:
         config = load_config()
+        config.thread_id = args.thread_id
         client = SafeAIClient(config)
         graph = build_graph(config, client)
         thread_config = _thread_config(args.thread_id)
@@ -64,7 +66,7 @@ def cmd_process(args: argparse.Namespace) -> None:
                 print(f"--- {inquiry_id} ---")
                 print(draft["text"])
 
-            print(f"\nטוקנים בריצה זו: {usage_tracker.get_total_tokens()}")
+            print(f"\nטוקנים בריצה זו: {usage_tracker.get_total_tokens(args.thread_id)}")
 
         elif "send_node" in next_nodes:
             if args.edit:
@@ -95,7 +97,7 @@ def cmd_process(args: argparse.Namespace) -> None:
             graph.invoke(None, thread_config)
             print(f"Sent replies for: {', '.join(approved_ids)}")
 
-            print(f"\nטוקנים בריצה זו: {usage_tracker.get_total_tokens()}")
+            print(f"\nטוקנים בריצה זו: {usage_tracker.get_total_tokens(args.thread_id)}")
 
         else:
             raise SystemExit("This run has no pending step (already completed or not started)")
