@@ -63,7 +63,10 @@ def cmd_process(args: argparse.Namespace) -> None:
 
             print(f"thread-id: {args.thread_id}")
             for inquiry_id, draft in state.get("drafts", {}).items():
-                print(f"--- {inquiry_id} ---")
+                result = state.get("guardrail_results", {}).get(inquiry_id, {})
+                print(f"--- {inquiry_id} (guardrails passed: {result.get('passed')}) ---")
+                if result.get("reasons"):
+                    print(f"reasons: {result['reasons']}")
                 print(draft["text"])
 
             print(f"\nטוקנים בריצה זו: {usage_tracker.get_total_tokens(args.thread_id)}")

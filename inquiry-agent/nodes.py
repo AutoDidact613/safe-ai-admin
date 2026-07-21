@@ -3,6 +3,9 @@ from classify import classify_inquiry
 from config import Config
 from draft_reply import generate_draft
 from graph_state import GraphState
+from guardrails import check_draft
+
+_MAX_DRAFT_RETRIES = 2
 
 
 def fetch_node(state: GraphState, client: SafeAIClient) -> GraphState:
@@ -46,6 +49,26 @@ def draft_node(state: GraphState, agent_config: Config) -> GraphState:
         }
     state["drafts"] = drafts
     return state
+
+
+def guardrails_node(state: GraphState, agent_config: Config) -> GraphState:
+    by_id = {inquiry["id"]: inquiry for inquiry in state.get("inquiries", [])}
+    results = {}
+    for inquiry_id, draft in state.get("drafts", {}).items():
+        results[inquiry_id] = check_draft(draft["text"], by_id[inquiry_id], agent_config)
+    state["guardrail_results"] = results
+    return state
+
+
+def guardrails_gate(state: GraphState) -> str:
+    retry_counts = state.setdefault("retry_counts", {})
+    for inquiry_id, result in state.get("guardrail_results", {}).items():
+        if not result["passed"]:
+            retries = retry_counts.get(inquiry_id, 0)
+            if retries < _MAX_DRAFT_RETRIES:
+                retry_counts[inquiry_id] = retries + 1
+                return "draft_node"
+    return "evaluator_node"
 
 
 def evaluator_node(state: GraphState) -> GraphState:

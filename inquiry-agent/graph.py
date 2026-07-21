@@ -12,6 +12,8 @@ from nodes import (
     draft_node,
     evaluator_node,
     fetch_node,
+    guardrails_gate,
+    guardrails_node,
     present_node,
     send_node,
 )
@@ -26,6 +28,7 @@ def build_graph(config: Config, client: SafeAIClient):
     # GATE 1 (selection_gate): HITL interrupt before draft_node - admin selects
     # which inquiry IDs go into state["selected_ids"] before resuming.
     builder.add_node("draft_node", partial(draft_node, agent_config=config))
+    builder.add_node("guardrails_node", partial(guardrails_node, agent_config=config))
     builder.add_node("evaluator_node", evaluator_node)
     # GATE 3 (evaluator_gate): HITL interrupt before send_node - admin approves
     # (populates state["approved_ids"]) or sends the run back to draft_node.
@@ -35,7 +38,13 @@ def build_graph(config: Config, client: SafeAIClient):
     builder.add_edge("fetch_node", "classify_node")
     builder.add_edge("classify_node", "present_node")
     builder.add_edge("present_node", "draft_node")
-    builder.add_edge("draft_node", "evaluator_node")
+    builder.add_edge("draft_node", "guardrails_node")
+    # GATE 2 (guardrails_gate): automated conditional edge, not human.
+    builder.add_conditional_edges(
+        "guardrails_node",
+        guardrails_gate,
+        {"draft_node": "draft_node", "evaluator_node": "evaluator_node"},
+    )
     builder.add_edge("evaluator_node", "send_node")
     builder.add_edge("send_node", END)
 

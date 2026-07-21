@@ -1,7 +1,8 @@
 # SafeAI Inquiry Agent
 
 Standalone LangGraph agent that classifies user support inquiries (category + urgency),
-drafts replies, and sends a reply only after explicit admin approval (human-in-the-loop).
+drafts replies, runs drafts through a GuardRails check, and sends a reply only after
+explicit admin approval (human-in-the-loop).
 
 This agent has no direct dependency on `client/` or `server/` code and no shared
 database. It integrates with the existing SafeAI-613 site exclusively through the
@@ -21,13 +22,34 @@ cp .env.example .env     # then fill in real values
 ```
 fetch_node -> classify_node -> present_node
   -> [GATE 1: selection_gate, HITL - admin picks inquiry IDs]
-  -> draft_node -> evaluator_node
-       -> [GATE 2: evaluator_gate, HITL - admin approves/edits/rejects]
+  -> draft_node -> guardrails_node
+       -> [GATE 2: guardrails_gate, automated - fail loops back to draft_node]
+  -> evaluator_node
+       -> [GATE 3: evaluator_gate, HITL - admin approves/edits/rejects]
   -> send_node
 ```
 
-The graph compiles with a checkpointer keyed by `thread_id`, since gates 1 and 2
+The graph compiles with a checkpointer keyed by `thread_id`, since gates 1 and 3
 pause execution across separate CLI invocations.
+
+## GuardRails
+
+`guardrails_node` checks each draft before it reaches the admin:
+
+- **Email / phone leakage** - plain regex (`guardrails.py`'s `_EMAIL_RE` / `_PHONE_RE`).
+  This is intentionally exact-match: an email or phone number either appears in the
+  draft or it doesn't, so a regex is the right tool and there's no ambiguity for an
+  LLM to resolve.
+- **Unsupported promises** - a semantic check via Gemini (`_check_overpromise`),
+  not exact-phrase matching. A support reply can overpromise ("we'll have this
+  fixed within the hour", "you'll get a full refund, no questions asked") without
+  using any fixed keyword, so a phrase list would miss most real cases; the
+  semantic check only runs when the regex checks already passed, to avoid an
+  extra LLM call on a draft that's already rejected.
+
+A failed check routes back to `draft_node` for another attempt, up to
+`_MAX_DRAFT_RETRIES` (2) retries per inquiry, before falling through to
+`evaluator_node` regardless.
 
 ## LLM provider
 
@@ -39,7 +61,7 @@ OpenAI dependency anywhere in this agent.
 
 Graph run state (thread checkpoints) is persisted to MongoDB Atlas via
 `MongoDBSaver`, not kept in local memory - runs must survive across separate
-CLI invocations (gates 1 and 2 each end a process). Requires `MONGODB_ATLAS_URI`
+CLI invocations (gates 1 and 3 each end a process). Requires `MONGODB_ATLAS_URI`
 in `.env`, pointing at a cluster fully separate from the SafeAI-613 website's
 own database.
 
@@ -52,9 +74,9 @@ python run_agent.py process --thread-id <id> --edit <inquiry_id>
 ```
 
 `list` runs the graph up to gate 1 and prints inquiries sorted by urgency.
-`process --ids` resumes a paused run with the selected IDs, drafts replies, and
-pauses again at gate 2 for admin review/approval. `process --edit` lets the
-admin rewrite a drafted reply's text before approving it at gate 2.
+`process --ids` resumes a paused run with the selected IDs, drafts + guardrails-checks
+replies, and pauses again at gate 3 for admin review/approval. `process --edit` lets the
+admin rewrite a drafted reply's text before approving it at gate 3.
 
 ## LangSmith
 
