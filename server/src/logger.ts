@@ -32,22 +32,28 @@ class MongoDBTransport extends Transport {
     const { level, message, timestamp, stack, userId, organizationId, requestId, context, ...rest } = info;
 
     // Save to MongoDB asynchronously
-    const logEntry = new ApplicationLog({
-      level,
-      message,
-      context: { ...rest, ...context }, // ✅ גמיש לשני המקרים
-      userId,
-      organizationId,
-      requestId,
-      stack,
-      timestamp: new Date(),
-      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-    });
+    try {
+      const logEntry = new ApplicationLog({
+        level,
+        message,
+        context: { ...rest, ...context }, // ✅ גמיש לשני המקרים
+        userId,
+        organizationId,
+        requestId,
+        stack,
+        timestamp: new Date(),
+        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+      });
 
-    logEntry.save().catch((err) => {
-      // Don't throw - logging should never crash the app
+      logEntry.save().catch((err) => {
+        // Don't throw - logging should never crash the app
+        console.error("Failed to save log to MongoDB:", err);
+      });
+    } catch (err) {
+      // Constructing the document can throw synchronously (e.g. an invalid
+      // ObjectId in userId/organizationId) - never let that crash the caller.
       console.error("Failed to save log to MongoDB:", err);
-    });
+    }
 
     callback();
   }

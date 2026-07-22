@@ -22,11 +22,16 @@ interface Post {
   averageRating: number;
 }
 
-// interface PostsResponse {
-//   posts: Post[];
-//   currentPage: number;
-//   totalPages: number;
-// }
+interface PostsResponse {
+  posts: Post[];
+  currentPage: number;
+  totalPages: number;
+}
+
+interface SimilarPost {
+  _id: string;
+  title: string;
+}
 
 export const ForumPage: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -60,14 +65,14 @@ export const ForumPage: React.FC = () => {
       : `${baseEndpoint}?userRole=${userRole}&page=${page}`;
 
     // שימוש ב-apiCall המרכזי במקום fetch גנרי
-    apiCall<any>(endpoint)
+    apiCall<PostsResponse | Post[]>(endpoint)
       .then((data) => {
-        if (data && data.posts) {
+        if (!Array.isArray(data) && data.posts) {
           setPosts(data.posts);
           setCurrentPage(data.currentPage || page);
           setTotalPages(data.totalPages || 1);
 
-          localStorage.setItem('user_posts_backup', JSON.stringify(data.posts.map((p: { _id: string; title: string }) => ({ _id: p._id, title: p.title }))));
+          localStorage.setItem('user_posts_backup', JSON.stringify(data.posts.map((p) => ({ _id: p._id, title: p.title }))));
         } else {
           setPosts(Array.isArray(data) ? data : []);
           setCurrentPage(1);
@@ -110,7 +115,7 @@ export const ForumPage: React.FC = () => {
 
     if (queryParam) {
       // מעבר ל-apiCall עבור חיפוש פוסטים דומים
-      apiCall<any[]>(`/posts/search-similar?${queryParam}`)
+      apiCall<SimilarPost[]>(`/posts/search-similar?${queryParam}`)
         .then((data) => {
           if (Array.isArray(data)) {
             const currentPostIds = posts.map(p => p._id);
@@ -180,9 +185,9 @@ export const ForumPage: React.FC = () => {
       });
 
       fetchPosts(searchQuery, currentPage);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error moderating post:', error);
-      alert(error.message || 'שגיאה בביצוע הפעולה');
+      alert(error instanceof Error ? error.message : 'שגיאה בביצוע הפעולה');
     }
   };
 

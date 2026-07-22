@@ -48,6 +48,11 @@ interface RatingResponse {
   ratingCount: number;
 }
 
+interface SimilarPost {
+  _id: string;
+  title: string;
+}
+
 export const PostThreadPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -105,7 +110,7 @@ export const PostThreadPage: React.FC = () => {
           localStorage.setItem('viewed_titles', JSON.stringify(updatedHistory));
 
           // שימוש ב-apiCall לחיפוש פוסטים דומים
-          apiCall<any[]>(`/posts/search-similar?postId=${data.post._id}`)
+          apiCall<SimilarPost[]>(`/posts/search-similar?postId=${data.post._id}`)
             .then((similarData) => {
               if (Array.isArray(similarData)) {
                 const filtered = similarData.filter((p: { _id: string }) => p._id !== data.post._id);
@@ -177,9 +182,9 @@ export const PostThreadPage: React.FC = () => {
       });
 
       setComments((prev) => prev.filter((comment) => comment._id !== commentId));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting comment:', err);
-      alert(err.message || 'שגיאה במחיקת התגובה');
+      alert(err instanceof Error ? err.message : 'שגיאה במחיקת התגובה');
     }
   };
 
@@ -240,9 +245,9 @@ export const PostThreadPage: React.FC = () => {
       editor.commands.clearContent(); 
       setSelectedFile(null);
       navigate('/forum');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error submitting comment:', err);
-      alert(`שגיאה בשמירת התגובה: ${err.message || 'לא ניתן לשמור תגובה'}`);
+      alert(`שגיאה בשמירת התגובה: ${err instanceof Error ? err.message : 'לא ניתן לשמור תגובה'}`);
     } finally {
       setCommentLoading(false);
     }
