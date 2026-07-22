@@ -55,8 +55,11 @@ calling a real model.
 
 from __future__ import annotations
 
+import json
 import operator
+import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Annotated, Any, Callable, Optional, TypedDict
 
 from langchain_core.messages import AIMessage, SystemMessage
@@ -77,6 +80,38 @@ from agent.nodes.stats import compute_latency_stats, find_duplicate_tenders
 from agent.nodes.topic_guardrail import classify_topic
 from agent.tools import SIDE_EFFECT_TOOLS, TOOLS
 
+# agents_logger.py (docs/agents_logger_python.md) lives one directory above
+# this project (agents/agentsLogger.py), shared by every agent under
+# agents/ - not a dependency this project's own requirements.txt installs.
+# Bootstrapping it onto sys.path here (once, at import time) is the only
+# way `python -m agent.cli` can reach it without copying the file into
+# this project. This deliberately fails soft (agent_log left as None) so
+# a frozen PyInstaller build (SCRUM-188, agentsLogger.py isn't bundled -
+# it lives outside run_cli.py's analysis root) or a missing dependency
+# never breaks report/chat - it just runs without AI-call logging.
+AGENT_NAME = "tender-board-monitoring-agent"
+
+# agentsLogger.py reads MONGODB_URI/MONGODB_DB_NAME from the environment
+# at IMPORT TIME (its module-level _MONGO_URI/_DB_NAME), not lazily -
+# cli.py's own load_dotenv() call (inside main()) runs too late to help
+# with that: `from agent.graph import ...` at the top of cli.py already
+# triggers this file's import - and therefore agentsLogger's - before
+# main() ever runs. Loading .env here, before the import below, is what
+# makes agentsLogger actually pick up the real MONGODB_URI/MONGODB_DB_NAME
+# instead of silently falling back to mongodb://localhost:27017 / "safeai".
+from dotenv import load_dotenv
+
+load_dotenv()
+
+try:
+    _AGENTS_ROOT = Path(__file__).resolve().parents[2]
+    if str(_AGENTS_ROOT) not in sys.path:
+        sys.path.insert(0, str(_AGENTS_ROOT))
+    from agentsLogger import NodeType, agent_log
+except ImportError:
+    agent_log = None
+    NodeType = None
+
 
 class ReportState(TypedDict):
     """
@@ -91,6 +126,7 @@ class ReportState(TypedDict):
 
     start_date: datetime
     end_date: datetime
+    run_id: str
     records: list[dict[str, Any]]
     counts: dict[str, int]
     error: Optional[str]
@@ -192,8 +228,35 @@ def build_graph(
         return {"samples": samples, "guardrail_flags": flags}
 
     def analyze_node(state: ReportState) -> dict[str, Any]:
-        """The one real LLM call. Re-entered on a retry from evaluator_node."""
-        analysis = analyze_fn(state["counts"], state["errors"], state["anomalies"], state["samples"])
+        """
+        The one real LLM call. Re-entered on a retry from evaluator_node.
+
+        Logged via agents_logger only when `analyze_fn` is still the real
+        analyze_records (its default value) - tests always inject a fake
+        analyze_fn instead (see agent.nodes.analyze's DI docstring), so
+        this never fires a real Mongo write from the test suite.
+        """
+        if agent_log is not None and analyze_fn is analyze_records:
+            with agent_log(
+                run_id=state.get("run_id", "unknown"),
+                agent_name=AGENT_NAME,
+                node="analyze",
+                node_type=NodeType.LLM,
+                user_prompt=json.dumps(
+                    {
+                        "counts": state["counts"],
+                        "errors": state["errors"],
+                        "anomalies": state["anomalies"],
+                        "samples": state["samples"],
+                    },
+                    default=str,
+                ),
+                description="ניתוח LLM עומק של סיכום פעילות לוח המכרזים (SCRUM-180)",
+            ) as set_output:
+                analysis = analyze_fn(state["counts"], state["errors"], state["anomalies"], state["samples"])
+                set_output(analysis)
+        else:
+            analysis = analyze_fn(state["counts"], state["errors"], state["anomalies"], state["samples"])
         attempts = state.get("analysis_attempts", 0) + 1
         return {"analysis": analysis, "analysis_attempts": attempts}
 
@@ -329,6 +392,7 @@ class ChatState(TypedDict):
     guardrail_flags: Annotated[list[str], operator.add]
     topic_allowed: bool
     security_allowed: bool
+    run_id: str
 
 
 GuardrailFn = Callable[[str], dict[str, Any]]
@@ -387,6 +451,11 @@ def build_chat_graph(
     exercise the gate (or bypass it) without ever calling a real model.
     """
     resolved_tools = tools if tools is not None else TOOLS
+    # Captured before resolving the fake-vs-real llm, so agent_node below
+    # can gate agents_logger logging on "is this really calling
+    # ChatOpenAI" - tests always pass a fake llm (see build_chat_graph's
+    # own docstring), so this stays False for the whole test suite.
+    _llm_is_real = llm is None
     llm_with_tools = llm if llm is not None else get_chat_openai().bind_tools(resolved_tools)
     base_tool_node = ToolNode(resolved_tools)
 
@@ -417,7 +486,21 @@ def build_chat_graph(
                 "concrete dates yourself using today's date above."
             )
         )
-        response = llm_with_tools.invoke([date_reminder, *state["messages"]])
+        if agent_log is not None and _llm_is_real:
+            last_message = state["messages"][-1].content if state["messages"] else ""
+            with agent_log(
+                run_id=state.get("run_id", "unknown"),
+                agent_name=AGENT_NAME,
+                node="agent",
+                node_type=NodeType.LLM,
+                system_prompt=date_reminder.content,
+                user_prompt=last_message if isinstance(last_message, str) else str(last_message),
+                description="בחירת tool או ניסוח תשובה סופית בלולאת הצ'אט (ReAct)",
+            ) as set_output:
+                response = llm_with_tools.invoke([date_reminder, *state["messages"]])
+                set_output(response.content if hasattr(response, "content") else str(response))
+        else:
+            response = llm_with_tools.invoke([date_reminder, *state["messages"]])
         return {"messages": [response]}
 
     def hitl_node(state: ChatState) -> dict[str, Any]:
@@ -480,7 +563,20 @@ def build_chat_graph(
         has a single incoming edge from START, so it always sees the
         turn fresh, before agent_node or anything else has run.
         """
-        result = topic_guardrail_fn(_latest_user_text(state))
+        text = _latest_user_text(state)
+        if agent_log is not None and topic_guardrail_fn is classify_topic:
+            with agent_log(
+                run_id=state.get("run_id", "unknown"),
+                agent_name=AGENT_NAME,
+                node="topic_guardrail",
+                node_type=NodeType.LLM,
+                user_prompt=text,
+                description="בדיקת שייכות נושאית של פניית המשתמש בצ'אט (חסימת שאלות לא-קשורות למכרזים)",
+            ) as set_output:
+                result = topic_guardrail_fn(text)
+                set_output(result)
+        else:
+            result = topic_guardrail_fn(text)
         update: dict[str, Any] = {"topic_allowed": bool(result.get("allowed"))}
         if not result.get("allowed"):
             update["guardrail_flags"] = [f"topic_guardrail_reject:{result.get('reason', '')}"]
@@ -488,7 +584,20 @@ def build_chat_graph(
 
     def security_guardrail_node(state: ChatState) -> dict[str, Any]:
         """Runs in parallel with topic_guardrail_node; see its docstring."""
-        result = security_guardrail_fn(_latest_user_text(state))
+        text = _latest_user_text(state)
+        if agent_log is not None and security_guardrail_fn is classify_security_risk:
+            with agent_log(
+                run_id=state.get("run_id", "unknown"),
+                agent_name=AGENT_NAME,
+                node="security_guardrail",
+                node_type=NodeType.LLM,
+                user_prompt=text,
+                description="בדיקת prompt-injection / שליפה מסוכנת בפניית המשתמש בצ'אט",
+            ) as set_output:
+                result = security_guardrail_fn(text)
+                set_output(result)
+        else:
+            result = security_guardrail_fn(text)
         update: dict[str, Any] = {"security_allowed": bool(result.get("allowed"))}
         if not result.get("allowed"):
             update["guardrail_flags"] = [f"security_guardrail_reject:{result.get('reason', '')}"]

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import uuid
 from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
@@ -139,7 +140,8 @@ def run_report(args: argparse.Namespace) -> int:
     start_date, end_date = resolve_date_range(args)
 
     app = build_graph()
-    result = app.invoke({"start_date": start_date, "end_date": end_date})
+    run_id = str(uuid.uuid4())
+    result = app.invoke({"start_date": start_date, "end_date": end_date, "run_id": run_id})
 
     print(result["report"])
 
@@ -170,6 +172,11 @@ def run_chat(args: argparse.Namespace) -> int:
             return 0
 
         state["messages"].append(("user", user_input))
+        # A fresh run_id per turn - one user question can trigger up to 4
+        # LLM calls (topic_guardrail + security_guardrail in parallel,
+        # then 1+ agent_node calls in the ReAct tool loop) and they should
+        # all be linked in agents_logger as belonging to the same turn.
+        state["run_id"] = str(uuid.uuid4())
         state = app.invoke(state)
 
         print(state["messages"][-1].content)
