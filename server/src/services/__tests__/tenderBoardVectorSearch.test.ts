@@ -1,9 +1,15 @@
 import { smartSearchTenders } from "../tenderBoardService";
 import { getEmbedding } from "../embeddingService";
+import { callAI } from "../aiService";
 import * as repo from "../../repositories/tenderBoardRepository";
 
 jest.mock("../embeddingService");
 jest.mock("../../repositories/tenderBoardRepository");
+// smartSearchTenders מריץ סינון רלוונטיות דרך TBAIService.filterRelevantTenders (../aiService),
+// שקוראת בפועל ל-OpenAI - חייב מוק, אחרת הטסט מנסה קריאת AI אמיתית וזה נכשל.
+jest.mock("../aiService", () => ({
+  callAI: jest.fn(),
+}));
 jest.mock("../../logger", () => ({
   info: jest.fn(),
   error: jest.fn(),
@@ -24,11 +30,14 @@ describe("tenderBoardService.smartSearchTenders (Atlas Vector Search)", () => {
 
     (getEmbedding as jest.Mock).mockResolvedValue(fakeVector);
     (repo.vectorSearchTenders as jest.Mock).mockResolvedValue(fakeResults);
+    // תוצאה יחידה, id="1", חייבת לעבור את סינון הרלוונטיות של ה-AI כדי שתישאר בתוצאה הסופית
+    (callAI as jest.Mock).mockResolvedValue({ relevantTenderIds: ["1"] });
 
     const results = await smartSearchTenders("אפליקציה לניהול מלאי");
 
     expect(getEmbedding).toHaveBeenCalledWith("אפליקציה לניהול מלאי");
-    expect(repo.vectorSearchTenders).toHaveBeenCalledWith(fakeVector, 10);
+    // limit ברירת המחדל הוא 10; smartSearchTenders מרחיב את מאגר המועמדים ל-Math.max(limit*5, 30) = 50
+    expect(repo.vectorSearchTenders).toHaveBeenCalledWith(fakeVector, 50);
     expect(results).toEqual(fakeResults);
   });
 

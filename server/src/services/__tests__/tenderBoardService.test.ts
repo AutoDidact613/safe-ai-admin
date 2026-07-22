@@ -158,7 +158,8 @@ describe("Tender Board Feature Tests", () => {
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
       expect(res.body.tender).toEqual(mockAiParsedData);
-      expect(AIService.generateTenderData).toHaveBeenCalledWith("בנה לי אפליקציה");
+      // הקונטרולר מעשיר כל קריאה ב-actor (audit log) - כאן {} כי לא נשלחה כותרת x-test-user
+      expect(AIService.generateTenderData).toHaveBeenCalledWith("בנה לי אפליקציה", {});
     });
 
     it("should return 400 if text parameter is empty", async () => {
@@ -190,7 +191,8 @@ describe("Tender Board Feature Tests", () => {
         .send({ title: "עודכן" });
 
       expect(res.status).toBe(200);
-      expect(service.updateTender).toHaveBeenCalledWith("123", { title: "עודכן" });
+      // actor.organizationId לא נכלל כי getUserById("owner-1") נכשל (לא ObjectId תקין) ונופל לענף ה-catch של getActor
+      expect(service.updateTender).toHaveBeenCalledWith("123", { title: "עודכן" }, { userId: "owner-1" });
     });
 
     it("allows an admin to update someone else's tender", async () => {
@@ -239,7 +241,7 @@ describe("Tender Board Feature Tests", () => {
         .set("x-test-user", OWNER_USER);
 
       expect(res.status).toBe(200);
-      expect(service.closeTender).toHaveBeenCalledWith("123");
+      expect(service.closeTender).toHaveBeenCalledWith("123", { userId: "owner-1" });
     });
   });
 
@@ -279,7 +281,8 @@ describe("Tender Board Feature Tests", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockTendersResult);
-      expect(service.smartSearchTenders).toHaveBeenCalledWith("מכרזים של אפליקציות");
+      // smartSearchTendersHandler תמיד מעביר undefined כ-limit מפורש, ואת ה-actor (audit log) כארגומנט שלישי
+      expect(service.smartSearchTenders).toHaveBeenCalledWith("מכרזים של אפליקציות", undefined, {});
     });
 
     it("should return 400 if the q param is missing", async () => {
