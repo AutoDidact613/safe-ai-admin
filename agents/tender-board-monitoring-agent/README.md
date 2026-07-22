@@ -232,6 +232,26 @@ tests/                                  # בדיקות יחידה לכל מוד�
 מהתשתית המקורית - הוחלט לעבור ל-OpenAI כי זה המפתח הזמין בסביבה הזו
 (ראו גם `manifest.json`: `technical_specifications.llm_provider`).
 
+### תיעוד קריאות ה-AI (agents_logger)
+
+כל 4 קריאות ה-LLM שתוארו למעלה (`analyze`, `topic_guardrail`,
+`security_guardrail`, `agent`) מתועדות אוטומטית ל-MongoDB, collection
+`agent_logs`, דרך המודול המשותף `agents/agentsLogger.py` (תיעוד מלא:
+`docs/agents_logger_python.md`) - זה לא צעד/הרצה נפרדת: זה קורה מעצמו
+בכל הרצה רגילה של `python -m agent.cli report` או
+`python -m agent.cli chat`, בדיוק כמו ב"הרצה" למעלה. משתמש באותם
+`MONGODB_URI`/`MONGODB_DB_NAME` שכבר מוגדרים ב-`.env` עבור מקור הנתונים
+של הסוכן עצמו (collection נפרד - `agent_logs`, לא `applicationlogs`) -
+אין צורך בשום משתנה סביבה נוסף. ה-collection וה-indexes נוצרים לבד,
+באופן עצל (lazy), בקריאת ה-LLM האמיתית הראשונה של אותה הרצה.
+
+`report` מקבל `run_id` אחד לכל הרצה (קריאת ה-`analyze` היחידה נרשמת
+תחתיו); `chat` מקבל `run_id` חדש בכל תור בצ'אט, כך שכל קריאות ה-LLM של
+אותו תור (שני ה-guardrails + קריאת/קריאות ה-agent) מקושרות יחד תחת אותו
+מזהה. אם `agents_logger.py` לא זמין לייבוא מסיבה כלשהי (למשל ב-exe
+ארוז דרך PyInstaller - ראו "אריזה" למטה, הקובץ חי מחוץ ל-root שנסרק) -
+התיעוד פשוט לא נכתב, בלי שהסוכן עצמו נכשל.
+
 ## אריזה כקובץ הרצה עצמאי (SCRUM-188)
 
 ```bash
