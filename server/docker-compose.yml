@@ -14,14 +14,14 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   # 2. MongoDB
-  # mongodb:
-  #   image: mongo:7-jammy
-  #   container_name: safe-ai-mongodb
-  #   restart: unless-stopped
-  #   ports:
-  #     - "27017:27017"
-  #   volumes:
-  #     - mongodb_data:/data/db
+  mongodb:
+    image: mongo:7-jammy
+    container_name: safe-ai-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
 
   # 3. LiteLLM Proxy
   litellm:
@@ -50,7 +50,7 @@ services:
     restart: unless-stopped
     depends_on:
       - litellm
-      # - mongodb
+      - mongodb
     ports:
       - "3001:3001"
     volumes:
@@ -70,5 +70,5 @@ services:
       - EMAIL_FROM=${EMAIL_FROM}
 volumes:
   postgres_data:
-  # mongodb_data:
+  mongodb_data:
   node_modules:
