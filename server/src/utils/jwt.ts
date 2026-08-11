@@ -5,8 +5,14 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "your-refresh-secret-key-change-in-production";
+if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
+  throw new Error(
+    "JWT_SECRET and JWT_REFRESH_SECRET must be defined in the environment"
+  );
+}
+
+const JWT_SECRET: string = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET: string = process.env.JWT_REFRESH_SECRET;
 
 const ACCESS_TOKEN_EXPIRY = "15m"; // 15 minutes
 const REFRESH_TOKEN_EXPIRY = "7d"; // 7 days

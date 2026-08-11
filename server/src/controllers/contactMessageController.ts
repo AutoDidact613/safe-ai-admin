@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import * as contactMessageService from '../services/contactMessageService';
 import { ContactMessage } from '../models/ContactMessage';
 

@@ -20,7 +20,7 @@ interface UploadRequestBody {
 
 // הפונקציה המרכזית שמייצרת את הקישור הזמני
 export const getPresignedUrl = async (
-  req: Request<{}, {}, UploadRequestBody>,
+  req: Request<Record<string, never>, Record<string, never>, UploadRequestBody>,
   res: Response
 ): Promise<Response | void> => {
   try {

@@ -8,12 +8,6 @@ import { Request, Response } from "express";
 import { PromptService } from "../services/promptService";
 import logger from "../logger";
 
-
-function getQueryString(value: unknown, defaultValue = ""): string {
-  if (typeof value === "string") return value;
-  if (Array.isArray(value)) return String(value[0] ?? defaultValue);
-  return defaultValue;
-}
 /**
  * GET /api/prompts
  * Get all prompts (admin only)

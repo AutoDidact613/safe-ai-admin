@@ -9,7 +9,6 @@ import { UsageLog } from "../models";
 import { EvaluationLog } from "../models/evaluationLog";
 import { User } from "../models/user";
 import logger from "../logger";
-import mongoose from "mongoose";
 
 /**
  * Get system-wide statistics for admin dashboard

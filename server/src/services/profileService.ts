@@ -3,7 +3,6 @@
  *
  * Service layer for working with AI profiles in the database.
  */
-import { AIProfileInput } from "../types/proxyTypes";
 import { AIProfile } from "../models";
 
 export async function createProfile(data: any) {

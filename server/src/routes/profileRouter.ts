@@ -19,12 +19,12 @@ router.get("/health", (_req, res) => {
 
 
 /* profiles */
-router.post("/", createProfileHandler);
+router.post("/", requireAdmin, createProfileHandler); // Admin-only: profiles feed the system prompt for all their users
 router.get("/", listProfilesHandler);
 router.get("/admin/all", requireAdmin, listAllProfilesHandler); // Admin-only: see all profiles
 router.get("/admin/full", requireAdmin, listAllFullProfilesHandler); // Admin-only: see all profiles with full details (prompts, categories)
 router.get("/:id", getProfileHandler);
-router.put("/:id", updateProfileHandler);
-router.delete("/:id", deleteProfileHandler);
+router.put("/:id", requireAdmin, updateProfileHandler); // Admin-only
+router.delete("/:id", requireAdmin, deleteProfileHandler); // Admin-only
 
 export default router;

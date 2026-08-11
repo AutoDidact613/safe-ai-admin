@@ -24,6 +24,7 @@ class MongoDBTransport extends Transport {
     });
 
     const { level, message, timestamp, stack, userId, requestId, context, ...rest } = info;
+    void timestamp; // intentionally excluded from `context`; logEntry below sets its own insertion-time timestamp
 
     // Save to MongoDB asynchronously
     const logEntry = new ApplicationLog({
