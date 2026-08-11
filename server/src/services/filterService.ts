@@ -5,19 +5,10 @@
  * הקובץ הזה נשאר נקודת הכניסה ושומר את ה-EvaluationLog (כולל trace).
  */
 
-import logger from "../logger";
 import { Embedding } from "../models";
 import { addEmbeddingToCache } from "../cache/embeddingCache";
-import {
-  EmbeddingRequest,
-  EvaluateRequest,
-  EvaluateResponse,
-} from "../types/proxyTypes";
+import { EmbeddingRequest } from "../types/proxyTypes";
 import { openai } from "../config/openai";
-import { getFullProfileById } from "../repositories/profileRepository";
-
-import { runInputWorkflow } from "../workflows/input/inputFilterWorkflow";
-import { NodeTrace } from "../workflows/types";
 
 /* ---------- Embeddings (לא בשימוש בזרימה הנוכחית, נשמר לעתיד) ---------- */
 

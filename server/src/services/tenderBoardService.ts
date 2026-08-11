@@ -8,8 +8,6 @@ import {
   sendTenderClosedEmail,
 } from "../utils/email";
 
-const aiService = new TBAIService();
-
 // הרשימה הסטטית של התחומים 
 const Static_ProductType_List = [
   'אפליקציה',

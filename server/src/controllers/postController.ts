@@ -41,7 +41,7 @@ export const getPosts = async (req: Request, res: Response) => {
     const limit = 10; // הגדרה קבועה של 10 פוסטים לעמוד
     const skip = (page - 1) * limit; // חישוב כמה פוסטים לדלג עליהם
 
-    let filterQuery: any = {};
+    const filterQuery: any = {};
     if (userRole !== 'admin') {
       filterQuery.isBlocked = { $ne: true };
     }
@@ -204,7 +204,7 @@ export const createPost = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "משתמש לא מחובר או לא מאומת" });
     }
 
-    let finalTagIds: string[] = [];
+    const finalTagIds: string[] = [];
     
     if (tags && Array.isArray(tags)) {
       for (const tagItem of tags) {
@@ -269,7 +269,7 @@ export const searchPosts = async (req: Request, res: Response) => {
     const matchingTags = await Tag.find({ name: searchRegex });
     const tagIds = matchingTags.map(t => t._id);
 
-    let searchFilter: any = {
+    const searchFilter: any = {
       $or: [
         { title: searchRegex },
         { content: searchRegex },

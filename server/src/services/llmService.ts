@@ -5,7 +5,6 @@
   //  * based on a prompt constructed from a specific profile.
   //  */
 
-  import OpenAI from "openai";
   import logger from "../logger";
   import { buildFilterPrompt } from "./promptBuilder";
 

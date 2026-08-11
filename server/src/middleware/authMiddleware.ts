@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 
 // הרחבת הטיפוסים של Express כדי שהקומפיילר יזהה את req.user ללא שגיאות
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace -- required syntax for augmenting the global Express namespace
   namespace Express {
     interface Request {
       user?: { id: string };

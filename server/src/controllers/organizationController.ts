@@ -21,6 +21,7 @@ import {
   rejectOrganization,
   getMyOrganization,
 } from "../services/organizationService";
+import { sanitizeUser } from "../utils/sanitizeUser";
 import logger from "../logger";
 
 /**
@@ -185,7 +186,7 @@ export async function getOrganizationUsersHandler(
     }
 
     const users = await getOrganizationUsers(orgId);
-    res.json(users);
+    res.json(users.map(sanitizeUser));
   } catch (error) {
     logger.error("Failed to get organization users", { error });
     res.status(500).json({ error: "Failed to get organization users" });

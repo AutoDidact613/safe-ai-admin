@@ -7,7 +7,6 @@ import { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import * as userService from "../services/userService";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt";
-import crypto from "crypto";
 import logger from "../logger";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
@@ -70,7 +69,7 @@ export async function googleCallbackHandler(req: Request, res: Response) {
       return res.redirect(`${CLIENT_URL}/login?error=no_email`);
     }
 
-    const { email, name, picture } = payload;
+    const { email } = payload;
 
     // Check if user exists
     const user = await userService.findUserByEmail(email);

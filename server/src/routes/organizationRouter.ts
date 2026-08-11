@@ -22,6 +22,7 @@ import {
   getMyOrganizationHandler,
 } from "../controllers/organizationController";
 import { authenticateToken, requireAdmin } from "../middleware/auth";
+import { registerRateLimiter } from "../middleware/authRateLimiter";
 import { getOrganizationById } from "../services/organizationService";
 
 const router = express.Router();
@@ -48,7 +49,7 @@ async function requireApprovedOrg(
 
 // ===== PUBLIC — no auth required (org owner sign-up) =====
 // חייב להיות לפני router.use(authenticateToken) למטה!
-router.post("/public-request", publicRequestOrganizationHandler);
+router.post("/public-request", registerRateLimiter, publicRequestOrganizationHandler);
 
 // 🔒 מכאן ואילך כל הנתיבים דורשים אימות משתמש מחובר (Token)
 router.use(authenticateToken);

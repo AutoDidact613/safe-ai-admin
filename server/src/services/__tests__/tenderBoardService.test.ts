@@ -3,7 +3,6 @@ import express from "express";
 import router from "../../routes/tenderBoardRouter"; // נתיב הראוטר שלך
 import * as service from "../tenderBoardService";
 import { AIService } from "../tenderBoardAIService";
-import * as repo from "../../repositories/tenderBoardRepository";
 
 // 1. הגדרת מוקים (Mocks) לכל השירותים והשכבות החיצוניות כדי למנוע קריאות אמיתיות ל-DB או ל-AI
 jest.mock("../tenderBoardService");

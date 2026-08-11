@@ -7,14 +7,8 @@
 
 import { Request, Response, NextFunction } from "express";
 import { UsageLog } from "../models";
-import { User } from "../models/user";
 import logger from "../logger";
 import { checkAndResetMonthlyBudget } from "../services/usageTracker";
-
-interface RateLimitError extends Error {
-  statusCode: number;
-  retryAfter?: number;
-}
 
 /**
  * Checks rate limits for a user

@@ -4,15 +4,12 @@ import {
   getProviderKeyByUserAndProvider,
   getSystemProviderKey,
 } from "../repositories/providerKeyRepository";
-import { OpenAI } from "openai";
 import { logUsage } from "./usageTracker";
 import { isProviderKeyFree } from "../middleware/rateLimiter";
 import {
   calculateCostFromTokens,
   calculateImageCost,
   calculateTTSCost,
-  calculateWhisperCost,
-  normalizeTokenUsage,
 } from "../utils/costs";
 import logger from "../logger";
 import { buildSystemPrompt } from "./promptBuilder";
@@ -239,8 +236,6 @@ export async function proxyChatCompletion(user: any, body: any) {
   // 1. זיהוי הספק
   const provider = getProviderFromModel(model);
 
-  let providerKey;
-
   // 2. השגת מפתח הספק של המשתמש
   const providerKeyDoc =
     user.mode === "MANAGED"
@@ -354,6 +349,7 @@ export async function proxyChatCompletion(user: any, body: any) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // eslint-disable-next-line no-constant-condition
           while (true) {
             const { done, value } = await reader.read();
 
@@ -614,6 +610,7 @@ export async function proxyResponses(user: any, body: any) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // eslint-disable-next-line no-constant-condition
           while (true) {
             const { done, value } = await reader.read();
 
@@ -985,6 +982,9 @@ export async function proxyAudioTranscription(
   const decryptedLiteLLMKey = decryptSecret(user.litellmKeyEncrypted);
 
   if (!decryptedLiteLLMKey) throw new Error("LiteLLM key missing");
+
+  // Forward the user's BYOK provider key alongside the file, same as the other proxy* functions
+  formData.append("api_key", providerApiKey);
 
   // מעביר את ה-FormData ישירות ל-LiteLLM
   const litellmResponse = await fetch(

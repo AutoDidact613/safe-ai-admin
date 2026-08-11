@@ -60,8 +60,8 @@ jobs:
         run: npm install
 
       - name: ESLint
-        run: npm run lint || true
-        
+        run: npm run lint
+
       - name: TypeScript typecheck
         run: npm run typecheck
 

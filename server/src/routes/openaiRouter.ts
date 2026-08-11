@@ -1,9 +1,8 @@
 import express from "express";
 import { proxyAuth } from "../middleware/proxyAuth";
-import { audioSpeechHandler, audioTranscriptionHandler, chatCompletionHandler, imageGenerationHandler } from "../controllers/openaiController";
+import { chatCompletionHandler, imageGenerationHandler } from "../controllers/openaiController";
 import { rateLimiter } from "../middleware/rateLimiter";
 import { responsesHandler } from "../controllers/openaiController";
-import multer from "multer"; // npm install multer @types/multer
 
 import {
   anthropicMessagesHandler,
@@ -13,12 +12,7 @@ import {
 
 const router = express.Router();
 
-// multer עם memory storage - הקובץ נשמר ב-RAM (מתאים לקבצי אודיו קטנים)
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 25 * 1024 * 1024 }, // 25MB - מגבלת Whisper
-});
-
+// Audio routes below are disabled; re-add the multer/audio handler imports if re-enabling them.
 
 
 router.post(
@@ -55,8 +49,8 @@ router.post("/responses",
 
 
 // ===== Anthropic Compatible Routes for Claude Code =====
-router.post("/messages", proxyAuth, anthropicMessagesHandler);
-router.post("/messages/count_tokens", proxyAuth, anthropicCountTokensHandler);
+router.post("/messages", proxyAuth, rateLimiter, anthropicMessagesHandler);
+router.post("/messages/count_tokens", proxyAuth, rateLimiter, anthropicCountTokensHandler);
 router.get("/models", proxyAuth, anthropicModelsHandler);
 
 
