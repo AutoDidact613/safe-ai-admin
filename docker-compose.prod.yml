@@ -1,0 +1,86 @@
+# Production stack — runs on the AWS EC2 instance.
+# Mongo and (the LiteLLM metadata) Postgres are NOT run here — they are managed
+# services (MongoDB Atlas / a hosted Postgres such as Neon) reached via
+# MONGO_URI / DATABASE_URL. This avoids self-hosting stateful databases on a
+# single EC2 box (no backup story, no HA) — see docs/DEPLOYMENT.md.
+#
+# Images are built in CI and pushed to a registry (see .github/workflows/cd-*.yml);
+# this file only pulls and runs them — no `build:` here, so deploys stay fast
+# and reproducible.
+#
+# Usage on the host:
+#   cp .env.example .env   (fill in real production values, chmod 600 .env)
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 1g
+    volumes:
+      - ./infra/litellm/litellm_config.yaml:/app/config.yaml:ro
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:4000/health/liveliness"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  server:
+    image: ${IMAGE_REGISTRY}/server:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 512m
+    depends_on:
+      litellm:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      LITELLM_PROXY_URL: http://litellm:4000
+      MONGO_URI: ${MONGO_URI}
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', r => process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  agent:
+    image: ${IMAGE_REGISTRY}/agent:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 512m
+    depends_on:
+      litellm:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      LITELLM_PROXY_URL: http://litellm:4000
+
+  nginx:
+    image: ${IMAGE_REGISTRY}/nginx:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 256m
+    depends_on:
+      - server
+    ports:
+      - "80:80"

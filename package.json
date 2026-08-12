@@ -1,0 +1,26 @@
+{
+  "name": "safeai-613",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo containing: apps/client (React+Vite+TS), apps/server (Node+Express+TS), apps/agent (Python FastAPI)",
+  "workspaces": [
+    "apps/client",
+    "apps/server"
+  ],
+  "scripts": {
+    "dev:client": "npm run dev --workspace=apps/client",
+    "dev:server": "npm run dev --workspace=apps/server",
+    "build:client": "npm run build --workspace=apps/client",
+    "build:server": "npm run build --workspace=apps/server",
+    "lint:client": "npm run lint --workspace=apps/client",
+    "lint:server": "npm run lint --workspace=apps/server",
+    "typecheck:client": "npm run typecheck --workspace=apps/client",
+    "typecheck:server": "npm run typecheck --workspace=apps/server",
+    "test:server": "npm test --workspace=apps/server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SafeAI613/SafeAI-613.git"
+  },
+  "license": "ISC"
+}

@@ -1,0 +1,106 @@
+name: CD - Staging
+
+# Deploys on every push to `develop`. This is a placeholder deploy pipeline:
+# it builds and publishes real images, but the "deploy" job only simulates
+# the rollout (see the TODO markers below) until real EC2 access + secrets
+# are wired up. See docs/DEPLOYMENT.md.
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch: {}
+
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BASE: ghcr.io/${{ github.repository }}
+
+jobs:
+  build-and-push:
+    name: Build & push images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.tag.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: tag
+        run: echo "value=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push server
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/server
+          push: true
+          tags: |
+            ${{ env.IMAGE_BASE }}/server:${{ steps.tag.outputs.value }}
+            ${{ env.IMAGE_BASE }}/server:staging
+
+      - name: Build & push agent
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/agent
+          push: true
+          tags: |
+            ${{ env.IMAGE_BASE }}/agent:${{ steps.tag.outputs.value }}
+            ${{ env.IMAGE_BASE }}/agent:staging
+
+      - name: Build & push nginx (client)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/nginx/Dockerfile
+          build-args: |
+            VITE_API_URL=/api
+          push: true
+          tags: |
+            ${{ env.IMAGE_BASE }}/nginx:${{ steps.tag.outputs.value }}
+            ${{ env.IMAGE_BASE }}/nginx:staging
+
+  deploy:
+    name: Deploy to staging (FAKE — placeholder)
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Simulate rollout
+        run: |
+          echo "=== FAKE DEPLOY (staging) ==="
+          echo "Would SSH into the staging EC2 host and run:"
+          echo "  export IMAGE_REGISTRY=${{ env.IMAGE_BASE }}"
+          echo "  export IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }}"
+          echo "  docker compose -f docker-compose.prod.yml pull"
+          echo "  docker compose -f docker-compose.prod.yml up -d"
+          echo "  docker image prune -f"
+          echo "=============================="
+          echo "No real deployment happened. Replace this step once EC2 SSH access + secrets are configured (see docs/DEPLOYMENT.md)."
+
+      # TODO (real deploy, once ready): something like
+      # - name: Deploy over SSH
+      #   uses: appleboy/ssh-action@v1
+      #   with:
+      #     host: ${{ secrets.STAGING_HOST }}
+      #     username: ${{ secrets.STAGING_SSH_USER }}
+      #     key: ${{ secrets.STAGING_SSH_KEY }}
+      #     script: |
+      #       cd /opt/safeai-613
+      #       export IMAGE_REGISTRY=${{ env.IMAGE_BASE }}
+      #       export IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }}
+      #       docker compose -f docker-compose.prod.yml pull
+      #       docker compose -f docker-compose.prod.yml up -d
+      #       docker image prune -f
