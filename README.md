@@ -48,8 +48,12 @@ docker compose up --build
 
 ## Local dev without Docker (faster frontend iteration)
 
+Each app is an independent npm project (no npm workspaces — see `docs/DEPLOYMENT.md` for why), so install each one separately first:
+
 ```bash
-npm install                       # installs client + server workspaces
+npm --prefix apps/client install
+npm --prefix apps/server install
+
 npm run dev:client                # http://localhost:5173
 npm run dev:server                # http://localhost:3001 (needs Mongo + LiteLLM reachable)
 ```

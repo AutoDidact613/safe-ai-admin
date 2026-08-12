@@ -2,21 +2,17 @@
   "name": "safeai-613",
   "version": "1.0.0",
   "private": true,
-  "description": "Monorepo containing: apps/client (React+Vite+TS), apps/server (Node+Express+TS), apps/agent (Python FastAPI)",
-  "workspaces": [
-    "apps/client",
-    "apps/server"
-  ],
+  "description": "Monorepo containing: apps/client (React+Vite+TS), apps/server (Node+Express+TS), apps/agent (Python FastAPI). Each app is an independent npm project (no npm workspaces) - workspace-driven dependency hoisting was found to alter apps/server's resolved dependency tree enough to break its TypeScript build, so each app installs and builds in full isolation instead, matching how the Dockerfiles already build them.",
   "scripts": {
-    "dev:client": "npm run dev --workspace=apps/client",
-    "dev:server": "npm run dev --workspace=apps/server",
-    "build:client": "npm run build --workspace=apps/client",
-    "build:server": "npm run build --workspace=apps/server",
-    "lint:client": "npm run lint --workspace=apps/client",
-    "lint:server": "npm run lint --workspace=apps/server",
-    "typecheck:client": "npm run typecheck --workspace=apps/client",
-    "typecheck:server": "npm run typecheck --workspace=apps/server",
-    "test:server": "npm test --workspace=apps/server"
+    "dev:client": "npm --prefix apps/client run dev",
+    "dev:server": "npm --prefix apps/server run dev",
+    "build:client": "npm --prefix apps/client run build",
+    "build:server": "npm --prefix apps/server run build",
+    "lint:client": "npm --prefix apps/client run lint",
+    "lint:server": "npm --prefix apps/server run lint",
+    "typecheck:client": "npm --prefix apps/client run typecheck",
+    "typecheck:server": "npm --prefix apps/server run typecheck",
+    "test:server": "npm --prefix apps/server test"
   },
   "repository": {
     "type": "git",
