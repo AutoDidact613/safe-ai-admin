@@ -90,6 +90,7 @@ server/data/
 **/*.d.ts.map
 !*.config.js
 !ecosystem.config.js
+!chrome-extension/**/*.js
 # =========================
 # TypeScript build artifacts in src
 # =========================
