@@ -5,13 +5,20 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Internal container healthcheck only (see Dockerfile HEALTHCHECK) — never
+    # routed to from the outside, so it stays unprefixed regardless of
+    # VITE_BASE_PATH.
     location = /healthz {
         access_log off;
         return 200 "ok\n";
         add_header Content-Type text/plain;
     }
 
-    location /api/ {
+    # The base path below is substituted at build time from VITE_BASE_PATH
+    # (see Dockerfile) — "/" for local dev, "/console/" when the app is
+    # deployed under a sub-path behind an existing host on the domain (e.g.
+    # shared with another product at "/").
+    location ${VITE_BASE_PATH}api/ {
         proxy_pass http://server:3001/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
@@ -20,8 +27,8 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    location / {
-        try_files $uri $uri/ /index.html;
+    location ${VITE_BASE_PATH} {
+        try_files $uri $uri/ ${VITE_BASE_PATH}index.html;
     }
 
     gzip on;

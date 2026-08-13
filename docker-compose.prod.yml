@@ -83,4 +83,11 @@ services:
     depends_on:
       - server
     ports:
-      - "80:80"
+      # Bound to loopback only — the host's own nginx (outside Docker) is the
+      # public front door. It already holds the domain's TLS certificate and
+      # routes other paths/sub-domains to other things running on this box
+      # (e.g. another product at "/"), so this container must never bind the
+      # public 80/443 itself. Add a location block on the host nginx that
+      # proxies the app's sub-path to 127.0.0.1:${NGINX_HOST_PORT:-8091} —
+      # see docs/DEPLOYMENT.md.
+      - "127.0.0.1:${NGINX_HOST_PORT:-8091}:80"
