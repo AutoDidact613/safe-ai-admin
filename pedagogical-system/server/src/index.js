@@ -10,7 +10,8 @@ const submissionRoutes = require("./routes/submissionRoutes");
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+// מגבלה מוגדלת מהדיפולט (100kb) כדי לאפשר קבצים מצורפים להגשות (מקודדים כ-base64 בגוף הבקשה)
+app.use(express.json({ limit: "8mb" }));
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 

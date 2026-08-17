@@ -100,4 +100,4 @@ npm run dev       # http://localhost:5173
 - `POST /api/auth/users` - יצירת משתמשת חדשה (רכזת מגמה בלבד)
 - `GET/POST/PUT/DELETE /api/courses` (+`/:id/units`) - סילבוסים
 - `GET/POST/PUT/DELETE /api/lesson-logs` - תיעוד שיעורים
-- `GET /api/submissions`, `GET /api/submissions/open-assignments`, `POST /api/submissions`, `PUT /api/submissions/:id/status` - הגשות
+- `GET /api/submissions`, `GET /api/submissions/open-assignments` (מציג רק מטלות שעדיין לא הוגשו), `POST /api/submissions` (תוכן + קובץ מצורף אופציונלי עד 5MB, base64), `GET /api/submissions/:id/file` (הורדת הקובץ), `PUT /api/submissions/:id/status` - הגשות

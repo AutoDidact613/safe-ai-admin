@@ -90,12 +90,12 @@ router.get("/open-assignments", async (req, res) => {
     studentId,
     lessonLogId: { $in: assignmentLogs.map((l) => l._id) },
   });
-  const byLog = new Map(existing.map((s) => [s.lessonLogId.toString(), s]));
+  const submittedLogIds = new Set(existing.map((s) => s.lessonLogId.toString()));
 
-  const openAssignments = assignmentLogs.map((log) => ({
-    lessonLog: log,
-    submission: byLog.get(log._id.toString()) || null,
-  }));
+  // מציגים רק מטלות שעדיין לא הוגשו - הגשה קיימת (בכל סטטוס) מוציאה את המטלה מהרשימה
+  const openAssignments = assignmentLogs
+    .filter((log) => !submittedLogIds.has(log._id.toString()))
+    .map((log) => ({ lessonLog: log }));
 
   res.json({ openAssignments });
 });
@@ -109,14 +109,16 @@ router.get("/:id", async (req, res) => {
   res.json({ submission });
 });
 
-// POST /api/submissions - תלמידה מגישה מטלה (יצירה או עדכון הגשה קיימת לאותה מטלה)
+const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5MB - שרירותי, סביר לקבצי תרגיל/פרויקט בסיסיים
+
+// POST /api/submissions - תלמידה מגישה מטלה (יצירה או עדכון הגשה קיימת לאותה מטלה), עם קובץ מצורף אופציונלי
 router.post("/", async (req, res) => {
   const user = req.fullUser;
   if (user.role !== "student") {
     return res.status(403).json({ error: "רק תלמידה יכולה להגיש מטלה" });
   }
 
-  const { lessonLogId, content } = req.body;
+  const { lessonLogId, content, fileName, fileType, fileData } = req.body;
   if (!lessonLogId) return res.status(400).json({ error: "יש לציין את השיעור/מטלה המשויכת" });
 
   const log = await LessonLog.findById(lessonLogId);
@@ -125,6 +127,14 @@ router.post("/", async (req, res) => {
   }
   if (!idsInclude(user.enrolledCourseIds, log.courseId)) {
     return res.status(403).json({ error: "ניתן להגיש מטלות רק עבור הקורס שלך" });
+  }
+
+  if (fileData) {
+    const approxBytes = (fileData.length * 3) / 4;
+    if (approxBytes > MAX_FILE_BYTES) {
+      return res.status(400).json({ error: "הקובץ גדול מהמותר (מקסימום 5MB)" });
+    }
+    if (!fileName) return res.status(400).json({ error: "חסר שם קובץ" });
   }
 
   const submission = await Submission.findOneAndUpdate(
@@ -136,11 +146,28 @@ router.post("/", async (req, res) => {
       content: content || "",
       status: "submitted",
       submittedAt: new Date(),
+      fileName: fileData ? fileName : null,
+      fileType: fileData ? fileType || "application/octet-stream" : null,
+      fileData: fileData || null,
     },
     { upsert: true, new: true }
   );
 
   res.status(201).json({ submission });
+});
+
+// GET /api/submissions/:id/file - הורדת הקובץ המצורף להגשה (אם קיים)
+router.get("/:id/file", async (req, res) => {
+  const submission = await Submission.findById(req.params.id);
+  if (!submission) return res.status(404).json({ error: "הגשה לא נמצאה" });
+  if (!(await canViewSubmission(req.fullUser, submission))) {
+    return res.status(403).json({ error: "אין הרשאת צפייה בהגשה זו" });
+  }
+  if (!submission.fileData) return res.status(404).json({ error: "לא צורף קובץ להגשה זו" });
+
+  res.setHeader("Content-Type", submission.fileType || "application/octet-stream");
+  res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(submission.fileName)}"`);
+  res.send(Buffer.from(submission.fileData, "base64"));
 });
 
 // PUT /api/submissions/:id/status - עדכון סטטוס בדיקה ע"י מורה (בעלת הקורס) או רכזת מגמה

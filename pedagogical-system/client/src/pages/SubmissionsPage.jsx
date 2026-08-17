@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import LinkStrip from "../components/LinkStrip";
@@ -11,8 +11,17 @@ const STATUS_LABELS = {
   reviewed: "נבדק",
 };
 
-function canReview(user, submission) {
+function canReview(user) {
   return user.role === "coordinator" || user.role === "teacher";
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 export default function SubmissionsPage() {
@@ -21,6 +30,8 @@ export default function SubmissionsPage() {
   const [openAssignments, setOpenAssignments] = useState([]);
   const [error, setError] = useState("");
   const [contentDrafts, setContentDrafts] = useState({});
+  const [fileDrafts, setFileDrafts] = useState({});
+  const [studentFilter, setStudentFilter] = useState("");
 
   async function load() {
     try {
@@ -40,7 +51,14 @@ export default function SubmissionsPage() {
 
   async function submitAssignment(lessonLogId) {
     try {
-      await api.post("/api/submissions", { lessonLogId, content: contentDrafts[lessonLogId] || "" });
+      const file = fileDrafts[lessonLogId];
+      const payload = { lessonLogId, content: contentDrafts[lessonLogId] || "" };
+      if (file) {
+        payload.fileName = file.name;
+        payload.fileType = file.type;
+        payload.fileData = await fileToBase64(file);
+      }
+      await api.post("/api/submissions", payload);
       load();
     } catch (err) {
       setError(err.response?.data?.error || "שגיאה בהגשה");
@@ -51,6 +69,22 @@ export default function SubmissionsPage() {
     await api.put(`/api/submissions/${submissionId}/status`, { status });
     load();
   }
+
+  async function downloadFile(submission) {
+    const res = await api.get(`/api/submissions/${submission._id}/file`, { responseType: "blob" });
+    const url = URL.createObjectURL(res.data);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = submission.fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const visibleSubmissions = useMemo(() => {
+    if (user.role !== "coordinator" || !studentFilter.trim()) return submissions;
+    const needle = studentFilter.trim().toLowerCase();
+    return submissions.filter((s) => s.studentName.toLowerCase().includes(needle));
+  }, [submissions, studentFilter, user.role]);
 
   return (
     <div className="page">
@@ -63,28 +97,38 @@ export default function SubmissionsPage() {
           <h2>מטלות פתוחות להגשה</h2>
           {openAssignments.length === 0 && <p className="muted">אין כרגע מטלות פתוחות.</p>}
           <ul>
-            {openAssignments.map(({ lessonLog, submission }) => (
+            {openAssignments.map(({ lessonLog }) => (
               <li className="open-assignment-item" key={lessonLog._id}>
                 <div>
                   <strong>{lessonLog.assignmentTitle || TYPE_LABELS[lessonLog.assignmentType]}</strong>
                   <span className="muted"> · {TYPE_LABELS[lessonLog.assignmentType]}</span>
                 </div>
-                {submission ? (
-                  <span className={"status-tag status-" + submission.status}>{STATUS_LABELS[submission.status]}</span>
-                ) : (
-                  <div className="submit-row">
-                    <input
-                      placeholder="תוכן ההגשה"
-                      value={contentDrafts[lessonLog._id] || ""}
-                      onChange={(e) => setContentDrafts({ ...contentDrafts, [lessonLog._id]: e.target.value })}
-                    />
-                    <button onClick={() => submitAssignment(lessonLog._id)}>הגש</button>
-                  </div>
-                )}
+                <div className="submit-row">
+                  <input
+                    placeholder="תוכן ההגשה"
+                    value={contentDrafts[lessonLog._id] || ""}
+                    onChange={(e) => setContentDrafts({ ...contentDrafts, [lessonLog._id]: e.target.value })}
+                  />
+                  <input
+                    type="file"
+                    onChange={(e) => setFileDrafts({ ...fileDrafts, [lessonLog._id]: e.target.files[0] || null })}
+                  />
+                  <button onClick={() => submitAssignment(lessonLog._id)}>הגש</button>
+                </div>
               </li>
             ))}
           </ul>
         </section>
+      )}
+
+      {user.role === "coordinator" && (
+        <div className="inline-form">
+          <input
+            placeholder="סינון לפי שם תלמידה"
+            value={studentFilter}
+            onChange={(e) => setStudentFilter(e.target.value)}
+          />
+        </div>
       )}
 
       <table className="submissions-table">
@@ -93,22 +137,32 @@ export default function SubmissionsPage() {
             <th>תלמידה</th>
             <th>סוג הגשה</th>
             <th>יחידה מקושרת</th>
+            <th>קובץ</th>
             <th>סטטוס</th>
             {user.role !== "student" && <th>פעולה</th>}
           </tr>
         </thead>
         <tbody>
-          {submissions.map((s) => (
+          {visibleSubmissions.map((s) => (
             <tr key={s._id}>
               <td>{s.studentName}</td>
               <td>{TYPE_LABELS[s.type]}</td>
               <td className="pill">🔗 {s.courseName} · {s.unitTitle}</td>
               <td>
+                {s.fileName ? (
+                  <button className="link-button" onClick={() => downloadFile(s)}>
+                    📎 {s.fileName}
+                  </button>
+                ) : (
+                  <span className="muted">-</span>
+                )}
+              </td>
+              <td>
                 <span className={"status-tag status-" + s.status}>{STATUS_LABELS[s.status]}</span>
               </td>
               {user.role !== "student" && (
                 <td>
-                  {canReview(user, s) && (
+                  {canReview(user) && (
                     <select value={s.status} onChange={(e) => updateStatus(s._id, e.target.value)}>
                       {Object.entries(STATUS_LABELS).map(([value, label]) => (
                         <option key={value} value={value}>

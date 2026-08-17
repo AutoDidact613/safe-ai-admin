@@ -9,6 +9,11 @@ const SubmissionSchema = new mongoose.Schema(
     status: { type: String, enum: SUBMISSION_STATUSES, default: "not_submitted" },
     content: { type: String, default: "", trim: true },
     submittedAt: { type: Date, default: null },
+
+    // קובץ מצורף (אופציונלי) - נשמר כ-base64 במסמך עצמו, אין שירות אחסון קבצים חיצוני
+    fileName: { type: String, default: null },
+    fileType: { type: String, default: null },
+    fileData: { type: String, default: null }, // base64, לא נחשף ב-toJSON (ר' למטה)
   },
   { timestamps: true }
 );
@@ -18,6 +23,7 @@ SubmissionSchema.index({ lessonLogId: 1, studentId: 1 }, { unique: true });
 SubmissionSchema.set("toJSON", {
   transform: (_doc, ret) => {
     delete ret.__v;
+    delete ret.fileData; // עלול להיות כבד; מתקבל דרך GET /:id/file בלבד
     return ret;
   },
 });
