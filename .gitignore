@@ -98,6 +98,10 @@ src/**/*.d.ts
 src/**/*.js.map
 src/**/*.d.ts.map
 
+# pedagogical-system is a plain-JavaScript project (not compiled from TypeScript) -
+# its .js files are source, not build artifacts, so they must not be ignored.
+!pedagogical-system/**/*.js
+!pedagogical-system/**/*.jsx
 
 docs/production/*
 
