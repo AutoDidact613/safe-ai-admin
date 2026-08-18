@@ -21,7 +21,10 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_BASE: ghcr.io/${{ github.repository }}
+  # Hardcoded lowercase: Docker tags reject uppercase, but github.repository
+  # resolves to "SafeAI613/SafeAI-613" (mixed case) — using it directly
+  # broke the first real run of the staging workflow, so fixing it here too.
+  IMAGE_BASE: ghcr.io/safeai613/safeai-613
 
 jobs:
   build-and-push:
