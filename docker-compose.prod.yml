@@ -41,15 +41,18 @@ services:
       GROQ_API_KEY: ${GROQ_API_KEY:-}
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O-", "http://localhost:4000/health/liveliness"]
+      # `wget` doesn't exist in this image (confirmed via `docker exec ... which
+      # wget` -> not found) — the healthcheck was failing forever regardless of
+      # timing, which is why bumping start_period kept "almost" working. python3
+      # is what's actually on PATH here.
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4000/health/liveliness', timeout=5)"]
       interval: 15s
-      timeout: 5s
+      timeout: 10s
       retries: 5
-      # litellm runs Prisma DB migrations on every startup. Neon Postgres is
-      # serverless and can be suspended, so first-connect latency varies a
-      # lot (observed 100s once, 245s another time) — 180s wasn't enough.
-      # Failing checks during start_period don't count against retries.
-      start_period: 300s
+      # Real logs show Prisma migrate + app startup completing in ~100-190s
+      # against Neon; this leaves real margin without the excess left over
+      # from chasing the wrong root cause.
+      start_period: 180s
 
   server:
     image: ${IMAGE_REGISTRY}/server:${IMAGE_TAG:-latest}
