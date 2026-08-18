@@ -5,7 +5,7 @@
 import nodemailer from "nodemailer";
 import logger from "../logger";
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const FRONTEND_URL = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/+$/, "");
 const EMAIL_FROM = process.env.EMAIL_FROM || "SafeAI <noreply@safeai.com>";
 
 // ---------------------------------------------------------------------------
