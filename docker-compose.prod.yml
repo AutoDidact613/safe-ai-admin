@@ -62,8 +62,12 @@ services:
     # Docker's embedded DNS resolver (127.0.0.11) failed to resolve the
     # mongodb+srv:// SRV record against MongoDB Atlas ("querySrv ECONNREFUSED"),
     # a known issue with SRV lookups through Docker's default DNS forwarding.
-    # Public DNS resolves it directly.
+    # Listing 127.0.0.11 FIRST keeps resolving other containers by name on
+    # this compose network (e.g. "litellm", needed for the in-app LiteLLM
+    # key-generation call on registration — omitting it broke that with a
+    # 5s timeout instead). Public DNS is the fallback for the SRV lookup.
     dns:
+      - 127.0.0.11
       - 8.8.8.8
       - 8.8.4.4
     depends_on:
