@@ -45,6 +45,11 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
+      # litellm runs Prisma DB migrations on every startup, which took ~100s
+      # against the real Postgres (Neon) — well past interval*retries (75s)
+      # with no grace period, so Docker gave up before it ever got healthy.
+      # Failing checks during start_period don't count against retries.
+      start_period: 180s
 
   server:
     image: ${IMAGE_REGISTRY}/server:${IMAGE_TAG:-latest}
