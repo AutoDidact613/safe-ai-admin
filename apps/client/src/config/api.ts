@@ -94,9 +94,15 @@ export async function apiCall<T>(
   // Get access token from localStorage
   const accessToken = localStorage.getItem("accessToken");
 
-  // If a relative endpoint is provided (starts with '/'), prepend the API base URL
-  const resolveUrl = (ep: string) =>
-    ep.startsWith("http") ? ep : `${API_BASE_URL}${ep}`;
+  // Most callers pass an API_ENDPOINTS.* value, which already has API_BASE_URL
+  // baked in (e.g. "/api/auth/register") — prepending it again here would
+  // double it up. Only bare relative paths that don't already carry the base
+  // (e.g. "/contact/my-requests/123") need it added.
+  const resolveUrl = (ep: string) => {
+    if (ep.startsWith("http")) return ep;
+    if (API_BASE_URL && ep.startsWith(API_BASE_URL)) return ep;
+    return `${API_BASE_URL}${ep}`;
+  };
 
   const makeRequest = async (token: string | null) => {
     const url = resolveUrl(endpoint);
