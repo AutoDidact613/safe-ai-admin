@@ -1,5 +1,8 @@
 # Multi-Agent Team Charter for SafeAI-613
 
+> **⚠️ Working branch: `develop`**
+> `develop` is the team's active integration branch — not `main`. All feature branches and pull requests should be based on, and opened against, `develop` unless explicitly told otherwise. `main` tracks production and only receives merges from `develop`.
+
 Quick Agent Summary
 -------------------
 - **Purpose:** Rapid orientation for AI coding agents working in this monorepo (client + server).
