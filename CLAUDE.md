@@ -2,9 +2,9 @@
 
 Quick Agent Summary
 -------------------
-- **Purpose:** Rapid orientation for AI coding agents working in this monorepo (client + server).
+- **Purpose:** Rapid orientation for AI coding agents working in this monorepo (client + server + agent, under `apps/`).
 - **Key files:** See [.github/copilot-instructions.md](.github/copilot-instructions.md) for developer workflows and [README.md](README.md) for setup.
-- **Where to look first:** `client/src/config/api.ts`, `server/src/index.ts`, and `docs/` for domain-specific guides.
+- **Where to look first:** `apps/client/src/config/api.ts`, `apps/server/src/index.ts`, [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for anything CD/AWS-related, and `docs/` for other domain-specific guides.
 
 This file defines the roles, responsibilities, and communication protocols for AI coding agents working on SafeAI-613. Use this to coordinate multi-agent work and ensure agents understand their boundaries and quality expectations.
 
@@ -194,3 +194,4 @@ When a task touches multiple layers (e.g., "add user management" spans backend C
 - [docs/CLIENT_ROUTING_STRUCTURE.md](docs/CLIENT_ROUTING_STRUCTURE.md) — Frontend routes and guards
 - [docs/CODE_DOCUMENTATION_GUIDE.md](docs/CODE_DOCUMENTATION_GUIDE.md) — Documentation standards
 - [docs/CLIENT_URGENT_TASKS.md](docs/CLIENT_URGENT_TASKS.md) — Backlog of outstanding work
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — CI/CD, the real staging/production AWS topology, and every deploy bug hit so far with its fix. Read this before touching `.github/workflows/cd-*.yml` or `docker-compose.prod.yml`.
