@@ -59,6 +59,13 @@ services:
     restart: unless-stopped
     logging: *default-logging
     mem_limit: 512m
+    # Docker's embedded DNS resolver (127.0.0.11) failed to resolve the
+    # mongodb+srv:// SRV record against MongoDB Atlas ("querySrv ECONNREFUSED"),
+    # a known issue with SRV lookups through Docker's default DNS forwarding.
+    # Public DNS resolves it directly.
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     depends_on:
       litellm:
         condition: service_healthy
