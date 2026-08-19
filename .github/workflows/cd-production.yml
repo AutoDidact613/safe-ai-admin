@@ -16,6 +16,9 @@ on:
     paths-ignore:
       - "**.md"
       - "docs/**"
+      - "claude-knowledge/**"
+      - ".claude/**"
+      - ".gitignore"
   workflow_dispatch: {}
 
 concurrency:
