@@ -13,6 +13,12 @@ name: CD - Production
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "claude-knowledge/**"
+      - ".claude/**"
+      - ".gitignore"
   workflow_dispatch: {}
 
 concurrency:
