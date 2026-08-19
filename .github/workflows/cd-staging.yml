@@ -16,6 +16,9 @@ name: CD - Staging
 on:
   push:
     branches: [develop]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
   workflow_dispatch: {}
 
 concurrency:

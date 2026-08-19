@@ -13,6 +13,9 @@ name: CD - Production
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
   workflow_dispatch: {}
 
 concurrency:
