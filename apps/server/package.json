@@ -10,7 +10,6 @@
     "prod": "npm run build && node dist/index.js",
     "typecheck": "tsc --noEmit",
     "seed:dev-data": "ts-node src/seedDevData.ts",
-    "seed:contact-types": "ts-node src/seedContactRequestTypes.ts",
     "lint": "eslint . --ext .ts",
     "test": "jest",
     "test:watch": "jest --watch",
