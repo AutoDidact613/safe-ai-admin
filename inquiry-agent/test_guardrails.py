@@ -36,6 +36,17 @@ def test_flags_unrelated_email_address():
 
 
 @patch("guardrails.genai.Client")
+def test_passes_when_no_issues_with_code_fenced_response(client_cls):
+    client_cls.return_value.models.generate_content.return_value.text = (
+        '```json\n{"overpromises": false, "reason": ""}\n```'
+    )
+
+    result = check_draft("Thank you for reaching out, we will look into it.", _inquiry(), _config())
+
+    assert result["passed"] is True
+
+
+@patch("guardrails.genai.Client")
 def test_flags_overpromise_via_semantic_check(client_cls):
     client_cls.return_value.models.generate_content.return_value.text = (
         '{"overpromises": true, "reason": "guarantees a same-day fix"}'

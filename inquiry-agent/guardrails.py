@@ -1,4 +1,3 @@
-import json
 import re
 
 from google import genai
@@ -6,6 +5,7 @@ from langsmith import traceable
 
 from config import Config
 from graph_state import GuardrailResult, Inquiry
+from json_utils import parse_json_response
 from usage_tracker import add_tokens
 
 _EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
@@ -29,7 +29,7 @@ def _check_overpromise(draft: str, config: Config) -> dict:
     )
     if response.usage_metadata:
         add_tokens(response.usage_metadata.total_token_count, config.thread_id)
-    return json.loads(response.text)
+    return parse_json_response(response.text)
 
 
 def check_draft(draft: str, inquiry: Inquiry, config: Config) -> GuardrailResult:

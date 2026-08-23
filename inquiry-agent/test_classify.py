@@ -22,6 +22,17 @@ def test_classify_inquiry_parses_valid_json(client_cls):
 
 
 @patch("classify.genai.Client")
+def test_classify_inquiry_parses_code_fenced_json(client_cls):
+    client_cls.return_value.models.generate_content.return_value.text = (
+        '```json\n{"category": "bug", "urgency": "urgent"}\n```'
+    )
+
+    result = classify_inquiry("the app crashes on login", _config())
+
+    assert result == {"category": "bug", "urgency": "urgent"}
+
+
+@patch("classify.genai.Client")
 def test_classify_inquiry_rejects_unknown_values(client_cls):
     client_cls.return_value.models.generate_content.return_value.text = (
         '{"category": "nonsense", "urgency": "urgent"}'

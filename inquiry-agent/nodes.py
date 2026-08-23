@@ -4,6 +4,7 @@ from config import Config
 from draft_reply import generate_draft
 from graph_state import GraphState
 from guardrails import check_draft
+from rag import ArticleRetriever
 
 _MAX_DRAFT_RETRIES = 2
 
@@ -35,7 +36,9 @@ def present_node(state: GraphState) -> GraphState:
     return state
 
 
-def draft_node(state: GraphState, agent_config: Config) -> GraphState:
+def draft_node(
+    state: GraphState, agent_config: Config, retriever: ArticleRetriever
+) -> GraphState:
     selected = state.get("selected_ids", [])
     print(f"מנסח {len(selected)} טיוטות תשובה...")
     drafts = state.get("drafts", {})
@@ -43,9 +46,10 @@ def draft_node(state: GraphState, agent_config: Config) -> GraphState:
     for inquiry_id in selected:
         inquiry = by_id[inquiry_id]
         category = state["classified"][inquiry_id]["category"]
+        articles = retriever.find_relevant(inquiry["description"])
         drafts[inquiry_id] = {
             "inquiry_id": inquiry_id,
-            "text": generate_draft(inquiry, category, agent_config),
+            "text": generate_draft(inquiry, category, articles, agent_config),
         }
     state["drafts"] = drafts
     return state

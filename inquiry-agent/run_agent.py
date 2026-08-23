@@ -103,6 +103,12 @@ def cmd_process(args: argparse.Namespace) -> None:
             print(f"\nטוקנים בריצה זו: {usage_tracker.get_total_tokens(args.thread_id)}")
 
         else:
+            # Known gap (tracked separately, not fixed here): if a run crashes inside
+            # guardrails_node or evaluator_node (e.g. a transient LLM error), next_nodes
+            # is ("guardrails_node",) / ("evaluator_node",) - neither branch above matches,
+            # so it lands here as "no pending step" even though the run is actually stuck
+            # mid-graph. Resuming in that case requires calling graph.invoke(None, thread_config)
+            # directly rather than through this CLI.
             raise SystemExit("This run has no pending step (already completed or not started)")
     except ConfigError as e:
         sys.exit(f"שגיאת הגדרות: {e}")

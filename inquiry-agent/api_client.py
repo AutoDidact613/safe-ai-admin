@@ -48,3 +48,8 @@ class SafeAIClient:
         response = self._session.get(f"{self._base_url}/contact/my-requests/{inquiry_id}")
         response.raise_for_status()
         return response.json()
+
+    def fetch_all_articles(self) -> List[dict]:
+        response = self._session.get(f"{self._base_url}/articles/all")
+        response.raise_for_status()
+        return response.json()["articles"]

@@ -22,6 +22,9 @@ class Config:
         self.safeai_agent_api_token = _require("SAFEAI_AGENT_API_TOKEN")
         self.gemini_api_key = _require("GEMINI_API_KEY")
         self.llm_model = os.environ.get("LLM_MODEL", "gemini-flash-latest")
+        self.gemini_embedding_model = os.environ.get(
+            "GEMINI_EMBEDDING_MODEL", "gemini-embedding-001"
+        )
         self.langchain_project = os.environ.get("LANGCHAIN_PROJECT", "safeai-inquiry-agent")
         self.mongodb_atlas_uri = _require("MONGODB_ATLAS_URI")
         # Set by the CLI per-invocation (not from env) - lets classify/draft_reply's

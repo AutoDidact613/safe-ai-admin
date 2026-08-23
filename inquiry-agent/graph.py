@@ -17,17 +17,29 @@ from nodes import (
     present_node,
     send_node,
 )
+from rag import ArticleRetriever
 
 
 def build_graph(config: Config, client: SafeAIClient):
     builder = StateGraph(GraphState)
+
+    # MongoClient is created directly (not via from_conn_string, a generator-based
+    # @contextmanager) so it stays referenced as a plain variable and isn't closed
+    # by the garbage collector while the graph is still using it.
+    mongo_client = MongoClient(config.mongodb_atlas_uri)
+    article_retriever = ArticleRetriever(
+        mongo_client["inquiry_agent_knowledge"]["article_embeddings"], config
+    )
 
     builder.add_node("fetch_node", partial(fetch_node, client=client))
     builder.add_node("classify_node", partial(classify_node, agent_config=config))
     builder.add_node("present_node", present_node)
     # GATE 1 (selection_gate): HITL interrupt before draft_node - admin selects
     # which inquiry IDs go into state["selected_ids"] before resuming.
-    builder.add_node("draft_node", partial(draft_node, agent_config=config))
+    builder.add_node(
+        "draft_node",
+        partial(draft_node, agent_config=config, retriever=article_retriever),
+    )
     builder.add_node("guardrails_node", partial(guardrails_node, agent_config=config))
     builder.add_node("evaluator_node", evaluator_node)
     # GATE 3 (evaluator_gate): HITL interrupt before send_node - admin approves
@@ -48,10 +60,6 @@ def build_graph(config: Config, client: SafeAIClient):
     builder.add_edge("evaluator_node", "send_node")
     builder.add_edge("send_node", END)
 
-    # MongoClient is created directly (not via from_conn_string, a generator-based
-    # @contextmanager) so it stays referenced as a plain variable and isn't closed
-    # by the garbage collector while the graph is still using it.
-    mongo_client = MongoClient(config.mongodb_atlas_uri)
     checkpointer = MongoDBSaver(mongo_client, db_name="inquiry_agent_checkpoints")
 
     return builder.compile(

@@ -32,6 +32,9 @@ fetch_node -> classify_node -> present_node
 The graph compiles with a checkpointer keyed by `thread_id`, since gates 1 and 3
 pause execution across separate CLI invocations.
 
+`draft_node` also retrieves relevant help articles (see RAG section below) and grounds
+the generated reply in them.
+
 ## GuardRails
 
 `guardrails_node` checks each draft before it reaches the admin:
@@ -56,6 +59,25 @@ A failed check routes back to `draft_node` for another attempt, up to
 Classification and drafting run on Gemini via `google-genai` (`GEMINI_API_KEY`,
 `LLM_MODEL` in `.env`). This is the project's only LLM provider - there is no
 OpenAI dependency anywhere in this agent.
+
+## RAG (help articles)
+
+`draft_node` grounds each draft in the SafeAI-613 help articles most relevant to the
+inquiry, instead of relying only on the LLM's own knowledge:
+
+- `index_articles.py` is a standalone script (run manually or on a schedule, not part of
+  the graph) that fetches all articles via `GET /articles/all` (the token this agent
+  already uses is admin-scoped, so no server change was needed), embeds each one with
+  Gemini (`embeddings.py`, `GEMINI_EMBEDDING_MODEL` in `.env`), and upserts it by `slug`
+  into the `article_embeddings` collection, in a separate `inquiry_agent_knowledge`
+  database on the same `MONGODB_ATLAS_URI` cluster used for checkpoints.
+- `rag.py`'s `ArticleRetriever` embeds the inquiry description and does a cosine-similarity
+  scan over that collection (no Atlas Vector Search index - the article count is small
+  enough that a full scan is fine) to find the top matching articles for `draft_node`.
+
+This is intentionally independent of the server's own embedding infrastructure
+(`Embedding` model / `embeddingCache` / `filterService`), which exists for a different,
+not-yet-active purpose (an input-filter guardrail node), not for knowledge retrieval.
 
 ## Checkpointer
 
