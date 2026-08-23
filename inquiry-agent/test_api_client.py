@@ -51,3 +51,23 @@ def test_post_reply_sends_text_payload(session_cls):
         "http://localhost:5000/api/contact/my-requests/1/reply",
         json={"text": "hello"},
     )
+
+
+@patch("api_client.requests.Session")
+def test_get_inquiry_details_calls_expected_url(session_cls):
+    session = session_cls.return_value
+    session.get.return_value.json.return_value = {
+        "_id": "1",
+        "title": "foo",
+        "description": "bar",
+        "status": "open",
+        "requestType": "baz",
+        "replies": [],
+    }
+
+    client = SafeAIClient(_config())
+    result = client.get_inquiry_details("1")
+
+    session.get.assert_called_once_with("http://localhost:5000/api/contact/my-requests/1")
+    assert result["status"] == "open"
+    assert result["replies"] == []
