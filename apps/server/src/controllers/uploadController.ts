@@ -30,6 +30,11 @@ export const getPresignedUrl = async (
       return res.status(400).json({ error: "שם וסוג הקובץ נדרשים" });
     }
 
+    if (!process.env.AWS_BUCKET_NAME || !process.env.AWS_REGION) {
+      console.error("Missing AWS upload configuration: AWS_BUCKET_NAME / AWS_REGION env vars are not set");
+      return res.status(500).json({ error: "שרת ההעלאה לא הוגדר כראוי" });
+    }
+
     // חילוץ סיומת הקובץ ויצירת מפתח ייחודי
     const fileExtension = fileName.split('.').pop();
     const uniqueKey = `uploads/${uuidv4()}.${fileExtension}`;

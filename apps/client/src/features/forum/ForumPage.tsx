@@ -46,7 +46,7 @@ export const ForumPage: React.FC = () => {
     const userRole = currentUser?.role || 'user';
 
     const baseUrl = search.trim()
-      ? `${API_BASE_URL}/api/posts/search?query=${search}`
+      ? `${API_BASE_URL}/api/posts/search?query=${encodeURIComponent(search)}`
       : `${API_BASE_URL}/api/posts?page=${page}`;
     
     const url = baseUrl.includes('?') 

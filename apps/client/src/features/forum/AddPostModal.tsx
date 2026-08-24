@@ -48,7 +48,7 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
   useEffect(() => {
     if (formData.title.length >= 3) {
       const timer = setTimeout(() => {
-        fetch(`${API_BASE_URL}/api/posts/search-strict-similar?title=${formData.title}`)
+        fetch(`${API_BASE_URL}/api/posts/search-strict-similar?title=${encodeURIComponent(formData.title)}`)
           .then((res) => res.json())
           .then((data) => {
             setSimilarPosts(data);

@@ -37,8 +37,10 @@ jest.mock('uuid', () => ({ v4: () => 'mock-uuid-value' }));
 // כדי להגיע ל-src, ולא רק אחת כמו אם הוא היה יושב ישירות מתחת ל-server/__tests__/.
 import app from '../../index';
 import Post from '../../models/Post';
+import Tag from '../../models/tag';
 
 jest.mock('../../models/Post'); // מנטרל את המודל האמיתי - לא נוגעים במסד הנתונים האמיתי
+jest.mock('../../models/tag');
 
 describe('GET /api/posts - בדיקת הראוט הראשי של הפורום', () => {
   test('צריך להחזיר סטטוס 200 ורשימת פוסטים', async () => {
@@ -57,5 +59,26 @@ describe('GET /api/posts - בדיקת הראוט הראשי של הפורום', 
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.posts)).toBe(true);
     expect(res.body.posts[0].title).toBe("פוסט בדיקה ראשון");
+  });
+});
+
+describe('GET /api/posts/search - בדיקת חיפוש פוסטים', () => {
+  beforeEach(() => {
+    (Tag.find as jest.Mock).mockResolvedValue([]);
+    (Post.aggregate as jest.Mock).mockResolvedValue([]);
+  });
+
+  test('מילת חיפוש רגילה מחזירה 200 (רגרסיה לתקלת /api/api ו-500)', async () => {
+    const res = await request(app).get('/api/posts/search').query({ query: 'גדש' });
+
+    expect(res.status).toBe(200);
+  });
+
+  test('מילת חיפוש עם תו מיוחד של Regex לא צריכה לקרוס בשגיאת 500', async () => {
+    // לפני התיקון: new RegExp(query, 'i') על "(" בלבד זרק SyntaxError שנתפס
+    // ב-catch והוחזר כ-500. כעת התו נבלע (escaped) ולא אמור לגרום לקריסה.
+    const res = await request(app).get('/api/posts/search').query({ query: '(תגית' });
+
+    expect(res.status).toBe(200);
   });
 });

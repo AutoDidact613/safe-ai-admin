@@ -14,6 +14,9 @@ import { resolveOrCreateTagByName } from '../services/tagService';
 // אתחול זיכרון המטמון הגלובלי בשרת
 const recommendationCache = new NodeCache({ stdTTL: 1800, checkperiod: 60 });
 
+// בריחה מתווים מיוחדים של Regex לפני בניית ביטוי מקלט משתמש חופשי
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
  * מנקה את כל ה-Cache של רשימות הפוסטים (כל העמודים, כל התפקידים).
  * נקרא בכל פעולה שיכולה לשנות את מה שמוצג ברשימה - פוסט חדש, תגובה חדשה
@@ -357,7 +360,7 @@ export const searchPosts = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'חובה לספק מילת חיפוש' });
     }
 
-    const searchRegex = new RegExp(query as string, 'i');
+    const searchRegex = new RegExp(escapeRegExp(query as string), 'i');
     
     const matchingTags = await Tag.find({ name: searchRegex });
     const tagIds = matchingTags.map(t => t._id);
