@@ -2,6 +2,7 @@
 
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import filterRouter from "./routes/filterRouter";
 import profileRouter from "./routes/profileRouter";
 import openaiRouter from "./routes/openaiRouter";
@@ -30,6 +31,7 @@ import path from 'path';
 import tagRoutes from './routes/tagRoutes';
 import uploadRouter from "./routes/uploadRoutes";
 import cookieParser from 'cookie-parser';
+import { initializeAutoPostBot } from './services/autoPostService';
 
 const PORT = process.env.PORT || 3001;
 
@@ -45,6 +47,10 @@ app.use(cors({
 }));
 
 app.use(cookieParser());
+
+// דוחס (gzip) את כל התגובות מהשרת לפני שהן נשלחות ברשת - מקטין את גודל
+// הנתונים שהלקוח צריך להוריד, ומשפר את מהירות הטעינה בעיקר בחיבורים איטיים
+app.use(compression());
 
 // הגדרה ל-50 מגה-בייט כדי להיות בטוחים
 app.use(express.json({ limit: "50mb" }));
@@ -108,6 +114,7 @@ async function start() {
     app.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
     });
+    initializeAutoPostBot();
 
   } catch (err) {
     logger.error("Startup failed:", err);
@@ -115,6 +122,9 @@ async function start() {
   }
 }
 
-start();
+export default app;
+if (require.main === module) {
+  start();
+}
 
 
