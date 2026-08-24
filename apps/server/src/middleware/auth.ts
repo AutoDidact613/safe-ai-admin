@@ -4,7 +4,24 @@
  */
 
 import { Request, Response, NextFunction } from "express";
+import crypto from "crypto";
 import { verifyAccessToken } from "../utils/jwt";
+
+// Shared secret for server-to-server calls (e.g. the inquiry-agent calling
+// back into this API) that must not expire like a 15-minute user access
+// token does. Optional: only compared against when set, so environments
+// that don't run the agent are unaffected.
+const AGENT_SERVICE_TOKEN = process.env.AGENT_SERVICE_TOKEN;
+
+function isAgentServiceToken(token: string): boolean {
+  if (!AGENT_SERVICE_TOKEN) return false;
+
+  const provided = Buffer.from(token);
+  const expected = Buffer.from(AGENT_SERVICE_TOKEN);
+  if (provided.length !== expected.length) return false;
+
+  return crypto.timingSafeEqual(provided, expected);
+}
 
 /**
  * Middleware to authenticate JWT token
@@ -25,6 +42,15 @@ export function authenticateToken(
 
   if (!token) {
     return res.status(401).json({ error: "Access token required" });
+  }
+
+  if (isAgentServiceToken(token)) {
+    (req as any).user = {
+      userId: "inquiry-agent",
+      email: "inquiry-agent@service.local",
+      role: "admin",
+    };
+    return next();
   }
 
   try {
