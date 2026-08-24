@@ -284,7 +284,7 @@ export async function createOrganizationMemberHandler(
       return res.status(403).json({ error: "Access denied" });
     }
 
-    const { user: newUser, temporaryPassword } = await createOrganizationMember(orgId, {
+    const { user: newUser, temporaryPassword, emailSent } = await createOrganizationMember(orgId, {
       name: name.trim(),
       email: email.trim(),
       role,
@@ -294,6 +294,7 @@ export async function createOrganizationMemberHandler(
       success: true,
       user: { _id: newUser._id, name: newUser.name, email: newUser.email },
       temporaryPassword,
+      emailSent,
     });
   } catch (error: any) {
     logger.error("Failed to create organization member", {

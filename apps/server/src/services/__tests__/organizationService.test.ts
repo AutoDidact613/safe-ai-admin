@@ -6,6 +6,7 @@ import {
   sendOrgApprovedEmail,
   sendOrgStatusEmail,
   sendOrgApprovalRequestEmail,
+  sendInviteEmail,
 } from "../../utils/email";
 import { register } from "../authService";
 import { UsageLog } from "../../models";
@@ -22,6 +23,7 @@ const mockedRepo = jest.mocked(repo);
 const mockedUserRepo = jest.mocked(userRepo);
 const mockedRegister = jest.mocked(register);
 const mockedUsageLog = jest.mocked(UsageLog);
+const mockedSendInviteEmail = jest.mocked(sendInviteEmail);
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -379,6 +381,42 @@ describe("organizationService.createOrganizationMember", () => {
     });
     expect(typeof result.temporaryPassword).toBe("string");
     expect(result.temporaryPassword.length).toBeGreaterThan(0);
+  });
+
+  it("sends an invite email with the generated temporary password and reports success", async () => {
+    mockedRepo.getOrganizationById.mockResolvedValue({ _id: "org1" } as any);
+    mockedUserRepo.countUsersByOrganization.mockResolvedValue(0);
+    mockedRegister.mockResolvedValue({
+      user: { _id: "newUser1", name: "New Member", email: "member@example.com" },
+    } as any);
+    mockedSendInviteEmail.mockResolvedValue(true);
+
+    const result = await organizationService.createOrganizationMember("org1", memberData);
+
+    expect(mockedSendInviteEmail).toHaveBeenCalledWith(
+      "member@example.com",
+      "New Member",
+      result.temporaryPassword
+    );
+    expect(result.emailSent).toBe(true);
+  });
+
+  it("still creates the user and reports emailSent=false when the invite email fails", async () => {
+    mockedRepo.getOrganizationById.mockResolvedValue({ _id: "org1" } as any);
+    mockedUserRepo.countUsersByOrganization.mockResolvedValue(0);
+    mockedRegister.mockResolvedValue({
+      user: { _id: "newUser1", name: "New Member", email: "member@example.com" },
+    } as any);
+    mockedSendInviteEmail.mockResolvedValue(false);
+
+    const result = await organizationService.createOrganizationMember("org1", memberData);
+
+    expect(result.user).toEqual({
+      _id: "newUser1",
+      name: "New Member",
+      email: "member@example.com",
+    });
+    expect(result.emailSent).toBe(false);
   });
 
   it("uses the given role instead of the default", async () => {
