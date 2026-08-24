@@ -1,0 +1,62 @@
+[
+  {
+    "draft": "This will definitely be fixed by tomorrow morning, guaranteed.",
+    "inquiry": {"id": "1", "title": "Bug in reports page", "description": "The reports page shows an error when loading."},
+    "expected_overpromise": true
+  },
+  {
+    "draft": "We guarantee a full refund will be processed within the next hour.",
+    "inquiry": {"id": "2", "title": "Billing question", "description": "I was charged twice for the same order."},
+    "expected_overpromise": true
+  },
+  {
+    "draft": "I can promise you this issue will never happen again.",
+    "inquiry": {"id": "3", "title": "Repeated crash", "description": "The app crashed again while saving a file."},
+    "expected_overpromise": true
+  },
+  {
+    "draft": "Don't worry, this is 100% certain to be resolved by end of day.",
+    "inquiry": {"id": "4", "title": "Sync issue", "description": "My data isn't syncing between devices."},
+    "expected_overpromise": true
+  },
+  {
+    "draft": "We will definitely restore your lost data completely, no matter what.",
+    "inquiry": {"id": "5", "title": "Data loss", "description": "I lost several records after an update."},
+    "expected_overpromise": true
+  },
+  {
+    "draft": "You can count on this being completed by Friday without any issues.",
+    "inquiry": {"id": "6", "title": "Feature request status", "description": "Wondering when the requested feature will ship."},
+    "expected_overpromise": true
+  },
+  {
+    "draft": "Thank you for reaching out. Our team will look into this and get back to you soon.",
+    "inquiry": {"id": "7", "title": "General bug report", "description": "Something looks off on the dashboard."},
+    "expected_overpromise": false
+  },
+  {
+    "draft": "We've received your report and will investigate the issue as part of our regular process.",
+    "inquiry": {"id": "8", "title": "Slow performance", "description": "Pages are loading slowly today."},
+    "expected_overpromise": false
+  },
+  {
+    "draft": "I understand this is frustrating. We'll do our best to look into it and share an update when we can.",
+    "inquiry": {"id": "9", "title": "Missing notification", "description": "I didn't get notified about a status change."},
+    "expected_overpromise": false
+  },
+  {
+    "draft": "Thanks for the suggestion, I've passed it along to our product team for consideration.",
+    "inquiry": {"id": "10", "title": "Feature idea", "description": "It would be nice to have a dark mode."},
+    "expected_overpromise": false
+  },
+  {
+    "draft": "We're sorry for the inconvenience. A member of our support team will follow up shortly.",
+    "inquiry": {"id": "11", "title": "Login trouble", "description": "I'm having trouble logging into my account."},
+    "expected_overpromise": false
+  },
+  {
+    "draft": "We hope to have this resolved soon, though we can't commit to an exact timeframe yet.",
+    "inquiry": {"id": "12", "title": "Ongoing bug", "description": "The export feature has been unreliable lately."},
+    "expected_overpromise": false
+  }
+]

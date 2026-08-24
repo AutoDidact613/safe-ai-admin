@@ -1,0 +1,62 @@
+[
+  {
+    "text": "I can't log into my account at all - every attempt shows a server error, and I need access today to finish an urgent task.",
+    "expected_category": "bug",
+    "expected_urgency": "urgent"
+  },
+  {
+    "text": "The app keeps crashing whenever I try to upload a file larger than 10MB. This happens every time and is blocking a report that's due in an hour.",
+    "expected_category": "bug",
+    "expected_urgency": "urgent"
+  },
+  {
+    "text": "The export button on the reports page doesn't do anything when I click it. A couple of other people on my team have hit this too - would be nice to have it addressed sometime this sprint.",
+    "expected_category": "bug",
+    "expected_urgency": "normal"
+  },
+  {
+    "text": "The search results seem to ignore the filters I've set - I select 'closed' status but open items still show up. It affects a few of us on the team, and we'd appreciate a fix sometime in the next week or two.",
+    "expected_category": "bug",
+    "expected_urgency": "normal"
+  },
+  {
+    "text": "I noticed a small typo in the settings page label, it says 'Preferances' instead of 'Preferences'.",
+    "expected_category": "bug",
+    "expected_urgency": "low"
+  },
+  {
+    "text": "We need the ability to export all records in bulk by the end of this week for a compliance deadline - is this already possible or planned?",
+    "expected_category": "feature",
+    "expected_urgency": "urgent"
+  },
+  {
+    "text": "Would it be possible to add a dark mode option to the dashboard? A few people on our team have asked about it - would be nice to have it addressed sometime this sprint.",
+    "expected_category": "feature",
+    "expected_urgency": "normal"
+  },
+  {
+    "text": "Small idea for later: maybe add keyboard shortcuts for navigating between pages.",
+    "expected_category": "feature",
+    "expected_urgency": "low"
+  },
+  {
+    "text": "Could you add support for two-factor authentication at login? We don't need it immediately but would like to see it on the roadmap.",
+    "expected_category": "feature",
+    "expected_urgency": "low"
+  },
+  {
+    "text": "I want to share urgent feedback: the recent pricing change without any advance notice upset several people on our team, and we'd like someone to address this today.",
+    "expected_category": "feedback",
+    "expected_urgency": "urgent"
+  },
+  {
+    "text": "Overall the new interface feels a lot smoother than the old one. A few of us on the team think it'd be worth reviewing some of the remaining rough edges sometime this sprint, though nothing is broken.",
+    "expected_category": "feedback",
+    "expected_urgency": "normal"
+  },
+  {
+    "text": "Just a small compliment - the support team has been really helpful and quick to respond lately.",
+    "expected_category": "feedback",
+    "expected_urgency": "low"
+  }
+]
