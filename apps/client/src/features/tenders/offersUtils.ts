@@ -1,4 +1,4 @@
-import { Tender } from './types'
+import type { Tender } from './types'
 
 export function getNewOffersCount(tender: Tender): number {
   return tender.applicants?.filter((applicant) => !applicant.isViewed).length ?? 0
