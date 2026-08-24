@@ -20,12 +20,45 @@ type Request = {
   replies?: Reply[];
 };
 
+type AgentInquiry = {
+  id: string;
+  title: string;
+  urgency?: string;
+};
+
+type AgentRunListResult = {
+  thread_id: string;
+  inquiries: AgentInquiry[];
+};
+
 export default function AdminRequestsList() {
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingRequestId, setDeletingRequestId] = useState<string | null>(null);
+  const [triggeringAgent, setTriggeringAgent] = useState(false);
+  const [agentResultMessage, setAgentResultMessage] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const handleTriggerAgent = async () => {
+    setTriggeringAgent(true);
+    setAgentResultMessage(null);
+    try {
+      const result = await apiCall<AgentRunListResult>(API_ENDPOINTS.inquiryAgent.runList, {
+        method: "POST",
+      });
+      setAgentResultMessage(
+        `סוכן ה-AI סיווג ${result.inquiries.length} פניות פתוחות (thread-id: ${result.thread_id})`,
+      );
+    } catch (err) {
+      console.error("שגיאה בהפעלת סוכן ה-AI:", err);
+      setAgentResultMessage(
+        err instanceof Error ? `שגיאה בהפעלת סוכן ה-AI: ${err.message}` : "שגיאה בהפעלת סוכן ה-AI",
+      );
+    } finally {
+      setTriggeringAgent(false);
+    }
+  };
 
   const isRequestNew = (req: Request) => {
     const hasAdminReply = req.replies?.some((reply: Reply) => reply.senderRole === "admin");
@@ -65,10 +98,20 @@ export default function AdminRequestsList() {
     fetchRequests();
   }, []);
 
+  const triggerButton = (
+    <div className="agent-trigger-section">
+      <button className="btn btn-primary" onClick={handleTriggerAgent} disabled={triggeringAgent}>
+        {triggeringAgent ? "מפעיל את סוכן ה-AI..." : "הפעל את סוכן ה-AI"}
+      </button>
+      {agentResultMessage && <p className="agent-trigger-message">{agentResultMessage}</p>}
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="admin-requests-container">
         <h2>כל הפניות במערכת (מצב מנהל)</h2>
+        {triggerButton}
         <p>טוען פניות...</p>
       </div>
     );
@@ -78,6 +121,7 @@ export default function AdminRequestsList() {
     return (
       <div className="admin-requests-container">
         <h2>כל הפניות במערכת (מצב מנהל)</h2>
+        {triggerButton}
         <p className="error">{error}</p>
       </div>
     );
@@ -86,6 +130,7 @@ export default function AdminRequestsList() {
   return (
     <div className="admin-requests-container">
       <h2>כל הפניות במערכת (מצב מנהל)</h2>
+      {triggerButton}
       {requests.length === 0 ? (
         <p>אין פניות כרגע.</p>
       ) : (

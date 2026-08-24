@@ -80,6 +80,7 @@ services:
       PORT: 3001
       LITELLM_PROXY_URL: http://litellm:4000
       MONGO_URI: ${MONGO_URI}
+      AGENT_SERVICE_URL: http://agent:8000
     ports:
       # Published to loopback so the host's own nginx (outside Docker, not
       # part of this compose file) can reach it as http://localhost:3001 —
@@ -93,14 +94,14 @@ services:
       retries: 3
 
   agent:
+    # inquiry-agent moved here from the repo-root inquiry-agent/ directory (SCRUM-140).
+    # It needs SAFEAI_API_BASE_URL, SAFEAI_AGENT_API_TOKEN, GEMINI_API_KEY,
+    # MONGODB_ATLAS_URI (and optionally LANGCHAIN_*) in this host's root .env -
+    # see apps/agent/.env.example. Without them the container exits on startup
+    # (ConfigError) - not yet confirmed to be set on the real EC2 hosts.
     image: ${IMAGE_REGISTRY}/agent:${IMAGE_TAG:-latest}
     restart: unless-stopped
     logging: *default-logging
     mem_limit: 512m
-    depends_on:
-      litellm:
-        condition: service_healthy
     env_file:
       - .env
-    environment:
-      LITELLM_PROXY_URL: http://litellm:4000

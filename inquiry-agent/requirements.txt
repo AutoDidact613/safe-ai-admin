@@ -1,9 +1,0 @@
-langgraph>=1.2
-langgraph-checkpoint-mongodb>=0.4
-langsmith>=0.1
-langchain-core>=1.4
-google-genai>=1.0
-pymongo>=4.16
-requests>=2.31
-python-dotenv>=1.0
-pytest>=8.0
