@@ -412,6 +412,83 @@ export async function sendWelcomeEmail(
 }
 
 /**
+ * Send invite email to a user newly added to an organization by an
+ * admin/org owner, containing their temporary password and a link to the
+ * site. Best-effort: failures are logged and swallowed, never block the
+ * underlying user-creation flow (same convention as sendWelcomeEmail).
+ */
+export async function sendInviteEmail(
+  email: string,
+  name: string,
+  temporaryPassword: string,
+): Promise<boolean> {
+  const safeName = escapeHtml(name);
+  const safeTemporaryPassword = escapeHtml(temporaryPassword);
+  const safeEmail = escapeHtml(email);
+
+  const mailOptions = {
+    from: EMAIL_FROM,
+    to: email,
+    subject: "הוזמנת להצטרף ל-SafeAI 🎉",
+    html: `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .credentials { background: white; padding: 15px; border-radius: 5px; border: 2px solid #667eea; }
+          .credentials p { margin: 5px 0; }
+          .password { font-family: monospace; font-weight: bold; }
+          .button { display: inline-block; margin-top: 20px; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🎉 הוזמנת ל-SafeAI!</h1>
+          </div>
+          <div class="content">
+            <p>שלום ${safeName},</p>
+            <p>נוצר עבורך חשבון ב-SafeAI. הפרטים להתחברות:</p>
+            <div class="credentials">
+              <p><strong>אימייל:</strong> ${safeEmail}</p>
+              <p><strong>סיסמה זמנית:</strong> <span class="password">${safeTemporaryPassword}</span></p>
+            </div>
+            <p style="text-align: center;">
+              <a class="button" href="${FRONTEND_URL}">כניסה למערכת</a>
+            </p>
+          </div>
+          <div class="footer">
+            <p>© 2026 SafeAI. כל הזכויות שמורות.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    await withRetry(async () => {
+      const transporter = await createTransporter();
+      return transporter.sendMail(mailOptions);
+    });
+    return true;
+  } catch (error) {
+    logger.error("Failed to send invite email:", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    // Don't throw - invite email failure must not block user creation
+    return false;
+  }
+}
+
+/**
  * Send contact form email to support
  */
 export async function sendContactEmail(data: {

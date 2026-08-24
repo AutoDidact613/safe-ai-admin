@@ -35,8 +35,12 @@ export async function createOrganizationHandler(req: Request, res: Response) {
     }
     const organization = await createOrganization(req.body);
     res.status(201).json({ success: true, organization });
-  } catch (error) {
-    logger.error("Failed to create organization", { error });
+  } catch (error: any) {
+    logger.error("Failed to create organization", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+    });
     res.status(500).json({ error: "Failed to create organization" });
   }
 }
@@ -68,7 +72,10 @@ export async function listOrganizationsHandler(req: Request, res: Response) {
 
     return res.status(200).json(userOrganizations);
   } catch (error: any) {
-    logger.error("Failed to list organizations", { error });
+    logger.error("Failed to list organizations", {
+      error: error.message,
+      stack: error.stack,
+    });
     return res.status(500).json({ error: "Failed to fetch organizations", details: error.message });
   }
 }
@@ -96,8 +103,13 @@ export async function getOrganizationHandler(
     }
 
     res.json(organization);
-  } catch (error) {
-    logger.error("Failed to get organization", { error });
+  } catch (error: any) {
+    logger.error("Failed to get organization", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: req.params.id,
+    });
     res.status(500).json({ error: "Failed to get organization" });
   }
 }
@@ -134,8 +146,13 @@ export async function updateOrganizationHandler(
 
     const updatedOrg = await updateOrganization(orgId, updateData);
     res.json({ success: true, organization: updatedOrg });
-  } catch (error) {
-    logger.error("Failed to update organization", { error });
+  } catch (error: any) {
+    logger.error("Failed to update organization", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: req.params.id,
+    });
     res.status(500).json({ error: "Failed to update organization" });
   }
 }
@@ -155,8 +172,13 @@ export async function deleteOrganizationHandler(
 
     await deleteOrganization(req.params.id);
     res.json({ success: true, message: "Organization deleted successfully" });
-  } catch (error) {
-    logger.error("Failed to delete organization", { error });
+  } catch (error: any) {
+    logger.error("Failed to delete organization", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: req.params.id,
+    });
     res.status(500).json({ error: "Failed to delete organization" });
   }
 }
@@ -187,8 +209,13 @@ export async function getOrganizationUsersHandler(
 
     const users = await getOrganizationUsers(orgId);
     res.json(users.map(sanitizeUser));
-  } catch (error) {
-    logger.error("Failed to get organization users", { error });
+  } catch (error: any) {
+    logger.error("Failed to get organization users", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: req.params.id,
+    });
     res.status(500).json({ error: "Failed to get organization users" });
   }
 }
@@ -219,7 +246,12 @@ export async function addUserToOrganizationHandler(
     await addUserToOrganization(orgId, userId, role || "user");
     res.json({ success: true, message: "User added to organization" });
   } catch (error: any) {
-    logger.error("Failed to add user to organization", { error });
+    logger.error("Failed to add user to organization", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: req.params.id,
+    });
     res.status(400).json({ error: error.message || "Failed to add user" });
   }
 }
@@ -252,7 +284,7 @@ export async function createOrganizationMemberHandler(
       return res.status(403).json({ error: "Access denied" });
     }
 
-    const { user: newUser, temporaryPassword } = await createOrganizationMember(orgId, {
+    const { user: newUser, temporaryPassword, emailSent } = await createOrganizationMember(orgId, {
       name: name.trim(),
       email: email.trim(),
       role,
@@ -262,9 +294,15 @@ export async function createOrganizationMemberHandler(
       success: true,
       user: { _id: newUser._id, name: newUser.name, email: newUser.email },
       temporaryPassword,
+      emailSent,
     });
   } catch (error: any) {
-    logger.error("Failed to create organization member", { error });
+    logger.error("Failed to create organization member", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: req.params.id,
+    });
     res.status(400).json({ error: error.message || "Failed to create organization member" });
   }
 }
@@ -307,7 +345,12 @@ export async function addUserByEmailToOrganizationHandler(
       organization: updatedOrg,
     });
   } catch (error: any) {
-    logger.error("Failed to add user by email to organization", { error });
+    logger.error("Failed to add user by email to organization", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: req.params.id,
+    });
     res
       .status(400)
       .json({ error: error.message || "Failed to add user by email" });
@@ -342,7 +385,12 @@ export async function removeUserFromOrganizationHandler(
       message: "User removed from organization successfully",
     });
   } catch (error: any) {
-    logger.error("Failed to remove user from organization", { error });
+    logger.error("Failed to remove user from organization", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      targetUserId: req.params.userId,
+    });
     res.status(400).json({ error: error.message || "Failed to remove user" });
   }
 }
@@ -362,6 +410,11 @@ export async function getPendingOrganizationsHandler(
       data: pendingOrganizations,
     });
   } catch (error: any) {
+    logger.error("Failed to get pending organizations", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+    });
     res.status(500).json({
       success: false,
       message: "שגיאה בשרת בעת שליפת ארגונים ממתינים",
@@ -404,7 +457,12 @@ export async function topUpOrganizationWalletHandler(
       organization: updatedOrg,
     });
   } catch (error: any) {
-    logger.error("Failed to top up organization wallet", { error });
+    logger.error("Failed to top up organization wallet", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: req.params.id,
+    });
     res.status(500).json({ error: "Failed to top up wallet", details: error.message });
   }
 }
@@ -412,12 +470,16 @@ export async function topUpOrganizationWalletHandler(
 /**
  * List ALL organizations with user counts + wallet balance (Admin only)
  */
-export async function getAllOrganizationsHandler(_req: Request, res: Response) {
+export async function getAllOrganizationsHandler(req: Request, res: Response) {
   try {
     const organizations = await listAllOrganizationsWithStats();
     res.status(200).json(organizations);
   } catch (error: any) {
-    logger.error("Failed to list all organizations", { error });
+    logger.error("Failed to list all organizations", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+    });
     res.status(500).json({ error: "Failed to fetch organizations" });
   }
 }
@@ -433,7 +495,12 @@ export async function suspendOrganizationHandler(
     const updated = await setOrganizationActive(req.params.id, false);
     res.json({ success: true, message: "Organization suspended", organization: updated });
   } catch (error: any) {
-    logger.error("Failed to suspend organization", { error });
+    logger.error("Failed to suspend organization", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: req.params.id,
+    });
     res.status(400).json({ error: error.message || "Failed to suspend organization" });
   }
 }
@@ -449,7 +516,12 @@ export async function activateOrganizationHandler(
     const updated = await setOrganizationActive(req.params.id, true);
     res.json({ success: true, message: "Organization reactivated", organization: updated });
   } catch (error: any) {
-    logger.error("Failed to reactivate organization", { error });
+    logger.error("Failed to reactivate organization", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: req.params.id,
+    });
     res.status(400).json({ error: error.message || "Failed to reactivate organization" });
   }
 }
@@ -481,7 +553,12 @@ export async function getOrganizationStatsHandler(
     const summary = await getOrganizationUsageSummary(orgId);
     res.json({ ...summary, walletBalance: (organization as any).walletBalance || 0 });
   } catch (error: any) {
-    logger.error("Failed to get organization stats", { error });
+    logger.error("Failed to get organization stats", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: req.params.id,
+    });
     res.status(500).json({ error: "Failed to fetch organization stats" });
   }
 }
@@ -515,7 +592,10 @@ export async function publicRequestOrganizationHandler(req: Request, res: Respon
       organization,
     });
   } catch (error: any) {
-    logger.error("Failed public organization request", { error });
+    logger.error("Failed public organization request", {
+      error: error.message,
+      stack: error.stack,
+    });
     // register() ו-publicRequestOrganization() כבר זורקים הודעות עבריות ברורות
     // ומובחנות עבור התנגשות אימייל לעומת התנגשות שם ארגון - מציגים אותן כמו
     // שהן במקום למפות כל שגיאה גורפת ל"אימייל כבר רשום".
@@ -536,7 +616,11 @@ export async function getMyOrganizationHandler(req: Request, res: Response) {
     const organization = await getMyOrganization(user.userId);
     res.json({ organization: organization || null });
   } catch (error: any) {
-    logger.error("Failed to get user's organization", { error });
+    logger.error("Failed to get user's organization", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+    });
     res.status(500).json({ error: "Failed to fetch organization" });
   }
 }
@@ -552,7 +636,12 @@ export async function approveOrganizationHandler(
     const updated = await approveOrganization(req.params.id);
     res.json({ success: true, message: "Organization approved", organization: updated });
   } catch (error: any) {
-    logger.error("Failed to approve organization", { error });
+    logger.error("Failed to approve organization", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: req.params.id,
+    });
     res.status(400).json({ error: error.message || "Failed to approve organization" });
   }
 }
@@ -568,7 +657,12 @@ export async function rejectOrganizationHandler(
     const updated = await rejectOrganization(req.params.id);
     res.json({ success: true, message: "Organization rejected", organization: updated });
   } catch (error: any) {
-    logger.error("Failed to reject organization", { error });
+    logger.error("Failed to reject organization", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: req.params.id,
+    });
     res.status(400).json({ error: error.message || "Failed to reject organization" });
   }
 }

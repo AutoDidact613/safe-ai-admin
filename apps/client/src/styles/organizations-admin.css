@@ -38,6 +38,8 @@
 .orgs-empty { padding: 16px; background: #f5f5f5; border-radius: 6px; text-align: center; color: #666; }
 .orgs-loading { padding: 20px; text-align: center; }
 .orgs-error { padding: 20px; color: #dc3545; }
+.orgs-success { padding: 8px 0; color: #16a34a; }
+.orgs-warning { padding: 8px 0; color: #b45309; }
 
 /* Internal sub-toggle (all / pending) */
 .orgs-subtoggle { display: flex; gap: 8px; margin: 12px 0 20px; border-bottom: 1px solid #e5e7eb; }
