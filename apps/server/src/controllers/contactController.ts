@@ -69,6 +69,7 @@ export async function submitContactForm(req: Request, res: Response) {
     } catch (emailError) {
       logger.error("Failed to send contact notification email:", {
         error: emailError instanceof Error ? emailError.message : String(emailError),
+        stack: emailError instanceof Error ? emailError.stack : undefined,
         userId,
       });
     }

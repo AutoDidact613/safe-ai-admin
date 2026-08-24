@@ -7,15 +7,15 @@ import {
   deleteUserHandler,
   updateOwnProfileHandler
 } from "../controllers/userController";
-import { authenticateToken } from "../middleware/auth";
+import { authenticateToken, requireAdmin } from "../middleware/auth";
 
 const router = express.Router();
 
-router.post("/", createUserHandler);
-router.get("/", listUsersHandler);
-router.get("/:id", getUserHandler);
-router.put("/:id", updateUserHandler);
+router.post("/", requireAdmin, createUserHandler);
+router.get("/", requireAdmin, listUsersHandler);
+router.get("/:id", requireAdmin, getUserHandler);
+router.put("/:id", requireAdmin, updateUserHandler);
 router.patch("/:id", authenticateToken, updateOwnProfileHandler); // Protected route for users to update their own profile
-router.delete("/:id", deleteUserHandler);
+router.delete("/:id", requireAdmin, deleteUserHandler);
 
 export default router;

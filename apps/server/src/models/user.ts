@@ -51,15 +51,15 @@ const UserSchema = new mongoose.Schema(
     // --- שדות עבור התקשורת הפנימית מול LiteLLM (Infrastructure Level) ---
     litellmKeyEncrypted: {
       type: String, // המפתח הגלוי (sk-safeai-...) אחרי הצפנה ב-userService
-      required: true,
+      required: false,
     },
     litellmPrefix: {
       type: String, // key_name שחזר מ-LiteLLM
-      required: true,
+      required: false,
     },
     litellmToken: {
       type: String, // ה-token (ההאש) שחזר מ-LiteLLM לניהול המפתח
-      required: true,
+      required: false,
     },
 
     // --- הגדרות פרופיל ומודלים ---
