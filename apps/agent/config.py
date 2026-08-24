@@ -2,7 +2,11 @@ import os
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# override=True: apps/agent/.env is the source of truth for this service.
+# Without it, a value already sitting in the process environment (e.g. a
+# stale var VS Code injected into a terminal when it launched) silently
+# wins over an updated .env, so editing .env would appear to do nothing.
+load_dotenv(override=True)
 
 
 class ConfigError(RuntimeError):
