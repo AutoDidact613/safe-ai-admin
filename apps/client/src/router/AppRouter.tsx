@@ -12,6 +12,7 @@ import RecommendedGuidesPage from "../pages/RecommendedGuidesPage";
 import CoursesPage from "../pages/CoursesPage";
 import ActivityLogPage from "../pages/ActivityLogPage";
 import AboutPage from "../pages/AboutPage";
+import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
 import TenderBoardPage from "../pages/TenderBoardPage";
 import DownloadAgentsPage from "../pages/AgentDownloadsPage";
 import LoginForm from "../features/auth/LoginForm";
@@ -211,6 +212,7 @@ export default function AppRouter() {
 
         {/* New Pages Routes */}
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/docs" element={<ArticlesPage />} />
         <Route path="/docs/:slug" element={<ArticlePage />} />
