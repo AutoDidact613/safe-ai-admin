@@ -106,6 +106,7 @@ export const createOrganizationMember = async (
   success: boolean;
   user: { _id: string; name: string; email: string };
   temporaryPassword: string;
+  emailSent: boolean;
 }> => {
   return apiCall(API_ENDPOINTS.adminOrganizations.members(orgId), {
     method: "POST",

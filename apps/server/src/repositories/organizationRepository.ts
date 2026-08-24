@@ -6,8 +6,12 @@ export async function createOrganization(data: any) {
     const organization = await Organization.create(data);
     logger.info("Organization created in DB", { organizationId: organization._id });
     return organization;
-  } catch (error) {
-    logger.error("Failed to create organization in DB", { error, data });
+  } catch (error: any) {
+    logger.error("Failed to create organization in DB", {
+      error: error.message,
+      stack: error.stack,
+      data,
+    });
     throw error;
   }
 }
@@ -34,10 +38,14 @@ export async function updateOrganization(orgId: string, data: any) {
       new: true,
       runValidators: true,
     }).lean();
-    logger.info("Organization updated in DB", { orgId, data });
+    logger.info("Organization updated in DB", { organizationId: orgId, data });
     return organization;
-  } catch (error) {
-    logger.error("Failed to update organization in DB", { error, orgId });
+  } catch (error: any) {
+    logger.error("Failed to update organization in DB", {
+      error: error.message,
+      stack: error.stack,
+      organizationId: orgId,
+    });
     throw error;
   }
 }
@@ -49,10 +57,15 @@ export async function incrementWalletBalance(orgId: string, amount: number) {
       { $inc: { walletBalance: amount } },
       { new: true, runValidators: true }
     ).lean();
-    logger.info("Organization wallet balance incremented in DB", { orgId, amount });
+    logger.info("Organization wallet balance incremented in DB", { organizationId: orgId, amount });
     return organization;
-  } catch (error) {
-    logger.error("Failed to increment organization wallet balance in DB", { error, orgId, amount });
+  } catch (error: any) {
+    logger.error("Failed to increment organization wallet balance in DB", {
+      error: error.message,
+      stack: error.stack,
+      organizationId: orgId,
+      amount,
+    });
     throw error;
   }
 }
@@ -60,10 +73,14 @@ export async function incrementWalletBalance(orgId: string, amount: number) {
 export async function deleteOrganization(orgId: string) {
   try {
     const organization = await Organization.findByIdAndDelete(orgId).lean();
-    logger.info("Organization deleted in DB", { orgId });
+    logger.info("Organization deleted in DB", { organizationId: orgId });
     return organization;
-  } catch (error) {
-    logger.error("Failed to delete organization in DB", { error, orgId });
+  } catch (error: any) {
+    logger.error("Failed to delete organization in DB", {
+      error: error.message,
+      stack: error.stack,
+      organizationId: orgId,
+    });
     throw error;
   }
 }
