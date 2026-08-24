@@ -3,12 +3,35 @@ import Post from '../models/Post';
 import { getEmbedding, generateDailyPostIdea } from './aiService';
 import { resolveOrCreateTagsByNames } from './tagService';
 
+const DEFAULT_AUTO_POST_BOT_HOUR = 10;
+
+/**
+ * שעת ההרצה היומית של הבוט, לפי AUTO_POST_BOT_HOUR ב-.env (0-23).
+ * אם המשתנה לא מוגדר או לא תקין, נופלים חזרה לשעה 10:00.
+ */
+function getAutoPostBotHour(): number {
+  const configured = process.env.AUTO_POST_BOT_HOUR;
+  if (configured === undefined) {
+    return DEFAULT_AUTO_POST_BOT_HOUR;
+  }
+
+  const hour = parseInt(configured, 10);
+  if (Number.isNaN(hour) || hour < 0 || hour > 23) {
+    console.error(`[BOT] AUTO_POST_BOT_HOUR="${configured}" אינו תקין (צריך מספר בין 0 ל-23), נופל חזרה לשעה ${DEFAULT_AUTO_POST_BOT_HOUR}:00`);
+    return DEFAULT_AUTO_POST_BOT_HOUR;
+  }
+
+  return hour;
+}
+
 /**
  * פונקציה ראשית המאתחלת את הבוט האוטומטי בשרת
  */
 export const initializeAutoPostBot = () => {
-  // תזמון קבוע: בכל יום בדיוק בשעה 10:00 בבוקר
-  cron.schedule('0 10 * * *', async () => {
+  // תזמון: בכל יום בשעה עגולה שמוגדרת ב-AUTO_POST_BOT_HOUR (ברירת מחדל: 10:00 בבוקר)
+  const hour = getAutoPostBotHour();
+  console.log(`[BOT] הבוט האוטומטי מתוזמן לרוץ מדי יום בשעה ${hour}:00`);
+  cron.schedule(`0 ${hour} * * *`, async () => {
     try {
       console.log('[BOT] מתעורר ומריץ בדיקות פעילות והלכה...');
 
