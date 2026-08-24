@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 from langgraph.checkpoint.memory import MemorySaver
 
 from graph import build_graph
+from nodes import _MAX_DRAFT_RETRIES
 
 
 def _thread_config(thread_id: str = "t1") -> dict:
@@ -49,6 +50,27 @@ def _build_test_graph():
         patch("graph.classify_node", _fake_classify_node),
         patch("graph.draft_node", _fake_draft_node),
         patch("graph.guardrails_node", _fake_guardrails_node),
+    ):
+        graph = build_graph(config, client)
+
+    return graph, client
+
+
+def _build_test_graph_with_real_guardrails():
+    """Same as _build_test_graph, but leaves the real guardrails_node/gate
+    from nodes.py in place (only check_draft's LLM call is mocked by the
+    caller) - exercises the actual retry-cap fix through the compiled graph,
+    not just the isolated unit tests in test_nodes.py."""
+    config = MagicMock()
+    config.mongodb_atlas_uri = "mongodb://fake"
+    client = MagicMock()
+
+    with (
+        patch("graph.MongoClient", return_value=MagicMock()),
+        patch("graph.MongoDBSaver", return_value=MemorySaver()),
+        patch("graph.fetch_node", _fake_fetch_node),
+        patch("graph.classify_node", _fake_classify_node),
+        patch("graph.draft_node", _fake_draft_node),
     ):
         graph = build_graph(config, client)
 
@@ -107,3 +129,49 @@ def test_explicit_approval_sends_only_the_approved_ids():
 
     client.post_reply.assert_called_once_with("1", "draft for 1")
     client.mark_handled.assert_called_once_with("1")
+
+
+@patch("nodes.check_draft")
+def test_guardrails_retry_gives_up_and_reaches_send_node_after_max_retries(check_draft_mock):
+    check_draft_mock.return_value = {"inquiry_id": "1", "passed": False, "reasons": ["always bad"]}
+    graph, _client = _build_test_graph_with_real_guardrails()
+    thread_config = _thread_config()
+
+    graph.invoke({}, thread_config)
+    graph.update_state(thread_config, {"selected_ids": ["1"]})
+
+    for _ in range(_MAX_DRAFT_RETRIES + 1):
+        graph.invoke(None, thread_config)
+        if graph.get_state(thread_config).next == ("send_node",):
+            break
+
+    snapshot = graph.get_state(thread_config)
+    assert snapshot.next == ("send_node",)
+    assert snapshot.values["retry_counts"]["1"] == _MAX_DRAFT_RETRIES + 1
+    # The draft is still handed to the admin for review even though it never
+    # passed guardrails - the admin has final say, not the guardrail check.
+    assert snapshot.values["guardrail_results"]["1"]["passed"] is False
+    assert "1" in snapshot.values["drafts"]
+
+
+@patch("nodes.check_draft")
+def test_guardrails_retry_recovers_before_exhausting_the_cap(check_draft_mock):
+    check_draft_mock.side_effect = [
+        {"inquiry_id": "1", "passed": False, "reasons": ["bad once"]},
+        {"inquiry_id": "1", "passed": True, "reasons": []},
+    ]
+    graph, _client = _build_test_graph_with_real_guardrails()
+    thread_config = _thread_config()
+
+    graph.invoke({}, thread_config)
+    graph.update_state(thread_config, {"selected_ids": ["1"]})
+
+    for _ in range(_MAX_DRAFT_RETRIES + 1):
+        graph.invoke(None, thread_config)
+        if graph.get_state(thread_config).next == ("send_node",):
+            break
+
+    snapshot = graph.get_state(thread_config)
+    assert snapshot.next == ("send_node",)
+    assert snapshot.values["retry_counts"]["1"] == 1
+    assert snapshot.values["guardrail_results"]["1"]["passed"] is True

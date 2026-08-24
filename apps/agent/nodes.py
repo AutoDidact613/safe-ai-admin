@@ -61,17 +61,24 @@ def guardrails_node(state: GraphState, agent_config: Config) -> GraphState:
     for inquiry_id, draft in state.get("drafts", {}).items():
         results[inquiry_id] = check_draft(draft["text"], by_id[inquiry_id], agent_config)
     state["guardrail_results"] = results
+
+    # Bookkeeping lives here, not in guardrails_gate: LangGraph only persists
+    # a *node's* return value across an interrupt/resume boundary, not a
+    # conditional-edge function's in-place mutations - counting retries in
+    # the gate silently reset to 0 on every resume, so the cap never engaged.
+    retry_counts = state.setdefault("retry_counts", {})
+    for inquiry_id, result in results.items():
+        if not result["passed"]:
+            retry_counts[inquiry_id] = retry_counts.get(inquiry_id, 0) + 1
+
     return state
 
 
 def guardrails_gate(state: GraphState) -> str:
-    retry_counts = state.setdefault("retry_counts", {})
+    retry_counts = state.get("retry_counts", {})
     for inquiry_id, result in state.get("guardrail_results", {}).items():
-        if not result["passed"]:
-            retries = retry_counts.get(inquiry_id, 0)
-            if retries < _MAX_DRAFT_RETRIES:
-                retry_counts[inquiry_id] = retries + 1
-                return "draft_node"
+        if not result["passed"] and retry_counts.get(inquiry_id, 0) <= _MAX_DRAFT_RETRIES:
+            return "draft_node"
     return "evaluator_node"
 
 

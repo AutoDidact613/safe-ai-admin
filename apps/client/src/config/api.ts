@@ -84,9 +84,12 @@ export const API_ENDPOINTS = {
     all: `${API_BASE_URL}/articles/all`,
     bySlug: (slug: string) => `${API_BASE_URL}/articles/${slug}`,
   },
-  // Inquiry agent (SCRUM-140 admin trigger button)
+  // Inquiry agent (SCRUM-140 admin trigger button, SCRUM-262 full flow)
   inquiryAgent: {
     runList: `${API_BASE_URL}/inquiry-agent/run/list`,
+    runProcess: `${API_BASE_URL}/inquiry-agent/run/process`,
+    runEdit: `${API_BASE_URL}/inquiry-agent/run/edit`,
+    runApprove: `${API_BASE_URL}/inquiry-agent/run/approve`,
   },
 } as const;
 
