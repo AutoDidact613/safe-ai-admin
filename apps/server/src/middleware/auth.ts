@@ -77,6 +77,20 @@ export function requireActiveUser(
 }
 
 /**
+ * canCreatePosts is opt-in (forbidden unless explicitly granted); canComment
+ * is opt-out (allowed unless explicitly revoked). Reads go through .lean(),
+ * which returns the raw stored document and does NOT apply the schema's
+ * `default` for a field that was never written - so an existing user from
+ * before this field existed comes back with the field simply absent. This
+ * map is what "absent" should resolve to for each field, independent of the
+ * schema default (which only affects documents created from now on).
+ */
+const FORUM_PERMISSION_DEFAULT_WHEN_UNSET: Record<"canCreatePosts" | "canComment", boolean> = {
+  canCreatePosts: false,
+  canComment: true,
+};
+
+/**
  * Middleware factory that blocks the request unless the authenticated user's
  * live DB record has the given forum permission flag set to true.
  * Must be used after authenticateToken. Checks the database (not the JWT
@@ -92,8 +106,10 @@ export function requireForumPermission(field: "canCreatePosts" | "canComment") {
     }
 
     const user = await User.findById(authUser.userId).select(field).lean();
+    const value = user ? (user as any)[field] : undefined;
+    const allowed = value === undefined ? FORUM_PERMISSION_DEFAULT_WHEN_UNSET[field] : value === true;
 
-    if (!user || !(user as any)[field]) {
+    if (!allowed) {
       return res.status(403).json({
         error:
           field === "canCreatePosts"

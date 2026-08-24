@@ -78,9 +78,10 @@ const UserSchema = new mongoose.Schema(
     },
 
     // --- Forum permissions ---
+    // Opt-in: forbidden by default, an admin must explicitly grant it per user.
     canCreatePosts: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     canComment: {
       type: Boolean,
