@@ -254,7 +254,7 @@ export const ForumPage: React.FC = () => {
     <div style={{ padding: '20px', direction: 'rtl', maxWidth: '1100px', margin: '0 auto', fontFamily: 'Assistant, sans-serif' }}>
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', gap: '20px' }}>
-        {currentUser?.canCreatePosts === true && (
+        {(currentUser?.role === 'admin' || currentUser?.canCreatePosts === true) && (
           <button
             onClick={() => setIsModalOpen(true)}
             style={{ backgroundColor: '#10b981', color: 'white', padding: '10px 25px', border: 'none', borderRadius: '6px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' }}

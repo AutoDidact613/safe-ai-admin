@@ -105,6 +105,11 @@ export function requireForumPermission(field: "canCreatePosts" | "canComment") {
       return res.status(401).json({ error: "Access token required" });
     }
 
+    // Admins always have full forum access, regardless of the stored flag.
+    if (authUser.role === "admin") {
+      return next();
+    }
+
     const user = await User.findById(authUser.userId).select(field).lean();
     const value = user ? (user as any)[field] : undefined;
     const allowed = value === undefined ? FORUM_PERMISSION_DEFAULT_WHEN_UNSET[field] : value === true;
