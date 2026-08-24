@@ -3,7 +3,7 @@ import * as repo from "../repositories/organizationRepository";
 import * as userRepo from "../repositories/userRepository";
 import { UsageLog } from "../models";
 import { register } from "./authService";
-import { sendOrgApprovalRequestEmail, sendOrgApprovedEmail, sendOrgStatusEmail } from "../utils/email";
+import { sendOrgApprovalRequestEmail, sendOrgApprovedEmail, sendOrgStatusEmail, sendInviteEmail } from "../utils/email";
 import logger from "../logger";
 
 function generateTemporaryPassword(): string {
@@ -213,7 +213,9 @@ export async function createOrganizationMember(
 
     logger.info("Organization member created", { organizationId: orgId, userId: user._id });
 
-    return { user, temporaryPassword };
+    const emailSent = await sendInviteEmail(data.email, data.name, temporaryPassword);
+
+    return { user, temporaryPassword, emailSent };
   } catch (error: any) {
     logger.error("Failed to create organization member", {
       error: error.message,

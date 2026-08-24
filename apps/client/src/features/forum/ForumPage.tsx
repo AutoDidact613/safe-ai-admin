@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AddPostModal } from './AddPostModal';
+import { API_BASE_URL } from '../../config/api';
 
 interface Post {
   _id: string;
@@ -44,9 +45,9 @@ export const ForumPage: React.FC = () => {
     setLoading(true);
     const userRole = currentUser?.role || 'user';
 
-    const baseUrl = search.trim() 
-      ? `http://localhost:5000/api/posts/search?query=${search}`
-      : `http://localhost:5000/api/posts?page=${page}`;
+    const baseUrl = search.trim()
+      ? `${API_BASE_URL}/api/posts/search?query=${search}`
+      : `${API_BASE_URL}/api/posts?page=${page}`;
     
     const url = baseUrl.includes('?') 
       ? `${baseUrl}&userRole=${userRole}${!search.trim() ? '' : `&page=${page}`}` 
@@ -106,7 +107,7 @@ export const ForumPage: React.FC = () => {
     }
 
     if (queryParam) {
-      fetch(`http://localhost:5000/api/posts/search-similar?${queryParam}`)
+      fetch(`${API_BASE_URL}/api/posts/search-similar?${queryParam}`)
         .then((res) => res.json())
         .then((data) => {
           if (Array.isArray(data)) {
@@ -168,7 +169,7 @@ export const ForumPage: React.FC = () => {
     if (!currentUser?._id) return alert('משתמש לא מחובר');
 
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/${postId}/moderation`, {
+      const response = await fetch(`${API_BASE_URL}/api/posts/${postId}/moderation`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

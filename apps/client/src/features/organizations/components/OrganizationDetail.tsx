@@ -28,6 +28,10 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
   const [memberEmail, setMemberEmail] = useState("");
   const [addingMember, setAddingMember] = useState(false);
   const [addMemberError, setAddMemberError] = useState<string | null>(null);
+  const [addMemberNotice, setAddMemberNotice] = useState<{
+    type: "success" | "warning";
+    text: string;
+  } | null>(null);
   const [createdMembers, setCreatedMembers] = useState<
     { name: string; email: string; password: string }[]
   >([]);
@@ -46,6 +50,7 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
     try {
       setAddingMember(true);
       setAddMemberError(null);
+      setAddMemberNotice(null);
       const result = await createOrganizationMember(orgId, {
         name: memberName.trim(),
         email: memberEmail.trim(),
@@ -58,6 +63,14 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
           password: result.temporaryPassword,
         },
       ]);
+      setAddMemberNotice(
+        result.emailSent
+          ? { type: "success", text: `נשלח מייל הזמנה ל-${result.user.email}` }
+          : {
+              type: "warning",
+              text: "המשתמש נוצר אך שליחת מייל ההזמנה נכשלה — יש לשתף את הפרטים ידנית",
+            }
+      );
       setMemberName("");
       setMemberEmail("");
       await reloadUsers();
@@ -169,6 +182,11 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
           placeholder="כתובת אימייל"
         />
         {addMemberError && <div className="orgs-error">{addMemberError}</div>}
+        {addMemberNotice && (
+          <div className={addMemberNotice.type === "success" ? "orgs-success" : "orgs-warning"}>
+            {addMemberNotice.text}
+          </div>
+        )}
         <button type="submit" className="orgs-btn orgs-btn-activate" disabled={addingMember}>
           {addingMember ? "מוסיף..." : "הוסף משתמש"}
         </button>

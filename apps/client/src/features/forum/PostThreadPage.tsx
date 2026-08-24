@@ -8,6 +8,7 @@ import { Highlight } from '@tiptap/extension-highlight';
 import { FontFamily } from '@tiptap/extension-font-family';
 import { TextAlign } from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
+import { API_BASE_URL } from '../../config/api';
 
 interface Comment {
   _id: string;
@@ -72,7 +73,7 @@ export const PostThreadPage: React.FC = () => {
 
   const loadPostAndComments = () => {
     if (!id) return;
-    fetch(`http://localhost:5000/api/posts/${id}`)
+    fetch(`${API_BASE_URL}/api/posts/${id}`)
       .then((res) => res.json())
       .then((data) => {
         setPost(data.post);
@@ -89,7 +90,7 @@ export const PostThreadPage: React.FC = () => {
           localStorage.setItem('viewed_titles', JSON.stringify(updatedHistory));
 
           // שימוש בפרמטר postId המהיר ב-100% מול ה-Backend
-          fetch(`http://localhost:5000/api/posts/search-similar?postId=${data.post._id}`)
+          fetch(`${API_BASE_URL}/api/posts/search-similar?postId=${data.post._id}`)
             .then((res) => res.json())
             .then((similarData) => {
               if (Array.isArray(similarData)) {
@@ -140,7 +141,7 @@ export const PostThreadPage: React.FC = () => {
     const user = userStr ? JSON.parse(userStr) : null;
 
     if (user) {
-      fetch(`http://localhost:5000/api/posts/${id}/view`, {
+      fetch(`${API_BASE_URL}/api/posts/${id}/view`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user._id })
@@ -159,7 +160,7 @@ export const PostThreadPage: React.FC = () => {
     if (!window.confirm('האם את בטוחה שברצונך למחוק תגובה זו לצמיתות?')) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/comment/${commentId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/posts/comment/${commentId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: currentUser?._id })
@@ -189,7 +190,7 @@ export const PostThreadPage: React.FC = () => {
 
     if (selectedFile) {
       try {
-        const urlResponse = await fetch('http://localhost:5000/api/upload/get-url', {
+        const urlResponse = await fetch(`${API_BASE_URL}/api/upload/get-url`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -226,7 +227,7 @@ export const PostThreadPage: React.FC = () => {
     };
 
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/${id}/comment`, {
+      const response = await fetch(`${API_BASE_URL}/api/posts/${id}/comment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(commentPayload)
@@ -254,7 +255,7 @@ export const PostThreadPage: React.FC = () => {
     setUserRating(selectedRating);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/${post._id}/rate`, {
+      const response = await fetch(`${API_BASE_URL}/api/posts/${post._id}/rate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

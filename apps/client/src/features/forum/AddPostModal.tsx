@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import CreatableSelect from 'react-select/creatable';
 import type { MultiValue } from 'react-select';
 import { authFetch } from '../../utils/apiClient';
+import { API_BASE_URL } from '../../config/api';
+
 interface AddPostModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -31,7 +33,7 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
   const [backupContent, setBackupContent] = useState(''); 
 
   const loadTagsFromServer = () => {
-    fetch('http://localhost:5000/api/tags')
+    fetch(`${API_BASE_URL}/api/tags`)
       .then((res) => res.json())
       .then((data) => {
         const formatted = Array.isArray(data) ? data.map((tag: { _id?: string; name: string }) => ({
@@ -46,7 +48,7 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
   useEffect(() => {
     if (formData.title.length >= 3) {
       const timer = setTimeout(() => {
-        fetch(`http://localhost:5000/api/posts/search-strict-similar?title=${formData.title}`)
+        fetch(`${API_BASE_URL}/api/posts/search-strict-similar?title=${formData.title}`)
           .then((res) => res.json())
           .then((data) => {
             setSimilarPosts(data);
@@ -82,7 +84,7 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
     if (mode === 'tags') setAiTags([]);
 
     try {
-      const response = await authFetch('http://localhost:5000/api/posts/ai-assist', {
+      const response = await authFetch(`${API_BASE_URL}/api/posts/ai-assist`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -161,7 +163,7 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
 
     if (selectedFile) {
       try {
-        const urlResponse = await fetch('http://localhost:5000/api/upload/get-url', {
+        const urlResponse = await fetch(`${API_BASE_URL}/api/upload/get-url`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -201,7 +203,7 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
     };
 
     try {
-      const response = await authFetch('http://localhost:5000/api/posts', {
+      const response = await authFetch(`${API_BASE_URL}/api/posts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
