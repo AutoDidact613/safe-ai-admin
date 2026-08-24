@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { apiCall, API_ENDPOINTS } from "../../config/api";
 
 interface RegisterFormData {
@@ -42,6 +42,7 @@ export default function RegisterForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+  const [agreedToPrivacyPolicy, setAgreedToPrivacyPolicy] = useState(false);
   const navigate = useNavigate();
 
   // Fetch organizations on component mount
@@ -97,6 +98,12 @@ export default function RegisterForm() {
     const errors = validatePassword(formData.password);
     if (errors.length > 0) {
       setPasswordErrors(errors);
+      setLoading(false);
+      return;
+    }
+
+    if (!agreedToPrivacyPolicy) {
+      setError("יש לאשר את מדיניות הפרטיות כדי להירשם");
       setLoading(false);
       return;
     }
@@ -274,16 +281,28 @@ export default function RegisterForm() {
             </div>
           )}
 
-          <div className="form-info">
-            <p style={{ fontSize: "12px", color: "#666" }}>
-              בהרשמה אתם מסכימים לתנאי השימוש ומדיניות הפרטיות שלנו
-            </p>
+          <div className="form-group">
+            <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "#666" }}>
+              <input
+                type="checkbox"
+                checked={agreedToPrivacyPolicy}
+                onChange={(e) => setAgreedToPrivacyPolicy(e.target.checked)}
+                required
+                style={{ marginTop: "2px" }}
+              />
+              <span>
+                קראתי ואני מסכימ/ה ל
+                <Link to="/privacy" target="_blank" rel="noopener noreferrer">
+                  מדיניות הפרטיות
+                </Link>
+              </span>
+            </label>
           </div>
 
           <button
             type="submit"
             className="btn btn-primary btn-full"
-            disabled={loading}
+            disabled={loading || !agreedToPrivacyPolicy}
           >
             {loading ? "נרשם..." : "הירשם"}
           </button>
