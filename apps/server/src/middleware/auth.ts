@@ -5,6 +5,7 @@
 
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../utils/jwt";
+import { User } from "../models/user";
 
 /**
  * Middleware to authenticate JWT token
@@ -73,6 +74,36 @@ export function requireActiveUser(
   // e.g., check if user.isActive in database
 
   next();
+}
+
+/**
+ * Middleware factory that blocks the request unless the authenticated user's
+ * live DB record has the given forum permission flag set to true.
+ * Must be used after authenticateToken. Checks the database (not the JWT
+ * payload) so a permission revoked by an admin takes effect immediately,
+ * without waiting for the user's access token to expire.
+ */
+export function requireForumPermission(field: "canCreatePosts" | "canComment") {
+  return async function (req: Request, res: Response, next: NextFunction) {
+    const authUser = (req as any).user;
+
+    if (!authUser?.userId) {
+      return res.status(401).json({ error: "Access token required" });
+    }
+
+    const user = await User.findById(authUser.userId).select(field).lean();
+
+    if (!user || !(user as any)[field]) {
+      return res.status(403).json({
+        error:
+          field === "canCreatePosts"
+            ? "אין לך הרשאה לפרסם פוסטים חדשים"
+            : "אין לך הרשאה להגיב לפוסטים",
+      });
+    }
+
+    next();
+  };
 }
 
 /**

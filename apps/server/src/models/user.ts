@@ -76,7 +76,17 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    
+
+    // --- Forum permissions ---
+    canCreatePosts: {
+      type: Boolean,
+      default: true,
+    },
+    canComment: {
+      type: Boolean,
+      default: true,
+    },
+
     // --- Rate Limits ---
     rateLimits: {
       requestsPerMinute: { type: Number, default: 60 },

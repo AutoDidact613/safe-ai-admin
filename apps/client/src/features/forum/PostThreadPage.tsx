@@ -226,9 +226,13 @@ export const PostThreadPage: React.FC = () => {
     };
 
     try {
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
       const response = await fetch(`http://localhost:5000/api/posts/${id}/comment`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(commentPayload)
       });
 
@@ -738,7 +742,21 @@ export const PostThreadPage: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', backgroundColor: '#fafafa', borderTop: '1px solid #f3f4f6' }}>
-              <button type="submit" disabled={commentLoading} style={{ backgroundColor: '#10b981', color: 'white', padding: '6px 20px', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>
+              <button
+                type="submit"
+                disabled={commentLoading || currentUser?.canComment === false}
+                title={currentUser?.canComment === false ? 'אין לך הרשאה להגיב לפוסטים' : undefined}
+                style={{
+                  backgroundColor: currentUser?.canComment === false ? '#a7f3d0' : '#10b981',
+                  color: 'white',
+                  padding: '6px 20px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: currentUser?.canComment === false ? 'not-allowed' : 'pointer',
+                }}
+              >
                 {commentLoading ? 'שומר...' : 'שמור תגובה'}
               </button>
               
