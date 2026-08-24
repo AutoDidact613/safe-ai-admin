@@ -37,7 +37,8 @@ const TenderSchema = new Schema(
             name: { type: String, required: true },
             email: { type: String, required: true },
             proposal: { type: Number, required: false },
-            contactMethod: { type: String, required: false }
+            contactMethod: { type: String, required: false },
+            isViewed: { type: Boolean, default: false }
             },
         ],
         default: [],

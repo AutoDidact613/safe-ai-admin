@@ -6,6 +6,7 @@ import {
   updateTender,
   deleteTender,
   closeTender,
+  markTenderOffersViewed,
   applyToTender,
   getProductTypeList,
   getAIApplicationTypeList,
@@ -200,6 +201,31 @@ export async function closeTenderHandler(req: Request<{ id: string }>, res: Resp
   } catch (error) {
     logger.error("Close tender failed", { error });
     res.status(500).json({ error: "Failed to close tender" });
+  }
+}
+
+/**
+ * מסמן את כל ההצעות (applicants) של מכרז כנצפו
+ * PATCH /tender-board/:id/view-offers
+ */
+export async function viewTenderOffersHandler(req: Request<{ id: string }>, res: Response) {
+  try {
+    const existing = await getTenderById(req.params.id);
+
+    if (!existing) {
+      return res.status(404).json({ error: "Tender not found" });
+    }
+
+    if (!isOwnerOrAdmin(req, existing)) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const tender = await markTenderOffersViewed(req.params.id);
+
+    res.json({ success: true, tender });
+  } catch (error) {
+    logger.error("Mark tender offers as viewed failed", { error });
+    res.status(500).json({ error: "Failed to mark tender offers as viewed" });
   }
 }
 

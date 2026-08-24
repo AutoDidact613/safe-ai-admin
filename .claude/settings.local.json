@@ -14,7 +14,8 @@
       "Bash(curl -s http://localhost:3001/organizations)",
       "Bash(node -e ' *)",
       "Bash(gh issue *)",
-      "Bash(gh project *)"
+      "Bash(gh project *)",
+      "mcp__claude_ai_Atlassian_Rovo__getJiraIssue"
     ],
     "additionalDirectories": [
       "c:\\safe-ai-admin"

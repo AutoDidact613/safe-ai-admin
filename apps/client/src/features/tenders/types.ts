@@ -11,6 +11,7 @@ export interface Applicant {
   details: string
   proposal?: number
   contactMethod?: string
+  isViewed?: boolean
 }
 
 export interface Tender {

@@ -348,24 +348,6 @@ export default function ManageTenderDetails({
         </div>
       </div>
 
-      {/* רשימת מועמדים קיימים */}
-      <section className="applicants-section" style={{ marginTop: '40px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
-        <h3>מועמדים ({tender.applicants?.length ?? 0})</h3>
-        {tender.applicants && tender.applicants.length > 0 ? (
-          tender.applicants.map((applicant, index) => (
-            <article key={`${applicant.email}-${index}`} className="applicant-card" style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', marginBottom: '10px' }}>
-              <h4>{applicant.name}</h4>
-              <p><strong>אימייל:</strong> {applicant.email}</p>
-              <p><strong>פרטים:</strong> {applicant.details}</p>
-              {applicant.proposal && <p><strong>הצעה:</strong> {applicant.proposal}</p>}
-              {applicant.contactMethod && <p><strong>דרכי קשר:</strong> {applicant.contactMethod}</p>}
-            </article>
-          ))
-        ) : (
-          <p style={{ color: '#666' }}>אין עדיין מועמדים שנרשמו למכרז זה.</p>
-        )}
-      </section>
-
       {/* פעולות, שגיאות והודעות הצלחה */}
       <div className="detail-actions" style={{ marginTop: '40px', display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
         {errorMessage && <div className="error-message" style={{ color: 'red', background: '#ffebee', padding: '8px 12px', borderRadius: '4px' }}>{errorMessage}</div>}
