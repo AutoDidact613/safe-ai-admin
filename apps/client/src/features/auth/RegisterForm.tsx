@@ -282,16 +282,26 @@ export default function RegisterForm() {
           )}
 
           <div className="form-group">
-            <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "#666" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#666", whiteSpace: "nowrap" }}>
               <input
                 type="checkbox"
                 checked={agreedToPrivacyPolicy}
                 onChange={(e) => setAgreedToPrivacyPolicy(e.target.checked)}
                 required
-                style={{ marginTop: "2px" }}
+                style={{
+                  width: "16px",
+                  height: "16px",
+                  padding: 0,
+                  margin: 0,
+                  flexShrink: 0,
+                  border: "1px solid #d1d5db",
+                  borderRadius: "3px",
+                  background: "#ffffff",
+                  accentColor: "#10a37f",
+                }}
               />
               <span>
-                קראתי ואני מסכימ/ה ל
+                קראתי ואני מסכימ/ה ל{" "}
                 <Link to="/privacy" target="_blank" rel="noopener noreferrer">
                   מדיניות הפרטיות
                 </Link>

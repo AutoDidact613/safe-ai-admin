@@ -1,8 +1,10 @@
 /* Site Footer */
 
 .site-footer {
-  background: #202123;
-  color: #d1d5db;
+  background-color: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
+  color: #374151;
   padding: 20px 0;
   margin-top: 40px;
 }
@@ -20,17 +22,17 @@
 }
 
 .site-footer-copyright {
-  color: #9ca3af;
+  color: #6b7280;
 }
 
 .site-footer-link {
-  color: #d1d5db;
+  color: #10a37f;
   text-decoration: underline;
   transition: color 0.2s;
 }
 
 .site-footer-link:hover {
-  color: #ffffff;
+  color: #0d8f6f;
 }
 
 @media (max-width: 480px) {
