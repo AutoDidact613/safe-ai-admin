@@ -1,41 +1,41 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import Post from '../models/Post';
 import Comment from '../models/Comment';
 import Tag from '../models/tag'; 
 import ModerationLog from '../models/ModerationLog';
 import { User } from '../models/user';
-import { OpenAI } from 'openai'; 
 import NodeCache from 'node-cache'; // ייבוא תקין של ה-Cache בשרת
+import { getEmbedding, refineContent, suggestTitles, suggestTags } from '../services/aiService';
+import { signAttachments } from '../services/s3Service';
+import { buildPostListPipeline, buildPostListWithCountPipeline } from '../services/postAggregationService';
+import { resolveOrCreateTagByName } from '../services/tagService';
 
 // אתחול זיכרון המטמון הגלובלי בשרת
 const recommendationCache = new NodeCache({ stdTTL: 1800, checkperiod: 60 });
 
 /**
- * פונקציית עזר להפיכת טקסט לוקטור מספרי באמצעות OpenAI
+ * מנקה את כל ה-Cache של רשימות הפוסטים (כל העמודים, כל התפקידים).
+ * נקרא בכל פעולה שיכולה לשנות את מה שמוצג ברשימה - פוסט חדש, תגובה חדשה
+ * (משנה lastActivity ואת המיון), או שינוי סטטוס חסימה - כדי שהמשתמשת לא
+ * תצטרך לחכות ל-TTL של 10 שניות כדי לראות את השינוי שלה עצמה.
  */
-async function getEmbedding(text: string): Promise<number[]> {
-  try {
-    // אתחול דינמי שמבטיח קריאה ישירה של המפתח המעודכן ביותר מ-process.env
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-    // הדפסת אבטחה קצרה לטרמינל כדי לוודא סופית איזה מפתח נטען בפועל
-    console.log("OpenAI Key check (first 10 chars):", process.env.OPENAI_API_KEY?.substring(0, 10) + "...");
-
-    const response = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: text,
-    });
-    return response.data[0]!.embedding;
-  } catch (error) {
-    console.error('OpenAI Embedding Error:', error);
-    throw new Error('Failed to generate embedding from OpenAI');
+function invalidatePostsListCache() {
+  const staleKeys = recommendationCache.keys().filter((key) => key.startsWith('posts-list:'));
+  if (staleKeys.length > 0) {
+    recommendationCache.del(staleKeys);
   }
 }
+
+/**
+ * skip/limit הם אופציונליים: אם לא מועברים, לא מתבצע דילוג/הגבלה (למסך חיפוש למשל).
+ * (בניית ה-pipeline עצמה הועברה לשירות services/postAggregationService.ts)
+ */
 
 export const getPosts = async (req: Request, res: Response) => {
   try {
     const { userRole } = req.query;
-    
+
     // 1. קריאת העמוד הנוכחי מה-Query Parameters (ברירת מחדל: עמוד 1)
     const page = parseInt(req.query.page as string) || 1;
     const limit = 10; // הגדרה קבועה של 10 פוסטים לעמוד
@@ -45,63 +45,88 @@ export const getPosts = async (req: Request, res: Response) => {
     if (userRole !== 'admin') {
       filterQuery.isBlocked = { $ne: true };
     }
-    
-    // 2. קבלת המספר הכולל של הפוסטים במערכת לצורך חישוב כמות העמודים
-    const totalPosts = await Post.countDocuments(filterQuery);
+
+    // Cache קצר-טווח (10 שניות) לרשימת הפוסטים - זה הנתיב הכי נטען באתר,
+    // וכל המשתמשות עם אותו userRole מקבלות תוצאה זהה לאותו עמוד. חלון
+    // זמן קצר כזה משמעו שפוסט חדש יופיע כמעט מיידית, אבל בעומס גבוה
+    // (הרבה כניסות בבת אחת) רוב הבקשות נענות מהזיכרון ולא ממסד הנתונים.
+    const listCacheKey = `posts-list:${page}:${userRole || 'user'}`;
+    const cachedList = recommendationCache.get(listCacheKey);
+    if (cachedList) {
+      return res.status(200).json(cachedList);
+    }
+
+    // 2+3. שליפת הפוסטים לעמוד הנוכחי (עם author/tags/commentCount/lastComment)
+    // וגם הספירה הכוללת - בקריאה אחת בלבד למסד הנתונים (לפני כן: שתי קריאות נפרדות)
+    const [result] = await Post.aggregate(
+      buildPostListWithCountPipeline(filterQuery, skip, limit)
+    );
+
+    const postsWithDetails = result?.data || [];
+    const totalPosts = result?.totalCount || 0;
     const totalPages = Math.ceil(totalPosts / limit);
 
-    // 3. שליפת הפוסטים הרלוונטיים בלבד לעמוד הנוכחי
-    const posts = await Post.find(filterQuery)
-      .populate('author', 'name')
-      .populate('tags', 'name')
-      .sort({ lastActivity: -1 })
-      .skip(skip)   // דילוג על הפוסטים של העמודים הקודמים
-      .limit(limit); // הגבלה ל-10 פוסטים בלבד
-
-    const postsWithDetails = await Promise.all(posts.map(async (post) => {
-      const commentCount = await Comment.countDocuments({ postId: post._id });
-      
-      const lastComment = await Comment.findOne({ postId: post._id })
-        .populate('author', 'name')
-        .sort({ createdAt: -1 }); 
-
-      return { 
-        ...post.toObject(), 
-        commentCount,
-        lastComment: lastComment ? {
-          authorName: (lastComment.author as any)?.name || 'משתמש',
-          content: lastComment.content
-        } : null
-      };
-    }));
-
-    // 4. החזרת הפוסטים יחד עם נתוני העמודים ל-Frontend
-    res.status(200).json({
+    const responseBody = {
       posts: postsWithDetails,
       currentPage: page,
       totalPages: totalPages,
       totalPosts: totalPosts
-    });
+    };
+
+    // TTL קצר בכוונה (10 שניות) - שונה מה-TTL הכללי (30 דקות) של שאר ה-Cache
+    recommendationCache.set(listCacheKey, responseBody, 10);
+
+    // 4. החזרת הפוסטים יחד עם נתוני העמודים ל-Frontend
+    res.status(200).json(responseBody);
 
   } catch (error) {
     console.error('Error in getPosts:', error);
     res.status(500).json({ message: 'Error fetching posts', error });
   }
 };
+
 export const getPostById = async (req: Request, res: Response) => {
   try {
+    // 1. הגנה: מניעת HTTP Cache כדי להכריח את הדפדפן לקבל מפתחות חתימה טריים בכל פעם
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+
     const post = await Post.findById(req.params.id)
       .populate('author', 'name')
-      .populate('tags', 'name');
+      .populate('tags', 'name')
+      .lean(); // מאפשר שינוי ישיר של המערכים בזיכרון
       
     if (!post) {
       return res.status(404).json({ message: 'הפוסט לא נמצא' });
     }
 
-    const comments = await Comment.find({ postId: post._id }).populate('author', 'name');
-    res.status(200).json({ post, comments });
+    // 2. חתימה דינמית על קבצי הפוסט הראשי מול S3 (בתוקף ל-15 דקות)
+    if (post.attachments && post.attachments.length > 0) {
+      post.attachments = await signAttachments(post.attachments);
+    }
+
+    // שליפת התגובות לפוסט
+    const comments = await Comment.find({ postId: String(req.params.id) }).populate('author', 'name').lean();
+
+    // 3. חתימה דינמית על קבצי התגובות מול S3 (במידה וקיימים)
+    // מקביל על כל התגובות בבת אחת, במקום תגובה-אחר-תגובה ברצף (שהיה מאט
+    // ליניארית ככל שיש יותר תגובות עם קבצים מצורפים לפוסט)
+    await Promise.all(
+      comments.map(async (comment) => {
+        if (comment.attachments && comment.attachments.length > 0) {
+          comment.attachments = await signAttachments(comment.attachments);
+        }
+      })
+    );
+
+    // 4. החזרת המידע החתום והטרי ל-React
+    return res.status(200).json({ post, comments });
+
   } catch (error) {
-    res.status(500).json({ message: 'שגיאה בהבאת השרשור', error });
+    console.error('Error in getPostById with presigned URLs:', error);
+    return res.status(500).json({ 
+      message: 'שגיאה בהבאת השרשור והקבצים המאובטחים', 
+      error: error instanceof Error ? error.message : error 
+    });
   }
 };
 
@@ -145,8 +170,10 @@ export const searchSimilarPosts = async (req: Request, res: Response) => {
     let searchEmbedding: number[] = [];
 
     // א) שליפת הווקטור המוכן מה-DB לפי ה-postId
+    // .select() מביא רק את השדה שבאמת נחוץ (במקום כל מסמך הפוסט המלא -
+    // תוכן, מצורפים, דירוגים וכו') ו-.lean() כי זו קריאה בלבד, בלי שמירה בהמשך
     if (postId) {
-      const currentPost = await Post.findById(postId);
+      const currentPost = await Post.findById(postId).select('titleEmbedding').lean();
       if (currentPost && currentPost.titleEmbedding && currentPost.titleEmbedding.length > 0) {
         searchEmbedding = currentPost.titleEmbedding;
       }
@@ -195,6 +222,70 @@ export const searchSimilarPosts = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const searchStrictSimilarPosts = async (req: Request, res: Response) => {
+  try {
+    const { title } = req.query;
+
+    if (!title || (title as string).length < 3) {
+      return res.status(200).json([]);
+    }
+
+    // בדיקת Cache לפני קריאה ל-OpenAI - בלי זה, כל הקלדה בתיבת החיפוש
+    // (גם כשמדובר באותה כותרת בדיוק, למשל אם כמה משתמשים בודקים כותרת פופולרית)
+    // הייתה מחייבת קריאה חדשה ל-OpenAI, גם אם כבר בדקנו את אותה כותרת בדקות האחרונות.
+    const cacheKey = `strict-similar:${(title as string).trim().toLowerCase()}`;
+    const cachedResult = recommendationCache.get(cacheKey);
+    if (cachedResult) {
+      return res.status(200).json(cachedResult);
+    }
+
+    // הפנייה ל-OpenAI לקבלת הווקטור של הכותרת החדשה
+    const searchEmbedding = await getEmbedding(title as string);
+
+    // הרצת החיפוש הוקטורי עם סינון קשיח (רף תאימות של 70%) עבור המודאל
+    const similar = await Post.aggregate([
+      {
+        $vectorSearch: {
+          index: 'vector_index', 
+          path: 'titleEmbedding',
+          queryVector: searchEmbedding,
+          numCandidates: 10,
+          limit: 4 
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          score: { $meta: "vectorSearchScore" } 
+        }
+      },
+      {
+        $match: {
+          score: { $gte: 0.8 } // סינון קשיח: רק מה שבאמת דומה עובר
+        }
+      },
+      {
+        $project: {
+          score: 0
+        }
+      }
+    ]);
+
+    recommendationCache.set(cacheKey, similar);
+
+    return res.status(200).json(similar);
+
+  } catch (error) {
+    console.error('Error in searchStrictSimilarPosts:', error);
+    return res.status(500).json({ 
+      message: 'שגיאה בחיפוש פוסטים דומים למודאל', 
+      error: error instanceof Error ? error.message : error 
+    });
+  }
+};
+
 export const createPost = async (req: Request, res: Response) => {
   try {
     const { title, content, category, tags, fileUrl } = req.body;
@@ -215,20 +306,14 @@ export const createPost = async (req: Request, res: Response) => {
           finalTagIds.push(tagItem.id || tagItem.value);
         } else {
           const newTagName = (tagItem.label || tagItem.name || tagItem.value || '').trim();
-          
+
           if (newTagName) {
-            let existingTag = await Tag.findOne({ name: { $regex: new RegExp(`^${newTagName}$`, 'i') } });
-            
-            if (!existingTag) {
-              existingTag = await Tag.create({ name: newTagName });
-            }
-            finalTagIds.push(String(existingTag._id));
+            const resolvedId = await resolveOrCreateTagByName(newTagName);
+            if (resolvedId) finalTagIds.push(resolvedId);
           }
         }
       }
     }
-
-    const embedding = await getEmbedding(title);
 
     const newPost = new Post({
       title,
@@ -237,14 +322,22 @@ export const createPost = async (req: Request, res: Response) => {
       tags: finalTagIds,
       attachments: fileUrl ? [fileUrl] : [], 
       author: authenticatedUserId,
-      titleEmbedding: embedding 
+      titleEmbedding: [] // יתעדכן ברקע מיד לאחר השמירה, בלי לעכב את התגובה למשתמשת
     });
 
     const savedPost = await newPost.save();
-    
+    invalidatePostsListCache();
+
+    // יצירת ה-embedding מתבצעת ברקע (לא await) - כך המשתמשת מקבלת אישור מיידי
+    // על יצירת הפוסט, בלי לחכות לזמן התגובה של OpenAI
+    getEmbedding(title)
+      .then((embedding) => Post.findByIdAndUpdate(savedPost._id, { titleEmbedding: embedding }))
+      .catch((err) => console.error('Error updating titleEmbedding in background:', err));
+
     const populatedPost = await Post.findById(savedPost._id)
       .populate('author', 'name')
-      .populate('tags', 'name');
+      .populate('tags', 'name')
+      .lean();
 
     return res.status(201).json(populatedPost);
 
@@ -281,27 +374,9 @@ export const searchPosts = async (req: Request, res: Response) => {
       searchFilter.isBlocked = { $ne: true };
     }
 
-    const posts = await Post.find(searchFilter)
-      .populate('author', 'name')
-      .populate('tags', 'name')
-      .sort({ lastActivity: -1 });
-
-    const postsWithDetails = await Promise.all(posts.map(async (post) => {
-      const commentCount = await Comment.countDocuments({ postId: post._id });
-      
-      const lastComment = await Comment.findOne({ postId: post._id })
-        .populate('author', 'name')
-        .sort({ createdAt: -1 }); 
-
-      return { 
-        ...post.toObject(), 
-        commentCount,
-        lastComment: lastComment ? {
-          authorName: (lastComment.author as any)?.name || 'משתמש',
-          content: lastComment.content
-        } : null
-      };
-    }));
+    const postsWithDetails = await Post.aggregate(
+      buildPostListPipeline(searchFilter)
+    );
 
     res.status(200).json(postsWithDetails);
   } catch (error) {
@@ -311,7 +386,7 @@ export const searchPosts = async (req: Request, res: Response) => {
 };
 export const createComment = async (req: Request, res: Response) => {
   try {
-    const { postId, content } = req.body;
+    const { postId, content, fileUrl } = req.body;
     const authenticatedUserId = (req as any).user?.userId || req.body.userId;
 
     if (!content || content.trim() === '') {
@@ -323,7 +398,7 @@ export const createComment = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'הפוסט אליו את מנסה להגיב לא נמצא' });
     }
 
-    const attachments = req.file ? [req.file.filename] : [];
+    const attachments = fileUrl ? [fileUrl] : [];
 
     const newComment = new Comment({
       postId,
@@ -337,10 +412,14 @@ export const createComment = async (req: Request, res: Response) => {
     const populatedComment = await Comment.findById(savedComment._id)
       .select('postId content attachments author createdAt')
       .populate('author', 'name');
-    
+
+    // עדכון lastActivity ברקע - לא חוסם את התגובה למשתמשת (שלא כמו לפני,
+    // כשה-await כאן עיכב את השמירה על התגובה עצמה בכל הוספת תגובה)
     post.lastActivity = new Date();
-    await post.save({ validateBeforeSave: false });    
-    
+    post.save({ validateBeforeSave: false })
+      .then(() => invalidatePostsListCache())
+      .catch((err) => console.error('Error updating post.lastActivity in background:', err));
+
     res.status(201).json(populatedComment);
   } catch (error) {
     console.error('Error in createComment:', error);
@@ -367,7 +446,7 @@ export const deleteCommentByAdmin = async (req: Request, res: Response) => {
       action: 'DELETE_COMMENT',
       adminId: user._id,
       targetId: comment._id,
-      details: `המנהל ${user.name} מחק את התגובה: "${comment.content.substring(0, 50)}..." שנכתבה על ידי ${(comment.author as any)?.name || 'אנונימי'}`
+      details: `המנהל ${user.name} מחק את התגובה: "${comment.content.substring(0, 50)}..." שנכתבה על ידי ${(comment.author as unknown as { name?: string })?.name || 'אנונימי'}`
     });
 
     res.status(200).json({ message: 'התגובה נמחקה ותועדה בהצלחה' });
@@ -414,6 +493,7 @@ export const moderatePost = async (req: Request, res: Response) => {
     }
 
     await post.save();
+    invalidatePostsListCache();
 
     await ModerationLog.create({
       action: logAction,
@@ -443,13 +523,16 @@ export const ratePost = async (req: Request, res: Response) => {
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
     const existingRatingIndex = post.ratedBy.findIndex(
-      (r: any) => r.userId.toString() === userId
+      (r: { userId: mongoose.Types.ObjectId; score: number }) => r.userId.toString() === userId
     );
 
     if (existingRatingIndex !== -1) {
-      const oldScore = post.ratedBy[existingRatingIndex]!.score;
-      post.ratingSum = (post.ratingSum - oldScore) + ratingNum;
-      post.ratedBy[existingRatingIndex]!.score = ratingNum;
+      const existingRating = post.ratedBy[existingRatingIndex];
+      if (existingRating) {
+        const oldScore = existingRating.score;
+        post.ratingSum = (post.ratingSum - oldScore) + ratingNum;
+        existingRating.score = ratingNum;
+      }
     } else {
       post.ratedBy.push({ userId, score: ratingNum });
       post.ratingCount += 1;
@@ -467,5 +550,33 @@ export const ratePost = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error in ratePost:', error);
     return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+export const generateAiAssistance = async (req: Request, res: Response) => {
+  try {
+    const { mode, content } = req.body;
+
+    if (!content || content.trim().length < 15) {
+      return res.status(400).json({ message: 'התוכן קצר מדי בשביל לקבל עזרת AI' });
+    }
+
+    if (mode === 'refine') {
+      const refinedContent = await refineContent(content);
+      return res.status(200).json({ refinedContent });
+
+    } else if (mode === 'titles') {
+      const titles = await suggestTitles(content);
+      return res.status(200).json({ titles });
+
+    } else if (mode === 'tags') {
+      const tags = await suggestTags(content);
+      return res.status(200).json({ tags });
+    }
+
+    return res.status(400).json({ message: 'מצב עבודה לא תקין' });
+
+  } catch (error) {
+    console.error('Error in generateAiAssistance:', error);
+    return res.status(500).json({ message: 'שגיאה פנימית בעיבוד ה-AI' });
   }
 };

@@ -56,4 +56,12 @@ const PostSchema: Schema = new Schema({
   }
 });
 
+// אינדקס מורכב: מאיץ בדיוק את השאילתה שמריצה כל טעינה של רשימת הפוסטים
+// (סינון לפי isBlocked + מיון לפי lastActivity) - בלי זה MongoDB סורק
+// את כל אוסף הפוסטים בכל בקשה ומיין אותו בזיכרון בכל פעם מחדש.
+PostSchema.index({ isBlocked: 1, lastActivity: -1 });
+
+// אינדקס שמאיץ סינון/מיון לפי קטגוריה, אם יתווסף שימוש כזה בעתיד
+PostSchema.index({ category: 1, lastActivity: -1 });
+
 export default mongoose.model<IPost>('Post', PostSchema);
