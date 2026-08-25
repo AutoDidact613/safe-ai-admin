@@ -54,21 +54,9 @@ app.use(cookieParser());
 app.use(compression());
 
 // הגדרה ל-50 מגה-בייט כדי להיות בטוחים
-// verify שומר את ה-body הגולמי על req.rawBody - נדרש לאימות חתימת webhook
-// של PayMe (paymeController.ts), שצריך לחשב HMAC על הבייטים המדויקים שהתקבלו.
-app.use(express.json({
-  limit: "50mb",
-  verify: (req: any, _res, buf) => {
-    req.rawBody = buf.toString("utf8");
-  },
-}));
-app.use(express.urlencoded({
-  limit: "50mb",
-  extended: true,
-  verify: (req: any, _res, buf) => {
-    req.rawBody = buf.toString("utf8");
-  },
-}));
+app.use(express.json({ limit: "50mb" }));
+// PayMe's Sale Callback (webhook) is posted as x-www-form-urlencoded.
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 app.use(requestLogger);
 
