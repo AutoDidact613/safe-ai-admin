@@ -454,7 +454,9 @@ export default function OrganizationUsersPage() {
                   <span style={{
                     padding: "4px 8px",
                     borderRadius: "4px",
-                    backgroundColor: user.role === "org_owner" ? "#4CAF50" : "#2196F3",
+                    // Darkened from the original #4CAF50/#2196F3 - white text on
+                    // those failed WCAG AA contrast (~2.7:1 / ~3.1:1); these pass (~5:1+).
+                    backgroundColor: user.role === "org_owner" ? "#2e7d32" : "#1565c0",
                     color: "white",
                     fontSize: "12px"
                   }}>
@@ -463,16 +465,18 @@ export default function OrganizationUsersPage() {
                 </td>
                 <td className="status-cell">
                   <span className="status-pill" style={{
-                    backgroundColor: user.isActive ? "#4CAF50" : "#f44336"
+                    // Darkened for contrast (see role badge above) + a leading
+                    // glyph so the state doesn't rely on color alone.
+                    backgroundColor: user.isActive ? "#2e7d32" : "#c62828"
                   }}>
-                    {user.isActive ? "פעיל" : "לא פעיל"}
+                    {user.isActive ? "✓ פעיל" : "✕ לא פעיל"}
                   </span>
                 </td>
                 <td className="status-cell">
                   <span className="status-pill" style={{
-                    backgroundColor: user.lastLogin ? "#4CAF50" : "#f44336"
+                    backgroundColor: user.lastLogin ? "#2e7d32" : "#c62828"
                   }}>
-                    {user.lastLogin ? "הצטרף" : "ממתין להתחברות ראשונה"}
+                    {user.lastLogin ? "✓ הצטרף" : "⏳ ממתין להתחברות ראשונה"}
                   </span>
                 </td>
                 <td>{new Date(user.createdAt).toLocaleDateString()}</td>
