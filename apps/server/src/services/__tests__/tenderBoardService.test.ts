@@ -54,6 +54,9 @@ describe("Tender Board Feature Tests", () => {
   // איפוס המוקים לפני כל בדיקה כדי שלא ישפיעו אחת על השנייה
   beforeEach(() => {
     jest.clearAllMocks();
+    // filterApplicantsForRequester מסונן אוטומטית ע"י jest.mock לעיל; ברירת המחדל
+    // כאן היא pass-through, כדי שטסטים שלא בודקים סינון applicants לא יושפעו ממנו.
+    (service.filterApplicantsForRequester as jest.Mock).mockImplementation((tender: any) => tender);
   });
 
   // ==========================================

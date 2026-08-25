@@ -12,6 +12,13 @@ export interface Applicant {
   proposal?: number
   contactMethod?: string
   isViewed?: boolean
+  userId?: string
+  appliedAt?: string
+}
+
+export interface ProposalRange {
+  min: number
+  max: number
 }
 
 export interface Tender {
@@ -28,6 +35,8 @@ export interface Tender {
   wantsEmails?: boolean
   additionalDetails?: string
   applicants?: Applicant[]
+  applicantsCount?: number
+  proposalRange?: ProposalRange | null
   domains?: string[]
 }
 
@@ -46,4 +55,6 @@ export interface RawTender {
   wantsEmails?: boolean
   additionalDetails?: string
   applicants?: Applicant[]
+  applicantsCount?: number
+  proposalRange?: ProposalRange | null
 }

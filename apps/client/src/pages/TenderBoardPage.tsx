@@ -3,6 +3,7 @@ import { apiCall, API_ENDPOINTS } from '../config/api'
 import Card from '../features/tenders/Card.tsx'
 import TenderDetails from '../features/tenders/TenderDetails.tsx'
 import ApplyForTender from './../features/tenders/ApplyForTender.tsx'
+import ViewMyApplication from '../features/tenders/ViewMyApplication.tsx'
 import CreateTender from '../features/tenders/CreateTender.tsx'
 import ManageMyTenders from '../features/tenders/ManageMyTenders.tsx'
 import type { Applicant, RawTender, Tender, TenderTime } from '../features/tenders/types'
@@ -60,6 +61,7 @@ export default function TenderBoardPage() {
 
   const [selectedTender, setSelectedTender] = useState<Tender | null>(null)
   const [applyingTender, setApplyingTender] = useState<Tender | null>(null)
+  const [viewingApplication, setViewingApplication] = useState<Applicant | null>(null)
   const [successMessage, setSuccessMessage] = useState('')
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -94,6 +96,8 @@ export default function TenderBoardPage() {
     wantsEmails: tender.wantsEmails,
     additionalDetails: tender.additionalDetails,
     applicants: tender.applicants,
+    applicantsCount: tender.applicantsCount,
+    proposalRange: tender.proposalRange,
   })
 
   useEffect(() => {
@@ -256,7 +260,9 @@ export default function TenderBoardPage() {
     const applicantWithId = { ...applicant }
 
     try {
-      const updatedTender = await apiCall<{ tender?: { applicants?: Applicant[] } }>(
+      const updatedTender = await apiCall<{
+        tender?: Pick<Tender, 'applicants' | 'applicantsCount' | 'proposalRange'>
+      }>(
         API_ENDPOINTS.tenders.apply(applyingTender.id),
         {
           method: 'POST',
@@ -270,6 +276,8 @@ export default function TenderBoardPage() {
             ? {
               ...tender,
               applicants: updatedTender.tender?.applicants ?? [...(tender.applicants ?? []), applicantWithId],
+              applicantsCount: updatedTender.tender?.applicantsCount ?? (tender.applicantsCount ?? tender.applicants?.length ?? 0) + 1,
+              proposalRange: updatedTender.tender?.proposalRange ?? tender.proposalRange,
             }
             : tender,
         )
@@ -507,7 +515,8 @@ export default function TenderBoardPage() {
                 budget={tender.budget}
                 productType={tender.productType}
                 aiApplicationType={tender.aiApplicationType}
-                applicantsCount={tender.applicants?.length ?? 0}
+                applicantsCount={tender.applicantsCount ?? tender.applicants?.length ?? 0}
+                appliedAt={tender.applicants?.find((a) => a.userId === currentUserCode)?.appliedAt}
                 onView={() => setSelectedTender(tender)}
               />
             ))
@@ -521,8 +530,18 @@ export default function TenderBoardPage() {
 
         {applyingTender ? (
           <ApplyForTender tender={applyingTender} onSubmit={handleTenderApply} onCancel={() => setApplyingTender(null)} />
+        ) : viewingApplication && selectedTender ? (
+          <ViewMyApplication tender={selectedTender} applicant={viewingApplication} onClose={() => setViewingApplication(null)} />
         ) : (
-          selectedTender && <TenderDetails tender={selectedTender} onClose={() => setSelectedTender(null)} onApply={startApply} />
+          selectedTender && (
+            <TenderDetails
+              tender={selectedTender}
+              onClose={() => setSelectedTender(null)}
+              onApply={startApply}
+              currentUserId={currentUserCode}
+              onViewMyApplication={(applicant) => setViewingApplication(applicant)}
+            />
+          )
         )}
 
         {showSuccessOverlay && successMessage && (
@@ -546,6 +565,15 @@ export default function TenderBoardPage() {
             className={`dashboard-link ${activeScreen === 'dashboard' ? 'active' : ''}`}
             onClick={() => setActiveScreen('dashboard')}
           >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h12v2H2v-2z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
             לוח מכרזים
           </button>
           <button
@@ -553,6 +581,14 @@ export default function TenderBoardPage() {
             className={`dashboard-link ${activeScreen === 'create' ? 'active' : ''}`}
             onClick={() => setActiveScreen('create')}
           >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M8 3v10M3 8h10"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
             פרסום פרוייקט
           </button>
           <button
@@ -560,6 +596,16 @@ export default function TenderBoardPage() {
             className={`dashboard-link ${activeScreen === 'manage' ? 'active' : ''}`}
             onClick={() => setActiveScreen('manage')}
           >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
             צפיה במכרזים שלי
           </button>
         </nav>

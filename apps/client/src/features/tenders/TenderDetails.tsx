@@ -1,10 +1,12 @@
 import { useMemo } from 'react'
-import type { Tender } from './types'
+import type { Applicant, Tender } from './types'
 
 interface Props {
   tender: Tender
   onClose: () => void
   onApply: (id: string) => void
+  currentUserId?: string
+  onViewMyApplication: (applicant: Applicant) => void
 }
 
 const singularUnit = (unit: string): string => {
@@ -34,8 +36,28 @@ const formatBudget = (budget?: number): string => {
   return budget === undefined || budget === null ? '—' : budget.toString()
 }
 
-export default function TenderDetails({ tender, onClose, onApply }: Props) {
+const formatAppliedAt = (appliedAt?: string): string => {
+  if (!appliedAt) return '—'
+  const date = new Date(appliedAt)
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleDateString('he-IL')
+}
+
+export default function TenderDetails({ tender, onClose, onApply, currentUserId, onViewMyApplication }: Props) {
+  const myApplication = useMemo(
+    () => tender.applicants?.find((a) => currentUserId && a.userId === currentUserId),
+    [tender, currentUserId],
+  )
+
+  // מעדיף את tender.proposalRange/applicantsCount שמחושבים בשרת מהמערך המלא -
+  // ה-applicants שמגיע ללקוח עשוי להיות מסונן לרשומה של המשתמש הנוכחי בלבד.
   const proposalRange = useMemo(() => {
+    if (tender.proposalRange !== undefined) {
+      const range = tender.proposalRange
+      if (!range) return null
+      return range.min === range.max ? String(range.min) : `${range.min} - ${range.max}`
+    }
+
     if (!tender || !tender.applicants || tender.applicants.length === 0) return null
     const nums = tender.applicants
       .map((a) => {
@@ -48,6 +70,8 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
     const max = Math.max(...nums)
     return min === max ? String(min) : `${min} - ${max}`
   }, [tender])
+
+  const applicantsCount = tender.applicantsCount ?? tender.applicants?.length ?? 0
 
   return (
     <div role="dialog" aria-modal="true" className="modal-overlay" onClick={onClose} style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
@@ -85,7 +109,7 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
             </div>
             <div style={{ border: '1px solid var(--border-color)', padding: '12px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
               <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>רשומים לפרויקט</span>
-              <strong>{tender.applicants?.length ?? 0} מועמדים</strong>
+              <strong>{applicantsCount} מועמדים</strong>
             </div>
             <div style={{ border: '1px solid var(--border-color)', padding: '12px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
               <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>טווח הצעות</span>
@@ -132,17 +156,35 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
           )}
 
           {/* כפתורי פעולה תחתונה */}
-          <div className="modal-actions mt-18" style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '10px' }}>
-            <button
-              type="button"
-              className="primary-button"
-              onClick={(e) => {
-                e.stopPropagation()
-                onApply(tender.id)
-              }}
-            >
-              הרשמה למכרז
-            </button>
+          <div className="modal-actions mt-18" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '10px' }}>
+            {myApplication ? (
+              <>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                  הגשת הצעה בתאריך {formatAppliedAt(myApplication.appliedAt)}
+                </span>
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onViewMyApplication(myApplication)
+                  }}
+                >
+                  לצפייה בהצעה שהגשתי
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="primary-button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onApply(tender.id)
+                }}
+              >
+                הרשמה למכרז
+              </button>
+            )}
           </div>
         </section>
       </div>

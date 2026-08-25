@@ -15,7 +15,9 @@
       "Bash(node -e ' *)",
       "Bash(gh issue *)",
       "Bash(gh project *)",
-      "mcp__claude_ai_Atlassian_Rovo__getJiraIssue"
+      "mcp__claude_ai_Atlassian_Rovo__getJiraIssue",
+      "Bash(npx eslint *)",
+      "Bash(npm run *)"
     ],
     "additionalDirectories": [
       "c:\\safe-ai-admin"

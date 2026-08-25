@@ -27,6 +27,13 @@ const formatBudget = (budget?: number): string => {
   return budget === undefined || budget === null ? '—' : budget.toString()
 }
 
+const formatAppliedAt = (appliedAt?: string): string => {
+  if (!appliedAt) return ''
+  const date = new Date(appliedAt)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('he-IL')
+}
+
 interface TenderCardProps {
   id: string
   title: string
@@ -39,6 +46,7 @@ interface TenderCardProps {
   wantsEmails?: boolean
   applicantsCount?: number
   newOffersCount?: number
+  appliedAt?: string
   onView: () => void
   onViewOffers?: () => void
 }
@@ -53,15 +61,22 @@ export default function Card({
   aiApplicationType,
   applicantsCount = 0,
   newOffersCount = 0,
+  appliedAt,
   onView,
   onViewOffers,
 }: TenderCardProps) {
+  const appliedAtLabel = formatAppliedAt(appliedAt)
+
   return (
-    <article 
-      className="tender-card" 
-      aria-labelledby={`tender-${id}`} 
+    <article
+      className={`tender-card${appliedAtLabel ? ' tender-card--applied' : ''}`}
+      aria-labelledby={`tender-${id}`}
       style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
     >
+      {appliedAtLabel && (
+        <span className="tender-card__applied-badge">הגשתי הצעה ב-{appliedAtLabel}</span>
+      )}
+
       <div className="tender-card__header">
         <div>
           <h3 id={`tender-${id}`}>{title}</h3>

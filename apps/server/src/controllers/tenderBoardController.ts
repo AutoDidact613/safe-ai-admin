@@ -11,7 +11,8 @@ import {
   getProductTypeList,
   getAIApplicationTypeList,
   // createSmartTender,  // נעקוף את פונקציית המעבר הבעייתית
-  smartSearchTenders,     
+  smartSearchTenders,
+  filterApplicantsForRequester,
 } from "../services/tenderBoardService";
 import { TBAIService } from "../services/tenderBoardAIService";
 import logger from "../logger";
@@ -66,8 +67,12 @@ export async function createTenderHandler(req: Request, res: Response) {
  */
 export async function listTendersHandler(req: Request, res: Response) {
   try {
+    const user = (req as any).user;
     const tenders = await listTenders();
-    res.json(tenders);
+    const filtered = tenders.map((tender: any) =>
+      filterApplicantsForRequester(tender, user?.userId, user?.role)
+    );
+    res.json(filtered);
   } catch (error) {
     logger.error("List tenders failed", { error });
     res.status(500).json({ error: "Failed to fetch tenders" });
@@ -79,13 +84,14 @@ export async function listTendersHandler(req: Request, res: Response) {
  */
 export async function getTenderHandler(req: Request<{ id: string }>, res: Response) {
   try {
+    const user = (req as any).user;
     const tender = await getTenderById(req.params.id);
 
     if (!tender) {
       return res.status(404).json({ error: "Tender not found" });
     }
 
-    res.json(tender);
+    res.json(filterApplicantsForRequester(tender, user?.userId, user?.role));
   } catch (error) {
     logger.error("Get tender failed", { error });
     res.status(500).json({ error: "Failed to fetch tender" });
@@ -154,19 +160,21 @@ export async function applyToTenderHandler(req: Request, res: Response) {
       });
     }
 
+    const user = (req as any).user;
     const applicant = {
       name: req.body.name,
       email: req.body.email,
       details: req.body.details,
       proposal: req.body.proposal,
       contactMethod: req.body.contactMethod,
+      userId: user?.userId,
     };
 
     const result = await applyToTender(tenderId, applicant);
 
     res.status(200).json({
       success: true,
-      tender: result,
+      tender: filterApplicantsForRequester(result, user?.userId, user?.role),
     });
   } catch (error: any) {
     logger.error("Apply to tender failed", { 
@@ -271,9 +279,13 @@ export async function smartSearchTendersHandler(req: Request, res: Response) {
     }
 
     // קריאה לפונקציית השירות שתמיר את הטקסט לשאילתת מונגו ותשלוף מה-DB
+    const user = (req as any).user;
     const tenders = await smartSearchTenders(searchText);
+    const filtered = tenders.map((tender: any) =>
+      filterApplicantsForRequester(tender, user?.userId, user?.role)
+    );
 
-    res.json(tenders);
+    res.json(filtered);
   } catch (error: any) {
     logger.error("Smart search tenders failed", { error: error.message });
 
