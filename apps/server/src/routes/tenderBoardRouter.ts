@@ -11,6 +11,7 @@ import {
   createSmartTenderHandler,
   smartSearchTendersHandler,
   closeTenderHandler,
+  viewTenderOffersHandler,
 } from "../controllers/tenderBoardController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -33,6 +34,7 @@ router.get("/", listTendersHandler);
 router.get("/:id", getTenderHandler);
 router.put("/:id", updateTenderHandler);
 router.patch("/:id/close", closeTenderHandler);
+router.patch("/:id/view-offers", viewTenderOffersHandler);
 router.delete("/:id", deleteTenderHandler);
 router.post("/:id/apply", applyToTenderHandler);
 

@@ -38,7 +38,9 @@ interface TenderCardProps {
   aiApplicationType?: string
   wantsEmails?: boolean
   applicantsCount?: number
+  newOffersCount?: number
   onView: () => void
+  onViewOffers?: () => void
 }
 
 export default function Card({
@@ -50,7 +52,9 @@ export default function Card({
   productType,
   aiApplicationType,
   applicantsCount = 0,
+  newOffersCount = 0,
   onView,
+  onViewOffers,
 }: TenderCardProps) {
   return (
     <article 
@@ -108,10 +112,44 @@ export default function Card({
         </div>
       )}
 
-      <div className="tender-card__actions" style={{ marginTop: '12px' }}>
+      <div className="tender-card__actions" style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
         <button type="button" className="details-button" onClick={onView}>
-          פרטים
+          פרטי מכרז
         </button>
+        {onViewOffers && (
+          <button
+            type="button"
+            className="details-button"
+            onClick={onViewOffers}
+            style={{ position: 'relative' }}
+          >
+            הצעות
+            {newOffersCount > 0 && (
+              <span
+                aria-label={`${newOffersCount} הצעות חדשות`}
+                style={{
+                  position: 'absolute',
+                  top: '-8px',
+                  insetInlineEnd: '-8px',
+                  minWidth: '18px',
+                  height: '18px',
+                  padding: '0 4px',
+                  borderRadius: '9px',
+                  backgroundColor: '#dc2626',
+                  color: '#fff',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: 1,
+                }}
+              >
+                {newOffersCount}
+              </span>
+            )}
+          </button>
+        )}
       </div>
     </article>
   )
