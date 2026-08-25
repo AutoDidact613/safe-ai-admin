@@ -103,9 +103,6 @@ export default function TopNavigation() {
               <Link to="/contact" className="top-nav-link">
                 צור קשר
               </Link>
-              <Link to="/privacy" className="top-nav-link">
-                מדיניות פרטיות
-              </Link>
 
               {/* Auth Buttons */}
               <Link to="/login" className="top-nav-btn top-nav-btn-secondary">
@@ -182,9 +179,6 @@ export default function TopNavigation() {
 
               <Link to="/contact" className="top-nav-link">
                 צור קשר
-              </Link>
-              <Link to="/privacy" className="top-nav-link">
-                מדיניות פרטיות
               </Link>
               <Link to="/tender-board" className="top-nav-link">
                 לוח פרוייקטים
