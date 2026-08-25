@@ -46,7 +46,12 @@ export function authenticateToken(
 
   if (isAgentServiceToken(token)) {
     (req as any).user = {
-      userId: "inquiry-agent",
+      // Must be a syntactically valid ObjectId - addReplyToRequest does
+      // `new mongoose.Types.ObjectId(senderId)` unconditionally (regardless
+      // of role), so a human-readable string like "inquiry-agent" throws
+      // and crashes the request with a 500. This doesn't reference a real
+      // User document, but nothing currently populates reply.senderId.
+      userId: "000000000000000000000000",
       email: "inquiry-agent@service.local",
       role: "admin",
     };
