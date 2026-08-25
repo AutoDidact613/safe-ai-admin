@@ -260,13 +260,16 @@ export default function AdminRequestsList() {
       <ul className="agent-inquiry-checklist">
         {agentInquiries.map((inquiry) => (
           <li key={inquiry.id}>
-            <label>
+            <label title={`#${inquiry.id}`}>
               <input
                 type="checkbox"
                 checked={selectedInquiryIds.has(inquiry.id)}
                 onChange={() => toggleInquirySelection(inquiry.id)}
               />
-              {` [${inquiry.urgency ?? "?"}] ${inquiry.title} (#${inquiry.id})`}
+              <span className={`urgency-badge urgency-${inquiry.urgency ?? "normal"}`}>
+                {inquiry.urgency ?? "?"}
+              </span>
+              {inquiry.title}
             </label>
           </li>
         ))}
@@ -276,7 +279,7 @@ export default function AdminRequestsList() {
         onClick={handleDraftSelected}
         disabled={selectedInquiryIds.size === 0 || drafting}
       >
-        {drafting ? "מנסח טיוטות... (יכול לקחת עד דקה)" : "נסח טיוטות"}
+        {drafting ? "מנסח טיוטות... (יכול לקחת כמה דקות, בעיקר עם כמה פניות בבת אחת)" : "נסח טיוטות"}
       </button>
       {draftError && <p className="error">{draftError}</p>}
     </div>

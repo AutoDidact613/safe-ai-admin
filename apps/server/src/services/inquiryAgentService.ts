@@ -1,8 +1,9 @@
 const AGENT_SERVICE_URL = process.env.AGENT_SERVICE_URL || "http://localhost:8000";
 const RUN_LIST_TIMEOUT_MS = 60_000;
 // Drafting + guardrails (with retries) means several real LLM calls per
-// selected inquiry, so this needs more headroom than a plain list fetch.
-const RUN_PROCESS_TIMEOUT_MS = 120_000;
+// selected inquiry, so this needs more headroom than a plain list fetch -
+// 120s was cutting it close for just 2 inquiries with a guardrails retry.
+const RUN_PROCESS_TIMEOUT_MS = 240_000;
 
 export async function runInquiryAgentList() {
   const response = await fetch(`${AGENT_SERVICE_URL}/run/list`, {
