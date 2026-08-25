@@ -58,7 +58,12 @@ export function authenticateToken(
     (req as any).user = decoded; // { userId, email, role }
     next();
   } catch (error) {
-    return res.status(403).json({ error: "Invalid or expired token" });
+    // 401, not 403: an expired/invalid token is an authentication failure,
+    // not an authorization one - and apiCall's silent-refresh-and-retry
+    // logic (client/src/config/api.ts) only triggers on 401. Returning 403
+    // here meant every access-token expiry surfaced as a hard error instead
+    // of the intended silent refresh.
+    return res.status(401).json({ error: "Invalid or expired token" });
   }
 }
 
