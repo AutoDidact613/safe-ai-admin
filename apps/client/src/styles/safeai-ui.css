@@ -594,18 +594,71 @@
   color: #24343a;
 }
 
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 8px 14px;
+  background: transparent;
+  color: #0b6b5b;
+  border: 1px solid #d5eae6;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.back-btn:hover {
+  background: #f1f8f7;
+  border-color: #0b6b5b;
+  transform: translateX(2px);
+}
+
+.back-btn svg {
+  transform: scaleX(-1);
+}
+
 .close-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin-top: 12px;
-  padding: 8px 12px;
+  padding: 10px 16px;
   background: #0b6b5b;
   color: #fff;
   border-radius: 8px;
   border: none;
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 6px 16px rgba(11, 107, 91, 0.25);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
 }
-.close-btn:hover { background: #095a4d; }
+
+.close-btn:hover {
+  background: #095a4d;
+  box-shadow: 0 8px 20px rgba(11, 107, 91, 0.3);
+  transform: translateY(-1px);
+}
+
+.close-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 10px rgba(11, 107, 91, 0.25);
+}
+
+.close-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.close-btn-disabled {
+  background: #eef2f1;
+  color: #5b6b67;
+  opacity: 1;
+}
 
 .replies-list { margin-top: 18px; display:flex; flex-direction:column; gap:12px; }
 .reply-bubble {
@@ -641,5 +694,47 @@
 @media (max-width: 720px) {
   .request-details-container { padding: 12px; }
   .reply-bubble { max-width: 100%; }
+}
+
+/* Close-request confirmation modal */
+.confirm-modal {
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  padding: 28px 24px 24px;
+}
+
+.confirm-modal-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.confirm-modal-title {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+  color: #111827;
+}
+
+.confirm-modal-text {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.confirm-modal-footer {
+  justify-content: center;
+  margin-top: 22px;
+}
+
+.confirm-modal-footer .btn {
+  min-width: 110px;
+  justify-content: center;
 }
 
