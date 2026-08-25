@@ -29,8 +29,6 @@ const ProviderKeySchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-
-  apiKey: String
 },
 { timestamps: true }
 );
