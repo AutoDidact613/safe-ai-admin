@@ -4,6 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from "express";
+import mongoose from "mongoose";
 import { verifyAccessToken } from "../utils/jwt";
 import { User } from "../models/user";
 
@@ -110,20 +111,26 @@ export function requireForumPermission(field: "canCreatePosts" | "canComment") {
       return next();
     }
 
-    const user = await User.findById(authUser.userId).select(field).lean();
-    const value = user ? (user as any)[field] : undefined;
-    const allowed = value === undefined ? FORUM_PERMISSION_DEFAULT_WHEN_UNSET[field] : value === true;
+    try {
+      const user = mongoose.Types.ObjectId.isValid(authUser.userId)
+        ? await User.findById(authUser.userId).select(field).lean()
+        : null;
+      const value = user ? (user as any)[field] : undefined;
+      const allowed = value === undefined ? FORUM_PERMISSION_DEFAULT_WHEN_UNSET[field] : value === true;
 
-    if (!allowed) {
-      return res.status(403).json({
-        error:
-          field === "canCreatePosts"
-            ? "אין לך הרשאה לפרסם פוסטים חדשים"
-            : "אין לך הרשאה להגיב לפוסטים",
-      });
+      if (!allowed) {
+        return res.status(403).json({
+          error:
+            field === "canCreatePosts"
+              ? "אין לך הרשאה לפרסם פוסטים חדשים"
+              : "אין לך הרשאה להגיב לפוסטים",
+        });
+      }
+
+      next();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to verify forum permissions" });
     }
-
-    next();
   };
 }
 
