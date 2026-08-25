@@ -53,6 +53,9 @@ export default function TenderBoardPage() {
   const [minBudget, setMinBudget] = useState<string>('')
   const [maxTimeDays, setMaxTimeDays] = useState<string>('')
 
+  // State עבור סינון "מכרזים שהגשתי להם הצעה"
+  const [showOnlyApplied, setShowOnlyApplied] = useState(false)
+
   // State עבור חיפוש חכם עם AI
   const [isSmartSearchOpen, setIsSmartSearchOpen] = useState(false)
   const [smartSearchQuery, setSmartSearchQuery] = useState('')
@@ -214,9 +217,12 @@ export default function TenderBoardPage() {
         matchTime = tenderTime <= parsedMaxTime
       }
 
-      return matchProduct && matchAi && matchBudget && matchTime
+      // סינון לפי מכרזים שהמשתמש הגיש להם הצעה
+      const matchApplied = !showOnlyApplied || (t.applicants ?? []).some((a) => a.userId === currentUserCode)
+
+      return matchProduct && matchAi && matchBudget && matchTime && matchApplied
     })
-  }, [tenders, smartSearchResults, selectedProductType, selectedAiApplication, minBudget, maxTimeDays])
+  }, [tenders, smartSearchResults, selectedProductType, selectedAiApplication, minBudget, maxTimeDays, showOnlyApplied, currentUserCode])
 
   const handleUpdateTender = (updatedTender: Tender) => {
     setTenders((prevTenders) => prevTenders.map((tender) => (tender.id === updatedTender.id ? updatedTender : tender)))
@@ -339,6 +345,15 @@ export default function TenderBoardPage() {
             >
               <span>✨</span>
               {isSmartSearchOpen ? <span>סגור חיפוש חכם</span> : <span>חיפוש חכם</span>}
+            </button>
+
+            <button
+              type="button"
+              className={`applied-filter-toggle${showOnlyApplied ? ' active' : ''}`}
+              onClick={() => setShowOnlyApplied((v) => !v)}
+              aria-pressed={showOnlyApplied}
+            >
+              {showOnlyApplied ? 'ניקוי החיפוש' : 'מכרזים שהגשתי להם הצעה'}
             </button>
 
             {isSmartSearchOpen && (
