@@ -347,14 +347,16 @@ export default function TenderBoardPage() {
               {isSmartSearchOpen ? <span>סגור חיפוש חכם</span> : <span>חיפוש חכם</span>}
             </button>
 
-            <button
-              type="button"
-              className={`applied-filter-toggle${showOnlyApplied ? ' active' : ''}`}
-              onClick={() => setShowOnlyApplied((v) => !v)}
-              aria-pressed={showOnlyApplied}
-            >
-              {showOnlyApplied ? 'ניקוי החיפוש' : 'מכרזים שהגשתי להם הצעה'}
-            </button>
+            {!isSmartSearchOpen && (
+              <button
+                type="button"
+                className={`applied-filter-toggle${showOnlyApplied ? ' active' : ''}`}
+                onClick={() => setShowOnlyApplied((v) => !v)}
+                aria-pressed={showOnlyApplied}
+              >
+                {showOnlyApplied ? 'ניקוי החיפוש' : 'מכרזים שהגשתי להם הצעה'}
+              </button>
+            )}
 
             {isSmartSearchOpen && (
               <div style={{ display: 'flex', gap: '10px', width: '100%', justifyContent: 'center' }}>
@@ -375,6 +377,17 @@ export default function TenderBoardPage() {
                   </button>
                 )}
               </div>
+            )}
+
+            {isSmartSearchOpen && (
+              <button
+                type="button"
+                className={`applied-filter-toggle${showOnlyApplied ? ' active' : ''}`}
+                onClick={() => setShowOnlyApplied((v) => !v)}
+                aria-pressed={showOnlyApplied}
+              >
+                {showOnlyApplied ? 'ניקוי החיפוש' : 'מכרזים שהגשתי להם הצעה'}
+              </button>
             )}
           </div>
 
