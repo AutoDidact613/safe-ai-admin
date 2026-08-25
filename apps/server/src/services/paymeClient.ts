@@ -15,8 +15,11 @@ const PAYME_BASE_URL =
 
 const SELLER_ID = process.env.PAYME_SELLER_ID || "";
 const API_KEY = process.env.PAYME_API_KEY || "";
-const SUCCESS_URL = process.env.PAYME_SUCCESS_URL || "http://localhost:5173/wallet/payme/success";
-const FAIL_URL = process.env.PAYME_FAIL_URL || "http://localhost:5173/wallet/payme/fail";
+// Client origin only - the org-specific success/fail page path is appended
+// per-request below, since it needs organizationId + our own requestId to
+// look up the transaction status (see PaymeResultPage.tsx on the client).
+const CLIENT_ORIGIN = process.env.PAYME_SUCCESS_URL || "http://localhost:5173";
+const CLIENT_FAIL_ORIGIN = process.env.PAYME_FAIL_URL || "http://localhost:5173";
 const NOTIFY_URL = process.env.PAYME_NOTIFY_URL || "http://localhost:3001/organizations/payme/webhook";
 
 export interface GenerateSaleResult {
@@ -38,6 +41,10 @@ export async function generateSale(params: {
   currency: string;
 }): Promise<GenerateSaleResult> {
   try {
+    const resultQuery = `requestId=${encodeURIComponent(params.requestId)}`;
+    const goodUrl = `${CLIENT_ORIGIN}/organizations/${params.organizationId}/wallet/payme/success?${resultQuery}`;
+    const errorUrl = `${CLIENT_FAIL_ORIGIN}/organizations/${params.organizationId}/wallet/payme/fail?${resultQuery}`;
+
     const query: Record<string, string> = {
       action: "pay",
       What: "Wallet top-up",
@@ -47,8 +54,8 @@ export async function generateSale(params: {
         requestId: params.requestId,
         organizationId: params.organizationId,
       }),
-      GoodURL: SUCCESS_URL,
-      ErrorURL: FAIL_URL,
+      GoodURL: goodUrl,
+      ErrorURL: errorUrl,
       NotifyURL: NOTIFY_URL,
       sellerid: SELLER_ID,
       apikey: API_KEY,
