@@ -120,10 +120,12 @@ the gitignored `evals/output/` directory.
 
 ## Backend dependency (tracked separately, not part of this agent's code)
 
-The SafeAI-613 server exists and is already running, but the agent still lacks
-a real service account: `SAFEAI_AGENT_API_TOKEN` is currently a personal admin
-JWT used for testing, not a dedicated service-account token. This agent still
-depends on the server exposing/adding:
+The SafeAI-613 server exists and is already running. `SAFEAI_AGENT_API_TOKEN`
+is a dedicated service-account secret, not a user JWT - the server's
+`authenticateToken` middleware checks it against `AGENT_SERVICE_TOKEN`
+(constant-time comparison) before falling back to normal JWT verification,
+so it doesn't expire like a 15-minute access token does. The two values must
+match; see `apps/server/src/middleware/auth.ts`. This agent still depends on
+the server exposing/adding:
 - `urgency` and `category` fields on inquiries (not yet on `ContactMessage`)
-- a real service/admin auth mechanism for this agent to call the API
 - an email notification sent once an admin reply is finalized

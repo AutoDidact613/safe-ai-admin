@@ -1,9 +1,44 @@
 {
   "name": "safeai-inquiry-agent",
   "version": "0.1.0",
-  "description": "Lorem ipsum dolor sit amet, placeholder description.",
+  "description": "LangGraph agent that classifies SafeAI-613 support inquiries by category and urgency, drafts RAG-grounded replies, screens them with automated guardrails, and sends only after explicit admin approval.",
+  "creator_name": "SafeAI-613 Team",
+  "contact_information": "support@safeai613.com",
+  "release_date": "2026-08-24",
+  "repository_url": "https://github.com/SafeAI613/SafeAI-613",
+  "download_url": "N/A - internal agent, not distributed as a downloadable package",
+  "target_audience": "Internal SafeAI-613 admin/support team",
+  "professional_fields": ["customer support", "technical support"],
+  "tasks_capable_of_performing": [
+    "Classify support inquiries by category (bug/feature/feedback) and urgency (urgent/normal/low)",
+    "Draft RAG-grounded replies using the SafeAI-613 help article knowledge base",
+    "Screen drafts for policy violations (leaked contact info, unsupported promises) before they reach an admin",
+    "Send an approved reply and mark the inquiry as handled, only after explicit admin approval"
+  ],
+  "examples_of_suitable_questions": [
+    "The app keeps crashing whenever I try to upload a file larger than 10MB.",
+    "Would it be possible to add a dark mode option to the dashboard?",
+    "The export button on the reports page doesn't do anything when I click it.",
+    "Could you add support for two-factor authentication at login?"
+  ],
+  "technical_specifications": {
+    "framework": "langgraph",
+    "llm_provider": "google-gemini",
+    "supported_models": ["gemini-flash-latest", "gemini-3.6-flash"],
+    "features_enabled": {
+      "rag": true,
+      "web_search": false,
+      "code_execution": false,
+      "mcp_support": false
+    },
+    "required_permissions": [
+      "contact_requests:read",
+      "contact_requests:reply",
+      "contact_requests:close",
+      "articles:read"
+    ]
+  },
   "entry_point": "run_agent.py",
-  "framework": "langgraph",
   "interfaces": ["cli"],
   "requires_human_approval": true,
   "environment_variables": [
@@ -11,9 +46,11 @@
     "SAFEAI_AGENT_API_TOKEN",
     "GEMINI_API_KEY",
     "LLM_MODEL",
+    "GEMINI_EMBEDDING_MODEL",
+    "LANGCHAIN_TRACING_V2",
     "LANGCHAIN_API_KEY",
-    "LANGCHAIN_PROJECT"
+    "LANGCHAIN_PROJECT",
+    "MONGODB_ATLAS_URI"
   ],
-  "author": "foo",
   "license": "UNLICENSED"
 }
