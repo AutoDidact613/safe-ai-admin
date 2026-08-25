@@ -1,26 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AddPostModal } from './AddPostModal';
-import { API_BASE_URL } from '../../config/api';
-
-interface Post {
-  _id: string;
-  title: string;
-  content: string;
-  category: string;
-  attachments: string[];
-  viewsCount: number;
-  commentCount: number;
-  rating: number;
-  author: { name: string };
-  createdAt: string;
-  tags: { _id: string; name: string }[];
-  lastComment: { authorName: string; content: string } | null;
-  isBlocked?: boolean;
-  isLocked?: boolean;
-  ratingCount: number;
-  averageRating: number;
-}
+import { fetchPosts as fetchPostsFromApi, fetchSimilarPosts, moderatePost as moderatePostApi } from './api';
+import type { Post } from './types';
 
 export const ForumPage: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -45,15 +27,7 @@ export const ForumPage: React.FC = () => {
     setLoading(true);
     const userRole = currentUser?.role || 'user';
 
-    const baseUrl = search.trim()
-      ? `${API_BASE_URL}/api/posts/search?query=${search}`
-      : `${API_BASE_URL}/api/posts?page=${page}`;
-    
-    const url = baseUrl.includes('?') 
-      ? `${baseUrl}&userRole=${userRole}${!search.trim() ? '' : `&page=${page}`}` 
-      : `${baseUrl}?userRole=${userRole}&page=${page}`;
-
-    fetch(url)
+    fetchPostsFromApi(search, page, userRole)
       .then((res) => {
         if (!res.ok) throw new Error('שרת הפורום החזיר שגיאה');
         return res.json();
@@ -107,7 +81,7 @@ export const ForumPage: React.FC = () => {
     }
 
     if (queryParam) {
-      fetch(`${API_BASE_URL}/api/posts/search-similar?${queryParam}`)
+      fetchSimilarPosts(queryParam)
         .then((res) => res.json())
         .then((data) => {
           if (Array.isArray(data)) {
@@ -169,14 +143,7 @@ export const ForumPage: React.FC = () => {
     if (!currentUser?._id) return alert('משתמש לא מחובר');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/posts/${postId}/moderation`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: currentUser._id,
-          actionType: actionType
-        })
-      });
+      const response = await moderatePostApi(postId, currentUser._id, actionType);
 
       if (response.ok) {
         fetchPosts(searchQuery, currentPage);

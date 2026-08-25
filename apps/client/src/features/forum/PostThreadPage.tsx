@@ -8,31 +8,17 @@ import { Highlight } from '@tiptap/extension-highlight';
 import { FontFamily } from '@tiptap/extension-font-family';
 import { TextAlign } from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
-import { API_BASE_URL } from '../../config/api';
-
-interface Comment {
-  _id: string;
-  content: string;
-  author: { name: string };
-  createdAt: string;
-  attachments?: string[];
-}
-
-interface Post {
-  _id: string;
-  title: string;
-  content: string;
-  category: string;
-  tags: { _id: string; name: string }[];
-  attachments: string[];
-  viewsCount: number;
-  author: { _id: string; name: string };
-  createdAt: string;
-  isLocked?: boolean;
-  ratingCount: number;
-  averageRating: number;
-  ratedBy: string[];
-}
+import {
+  fetchPostById,
+  fetchSimilarPosts,
+  incrementPostView,
+  deleteComment,
+  getUploadUrl,
+  uploadFileToS3,
+  createComment,
+  ratePost,
+} from './api';
+import type { Post, Comment } from './types';
 
 export const PostThreadPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -73,7 +59,7 @@ export const PostThreadPage: React.FC = () => {
 
   const loadPostAndComments = () => {
     if (!id) return;
-    fetch(`${API_BASE_URL}/api/posts/${id}`)
+    fetchPostById(id)
       .then((res) => res.json())
       .then((data) => {
         setPost(data.post);
@@ -90,7 +76,7 @@ export const PostThreadPage: React.FC = () => {
           localStorage.setItem('viewed_titles', JSON.stringify(updatedHistory));
 
           // שימוש בפרמטר postId המהיר ב-100% מול ה-Backend
-          fetch(`${API_BASE_URL}/api/posts/search-similar?postId=${data.post._id}`)
+          fetchSimilarPosts(`postId=${data.post._id}`)
             .then((res) => res.json())
             .then((similarData) => {
               if (Array.isArray(similarData)) {
@@ -141,11 +127,7 @@ export const PostThreadPage: React.FC = () => {
     const user = userStr ? JSON.parse(userStr) : null;
 
     if (user) {
-      fetch(`${API_BASE_URL}/api/posts/${id}/view`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user._id })
-      })
+      incrementPostView(id, user._id)
         .then((res) => res.json())
         .then((viewData) => {
           if (viewData && viewData.viewsCount !== undefined) {
@@ -160,11 +142,7 @@ export const PostThreadPage: React.FC = () => {
     if (!window.confirm('האם את בטוחה שברצונך למחוק תגובה זו לצמיתות?')) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/posts/comment/${commentId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser?._id })
-      });
+      const response = await deleteComment(commentId, currentUser?._id);
 
       if (response.ok) {
         setComments((prev) => prev.filter((comment) => comment._id !== commentId));
@@ -190,23 +168,12 @@ export const PostThreadPage: React.FC = () => {
 
     if (selectedFile) {
       try {
-        const urlResponse = await fetch(`${API_BASE_URL}/api/upload/get-url`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fileName: selectedFile.name,
-            fileType: selectedFile.type,
-          }),
-        });
+        const urlResponse = await getUploadUrl(selectedFile.name, selectedFile.type);
 
         if (!urlResponse.ok) throw new Error('נכשלה קבלת קישור מאובטח לתגובה');
         const { uploadUrl, fileUrl } = await urlResponse.json();
 
-        const awsResponse = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': selectedFile.type },
-          body: selectedFile,
-        });
+        const awsResponse = await uploadFileToS3(uploadUrl, selectedFile);
 
         if (!awsResponse.ok) throw new Error('העלאת קובץ התגובה ל-S3 נכשלה');
         finalFileUrl = fileUrl;
@@ -227,11 +194,7 @@ export const PostThreadPage: React.FC = () => {
     };
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/posts/${id}/comment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(commentPayload)
-      });
+      const response = await createComment(id, commentPayload);
 
       if (response.ok) {
         const savedComment = await response.json();
@@ -255,15 +218,7 @@ export const PostThreadPage: React.FC = () => {
     setUserRating(selectedRating);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/posts/${post._id}/rate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          userId: currentUser?._id,
-          rating: selectedRating
-        })
-      });
+      const response = await ratePost(post._id, currentUser?._id, selectedRating);
 
       if (response.ok) {
         const data = await response.json();

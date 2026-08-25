@@ -2,8 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CreatableSelect from 'react-select/creatable';
 import type { MultiValue } from 'react-select';
-import { authFetch } from '../../utils/apiClient';
-import { API_BASE_URL } from '../../config/api';
+import {
+  fetchTags,
+  fetchStrictSimilarPosts,
+  generateAiAssistance,
+  getUploadUrl,
+  uploadFileToS3,
+  createPost,
+} from './api';
 
 interface AddPostModalProps {
   isOpen: boolean;
@@ -33,7 +39,7 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
   const [backupContent, setBackupContent] = useState(''); 
 
   const loadTagsFromServer = () => {
-    fetch(`${API_BASE_URL}/api/tags`)
+    fetchTags()
       .then((res) => res.json())
       .then((data) => {
         const formatted = Array.isArray(data) ? data.map((tag: { _id?: string; name: string }) => ({
@@ -48,7 +54,7 @@ export const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onP
   useEffect(() => {
     if (formData.title.length >= 3) {
       const timer = setTimeout(() => {
-        fetch(`${API_BASE_URL}/api/posts/search-strict-similar?title=${formData.title}`)
+        fetchStrictSimilarPosts(formData.title)
           .then((res) => res.json())
           .then((data) => {
             setSimilarPosts(data);
@@ -84,13 +90,7 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
     if (mode === 'tags') setAiTags([]);
 
     try {
-      const response = await authFetch(`${API_BASE_URL}/api/posts/ai-assist`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ mode, content: formData.content })
-      });
+      const response = await generateAiAssistance(mode, formData.content);
 
       const data = await response.json();
       console.log("[AI Assist Debug] המידע שחזר מהשרת עבור", mode, ":", data);
@@ -163,23 +163,12 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
 
     if (selectedFile) {
       try {
-        const urlResponse = await fetch(`${API_BASE_URL}/api/upload/get-url`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fileName: selectedFile.name,
-            fileType: selectedFile.type,
-          }),
-        });
+        const urlResponse = await getUploadUrl(selectedFile.name, selectedFile.type);
 
         if (!urlResponse.ok) throw new Error('נכשלה קבלת קישור מאובטח מהשרת');
         const { uploadUrl, fileUrl } = await urlResponse.json();
 
-        const awsResponse = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': selectedFile.type },
-          body: selectedFile,
-        });
+        const awsResponse = await uploadFileToS3(uploadUrl, selectedFile);
 
         if (!awsResponse.ok) throw new Error('העלאת הקובץ ל-S3 נכשלה');
         finalFileUrl = fileUrl;
@@ -203,13 +192,7 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
     };
 
     try {
-      const response = await authFetch(`${API_BASE_URL}/api/posts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(postPayload)
-      });
+      const response = await createPost(postPayload);
 
       if (response.ok) {
         setFormData({ title: '', category: 'כללי', tags: '', content: '' });
