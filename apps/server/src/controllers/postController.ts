@@ -386,7 +386,8 @@ export const searchPosts = async (req: Request, res: Response) => {
 };
 export const createComment = async (req: Request, res: Response) => {
   try {
-    const { postId, content, userId, fileUrl } = req.body;
+    const { postId, content, fileUrl } = req.body;
+    const authenticatedUserId = (req as any).user?.userId;
 
     if (!content || content.trim() === '') {
       return res.status(400).json({ message: 'תוכן התגובה אינו יכול להיות ריק' });
@@ -402,8 +403,8 @@ export const createComment = async (req: Request, res: Response) => {
     const newComment = new Comment({
       postId,
       content,
-      attachments, 
-      author: userId || null
+      attachments,
+      author: authenticatedUserId
     });
 
     const savedComment = await newComment.save();

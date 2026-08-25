@@ -7,6 +7,8 @@ export interface AuthUser {
   role?: string;
   profileId?: string;
   mode?: "BYOK" | "MANAGED";
+  canCreatePosts?: boolean;
+  canComment?: boolean;
 }
 
 export interface AuthContextValue {
