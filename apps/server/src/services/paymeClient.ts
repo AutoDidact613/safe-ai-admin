@@ -38,6 +38,10 @@ const CALLBACK_URL = process.env.PAYME_NOTIFY_URL || "http://localhost:3001/orga
 // PayMe's stated minimum sale_price, in agorot (5.00 ILS).
 export const MIN_SALE_PRICE_AGOROT = 500;
 
+// generateSale had no timeout at all - a hung PayMe response would hold
+// the initiate request open indefinitely. 10s is generous for a JSON POST.
+const GENERATE_SALE_TIMEOUT_MS = 10_000;
+
 export interface GenerateSaleResult {
   success: boolean;
   iframeUrl?: string;
@@ -61,19 +65,28 @@ export async function generateSale(params: {
   try {
     const salePriceAgorot = Math.round(params.amount * 100);
 
-    const response = await fetch(`${PAYME_BASE_URL}/generate-sale`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        seller_payme_id: SELLER_PAYME_ID,
-        sale_price: salePriceAgorot,
-        currency: params.currency,
-        product_name: "Wallet top-up",
-        transaction_id: params.requestId,
-        sale_callback_url: CALLBACK_URL,
-        sale_return_url: `${CLIENT_ORIGIN}/organizations/${params.organizationId}/wallet/payme/success?requestId=${encodeURIComponent(params.requestId)}`,
-      }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), GENERATE_SALE_TIMEOUT_MS);
+
+    let response: Response;
+    try {
+      response = await fetch(`${PAYME_BASE_URL}/generate-sale`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          seller_payme_id: SELLER_PAYME_ID,
+          sale_price: salePriceAgorot,
+          currency: params.currency,
+          product_name: "Wallet top-up",
+          transaction_id: params.requestId,
+          sale_callback_url: CALLBACK_URL,
+          sale_return_url: `${CLIENT_ORIGIN}/organizations/${params.organizationId}/wallet/payme/success?requestId=${encodeURIComponent(params.requestId)}`,
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
     const data = (await response.json()) as {
       status_code?: number;
