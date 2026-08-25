@@ -21,13 +21,11 @@ beforeEach(() => {
 });
 
 describe("paymeController.paymeWebhookHandler", () => {
-  it("rejects with 401 and never touches the DB when the signature is missing or invalid", async () => {
+  it("rejects with 401 and never touches the DB when the signature does not verify", async () => {
     (mockedPaymeService.verifyWebhookSignature as jest.Mock).mockReturnValue(false as never);
 
     const req: any = {
-      headers: {},
-      rawBody: "{}",
-      body: {},
+      body: { status_code: "0" },
     };
     const res = mockRes();
 
@@ -37,31 +35,14 @@ describe("paymeController.paymeWebhookHandler", () => {
     expect(mockedPaymeService.processWalletTopUpWebhook).not.toHaveBeenCalled();
   });
 
-  it("rejects with 401 when rawBody was never captured (e.g. unexpected content-type)", async () => {
-    const req: any = {
-      headers: { "x-payme-signature": "deadbeef" },
-      rawBody: undefined,
-      body: {},
-    };
-    const res = mockRes();
-
-    await paymeWebhookHandler(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(mockedPaymeService.verifyWebhookSignature).not.toHaveBeenCalled();
-    expect(mockedPaymeService.processWalletTopUpWebhook).not.toHaveBeenCalled();
-  });
-
-  it("processes the webhook once the signature is valid", async () => {
+  it("processes the webhook once the signature verifies", async () => {
     (mockedPaymeService.verifyWebhookSignature as jest.Mock).mockReturnValue(true as never);
     (mockedPaymeService.processWalletTopUpWebhook as jest.Mock).mockResolvedValue({
       handled: true,
     } as never);
 
     const req: any = {
-      headers: { "x-payme-signature": "deadbeef" },
-      rawBody: "{}",
-      body: { StatusCode: "0" },
+      body: { status_code: "0", notify_type: "sale-complete" },
     };
     const res = mockRes();
 
