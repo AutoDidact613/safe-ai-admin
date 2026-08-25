@@ -7,6 +7,7 @@ import {
   processWalletTopUpWebhook,
   getWalletTopUpStatus,
 } from "../services/paymeService";
+import { MIN_SALE_PRICE_AGOROT } from "../services/paymeClient";
 
 /**
  * Admin or the organization's own owner may initiate/check a top-up -
@@ -35,8 +36,10 @@ export async function initiatePaymeTopUpHandler(req: Request<{ id: string }>, re
     const orgId = req.params.id;
     const { amount, currency } = req.body;
 
-    if (amount === undefined || typeof amount !== "number" || amount <= 0) {
-      return res.status(400).json({ error: "A valid positive amount is required" });
+    if (amount === undefined || typeof amount !== "number" || amount * 100 < MIN_SALE_PRICE_AGOROT) {
+      return res
+        .status(400)
+        .json({ error: `A valid amount of at least ${MIN_SALE_PRICE_AGOROT / 100} is required` });
     }
 
     if (!(await isAdminOrOwner(req, res))) return;
@@ -59,12 +62,9 @@ export async function initiatePaymeTopUpHandler(req: Request<{ id: string }>, re
 
 export async function paymeWebhookHandler(req: Request, res: Response) {
   try {
-    const signatureHeader = req.headers["x-payme-signature"] as string | undefined;
-    const rawBody = (req as any).rawBody as string | undefined;
-
-    if (!rawBody || !verifyWebhookSignature(rawBody, signatureHeader)) {
+    if (!verifyWebhookSignature(req.body)) {
       logger.warn("Rejected PayMe webhook - invalid or missing signature", {
-        hasSignature: Boolean(signatureHeader),
+        hasSignature: Boolean(req.body?.payme_signature),
       });
       return res.status(401).json({ error: "Invalid signature" });
     }

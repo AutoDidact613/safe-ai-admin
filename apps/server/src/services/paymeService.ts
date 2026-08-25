@@ -8,11 +8,17 @@
  * made /initiate always fail, an inverted StatusCode check that treated
  * successful payments as failed, no webhook signature check, no
  * idempotency, no amount verification). None of that is reused here.
+ *
+ * Rewritten a second time after confirming PayMe's actual, documented
+ * API shape (https://docs.payme.io/docs/payments): the first version of
+ * this file guessed at a callback payload shape (StatusCode/TransactionId/
+ * Amount/MoreData) that does not match PayMe's real Sale Callback
+ * attributes (status_code/notify_type/transaction_id/price/payme_transaction_id).
  */
 
 import crypto from "crypto";
 import logger from "../logger";
-import { generateSale } from "./paymeClient";
+import { generateSale, MIN_SALE_PRICE_AGOROT } from "./paymeClient";
 import * as walletTransactionRepo from "../repositories/walletTransactionRepository";
 import * as organizationRepo from "../repositories/organizationRepository";
 
@@ -28,6 +34,10 @@ export async function initiateWalletTopUp(
   amount: number,
   currency = "ILS",
 ): Promise<InitiateTopUpResult> {
+  if (Math.round(amount * 100) < MIN_SALE_PRICE_AGOROT) {
+    return { success: false, error: `Amount must be at least ${MIN_SALE_PRICE_AGOROT / 100} ${currency}` };
+  }
+
   const requestId = crypto.randomUUID();
 
   const transaction = await walletTransactionRepo.createPendingTransaction({
@@ -56,34 +66,26 @@ export async function initiateWalletTopUp(
 }
 
 /**
- * Verifies that a webhook request actually came from PayMe, before any
- * DB access happens. Uses HMAC-SHA256 over the raw request body with
- * PAYME_WEBHOOK_SECRET, compared with a timing-safe check.
+ * Verifies that a Sale Callback actually came from PayMe, before any DB
+ * access happens.
  *
- * NOTE: PayMe's exact webhook-authentication mechanism must be confirmed
- * against their official documentation before this goes to production -
- * this HMAC scheme is the standard fallback, not a confirmed PayMe
- * contract. If PayMe uses a different mechanism (e.g. a signature header
- * with a different algorithm), this function is the only place that
- * needs to change.
+ * NOT YET IMPLEMENTED: PayMe's callback payload includes a
+ * payme_signature field, but the formula for computing/verifying it
+ * (which fields, in what order, with what algorithm and key) is not in
+ * PayMe's public API docs. We've asked PayMe support directly; until
+ * they confirm it, this fails closed - every callback is rejected - so a
+ * missing verification step can never be mistaken for a passing one.
+ * Once confirmed, this is the only function that needs to change.
  */
-export function verifyWebhookSignature(rawBody: string, signatureHeader: string | undefined): boolean {
-  const secret = process.env.PAYME_WEBHOOK_SECRET || "";
-
-  if (!secret || !signatureHeader) {
+export function verifyWebhookSignature(body: { payme_signature?: string }): boolean {
+  if (!body.payme_signature) {
     return false;
   }
 
-  const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
-
-  const expectedBuf = Buffer.from(expected, "hex");
-  const receivedBuf = Buffer.from(signatureHeader, "hex");
-
-  if (expectedBuf.length !== receivedBuf.length) {
-    return false;
-  }
-
-  return crypto.timingSafeEqual(expectedBuf, receivedBuf);
+  logger.warn(
+    "PayMe webhook signature verification is not yet implemented (formula not confirmed with PayMe support) - rejecting by default",
+  );
+  return false;
 }
 
 export interface WebhookProcessResult {
@@ -91,33 +93,38 @@ export interface WebhookProcessResult {
   reason?: string;
 }
 
+export interface PaymeSaleCallbackBody {
+  status_code?: string | number;
+  notify_type?: string;
+  transaction_id?: string;
+  payme_transaction_id?: string;
+  price?: string | number;
+  currency?: string;
+  payme_signature?: string;
+  [key: string]: unknown;
+}
+
 /**
- * Applies a verified webhook to the matching pending WalletTransaction.
- * Caller is responsible for signature verification before calling this -
- * this function assumes the request is authentic.
+ * Applies a verified Sale Callback to the matching pending
+ * WalletTransaction. Caller is responsible for signature verification
+ * before calling this - this function assumes the request is authentic.
+ *
+ * transaction_id here is PayMe's echo of our own WalletTransaction.requestId
+ * (sent as transaction_id in the generate-sale request) - PayMe's own
+ * correlator field, not something we had to invent an encoding for.
  */
-export async function processWalletTopUpWebhook(body: {
-  StatusCode?: string;
-  TransactionId?: string;
-  Amount?: string | number;
-  MoreData?: string;
-}): Promise<WebhookProcessResult> {
-  let requestId: string | undefined;
-  try {
-    requestId = JSON.parse(body.MoreData || "{}").requestId;
-  } catch {
-    requestId = undefined;
-  }
+export async function processWalletTopUpWebhook(body: PaymeSaleCallbackBody): Promise<WebhookProcessResult> {
+  const requestId = body.transaction_id;
 
   if (!requestId) {
-    logger.warn("PayMe webhook missing requestId in MoreData", { body });
-    return { handled: false, reason: "Missing requestId" };
+    logger.warn("PayMe webhook missing transaction_id", { body });
+    return { handled: false, reason: "Missing transaction_id" };
   }
 
   const transaction = await walletTransactionRepo.findByRequestId(requestId);
   if (!transaction) {
-    logger.warn("PayMe webhook for unknown requestId", { requestId });
-    return { handled: false, reason: "Unknown requestId" };
+    logger.warn("PayMe webhook for unknown transaction_id", { requestId });
+    return { handled: false, reason: "Unknown transaction_id" };
   }
 
   if (transaction.status !== "pending") {
@@ -131,23 +138,24 @@ export async function processWalletTopUpWebhook(body: {
     return { handled: true, reason: "Already resolved" };
   }
 
-  const approvedAmount = Number(body.Amount);
+  // price is in agorot (e.g. 5075 = 50.75 ILS) - WalletTransaction.amount is ILS.
+  const approvedAmount = Number(body.price) / 100;
   if (!Number.isFinite(approvedAmount) || approvedAmount !== transaction.amount) {
     await walletTransactionRepo.markFailedIfPending(requestId, body);
     logger.warn("PayMe webhook amount mismatch - rejecting", {
       requestId,
       expected: transaction.amount,
-      received: body.Amount,
+      received: body.price,
     });
     return { handled: false, reason: "Amount mismatch" };
   }
 
-  const paymeSuccess = body.StatusCode === "0";
-  const payMeTransactionId = body.TransactionId || "";
+  const paymeSuccess = body.notify_type === "sale-complete" && String(body.status_code) === "0";
+  const payMeTransactionId = body.payme_transaction_id || "";
 
   if (!paymeSuccess) {
     await walletTransactionRepo.markFailedIfPending(requestId, body);
-    return { handled: true, reason: "PayMe reported failure" };
+    return { handled: true, reason: `PayMe notify_type: ${body.notify_type}` };
   }
 
   const resolved = await walletTransactionRepo.markCompletedIfPending(
