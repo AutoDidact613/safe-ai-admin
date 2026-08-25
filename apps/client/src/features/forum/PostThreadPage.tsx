@@ -8,6 +8,7 @@ import { Highlight } from '@tiptap/extension-highlight';
 import { FontFamily } from '@tiptap/extension-font-family';
 import { TextAlign } from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
+import { API_BASE_URL } from '../../config/api';
 
 interface Comment {
   _id: string;
@@ -72,7 +73,7 @@ export const PostThreadPage: React.FC = () => {
 
   const loadPostAndComments = () => {
     if (!id) return;
-    fetch(`http://localhost:5000/api/posts/${id}`)
+    fetch(`${API_BASE_URL}/api/posts/${id}`)
       .then((res) => res.json())
       .then((data) => {
         setPost(data.post);
@@ -89,7 +90,7 @@ export const PostThreadPage: React.FC = () => {
           localStorage.setItem('viewed_titles', JSON.stringify(updatedHistory));
 
           // שימוש בפרמטר postId המהיר ב-100% מול ה-Backend
-          fetch(`http://localhost:5000/api/posts/search-similar?postId=${data.post._id}`)
+          fetch(`${API_BASE_URL}/api/posts/search-similar?postId=${data.post._id}`)
             .then((res) => res.json())
             .then((similarData) => {
               if (Array.isArray(similarData)) {
@@ -140,7 +141,7 @@ export const PostThreadPage: React.FC = () => {
     const user = userStr ? JSON.parse(userStr) : null;
 
     if (user) {
-      fetch(`http://localhost:5000/api/posts/${id}/view`, {
+      fetch(`${API_BASE_URL}/api/posts/${id}/view`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user._id })
@@ -159,7 +160,7 @@ export const PostThreadPage: React.FC = () => {
     if (!window.confirm('האם את בטוחה שברצונך למחוק תגובה זו לצמיתות?')) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/comment/${commentId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/posts/comment/${commentId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: currentUser?._id })
@@ -189,7 +190,7 @@ export const PostThreadPage: React.FC = () => {
 
     if (selectedFile) {
       try {
-        const urlResponse = await fetch('http://localhost:5000/api/upload/get-url', {
+        const urlResponse = await fetch(`${API_BASE_URL}/api/upload/get-url`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -226,7 +227,7 @@ export const PostThreadPage: React.FC = () => {
     };
 
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/${id}/comment`, {
+      const response = await fetch(`${API_BASE_URL}/api/posts/${id}/comment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(commentPayload)
@@ -254,7 +255,7 @@ export const PostThreadPage: React.FC = () => {
     setUserRating(selectedRating);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/${post._id}/rate`, {
+      const response = await fetch(`${API_BASE_URL}/api/posts/${post._id}/rate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -333,6 +334,111 @@ export const PostThreadPage: React.FC = () => {
     });
     return `${hebrewDate} / ${gregoreanDate}`;
   };
+const renderFileAttachment = (fileUrl: string, index: number) => {
+    if (!fileUrl) return null;
+    
+    // 1. פיענוח תווים מיוחדים בעברית (הופך %D7%A5 וכדומה לאותיות אמיתיות)
+    const cleanPath = decodeURIComponent(fileUrl.split('?')[0]);
+    let fileName = cleanPath.split('/').pop() || 'קובץ מצורף';
+    const fileExtension = fileName.split('.').pop()?.toLowerCase() || '';
+
+    // 2. חילוץ השם המקורי בצורה בטוחה: 
+    // אם יש קו תחתון (_) או מיקוף (-) ושם הקובץ ארוך מאוד (כמו במקרה של GUID או Timestamp של S3)
+    if (fileName.length > 30) {
+      if (fileName.includes('_')) {
+        // לוקח את כל מה שמופיע אחרי הקו התחתון הראשון
+        fileName = fileName.substring(fileName.indexOf('_') + 1);
+      } else if (fileName.includes('-')) {
+        // לוקח את החלק האחרון אחרי המיקופים של ה-GUID
+        const parts = fileName.split('-');
+        if (parts.length > 4) {
+          fileName = parts.slice(4).join('-');
+        }
+      }
+    }
+
+    // 3. הגנה חיונית: אם החיתוך השתבש והשאיר שם ריק או רק את הסיומת, נחזיר את השם המקורי לפני החיתוך
+    if (!fileName || fileName.startsWith('.') || fileName === fileExtension) {
+      fileName = cleanPath.split('/').pop() || 'קובץ מצורף';
+    }
+
+    // 4. הגבלת אורך תצוגה אסתטית (למשל: document...docx)
+    if (fileName.length > 25) {
+      const nameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.'));
+      fileName = `${nameWithoutExtension.substring(0, 12)}...${nameWithoutExtension.slice(-4)}.${fileExtension}`;
+    }
+
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension);
+
+    if (isImage) {
+      return (
+        <div
+          key={index}
+          onClick={() => window.open(fileUrl, '_blank')}
+          title="לחצי להגדלת התמונה"
+          style={{ width: '75px', height: '75px', borderRadius: '8px', border: '1px solid #10b981', overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', transition: 'transform 0.15s ease' }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        >
+          <img src={fileUrl} alt="תצוגה מקדימה" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
+      );
+    }
+
+    let iconClass = 'fa-solid fa-file';
+    let iconColor = '#64748b';
+
+    if (fileExtension === 'pdf') {
+      iconClass = 'fa-solid fa-file-pdf';
+      iconColor = '#ef4444';
+    } else if (['doc', 'docx'].includes(fileExtension)) {
+      iconClass = 'fa-solid fa-file-word';
+      iconColor = '#3b82f6';
+    } else if (['xls', 'xlsx'].includes(fileExtension)) {
+      iconClass = 'fa-solid fa-file-excel';
+      iconColor = '#10b981';
+    } else if (['zip', 'rar', '7z'].includes(fileExtension)) {
+      iconClass = 'fa-solid fa-file-zipper';
+      iconColor = '#f59e0b';
+    } else if (['ts', 'tsx', 'js', 'jsx', 'html', 'css', 'json'].includes(fileExtension)) {
+      iconClass = 'fa-solid fa-file-code';
+      iconColor = '#8b5cf6';
+    }
+
+    return (
+      <div 
+        key={index}
+        style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px 14px', width: '320px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}
+      >
+        <i className={iconClass} style={{ fontSize: '24px', color: iconColor }}></i>
+        
+        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
+          <span 
+            style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+            title={fileName}
+          >
+            {fileName}
+          </span>
+          <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase' }}>קובץ {fileExtension}</span>
+        </div>
+
+        <a 
+          href={fileUrl}
+          target="_blank"
+          rel="noreferrer"
+          download={fileName}
+          style={{ textDecoration: 'none', backgroundColor: '#fff', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '5px 10px', color: '#475569', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', transition: '0.15s' }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+        >
+          <i className="fa-solid fa-download"></i>
+          הורדה
+        </a>
+      </div>
+    );
+  };
+
+  if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: '#10b981', fontWeight: 'bold', direction: 'rtl' }}>טוען שרשור...</div>;
 
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: '#10b981', fontWeight: 'bold', direction: 'rtl' }}>טוען שרשור...</div>;
   if (!post) return <div style={{ textAlign: 'center', padding: '50px', direction: 'rtl' }}>הפוסט לא נמצא.</div>;
@@ -399,24 +505,9 @@ export const PostThreadPage: React.FC = () => {
               </div>
             )}
 
-            {post.attachments && post.attachments.length > 0 && (
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {post.attachments.map((file, index) => {
-                  const fileUrl = file.startsWith('http') ? file : `http://localhost:5000/uploads/${file}`;
-                  return (
-                    <a 
-                      key={index}
-                      href={fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      download
-                      style={{ textDecoration: 'none', border: '1px solid #10b981', borderRadius: '4px', padding: '4px 10px', backgroundColor: '#fff', color: '#059669', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' }}
-                    >
-                      <i className="fa-solid fa-file-arrow-down"></i>
-                      הורד קובץ מצורף
-                    </a>
-                  );
-                })}
+           {post.attachments && post.attachments.length > 0 && (
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                {post.attachments.map((file, index) => renderFileAttachment(file, index))}
               </div>
             )}
           </div>
@@ -501,66 +592,9 @@ export const PostThreadPage: React.FC = () => {
                     style={{ margin: '4px 0 0 0', color: '#374151', fontSize: '14px', lineHeight: '1.5' }} 
                   />
 
-                  {comment.attachments && comment.attachments.length > 0 && (
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
-                      {comment.attachments.map((file, idx) => {
-                        const fileUrl = file.startsWith('http') ? file : `http://localhost:5000/uploads/${file}`;
-                        const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(file);
-
-                        if (isImage) {
-                          return (
-                            <div 
-                              key={idx}
-                              onClick={() => window.open(fileUrl, '_blank')}
-                              title="לחצי להגדלת התמונה"
-                              style={{ 
-                                width: '55px', 
-                                height: '55px', 
-                                borderRadius: '6px', 
-                                border: '1px solid #e2e8f0', 
-                                overflow: 'hidden', 
-                                cursor: 'pointer',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                                transition: 'transform 0.15s ease'
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                            >
-                              <img 
-                                src={fileUrl} 
-                                alt="קובץ מצורף" 
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                              />
-                            </div>
-                          );
-                        }
-
-                        return (
-                          <a 
-                            key={idx} 
-                            href={fileUrl} 
-                            target="_blank" 
-                            rel="noreferrer" 
-                            download 
-                            style={{ 
-                              textDecoration: 'none', 
-                              color: '#059669', 
-                              fontSize: '12px', 
-                              fontWeight: 'bold', 
-                              display: 'inline-flex', 
-                              alignItems: 'center', 
-                              gap: '6px',
-                              backgroundColor: '#f0fdf4',
-                              padding: '4px 10px',
-                              borderRadius: '4px',
-                              border: '1px solid #bbf7d0'
-                            }}
-                          >
-                            <i className="fa-solid fa-paperclip" style={{ fontSize: '11px' }}></i> 
-                            <span>הורד קובץ מצורף</span>
-                          </a>
-                        );
-                      })}
+                {comment.attachments && comment.attachments.length > 0 && (
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '12px' }}>
+                      {comment.attachments.map((file, idx) => renderFileAttachment(file, idx))}
                     </div>
                   )}
                 </div>

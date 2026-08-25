@@ -75,6 +75,7 @@ export const API_ENDPOINTS = {
     getProductTypes: `${API_BASE_URL}/tender-board/product-types`,
     update: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
     close:  (id: string) => `${API_BASE_URL}/tender-board/${id}/close`,
+    viewOffers: (id: string) => `${API_BASE_URL}/tender-board/${id}/view-offers`,
     delete: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
     apply: (id: string) => `${API_BASE_URL}/tender-board/${id}/apply`,
   },

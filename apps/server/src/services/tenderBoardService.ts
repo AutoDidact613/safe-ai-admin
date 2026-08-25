@@ -217,6 +217,40 @@ export async function closeTender(id: string) {
   }
 }
 
+/**
+ * סימון כל ההצעות (applicants) של מכרז כנצפו - מאפס את חיווי "הצעות חדשות"
+ */
+export async function markTenderOffersViewed(id: string) {
+  try {
+    const result = await repo.markApplicantsViewed(id);
+    if (!result) {
+      throw new Error("Tender not found");
+    }
+
+    logger.info("Tender offers marked as viewed", { tenderId: id });
+
+    await saveTenderLog({
+      action: "UPDATE",
+      status: "SUCCESS",
+      tenderId: id,
+      metaData: { changes: ["applicants.isViewed"] }
+    });
+
+    return result;
+  } catch (error: any) {
+    logger.error("Failed to mark tender offers as viewed", { error, tenderId: id });
+
+    await saveTenderLog({
+      action: "UPDATE",
+      status: "FAILED",
+      tenderId: id,
+      errorMessage: error?.message || String(error)
+    });
+
+    throw error;
+  }
+}
+
 export async function deleteTender(id: string) {
   try {
     const result = await repo.deleteTender(id);
