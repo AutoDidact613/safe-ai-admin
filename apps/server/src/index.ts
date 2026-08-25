@@ -14,6 +14,7 @@ import adminStatsRouter from "./routes/adminStatsRouter";
 import proxyKeyRouter from "./routes/proxyKeyRouter";
 import promptRouter from "./routes/promptRouter";
 import organizationRouter from "./routes/organizationRouter";
+import paymeRouter from "./routes/paymeRouter";
 import contactRouter from "./routes/contactRouter";
 import tenderBoardRouter from "./routes/tenderBoardRouter";
 import contactTypeRoutes from "./routes/contactTypeRoutes"; // הייבוא של הקובץ שיצרת
@@ -53,8 +54,21 @@ app.use(cookieParser());
 app.use(compression());
 
 // הגדרה ל-50 מגה-בייט כדי להיות בטוחים
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
+// verify שומר את ה-body הגולמי על req.rawBody - נדרש לאימות חתימת webhook
+// של PayMe (paymeController.ts), שצריך לחשב HMAC על הבייטים המדויקים שהתקבלו.
+app.use(express.json({
+  limit: "50mb",
+  verify: (req: any, _res, buf) => {
+    req.rawBody = buf.toString("utf8");
+  },
+}));
+app.use(express.urlencoded({
+  limit: "50mb",
+  extended: true,
+  verify: (req: any, _res, buf) => {
+    req.rawBody = buf.toString("utf8");
+  },
+}));
 
 app.use(requestLogger);
 
@@ -82,6 +96,7 @@ app.use("/proxy-key", proxyKeyRouter); // User's own proxy key management
 app.use("/admin/stats", adminStatsRouter); // Admin stats already has auth middleware
 app.use("/prompts", authenticateToken, promptRouter); // Prompt management (admin routes protected in router)
 app.use("/organizations", organizationRouter); // Organization management (auth middleware in router)
+app.use("/organizations", paymeRouter); // PayMe wallet top-up (webhook route excluded from auth, see paymeRouter.ts)
 app.use("/contact", contactRouter); // Contact form (requires authentication)
 app.use("/contact-types", contactTypeRoutes); // Contact form types
 app.use("/articles", articlesRouter);
