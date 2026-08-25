@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AddPostModal } from './AddPostModal';
+import { API_BASE_URL } from '../../config/api';
 
 interface Post {
   _id: string;
@@ -44,9 +45,9 @@ export const ForumPage: React.FC = () => {
     setLoading(true);
     const userRole = currentUser?.role || 'user';
 
-    const baseUrl = search.trim() 
-      ? `http://localhost:5000/api/posts/search?query=${search}`
-      : `http://localhost:5000/api/posts?page=${page}`;
+    const baseUrl = search.trim()
+      ? `${API_BASE_URL}/api/posts/search?query=${search}`
+      : `${API_BASE_URL}/api/posts?page=${page}`;
     
     const url = baseUrl.includes('?') 
       ? `${baseUrl}&userRole=${userRole}${!search.trim() ? '' : `&page=${page}`}` 
@@ -63,7 +64,7 @@ export const ForumPage: React.FC = () => {
           setCurrentPage(data.currentPage || page);
           setTotalPages(data.totalPages || 1);
 
-          localStorage.setItem('user_posts_backup', JSON.stringify(data.posts.map((p: { _id: string; title: string }) => ({ _id: p._id, title: p.title }))));
+          localStorage.setItem('user_posts_backup', JSON.stringify(data.posts.map((p: Post) => ({ _id: p._id, title: p.title }))));
         } else {
           setPosts(Array.isArray(data) ? data : []);
           setCurrentPage(1);
@@ -106,7 +107,7 @@ export const ForumPage: React.FC = () => {
     }
 
     if (queryParam) {
-      fetch(`http://localhost:5000/api/posts/search-similar?${queryParam}`)
+      fetch(`${API_BASE_URL}/api/posts/search-similar?${queryParam}`)
         .then((res) => res.json())
         .then((data) => {
           if (Array.isArray(data)) {
@@ -168,7 +169,7 @@ export const ForumPage: React.FC = () => {
     if (!currentUser?._id) return alert('משתמש לא מחובר');
 
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/${postId}/moderation`, {
+      const response = await fetch(`${API_BASE_URL}/api/posts/${postId}/moderation`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -258,7 +259,7 @@ export const ForumPage: React.FC = () => {
           onClick={() => setIsModalOpen(true)}
           style={{ backgroundColor: '#10b981', color: 'white', padding: '10px 25px', border: 'none', borderRadius: '6px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' }}
         >
-          הוסף תוכן חדש
+          הוסף פוסט חדש
         </button>
 
         <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
@@ -302,7 +303,8 @@ export const ForumPage: React.FC = () => {
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             {posts.map((post) => {
-              const isLongPost = post.content.length > 140;
+              const lineCount = post.content.split('\n').length;
+              const isLongPost = post.content.length > 140 || lineCount > 6;
               const isExpanded = expandedPosts.includes(post._id);
 
               return (
@@ -341,8 +343,9 @@ export const ForumPage: React.FC = () => {
 
                         <h3 style={{ margin: 0, fontSize: '21px', color: '#0f172a', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.title}</h3>
                         {post.tags && Array.isArray(post.tags) && post.tags.map((tag: string | { _id: string; name: string }) => {
-                          const tagName = typeof tag === 'object' && tag !== null ? tag.name : tag;
-                          const tagKey = typeof tag === 'object' && tag !== null ? tag._id : tagName;
+                          const isTagObject = typeof tag === 'object' && tag !== null;
+                          const tagName = isTagObject ? tag.name : tag;
+                          const tagKey = isTagObject ? tag._id : tagName;
                           return (
                             <span key={tagKey} onClick={(e) => { e.stopPropagation(); setSearchQuery(tagName); setCurrentPage(1); }} style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '1px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '500', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
                              {tagName}
@@ -354,7 +357,9 @@ export const ForumPage: React.FC = () => {
                       <div style={{ marginBottom: '10px' }}>
                         <p style={{ color: '#4b5563', lineHeight: '1.5', fontSize: '14px', margin: 0, whiteSpace: 'pre-line' }}>
                           {isLongPost && !isExpanded 
-                            ? `${post.content.substring(0, 140)}...` 
+                            ? post.content.split('\n').length > 6
+                              ? post.content.split('\n').slice(0, 6).join('\n')
+                              : `${post.content.substring(0, 140)}`
                             : post.content}
                         </p>
                         {isLongPost && (

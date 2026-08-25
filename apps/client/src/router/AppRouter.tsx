@@ -12,6 +12,7 @@ import RecommendedGuidesPage from "../pages/RecommendedGuidesPage";
 import CoursesPage from "../pages/CoursesPage";
 import ActivityLogPage from "../pages/ActivityLogPage";
 import AboutPage from "../pages/AboutPage";
+import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
 import TenderBoardPage from "../pages/TenderBoardPage";
 import DownloadAgentsPage from "../pages/AgentDownloadsPage";
 import LoginForm from "../features/auth/LoginForm";
@@ -23,6 +24,7 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
+import Footer from "../components/Footer";
 import { PublicOrgOwnerSignup } from "../features/organizations/PublicOrgOwnerSignup";
 import RequestDetails from "../features/safeai-ui/RequestDetails";
 import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
@@ -211,6 +213,7 @@ export default function AppRouter() {
 
         {/* New Pages Routes */}
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/docs" element={<ArticlesPage />} />
         <Route path="/docs/:slug" element={<ArticlePage />} />
@@ -225,6 +228,8 @@ export default function AppRouter() {
         {/* Catch all - 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+
+      <Footer />
     </BrowserRouter>
   );
 }
