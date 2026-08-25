@@ -10,6 +10,7 @@ import {
   uploadFileToS3,
   createPost,
 } from './api';
+import '../../styles/forum.css';
 
 interface AddPostModalProps {
   isOpen: boolean;
@@ -225,19 +226,19 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
   const isRefineDisabled = isAiLoading || isContentTooShort || formData.content.trim() === lastRefinedContent;
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, direction: 'rtl' }}>
-      <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', width: '800px', maxWidth: '90%', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', border: '2px solid #10b981', maxHeight: '95vh', overflowY: 'auto' }}>
-        <h2 style={{ color: '#064e3b', textAlign: 'center', marginBottom: '25px', fontWeight: 'bold' }}>הוסף תוכן חדש</h2>
-        
+    <div className="forum-modal-overlay">
+      <div className="forum-modal-box">
+        <h2 className="forum-modal-title">הוסף תוכן חדש</h2>
+
         <form onSubmit={handleSubmit}>
-          
-          <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', alignItems: 'flex-end', width: '100%' }}>
-            <div style={{ width: '160px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label style={{ fontWeight: 'bold', color: '#064e3b', fontSize: '14px' }}>קטגוריה/מקדם</label>
-              <select 
-                value={formData.category} 
+
+          <div className="forum-form-row">
+            <div className="forum-category-field">
+              <label className="forum-field-label">קטגוריה/מקדם</label>
+              <select
+                value={formData.category}
                 onChange={(e) => setFormData({...formData, category: e.target.value})}
-                style={{ width: '100%', height: '40px', padding: '0 10px', borderRadius: '6px', border: '2px solid #d1fae5', backgroundColor: '#fff', fontSize: '14px', outline: 'none' }}
+                className="forum-category-select"
               >
                 <option value="פיתוח">פיתוח</option>
                 <option value="AI">AI</option>
@@ -245,34 +246,34 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
               </select>
             </div>
 
-            <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label style={{ fontWeight: 'bold', color: '#064e3b', fontSize: '14px' }}>כותרת</label>
-              <input 
-                type="text" 
+            <div className="forum-title-field">
+              <label className="forum-field-label">כותרת</label>
+              <input
+                type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({...formData, title: e.target.value})}
-                style={{ width: '100%', height: '40px', padding: '0 12px', borderRadius: '6px', border: '2px solid #d1fae5', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                className="forum-title-input"
                 placeholder="רשמי כותרת נושא..."
-                required 
+                required
               />
-              
+
               {showSimilar && similarPosts.length > 0 && (
-                <div style={{ position: 'absolute', top: '100%', right: 0, left: 0, background: '#f0fdf4', padding: '12px', marginTop: '5px', borderRadius: '6px', border: '1px solid #10b981', zIndex: 999, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                    <small style={{ color: '#065f46', fontWeight: 'bold' }}>
+                <div className="forum-similar-posts-dropdown">
+                  <div className="forum-similar-posts-header">
+                    <small className="forum-similar-posts-label">
                       💡 אולי כבר יש מענה לפוסט שלך? בדקי פוסטים דומים:
                     </small>
-                    <button 
-                      type="button" 
-                      onClick={() => setShowSimilar(false)} 
-                      style={{ background: 'none', border: 'none', color: '#059669', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}
+                    <button
+                      type="button"
+                      onClick={() => setShowSimilar(false)}
+                      className="forum-similar-posts-close"
                     >
                       סגור ✖
                     </button>
                   </div>
                   {similarPosts.map((post: { _id: string; title: string }) => (
-                    <div key={post._id} style={{ marginBottom: '4px' }}>
-                      <a href={`/forum/post/${post._id}`} target="_blank" rel="noreferrer" style={{ fontSize: '13px', color: '#059669', textDecoration: 'underline' }}>
+                    <div key={post._id} className="forum-similar-post-item">
+                      <a href={`/forum/post/${post._id}`} target="_blank" rel="noreferrer" className="forum-similar-post-link">
                         {post.title}
                       </a>
                     </div>
@@ -282,27 +283,27 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
             </div>
           </div>
 
-          <div style={{ position: 'relative', marginBottom: '15px', width: '100%' }}>
-            <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#064e3b' }}>תוכן</label>
-            <textarea 
+          <div className="forum-content-field">
+            <label className="forum-content-label">תוכן</label>
+            <textarea
               value={formData.content}
               onChange={(e) => setFormData({...formData, content: e.target.value})}
               placeholder="כתוב כאן את גוף הפוסט..."
-              style={{ width: '100%', height: '160px', padding: '15px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '15px', outline: 'none', boxSizing: 'border-box' }}
+              className="forum-content-textarea"
               required
             />
-            
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              style={{ display: 'none' }} 
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="forum-file-input-hidden"
               onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
             />
-            
-            <button 
-              type="button" 
+
+            <button
+              type="button"
               onClick={handleClipClick}
-              style={{ position: 'absolute', bottom: '15px', left: '15px', backgroundColor: '#ecfdf5', border: '1px solid #10b981', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', color: '#059669', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px' }}
+              className="forum-clip-btn"
             >
               <i className="fa-solid fa-paperclip"></i>
               {selectedFile ? `📎 ${selectedFile.name}` : 'צירוף קבצים'}
@@ -310,25 +311,25 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
           </div>
 
           {/* --- סרגל כלים מבוסס AI --- */}
-          <div style={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#374151', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ color: '#10b981' }}>🪄</span> עוזר כתיבה חכם:
+          <div className="forum-ai-toolbar">
+            <div className="forum-ai-toolbar-row">
+              <span className="forum-ai-toolbar-label">
+                <span className="forum-ai-emoji">🪄</span> עוזר כתיבה חכם:
               </span>
               <button
                 type="button"
                 disabled={isRefineDisabled}
                 onClick={() => handleAiAssist('refine')}
-                style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '6px', border: '1px solid #d1d5db', backgroundColor: isRefineDisabled ? '#f3f4f6' : '#fff', color: isRefineDisabled ? '#9ca3af' : '#4b5563', cursor: isRefineDisabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                className={`forum-ai-refine-btn ${isRefineDisabled ? 'forum-ai-refine-btn-disabled' : ''}`}
               >
                 {isAiLoading ? 'מעבד...' : 'שפר ניסוח'}
               </button>
-              
+
               {backupContent && (
                 <button
                   type="button"
                   onClick={handleUndoRefine}
-                  style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '6px', border: '1px solid #fca5a5', backgroundColor: '#fef2f2', color: '#b91c1c', cursor: 'pointer', fontWeight: 'bold' }}
+                  className="forum-ai-undo-btn"
                 >
                   ↩️ בטל שינוי AI
                 </button>
@@ -338,7 +339,7 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
                 type="button"
                 disabled={isAiLoading || isContentTooShort}
                 onClick={() => handleAiAssist('titles')}
-                style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: isContentTooShort ? '#f3f4f6' : '#fff', color: isContentTooShort ? '#9ca3af' : '#059669', cursor: isContentTooShort ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                className={`forum-ai-titles-btn ${isContentTooShort ? 'forum-ai-titles-btn-disabled' : ''}`}
               >
                 {isAiLoading ? 'מעבד...' : 'הצעת כותרת'}
               </button>
@@ -346,24 +347,24 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
                 type="button"
                 disabled={isAiLoading || isContentTooShort}
                 onClick={() => handleAiAssist('tags')}
-                style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: isContentTooShort ? '#f3f4f6' : '#fff', color: isContentTooShort ? '#9ca3af' : '#2563eb', cursor: isContentTooShort ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+                className={`forum-ai-tags-btn ${isContentTooShort ? 'forum-ai-tags-btn-disabled' : ''}`}
               >
                 {isAiLoading ? 'מעבד...' : 'הצעת תגיות'}
               </button>
-              {isContentTooShort && <small style={{ color: '#9ca3af', fontSize: '11px', marginRight: '5px' }}>הקלידי לפחות 15 תווים בתוכן להפעלת ה-AI</small>}
+              {isContentTooShort && <small className="forum-ai-hint">הקלידי לפחות 15 תווים בתוכן להפעלת ה-AI</small>}
             </div>
 
             {/* הצגת כותרות לחיצות מוצעות */}
             {aiTitles.length > 0 && (
-              <div style={{ marginTop: '12px', borderTop: '1px solid #f3f4f6', paddingTop: '10px' }}>
-                <small style={{ fontWeight: 'bold', color: '#374151', display: 'block', marginBottom: '6px' }}>בחרי כותרת מתאימה מההצעות:</small>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div className="forum-ai-suggestions-block">
+                <small className="forum-ai-suggestions-label">בחרי כותרת מתאימה מההצעות:</small>
+                <div className="forum-ai-titles-list">
                   {aiTitles.map((title, idx) => (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => selectSuggestedTitle(title)}
-                      style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '6px', color: '#2563eb', padding: '8px 12px', cursor: 'pointer', fontSize: '13px', textAlign: 'right', fontWeight: '500', width: '100%' }}
+                      className="forum-ai-title-option"
                     >
                       💡 {title}
                     </button>
@@ -374,15 +375,15 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
 
             {/* הצגת תגיות לחיצות מוצעות */}
             {aiTags.length > 0 && (
-              <div style={{ marginTop: '12px', borderTop: '1px solid #f3f4f6', paddingTop: '10px' }}>
-                <small style={{ fontWeight: 'bold', color: '#374151', display: 'block', marginBottom: '6px' }}>לחצי על תגיות להוספה מהירה:</small>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <div className="forum-ai-suggestions-block">
+                <small className="forum-ai-suggestions-label">לחצי על תגיות להוספה מהירה:</small>
+                <div className="forum-ai-tags-list">
                   {aiTags.map((tag, idx) => (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => selectSuggestedTag(tag)}
-                      style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e40af', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}
+                      className="forum-ai-tag-option"
                     >
                       + {tag}
                     </button>
@@ -392,8 +393,8 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
             )}
           </div>
 
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '25px' }}>
-            <label style={{ fontWeight: 'bold', color: '#064e3b', fontSize: '14px' }}>תגיות נושא </label>
+          <div className="forum-tags-field">
+            <label className="forum-field-label">תגיות נושא </label>
             <CreatableSelect
               isMulti
               options={allTags}
@@ -460,24 +461,24 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
           </div>
 
           {validationError && (
-            <div style={{ backgroundColor: '#fef2f2', color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '4px', padding: '10px 12px', marginBottom: '12px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div className="forum-validation-error">
               ⚠️ {validationError}
             </div>
           )}
 
-          <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '10px', alignItems: 'center' }}>
-            <button 
-              type="submit" 
-              disabled={isSubmitting || isAiLoading} 
-              style={{ padding: '10px 40px', background: isSubmitting ? '#a7f3d0' : '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: isSubmitting ? 'not-allowed' : 'pointer', fontSize: '16px' }}
+          <div className="forum-modal-actions">
+            <button
+              type="submit"
+              disabled={isSubmitting || isAiLoading}
+              className={`forum-submit-btn ${isSubmitting ? 'forum-submit-btn-submitting' : ''}`}
             >
               {isSubmitting ? 'מפרסם פוסט...' : 'הוסף'}
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               disabled={isSubmitting || isAiLoading}
-              onClick={onClose} 
-              style={{ padding: '10px 20px', background: 'none', border: 'none', color: '#666', cursor: isSubmitting ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+              onClick={onClose}
+              className={`forum-cancel-btn ${isSubmitting ? 'forum-cancel-btn-disabled' : ''}`}
             >
               ביטול
             </button>
