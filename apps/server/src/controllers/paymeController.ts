@@ -13,10 +13,16 @@ import { MIN_SALE_PRICE_AGOROT } from "../services/paymeClient";
  * Admin or the organization's own owner may initiate/check a top-up -
  * same ownership rule as topUpOrganizationWalletHandler in
  * organizationController.ts.
+ *
+ * Every route that calls this runs requireApprovedOrg first, which already
+ * fetched the org and attached it as req.organization - reuse that instead
+ * of a second, identical findById for the same request. The fallback fetch
+ * only matters if this is ever called from a route that skips
+ * requireApprovedOrg.
  */
 async function isAdminOrOwner(req: Request<{ id: string }>, res: Response): Promise<boolean> {
   const user = (req as any).user;
-  const organization = await getOrganizationById(req.params.id);
+  const organization = (req as any).organization ?? (await getOrganizationById(req.params.id));
   if (!organization) {
     res.status(404).json({ error: "Organization not found" });
     return false;
