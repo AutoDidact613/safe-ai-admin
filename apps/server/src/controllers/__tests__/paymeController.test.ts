@@ -1,6 +1,7 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
-import { paymeWebhookHandler } from "../paymeController";
+import { paymeWebhookHandler, initiatePaymeTopUpHandler } from "../paymeController";
 import * as paymeService from "../../services/paymeService";
+import * as organizationService from "../../services/organizationService";
 
 jest.mock("../../services/paymeService");
 jest.mock("../../services/organizationService", () => ({
@@ -8,6 +9,7 @@ jest.mock("../../services/organizationService", () => ({
 }));
 
 const mockedPaymeService = jest.mocked(paymeService);
+const mockedOrganizationService = jest.mocked(organizationService);
 
 function mockRes() {
   const res: any = {};
@@ -50,5 +52,75 @@ describe("paymeController.paymeWebhookHandler", () => {
 
     expect(mockedPaymeService.processWalletTopUpWebhook).toHaveBeenCalledWith(req.body);
     expect(res.json).toHaveBeenCalledWith({ success: true });
+  });
+});
+
+describe("paymeController.initiatePaymeTopUpHandler - authorization (isAdminOrOwner)", () => {
+  const org = { _id: "org1", ownerId: "owner1" };
+
+  function mockReq(userOverrides: Record<string, unknown>) {
+    return {
+      params: { id: "org1" },
+      body: { amount: 100, currency: "ILS" },
+      user: { userId: "owner1", role: "user", ...userOverrides },
+    } as any;
+  }
+
+  it("allows a system admin to initiate a top-up even if they don't own the organization", async () => {
+    (mockedOrganizationService.getOrganizationById as jest.Mock).mockResolvedValue(org as never);
+    (mockedPaymeService.initiateWalletTopUp as jest.Mock).mockResolvedValue({
+      success: true,
+      iframeUrl: "https://sandbox.payme.io/x",
+      requestId: "req1",
+    } as never);
+
+    const req = mockReq({ userId: "some-other-admin", role: "admin" });
+    const res = mockRes();
+
+    await initiatePaymeTopUpHandler(req, res);
+
+    expect(mockedPaymeService.initiateWalletTopUp).toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalledWith(403);
+  });
+
+  it("allows the organization's own owner to initiate a top-up", async () => {
+    (mockedOrganizationService.getOrganizationById as jest.Mock).mockResolvedValue(org as never);
+    (mockedPaymeService.initiateWalletTopUp as jest.Mock).mockResolvedValue({
+      success: true,
+      iframeUrl: "https://sandbox.payme.io/x",
+      requestId: "req1",
+    } as never);
+
+    const req = mockReq({ userId: "owner1", role: "user" });
+    const res = mockRes();
+
+    await initiatePaymeTopUpHandler(req, res);
+
+    expect(mockedPaymeService.initiateWalletTopUp).toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalledWith(403);
+  });
+
+  it("rejects a non-admin, non-owner user with 403 and never calls the PayMe service", async () => {
+    (mockedOrganizationService.getOrganizationById as jest.Mock).mockResolvedValue(org as never);
+
+    const req = mockReq({ userId: "some-random-user", role: "user" });
+    const res = mockRes();
+
+    await initiatePaymeTopUpHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockedPaymeService.initiateWalletTopUp).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 without calling the PayMe service when the organization doesn't exist", async () => {
+    (mockedOrganizationService.getOrganizationById as jest.Mock).mockResolvedValue(null as never);
+
+    const req = mockReq({ userId: "owner1", role: "user" });
+    const res = mockRes();
+
+    await initiatePaymeTopUpHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(mockedPaymeService.initiateWalletTopUp).not.toHaveBeenCalled();
   });
 });
