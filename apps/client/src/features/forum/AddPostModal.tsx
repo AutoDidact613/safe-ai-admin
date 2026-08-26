@@ -163,7 +163,7 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
 
     if (selectedFile) {
       try {
-        const urlResponse = await fetch(`${API_BASE_URL}/api/upload/get-url`, {
+        const urlResponse = await authFetch(`${API_BASE_URL}/api/upload/get-url`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

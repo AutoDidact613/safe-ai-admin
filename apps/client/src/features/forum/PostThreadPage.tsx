@@ -9,6 +9,7 @@ import { FontFamily } from '@tiptap/extension-font-family';
 import { TextAlign } from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
 import { API_BASE_URL } from '../../config/api';
+import { authFetch } from '../../utils/apiClient';
 
 interface Comment {
   _id: string;
@@ -191,7 +192,7 @@ export const PostThreadPage: React.FC = () => {
 
     if (selectedFile) {
       try {
-        const urlResponse = await fetch(`${API_BASE_URL}/api/upload/get-url`, {
+        const urlResponse = await authFetch(`${API_BASE_URL}/api/upload/get-url`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

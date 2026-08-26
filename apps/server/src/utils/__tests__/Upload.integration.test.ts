@@ -25,16 +25,31 @@ jest.mock('@aws-sdk/s3-request-presigner', () => ({
 }));
 
 import app from '../../index';
+import { generateAccessToken } from '../jwt';
+
+const TOKEN = generateAccessToken({ userId: '507f1f77bcf86cd799439011', email: 'a@b.com', role: 'user' });
 
 describe('POST /api/upload/get-url - קבלת קישור העלאה חתום', () => {
+  test('מחזיר 401 כשאין טוקן התחברות בכלל', async () => {
+    const res = await request(app)
+      .post('/api/upload/get-url')
+      .send({ fileName: 'image.png', fileType: 'image/png' });
+
+    expect(res.status).toBe(401);
+  });
+
   test('מחזיר 400 אם fileName או fileType חסרים', async () => {
-    const res = await request(app).post('/api/upload/get-url').send({});
+    const res = await request(app)
+      .post('/api/upload/get-url')
+      .set('Authorization', `Bearer ${TOKEN}`)
+      .send({});
     expect(res.status).toBe(400);
   });
 
   test('מחזיר uploadUrl ו-fileUrl כשהנתונים תקינים', async () => {
     const res = await request(app)
       .post('/api/upload/get-url')
+      .set('Authorization', `Bearer ${TOKEN}`)
       .send({ fileName: 'image.png', fileType: 'image/png' });
 
     expect(res.status).toBe(200);
