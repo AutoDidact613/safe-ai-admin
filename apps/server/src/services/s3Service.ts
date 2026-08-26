@@ -1,5 +1,6 @@
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import logger from "../logger";
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
@@ -28,8 +29,18 @@ export async function generatePresignedDownloadUrl(fileKey: string): Promise<str
 
     // יצירת הקישור הזמני ל-15 דקות
     return await getSignedUrl(s3Client, command, { expiresIn: 900 });
-  } catch (error) {
-    console.error("Error generating presigned download URL:", error);
+  } catch (error: any) {
+    // פונקציית עומק ללא גישה ל-req - אין userId/organizationId/requestId
+    // אמיתיים לצרף כאן (בניגוד לפערים במקומות אחרים, זה לא חוסר מידע, אלא
+    // שהפונקציה הזו לא יודעת בעד איזה משתמש/בקשה היא רצה).
+    logger.error("Failed to generate presigned download URL", {
+      error: error.message,
+      stack: error.stack,
+      userId: undefined,
+      organizationId: undefined,
+      requestId: undefined,
+      fileKey,
+    });
     return fileKey;
   }
 }
