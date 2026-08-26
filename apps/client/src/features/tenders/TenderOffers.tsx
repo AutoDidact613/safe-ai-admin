@@ -64,7 +64,7 @@ export default function TenderOffers({ tender, onClose, onUpdateTender }: Tender
                 <p>
                   <strong>קורות חיים:</strong>{' '}
                   <a href={applicant.resumeFileKey} target="_blank" rel="noopener noreferrer">
-                    הורדת קובץ
+                    לפתיחת הקובץ
                   </a>
                 </p>
               )}
