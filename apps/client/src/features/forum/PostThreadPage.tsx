@@ -9,6 +9,8 @@ import { FontFamily } from '@tiptap/extension-font-family';
 import { TextAlign } from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
 import { API_BASE_URL } from '../../config/api';
+import { validateFileForUpload } from './uploadValidation';
+import { uploadFileViaPresignedPost } from './s3Upload';
 
 interface Comment {
   _id: string;
@@ -197,17 +199,18 @@ export const PostThreadPage: React.FC = () => {
           body: JSON.stringify({
             fileName: selectedFile.name,
             fileType: selectedFile.type,
+            fileSize: selectedFile.size,
+            uploadContext: 'comment',
           }),
         });
 
-        if (!urlResponse.ok) throw new Error('נכשלה קבלת קישור מאובטח לתגובה');
-        const { uploadUrl, fileUrl } = await urlResponse.json();
+        if (!urlResponse.ok) {
+          const errData = await urlResponse.json().catch(() => null);
+          throw new Error(errData?.error || 'נכשלה קבלת קישור מאובטח לתגובה');
+        }
+        const { url, fields, fileUrl } = await urlResponse.json();
 
-        const awsResponse = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': selectedFile.type },
-          body: selectedFile,
-        });
+        const awsResponse = await uploadFileViaPresignedPost(url, fields, selectedFile);
 
         if (!awsResponse.ok) throw new Error('העלאת קובץ התגובה ל-S3 נכשלה');
         finalFileUrl = fileUrl;
@@ -253,6 +256,23 @@ export const PostThreadPage: React.FC = () => {
     } finally {
       setCommentLoading(false);
     }
+  };
+
+  const handleCommentFileSelect = async (file: File | null) => {
+    if (!file) {
+      setSelectedFile(null);
+      return;
+    }
+
+    const error = await validateFileForUpload(file, 'comment');
+    if (error) {
+      alert(error);
+      if (commentFileInputRef.current) commentFileInputRef.current.value = '';
+      setSelectedFile(null);
+      return;
+    }
+
+    setSelectedFile(file);
   };
 
   const handleStarClick = async (selectedRating: number) => {
@@ -795,7 +815,7 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
                 {commentLoading ? 'שומר...' : 'שמור תגובה'}
               </button>
               
-              <input type="file" ref={commentFileInputRef} style={{ display: 'none' }} onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
+              <input type="file" ref={commentFileInputRef} style={{ display: 'none' }} onChange={(e) => handleCommentFileSelect(e.target.files?.[0] || null)} />
               <button type="button" onClick={() => commentFileInputRef.current?.click()} style={{ background: 'none', border: 'none', color: '#059669', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <i className="fa-solid fa-paperclip"></i> צרף קובץ לתגובה
               </button>

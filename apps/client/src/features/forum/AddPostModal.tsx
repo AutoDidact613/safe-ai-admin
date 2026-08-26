@@ -4,6 +4,8 @@ import CreatableSelect from 'react-select/creatable';
 import type { MultiValue } from 'react-select';
 import { authFetch } from '../../utils/apiClient';
 import { API_BASE_URL } from '../../config/api';
+import { validateFileForUpload } from './uploadValidation';
+import { uploadFileViaPresignedPost } from './s3Upload';
 
 interface AddPostModalProps {
   isOpen: boolean;
@@ -169,17 +171,18 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
           body: JSON.stringify({
             fileName: selectedFile.name,
             fileType: selectedFile.type,
+            fileSize: selectedFile.size,
+            uploadContext: 'post',
           }),
         });
 
-        if (!urlResponse.ok) throw new Error('נכשלה קבלת קישור מאובטח מהשרת');
-        const { uploadUrl, fileUrl } = await urlResponse.json();
+        if (!urlResponse.ok) {
+          const errData = await urlResponse.json().catch(() => null);
+          throw new Error(errData?.error || 'נכשלה קבלת קישור מאובטח מהשרת');
+        }
+        const { url, fields, fileUrl } = await urlResponse.json();
 
-        const awsResponse = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': selectedFile.type },
-          body: selectedFile,
-        });
+        const awsResponse = await uploadFileViaPresignedPost(url, fields, selectedFile);
 
         if (!awsResponse.ok) throw new Error('העלאת הקובץ ל-S3 נכשלה');
         finalFileUrl = fileUrl;
@@ -236,6 +239,24 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
 
   const handleClipClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (file: File | null) => {
+    if (!file) {
+      setSelectedFile(null);
+      return;
+    }
+
+    const error = await validateFileForUpload(file, 'post');
+    if (error) {
+      setValidationError(error);
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setValidationError(null);
+    setSelectedFile(file);
   };
 
   const isContentTooShort = formData.content.trim().length < 15;
@@ -309,11 +330,11 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
               required
             />
             
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              style={{ display: 'none' }} 
-              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
             />
             
             <button 
