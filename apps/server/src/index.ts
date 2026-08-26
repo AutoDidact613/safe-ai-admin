@@ -11,6 +11,7 @@ import providerKeyRouter from "./routes/providerKeyRouter";
 import authRouter from "./routes/authRouter";
 import usageRouter from "./routes/usageRouter";
 import adminStatsRouter from "./routes/adminStatsRouter";
+import publicStatsRouter from "./routes/publicStatsRouter";
 import proxyKeyRouter from "./routes/proxyKeyRouter";
 import promptRouter from "./routes/promptRouter";
 import organizationRouter from "./routes/organizationRouter";
@@ -66,6 +67,7 @@ app.get("/health", (_req, res) => {
 
 // ===== Public Routes (No Authentication) =====
 app.use("/auth", authRouter);
+app.use("/public-stats", publicStatsRouter); // Landing page counts — no auth, counts only
 
 // ===== JWT Protected Routes (User Self-Management) =====
 // Import the handler for self-profile updates

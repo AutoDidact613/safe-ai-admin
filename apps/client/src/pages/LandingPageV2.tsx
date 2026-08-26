@@ -2,7 +2,9 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/landing-page-v2.css";
 import { useAuth } from "../context/authStore";
+import { API_ENDPOINTS, apiCall } from "../config/api";
 import InfoModal from "../features/landing/InfoModal";
+import CountUpStat from "../features/landing/CountUpStat";
 
 type BannerStatus = "available" | "soon";
 
@@ -23,17 +25,11 @@ interface ModalContent {
   onPrimaryAction?: () => void;
 }
 
-interface StatItem {
-  label: string;
-  value: string;
+interface PublicStats {
+  userCount: number;
+  organizationCount: number;
+  tenderCount: number;
 }
-
-// TODO: לחבר ל-endpoint ציבורי אמיתי בשרת כשזה יהיה קיים (ראו backend requirement).
-const STATS: StatItem[] = [
-  { label: "משתמשים רשומים", value: "בקרוב" },
-  { label: "ארגונים פעילים", value: "בקרוב" },
-  { label: "פרויקטים תחת SafeAI", value: "בקרוב" },
-];
 
 const HERO_PROMPTS = [
   "איך בודקים שמודל AI לא חושף מידע רגיש?",
@@ -48,6 +44,9 @@ export default function LandingPageV2() {
   const [productsMenuOpen, setProductsMenuOpen] = useState(false);
   const [loginMenuOpen, setLoginMenuOpen] = useState(false);
   const [promptIndex, setPromptIndex] = useState(0);
+  const [stats, setStats] = useState<PublicStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsFailed, setStatsFailed] = useState(false);
   const productsMenuRef = useRef<HTMLDivElement>(null);
   const loginMenuRef = useRef<HTMLDivElement>(null);
 
@@ -56,6 +55,23 @@ export default function LandingPageV2() {
       setPromptIndex((current) => (current + 1) % HERO_PROMPTS.length);
     }, 3200);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiCall<PublicStats>(API_ENDPOINTS.publicStats)
+      .then((data) => {
+        if (!cancelled) setStats(data);
+      })
+      .catch(() => {
+        if (!cancelled) setStatsFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setStatsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -244,12 +260,24 @@ export default function LandingPageV2() {
       </section>
 
       <section className="lv2-stats">
-        {STATS.map((stat) => (
-          <div key={stat.label} className="lv2-stat-item">
-            <div className="lv2-stat-value">{stat.value}</div>
-            <div className="lv2-stat-label">{stat.label}</div>
-          </div>
-        ))}
+        <CountUpStat
+          label="משתמשים רשומים"
+          value={stats?.userCount ?? null}
+          loading={statsLoading}
+          failed={statsFailed}
+        />
+        <CountUpStat
+          label="ארגונים פעילים"
+          value={stats?.organizationCount ?? null}
+          loading={statsLoading}
+          failed={statsFailed}
+        />
+        <CountUpStat
+          label="פרויקטים תחת SafeAI"
+          value={stats?.tenderCount ?? null}
+          loading={statsLoading}
+          failed={statsFailed}
+        />
       </section>
 
       <footer className="lv2-footer">
