@@ -18,7 +18,18 @@ const s3 = new S3Client({
 interface UploadRequestBody {
   fileName: string;
   fileType: string;
+  fileSize?: number;
+  context?: string;
 }
+
+// הגדרות ייעודיות לפי הקשר העלאה - תיקיית יעד ב-S3 וכללי ולידציה
+const UPLOAD_CONTEXTS: Record<string, { prefix: string; allowedTypes: string[]; maxSizeBytes: number }> = {
+  tenderResume: {
+    prefix: "uploads/tenders",
+    allowedTypes: ["application/pdf"],
+    maxSizeBytes: 5 * 1024 * 1024,
+  },
+};
 
 // הפונקציה המרכזית שמייצרת את הקישור הזמני
 export const getPresignedUrl = async (
@@ -26,15 +37,31 @@ export const getPresignedUrl = async (
   res: Response
 ): Promise<Response | void> => {
   try {
-    const { fileName, fileType } = req.body;
+    const { fileName, fileType, fileSize, context } = req.body;
 
     if (!fileName || !fileType) {
       return res.status(400).json({ error: "שם וסוג הקובץ נדרשים" });
     }
 
+    if (context !== undefined && !UPLOAD_CONTEXTS[context]) {
+      return res.status(400).json({ error: "הקשר העלאה לא מוכר" });
+    }
+
+    const contextConfig = context ? UPLOAD_CONTEXTS[context] : undefined;
+
+    if (contextConfig) {
+      if (!contextConfig.allowedTypes.includes(fileType)) {
+        return res.status(400).json({ error: "סוג הקובץ אינו נתמך" });
+      }
+      if (typeof fileSize === "number" && fileSize > contextConfig.maxSizeBytes) {
+        return res.status(400).json({ error: "הקובץ חורג מהגודל המותר" });
+      }
+    }
+
     // חילוץ סיומת הקובץ ויצירת מפתח ייחודי
     const fileExtension = fileName.split('.').pop();
-    const uniqueKey = `uploads/${uuidv4()}.${fileExtension}`;
+    const keyPrefix = contextConfig?.prefix || "uploads";
+    const uniqueKey = `${keyPrefix}/${uuidv4()}.${fileExtension}`;
 
     // הכנת פקודת ההעלאה עבור ה-Bucket
     const command = new PutObjectCommand({
