@@ -9,13 +9,13 @@
 ├─ apps/
 │  ├─ client/   React + Vite + TS — נבנה כקבצים סטטיים, לא רץ בדוקר ב-staging/production
 │  ├─ server/   Node.js + Express + TS
-│  └─ agent/    Python + FastAPI
+│  └─ agents/   מודולי אייג'נט בפייתון (log-agent, inquiry-agent), כל אחד עם manifest.json משלו — עצמאיים, לא חלק ממחסנית הדוקר
 ├─ infra/
 │  ├─ docker/nginx/     Dockerfile + nginx.conf.template — בשימוש רק לפיתוח מקומי (docker-compose.yml). ב-staging/production אין nginx בדוקר בכלל, ראו סעיף 8.
 │  ├─ litellm/          litellm_config.yaml (ללא סודות — ראו סעיף 5)
 │  └─ legacy/           ecosystem.config.js (הגדרת PM2 ישנה, נשמרה להיסטוריה)
 ├─ docker-compose.yml       סביבת פיתוח מקומית — כולל mongo+postgres מקומיים ו-nginx בדוקר
-├─ docker-compose.prod.yml  רץ על ה-EC2 (staging ו-production) — litellm+server+agent בלבד, ללא nginx
+├─ docker-compose.prod.yml  רץ על ה-EC2 (staging ו-production) — litellm+server בלבד, ללא nginx
 └─ .github/workflows/
    ├─ ci.yml              בדיקות איכות (lint/typecheck/test/build) לכל אפליקציה + build של תמונות הדוקר
    ├─ cd-staging.yml       פריסה בעת push ל-develop — **פעיל ונבדק בפועל**
@@ -46,7 +46,6 @@
 |---|---|---|
 | `nginx` | בדוקר, בונה מהריפו, מגיש client + מעביר `/api/*` לשרת | **לא קיים בקובץ הזה בכלל** — ה-nginx **של המערכת** (מחוץ לדוקר, כבר קיים על כל מכונה) מגיש את ה-client כקבצים סטטיים ומעביר `/api/` ל-`server` דרך `http://localhost:3001` |
 | `server` | build מ-`Dockerfile.dev` (hot reload) | image מוכן מ-GHCR, פורט מפורסם ל-`127.0.0.1:3001` כדי שה-nginx החיצוני יגיע אליו |
-| `agent` | build מקומי | image מוכן מ-GHCR |
 | `litellm` | image רשמי + Postgres מקומי | image רשמי + Postgres מנוהל (Neon) |
 | `mongo` | קונטיינר מקומי | **לא רץ** — MongoDB Atlas דרך `MONGO_URI` |
 | `postgres` | קונטיינר מקומי | **לא רץ** — Postgres מנוהל (Neon) דרך `DATABASE_URL` |
@@ -59,7 +58,6 @@
 ```bash
 cp .env.example .env
 cp apps/server/.env.example apps/server/.env
-cp apps/agent/.env.example apps/agent/.env
 docker compose up --build
 # client: http://localhost:8080  |  server ישיר: http://localhost:3001  |  litellm: http://localhost:4000
 ```
@@ -78,7 +76,7 @@ sudo cp -r dist/. /var/www/safeai/   # /var/www/ai613/console/client/dist/ ב-pr
 
 **שני קבצי `.env` שונים לגמרי — קלות טעות אמיתית שקרתה בפועל:**
 - `apps/server/.env` — רלוונטי רק אם מריצים את השרת **ישירות** (לא בדוקר), למשל תחת PM2 הישן.
-- `.env` **בשורש** ה-repo — זה מה ש-`docker compose` קורא בפועל (גם ל-`${VAR}` substitution בתוך `docker-compose.prod.yml`, וגם דרך `env_file: .env` לתוך containers של `server`/`agent`). **אם הוא חסר, `docker compose up` נכשל על `.env not found` בלי הסבר ברור.**
+- `.env` **בשורש** ה-repo — זה מה ש-`docker compose` קורא בפועל (גם ל-`${VAR}` substitution בתוך `docker-compose.prod.yml`, וגם דרך `env_file: .env` לתוך container של `server`). **אם הוא חסר, `docker compose up` נכשל על `.env not found` בלי הסבר ברור.**
 
 ודאו ששני הקבצים תואמים כשמעדכנים ערך (למשל `MONGO_URI`) — ותוך שימת לב ל-**וודאות ש-`DATABASE_URL` הוא Postgres (Neon), לא Mongo!** זו טעות אמיתית שקרתה — `litellm` דורש `postgresql://`, לא `mongodb+srv://`; אם הערך הלא-נכון מגיע ל-`DATABASE_URL`, litellm יכתוב ללוג `unsupported scheme 'mongodb+srv'` בבירור.
 
@@ -99,7 +97,7 @@ sudo cp -r dist/. /var/www/safeai/   # /var/www/ai613/console/client/dist/ ב-pr
 
 ## 7. נקודות DevOps חשובות
 
-- **Healthchecks**: לכל שירות (`server`, `agent`, `litellm`) יש `healthcheck`, ו-`depends_on: condition: service_healthy`.
+- **Healthchecks**: לכל שירות (`server`, `litellm`) יש `healthcheck`, ו-`depends_on: condition: service_healthy`.
 - **הגבלת לוגים/זיכרון**: `max-size`/`max-file` ו-`mem_limit` לכל שירות.
 - **`restart: unless-stopped`** בכל מקום.
 - **משתמש לא-root** בתוך קונטיינר השרת והסוכן.

@@ -14,6 +14,8 @@ export interface User {
   organizationId?: string;
   mode: "BYOK" | "MANAGED";
   isActive: boolean;
+  canCreatePosts: boolean;
+  canComment: boolean;
   proxyKeyPrefix: string;
   litellmPrefix: string;
   createdAt?: string;
@@ -50,7 +52,7 @@ interface CreateUserResponse {
 }
 
 const EMPTY_CREATE = { email: "", name: "", profileId: "", mode: "MANAGED" as "BYOK" | "MANAGED", isActive: true };
-const EMPTY_EDIT = { name: "", profileId: "", organizationId: "", mode: "MANAGED" as "BYOK" | "MANAGED", isActive: true };
+const EMPTY_EDIT = { name: "", profileId: "", organizationId: "", mode: "MANAGED" as "BYOK" | "MANAGED", isActive: true, canCreatePosts: true, canComment: true };
 
 export default function UsersManagement() {
   const [users, setUsers] = useState<User[]>([]);
@@ -154,6 +156,8 @@ export default function UsersManagement() {
           organizationId: editFormData.organizationId || undefined,
           mode: editFormData.mode,
           isActive: editFormData.isActive,
+          canCreatePosts: editFormData.canCreatePosts,
+          canComment: editFormData.canComment,
         }),
       });
       setModal(null);
@@ -180,7 +184,7 @@ export default function UsersManagement() {
 
   const openEdit = (user: User) => {
     setEditingUser(user);
-    setEditFormData({ name: user.name ?? "", profileId: user.profileId ?? "", organizationId: user.organizationId ?? "", mode: user.mode, isActive: user.isActive });
+    setEditFormData({ name: user.name ?? "", profileId: user.profileId ?? "", organizationId: user.organizationId ?? "", mode: user.mode, isActive: user.isActive, canCreatePosts: user.canCreatePosts, canComment: user.canComment });
     setModal("edit");
   };
 
@@ -315,6 +319,18 @@ export default function UsersManagement() {
                 <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <input type="checkbox" checked={editFormData.isActive} onChange={(e) => setEditFormData({ ...editFormData, isActive: e.target.checked })} />
                   משתמש פעיל
+                </label>
+              </div>
+              <div className="form-group">
+                <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <input type="checkbox" checked={editFormData.canCreatePosts} onChange={(e) => setEditFormData({ ...editFormData, canCreatePosts: e.target.checked })} />
+                  מורשה לפרסם פוסטים בפורום
+                </label>
+              </div>
+              <div className="form-group">
+                <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <input type="checkbox" checked={editFormData.canComment} onChange={(e) => setEditFormData({ ...editFormData, canComment: e.target.checked })} />
+                  מורשה להגיב בפורום
                 </label>
               </div>
               <div className="modal-footer">

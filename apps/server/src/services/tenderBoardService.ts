@@ -322,6 +322,18 @@ export async function deleteTender(id: string) {
  * Validates that applicant details are provided and prevents duplicate applications
  * לאחר רישום מוצלח - שולח מייל למנהל המכרז עם פרטי המועמד
  */
+const PORTFOLIO_LINK_REGEX = /^https?:\/\/.+/i;
+
+// מקבל key גולמי או URL מלא ל-S3 ומחזיר את ה-path (ה-key) בלבד, לצורך ולידציית תיקיית היעד
+function extractS3Key(fileKeyOrUrl: string): string {
+  if (!fileKeyOrUrl.startsWith("http")) return fileKeyOrUrl;
+  try {
+    return new URL(fileKeyOrUrl).pathname.replace(/^\//, "");
+  } catch {
+    return fileKeyOrUrl;
+  }
+}
+
 export async function applyToTender(
   tenderId: string,
   applicant: {
@@ -331,6 +343,9 @@ export async function applyToTender(
     proposal?: number;
     contactMethod?: string;
     userId?: string;
+    resumeFileKey?: string;
+    portfolioLink?: string;
+    professionalProfileId?: string;
   }
 ) {
   logger.info("Processing application to tender", { tenderId, applicantEmail: applicant?.email });
@@ -346,6 +361,14 @@ export async function applyToTender(
   if (!applicant.details || !applicant.details.trim()) {
     logger.warn("Validation failed: Applicant details are required", { tenderId, applicantEmail: applicant.email });
     throw new Error("Applicant details are required");
+  }
+  if (applicant.resumeFileKey && !extractS3Key(applicant.resumeFileKey.trim()).startsWith("uploads/tenders/")) {
+    logger.warn("Validation failed: Invalid resume file key", { tenderId, applicantEmail: applicant.email });
+    throw new Error("Invalid resume file");
+  }
+  if (applicant.portfolioLink && !PORTFOLIO_LINK_REGEX.test(applicant.portfolioLink.trim())) {
+    logger.warn("Validation failed: Invalid portfolio link", { tenderId, applicantEmail: applicant.email });
+    throw new Error("Invalid portfolio link");
   }
 
   const tender = await repo.getTenderById(tenderId);
@@ -380,6 +403,9 @@ export async function applyToTender(
     contactMethod: applicant.contactMethod?.trim() || undefined,
     userId: normalizedUserId,
     appliedAt: new Date(),
+    resumeFileKey: applicant.resumeFileKey?.trim() || undefined,
+    portfolioLink: applicant.portfolioLink?.trim() || undefined,
+    professionalProfileId: applicant.professionalProfileId || undefined,
   };
 
   const updatedApplicants = [

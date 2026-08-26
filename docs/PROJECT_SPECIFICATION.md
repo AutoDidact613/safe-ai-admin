@@ -334,7 +334,6 @@
 ```bash
 cp .env.example .env
 cp apps/server/.env.example apps/server/.env
-cp apps/agent/.env.example apps/agent/.env
 docker compose up --build
 # client: http://localhost:8080 | server: http://localhost:3001 | litellm: http://localhost:4000
 ```
@@ -345,14 +344,13 @@ docker compose up --build
 services:
   - LiteLLM Proxy (port 4000, פנימי)
   - SafeAI Server (port 3001, פנימי)
-  - Agent (port 8000, פנימי)
   - Nginx (ports 80/443, השער היחיד שנחשף החוצה, מגיש גם את ה-client)
   # MongoDB (Atlas) ו-Postgres (מנוהל, למשל Neon) הם שירותים חיצוניים —
   # לא רצים כקונטיינר על ה-EC2.
 ```
 
 **תהליך פריסה (מבוצע אוטומטית ע"י `cd-staging.yml`/`cd-production.yml`, בשלב זה עדיין מדומה — ראו docs/DEPLOYMENT.md):**
-1. CI בונה ובודק client/server/agent
+1. CI בונה ובודק client/server
 2. בניית ודחיפת Docker images ל-GHCR
 3. Pull ב-production server
 4. `docker compose -f docker-compose.prod.yml up -d`

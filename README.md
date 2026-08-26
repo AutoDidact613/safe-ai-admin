@@ -3,7 +3,7 @@
 Monorepo containing:
 - **apps/client**: React + Vite + TypeScript
 - **apps/server**: Node.js + Express + TypeScript
-- **apps/agent**: Python + FastAPI (agent layer — scaffold, see `apps/agent/README.md`)
+- **apps/agents**: Python agent modules (e.g. `log-agent`, `inquiry-agent`), each exposed via its own `manifest.json` — standalone, not part of the Docker Compose stack
 
 Deployment, Docker topology, secrets management, and CI/CD are documented in **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)**.
 
@@ -14,7 +14,9 @@ Deployment, Docker topology, secrets management, and CI/CD are documented in **[
 ├─ apps/
 │  ├─ client/
 │  ├─ server/
-│  └─ agent/
+│  └─ agents/
+│     ├─ log-agent/
+│     └─ inquiry-agent/
 ├─ infra/
 │  ├─ docker/nginx/
 │  ├─ litellm/
@@ -29,7 +31,7 @@ Deployment, Docker topology, secrets management, and CI/CD are documented in **[
 
 ## Prerequisites
 - Node.js **20+**
-- Python **3.12+** (only needed if working on `apps/agent` outside Docker)
+- Python **3.12+** (only needed if working on `apps/agents/*`)
 - Docker + Docker Compose
 
 ## Quickstart (full stack via Docker)
@@ -37,13 +39,11 @@ Deployment, Docker topology, secrets management, and CI/CD are documented in **[
 ```bash
 cp .env.example .env
 cp apps/server/.env.example apps/server/.env
-cp apps/agent/.env.example apps/agent/.env
 docker compose up --build
 ```
 
 - Client (via nginx): http://localhost:8080
 - Server: http://localhost:3001
-- Agent: http://localhost:8000
 - LiteLLM: http://localhost:4000
 
 ## Local dev without Docker (faster frontend iteration)
@@ -64,7 +64,6 @@ Each app keeps its own example file; the root `.env.example` is consumed by the 
 - `.env.example`
 - `apps/client/.env.example`
 - `apps/server/.env.example`
-- `apps/agent/.env.example`
 
 See `docs/DEPLOYMENT.md` for how secrets are meant to flow through local `.env` files vs. GitHub Environment secrets vs. a managed secret store.
 

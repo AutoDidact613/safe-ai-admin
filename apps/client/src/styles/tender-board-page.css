@@ -1021,10 +1021,123 @@
 }
 
 /* ========================================== */
+/* טפסים בתוך מודלים (הרשמה למכרז, פרופיל מקצועי) */
+/* ========================================== */
+.apply-form .form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 8px;
+}
+
+.apply-form .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: right;
+}
+
+.apply-form .form-field.form-full {
+  grid-column: 1 / -1;
+}
+
+.apply-form .form-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.apply-form .form-input,
+.apply-form .form-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 0.95rem;
+  font-family: inherit;
+  text-align: right;
+}
+
+.apply-form .form-input:focus,
+.apply-form .form-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.apply-form .form-textarea {
+  resize: vertical;
+}
+
+.apply-form .form-error {
+  display: block;
+  width: 100%;
+  color: #dc2626;
+  font-size: 0.8rem;
+}
+
+.apply-form .profile-attach-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--secondary-bg);
+}
+
+.apply-form .profile-attach-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.apply-form .profile-attach-checkbox input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.apply-form .resume-file-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.apply-form .resume-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--secondary-bg);
+  font-size: 0.9rem;
+}
+
+.apply-form .resume-file-row .pending-badge {
+  margin-inline-start: 8px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-style: normal;
+}
+
+/* ========================================== */
 /* מדיה קווריס רספונסיביות (Responsive Design) */
 /* ========================================== */
 @media (max-width: 1024px) {
   .tender-form .form-grid,
+  .apply-form .form-grid,
   .tender-form .footer-row,
   .manage-content,
   .detail-row {

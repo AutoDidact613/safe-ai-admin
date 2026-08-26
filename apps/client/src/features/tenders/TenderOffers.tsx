@@ -81,6 +81,31 @@ export default function TenderOffers({ tender, onClose, onUpdateTender, highligh
                 <p><strong>פרטים:</strong> {applicant.details}</p>
                 {applicant.proposal && <p><strong>הצעה:</strong> {applicant.proposal}</p>}
                 {applicant.contactMethod && <p><strong>דרכי קשר:</strong> {applicant.contactMethod}</p>}
+                {applicant.professionalProfile && (
+                  <div style={{ marginTop: '8px', padding: '8px', background: '#f8fafc', borderRadius: '4px' }}>
+                    <p><strong>פרופיל מקצועי - {applicant.professionalProfile.name}</strong></p>
+                    {applicant.professionalProfile.description && <p>{applicant.professionalProfile.description}</p>}
+                    {applicant.professionalProfile.experience && (
+                      <p><strong>ניסיון:</strong> {applicant.professionalProfile.experience}</p>
+                    )}
+                  </div>
+                )}
+                {applicant.resumeFileKey && (
+                  <p>
+                    <strong>קורות חיים:</strong>{' '}
+                    <a href={applicant.resumeFileKey} target="_blank" rel="noopener noreferrer">
+                      לפתיחת הקובץ
+                    </a>
+                  </p>
+                )}
+                {applicant.portfolioLink && (
+                  <p>
+                    <strong>תיק עבודות:</strong>{' '}
+                    <a href={applicant.portfolioLink} target="_blank" rel="noopener noreferrer">
+                      {applicant.portfolioLink}
+                    </a>
+                  </p>
+                )}
               </article>
             )
           })
