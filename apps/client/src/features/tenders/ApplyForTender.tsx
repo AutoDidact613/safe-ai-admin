@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { apiCall, API_ENDPOINTS } from '../../config/api'
+import { normalizeProfile } from '../professionalProfile/normalize'
+import type { ProfessionalProfile, RawProfessionalProfile } from '../professionalProfile/types'
 import type { Applicant, Tender } from './types'
 
 interface Props {
@@ -34,6 +36,16 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
+
+  const [profile, setProfile] = useState<ProfessionalProfile | null>(null)
+  const [attachProfile, setAttachProfile] = useState(false)
+  const [selectedResumeKey, setSelectedResumeKey] = useState('')
+
+  useEffect(() => {
+    apiCall<RawProfessionalProfile | null>(API_ENDPOINTS.professionalProfile.me)
+      .then((raw) => setProfile(raw ? normalizeProfile(raw) : null))
+      .catch((error) => console.error('Failed to load professional profile', error))
+  }, [])
 
   const validateForm = () => {
     const nextErrors: FormErrors = {}
@@ -135,7 +147,9 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
     setIsSubmitting(true)
 
     let resumeFileKey: string | undefined
-    if (resumeFile) {
+    if (attachProfile && selectedResumeKey) {
+      resumeFileKey = selectedResumeKey
+    } else if (resumeFile) {
       try {
         resumeFileKey = await uploadResume(resumeFile)
       } catch (error) {
@@ -154,6 +168,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
       contactMethod: contactMethod.trim() || undefined,
       resumeFileKey,
       portfolioLink: portfolioLink.trim() || undefined,
+      professionalProfileId: attachProfile && profile ? profile.id : undefined,
     })
 
     setIsSubmitting(false)
@@ -192,7 +207,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 maxLength={INPUT_LIMITS.name}
                 required
               />
-              {errors.name && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.name}</span>}
+              {errors.name && <span className="form-error">{errors.name}</span>}
             </label>
 
             <label className="form-field">
@@ -211,7 +226,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 maxLength={INPUT_LIMITS.email}
                 required
               />
-              {errors.email && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.email}</span>}
+              {errors.email && <span className="form-error">{errors.email}</span>}
             </label>
 
             <label className="form-field form-full">
@@ -230,7 +245,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 required
                 rows={5}
               />
-              {errors.details && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.details}</span>}
+              {errors.details && <span className="form-error">{errors.details}</span>}
             </label>
 
             <label className="form-field">
@@ -251,7 +266,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 max="999999999"
                 inputMode="numeric"
               />
-              {errors.proposal && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.proposal}</span>}
+              {errors.proposal && <span className="form-error">{errors.proposal}</span>}
             </label>
 
             <label className="form-field">
@@ -269,19 +284,54 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 placeholder="טלפון / אימייל"
                 maxLength={INPUT_LIMITS.contactMethod}
               />
-              {errors.contactMethod && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.contactMethod}</span>}
+              {errors.contactMethod && <span className="form-error">{errors.contactMethod}</span>}
             </label>
 
-            <label className="form-field">
-              <span className="form-label">קורות חיים (PDF, עד 5MB)</span>
-              <input
-                className="form-input"
-                type="file"
-                accept="application/pdf"
-                onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
-              />
-              {errors.resumeFile && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.resumeFile}</span>}
-            </label>
+            {profile && (
+              <div className="form-field form-full">
+                <div className="profile-attach-box">
+                  <label className="profile-attach-checkbox">
+                    צרף את הפרופיל המקצועי שלי
+                    <input
+                      type="checkbox"
+                      checked={attachProfile}
+                      onChange={(e) => {
+                        setAttachProfile(e.target.checked)
+                        setSelectedResumeKey('')
+                      }}
+                    />
+                  </label>
+
+                  {attachProfile && profile.resumeFiles.length > 0 && (
+                    <select
+                      className="form-input"
+                      value={selectedResumeKey}
+                      onChange={(e) => setSelectedResumeKey(e.target.value)}
+                    >
+                      <option value="">בחר קובץ קורות חיים (אופציונלי)</option>
+                      {profile.resumeFiles.map((file) => (
+                        <option key={file.fileKey} value={file.fileKey}>
+                          {file.fileName}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!attachProfile && (
+              <label className="form-field">
+                <span className="form-label">קורות חיים (PDF, עד 5MB)</span>
+                <input
+                  className="form-input"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
+                />
+                {errors.resumeFile && <span className="form-error">{errors.resumeFile}</span>}
+              </label>
+            )}
 
             <label className="form-field">
               <span className="form-label">קישור לתיק עבודות</span>
@@ -298,7 +348,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 placeholder="https://..."
                 maxLength={INPUT_LIMITS.portfolioLink}
               />
-              {errors.portfolioLink && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.portfolioLink}</span>}
+              {errors.portfolioLink && <span className="form-error">{errors.portfolioLink}</span>}
             </label>
           </div>
 

@@ -15,6 +15,7 @@ import {
 } from "../services/tenderBoardService";
 import { TBAIService } from "../services/tenderBoardAIService";
 import { generatePresignedDownloadUrl } from "../services/s3Service";
+import { getProfileById } from "../services/professionalProfileService";
 import logger from "../logger";
 
 /**
@@ -47,10 +48,11 @@ function isOwnerOrAdmin(req: Request, tender: any): boolean {
 }
 
 /**
- * מחליף את resumeFileKey בקישור הורדה חתום עבור בעל המכרז/אדמין בלבד;
- * למשתמשים אחרים השדה מוסר מהתגובה כדי לא לחשוף קובץ פרטי של מועמד.
+ * מחליף את resumeFileKey בקישור הורדה חתום ומצרף תקציר פרופיל מקצועי (אם צורף),
+ * עבור בעל המכרז/אדמין בלבד; למשתמשים אחרים השדות מוסרים מהתגובה כדי לא לחשוף
+ * קובץ/פרופיל פרטי של מועמד.
  */
-async function withSignedApplicantResumes(req: Request, tender: any): Promise<any> {
+async function withSignedApplicantDetails(req: Request, tender: any): Promise<any> {
   if (!tender?.applicants?.length) return tender;
 
   const authorized = isOwnerOrAdmin(req, tender);
@@ -58,12 +60,28 @@ async function withSignedApplicantResumes(req: Request, tender: any): Promise<an
 
   plain.applicants = await Promise.all(
     plain.applicants.map(async (applicant: any) => {
-      if (!applicant.resumeFileKey) return applicant;
       if (!authorized) {
-        const { resumeFileKey, ...rest } = applicant;
+        const { resumeFileKey, professionalProfileId, ...rest } = applicant;
         return rest;
       }
-      return { ...applicant, resumeFileKey: await generatePresignedDownloadUrl(applicant.resumeFileKey) };
+
+      const signedApplicant = applicant.resumeFileKey
+        ? { ...applicant, resumeFileKey: await generatePresignedDownloadUrl(applicant.resumeFileKey) }
+        : applicant;
+
+      if (!applicant.professionalProfileId) return signedApplicant;
+
+      const profile = await getProfileById(applicant.professionalProfileId.toString());
+      if (!profile) return signedApplicant;
+
+      return {
+        ...signedApplicant,
+        professionalProfile: {
+          name: profile.name,
+          description: profile.description,
+          experience: profile.experience,
+        },
+      };
     })
   );
 
@@ -93,7 +111,7 @@ export async function listTendersHandler(req: Request, res: Response) {
   try {
     const tenders = await listTenders();
     const withSignedResumes = await Promise.all(
-      tenders.map((tender: any) => withSignedApplicantResumes(req, tender))
+      tenders.map((tender: any) => withSignedApplicantDetails(req, tender))
     );
     res.json(withSignedResumes);
   } catch (error) {
@@ -113,7 +131,7 @@ export async function getTenderHandler(req: Request<{ id: string }>, res: Respon
       return res.status(404).json({ error: "Tender not found" });
     }
 
-    res.json(await withSignedApplicantResumes(req, tender));
+    res.json(await withSignedApplicantDetails(req, tender));
   } catch (error) {
     logger.error("Get tender failed", { error });
     res.status(500).json({ error: "Failed to fetch tender" });
@@ -190,7 +208,16 @@ export async function applyToTenderHandler(req: Request, res: Response) {
       contactMethod: req.body.contactMethod,
       resumeFileKey: req.body.resumeFileKey,
       portfolioLink: req.body.portfolioLink,
+      professionalProfileId: req.body.professionalProfileId,
     };
+
+    if (applicant.professionalProfileId) {
+      const user = (req as any).user;
+      const profile = await getProfileById(applicant.professionalProfileId);
+      if (!profile || profile.userId?.toString() !== user?.userId) {
+        return res.status(403).json({ error: "Invalid professional profile" });
+      }
+    }
 
     const result = await applyToTender(tenderId, applicant);
 

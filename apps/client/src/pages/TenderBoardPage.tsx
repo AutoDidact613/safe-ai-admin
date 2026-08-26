@@ -8,6 +8,7 @@ import ManageMyTenders from '../features/tenders/ManageMyTenders.tsx'
 import type { Applicant, RawTender, Tender, TenderTime } from '../features/tenders/types'
 import '../styles/tender-board-page.css'
 import AiThinkingLoader from '../features/tenders/AiThinkingLoader.tsx'
+import ProfessionalProfileAvatar from '../features/professionalProfile/ProfessionalProfileAvatar.tsx'
 
 const initialTenders: Tender[] = []
 
@@ -562,6 +563,8 @@ export default function TenderBoardPage() {
           >
             צפיה במכרזים שלי
           </button>
+
+          <ProfessionalProfileAvatar />
         </nav>
       </section>
 
