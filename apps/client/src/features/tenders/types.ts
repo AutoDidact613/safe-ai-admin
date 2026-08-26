@@ -11,6 +11,8 @@ export interface Applicant {
   details: string
   proposal?: number
   contactMethod?: string
+  resumeFileKey?: string
+  portfolioLink?: string
   isViewed?: boolean
 }
 

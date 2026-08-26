@@ -14,6 +14,7 @@ import {
   smartSearchTenders,     
 } from "../services/tenderBoardService";
 import { TBAIService } from "../services/tenderBoardAIService";
+import { generatePresignedDownloadUrl } from "../services/s3Service";
 import logger from "../logger";
 
 /**
@@ -46,6 +47,30 @@ function isOwnerOrAdmin(req: Request, tender: any): boolean {
 }
 
 /**
+ * מחליף את resumeFileKey בקישור הורדה חתום עבור בעל המכרז/אדמין בלבד;
+ * למשתמשים אחרים השדה מוסר מהתגובה כדי לא לחשוף קובץ פרטי של מועמד.
+ */
+async function withSignedApplicantResumes(req: Request, tender: any): Promise<any> {
+  if (!tender?.applicants?.length) return tender;
+
+  const authorized = isOwnerOrAdmin(req, tender);
+  const plain = typeof tender.toObject === "function" ? tender.toObject() : tender;
+
+  plain.applicants = await Promise.all(
+    plain.applicants.map(async (applicant: any) => {
+      if (!applicant.resumeFileKey) return applicant;
+      if (!authorized) {
+        const { resumeFileKey, ...rest } = applicant;
+        return rest;
+      }
+      return { ...applicant, resumeFileKey: await generatePresignedDownloadUrl(applicant.resumeFileKey) };
+    })
+  );
+
+  return plain;
+}
+
+/**
  * CREATE Tender
  */
 export async function createTenderHandler(req: Request, res: Response) {
@@ -67,7 +92,10 @@ export async function createTenderHandler(req: Request, res: Response) {
 export async function listTendersHandler(req: Request, res: Response) {
   try {
     const tenders = await listTenders();
-    res.json(tenders);
+    const withSignedResumes = await Promise.all(
+      tenders.map((tender: any) => withSignedApplicantResumes(req, tender))
+    );
+    res.json(withSignedResumes);
   } catch (error) {
     logger.error("List tenders failed", { error });
     res.status(500).json({ error: "Failed to fetch tenders" });
@@ -85,7 +113,7 @@ export async function getTenderHandler(req: Request<{ id: string }>, res: Respon
       return res.status(404).json({ error: "Tender not found" });
     }
 
-    res.json(tender);
+    res.json(await withSignedApplicantResumes(req, tender));
   } catch (error) {
     logger.error("Get tender failed", { error });
     res.status(500).json({ error: "Failed to fetch tender" });
@@ -160,6 +188,8 @@ export async function applyToTenderHandler(req: Request, res: Response) {
       details: req.body.details,
       proposal: req.body.proposal,
       contactMethod: req.body.contactMethod,
+      resumeFileKey: req.body.resumeFileKey,
+      portfolioLink: req.body.portfolioLink,
     };
 
     const result = await applyToTender(tenderId, applicant);
