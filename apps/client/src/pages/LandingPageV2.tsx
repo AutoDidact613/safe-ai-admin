@@ -1,16 +1,26 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/landing-page-v2.css";
 import { useAuth } from "../context/authStore";
 import { API_ENDPOINTS, apiCall } from "../config/api";
 import InfoModal from "../features/landing/InfoModal";
 import CountUpStat from "../features/landing/CountUpStat";
+import {
+  ShieldIcon,
+  BookIcon,
+  ChatIcon,
+  BoxIcon,
+  ClockIcon,
+  LockIcon,
+  ChevronDownIcon,
+  ArrowUpIcon,
+} from "../features/landing/icons";
 
 type BannerStatus = "available" | "soon";
 
 interface Banner {
   key: string;
-  icon: string;
+  icon: ReactNode;
   title: string;
   description: string;
   status: BannerStatus;
@@ -18,7 +28,7 @@ interface Banner {
 }
 
 interface ModalContent {
-  icon: string;
+  icon: ReactNode;
   title: string;
   message: string;
   primaryLabel?: string;
@@ -89,7 +99,7 @@ export default function LandingPageV2() {
 
   const showComingSoon = (name: string) => {
     setModal({
-      icon: "🚧",
+      icon: <ClockIcon />,
       title: "בקרוב",
       message: `${name} עדיין בבנייה ויהיה זמין בקרוב במערכת.`,
     });
@@ -101,7 +111,7 @@ export default function LandingPageV2() {
       return;
     }
     setModal({
-      icon: "🔒",
+      icon: <LockIcon />,
       title: "נדרשת התחברות",
       message: "כדי להיכנס לפורום זהירות AI יש להתחבר קודם למערכת.",
       primaryLabel: "מעבר להתחברות",
@@ -117,7 +127,7 @@ export default function LandingPageV2() {
   const banners: Banner[] = [
     {
       key: "platform",
-      icon: "🛡️",
+      icon: <ShieldIcon />,
       title: "SafeAI Platform",
       description: "איזור אישי, תיעוד, יצירת קשר וניהול ארגונים",
       status: "soon",
@@ -125,7 +135,7 @@ export default function LandingPageV2() {
     },
     {
       key: "hub",
-      icon: "🎓",
+      icon: <BookIcon />,
       title: "SafeAI Hub",
       description: "קורסים, חדשות, לוח פרויקטים, פורום ומדריכים",
       status: "soon",
@@ -133,7 +143,7 @@ export default function LandingPageV2() {
     },
     {
       key: "forum",
-      icon: "💬",
+      icon: <ChatIcon />,
       title: "פורום זהירות AI",
       description: "דיון קהילתי בנושאי בטיחות ואחריות בשימוש בבינה מלאכותית",
       status: "available",
@@ -141,7 +151,7 @@ export default function LandingPageV2() {
     },
     {
       key: "safechatbox",
-      icon: "📦",
+      icon: <BoxIcon />,
       title: "SafeChatbox",
       description: "פתרון תקשורת מאובטח מבוסס AI",
       status: "soon",
@@ -166,9 +176,7 @@ export default function LandingPageV2() {
               onClick={() => setProductsMenuOpen((open) => !open)}
             >
               המוצרים שלנו
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" className={`lv2-caret ${productsMenuOpen ? "open" : ""}`}>
-                <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <ChevronDownIcon className={`lv2-caret ${productsMenuOpen ? "open" : ""}`} />
             </button>
             {productsMenuOpen && (
               <div className="lv2-dropdown lv2-dropdown-products">
@@ -199,9 +207,7 @@ export default function LandingPageV2() {
           <div className="lv2-menu" ref={loginMenuRef}>
             <button className="lv2-btn lv2-btn-ghost lv2-btn-sm" onClick={() => setLoginMenuOpen((open) => !open)}>
               התחברות
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" className={`lv2-caret ${loginMenuOpen ? "open" : ""}`}>
-                <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <ChevronDownIcon className={`lv2-caret ${loginMenuOpen ? "open" : ""}`} />
             </button>
             {loginMenuOpen && (
               <div className="lv2-dropdown lv2-dropdown-login">
@@ -228,9 +234,7 @@ export default function LandingPageV2() {
             aria-label="שאלו את SafeAI"
           />
           <button type="submit" className="lv2-hero-search-submit" aria-label="שליחה">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 13V3M8 3L3 8M8 3L13 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <ArrowUpIcon />
           </button>
         </form>
 
@@ -312,7 +316,7 @@ export default function LandingPageV2() {
         onClick={() => showComingSoon("הצ'אט")}
         aria-label="פתיחת צ'אט"
       >
-        💬
+        <ChatIcon size={22} />
       </button>
 
       {modal && (

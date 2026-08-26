@@ -12,7 +12,7 @@
 
 .info-modal {
   background: var(--bg-surface, #ffffff);
-  border-radius: 16px;
+  border-radius: 10px;
   padding: 32px;
   max-width: 420px;
   width: 100%;
@@ -28,12 +28,14 @@
   left: 12px;
   border: none;
   background: transparent;
-  font-size: 16px;
   color: var(--text-muted, #64748b);
   cursor: pointer;
   width: 28px;
   height: 28px;
-  border-radius: 50%;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.15s;
 }
 
@@ -42,8 +44,15 @@
 }
 
 .info-modal-icon {
-  font-size: 40px;
-  margin-bottom: 12px;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--lv2-accent-soft, rgba(20, 60, 66, 0.08));
+  color: var(--lv2-accent, #14444c);
 }
 
 .info-modal-title {

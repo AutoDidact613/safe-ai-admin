@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import "../../styles/info-modal.css";
+import { CloseIcon } from "./icons";
 
 interface InfoModalProps {
-  icon?: string;
+  icon: ReactNode;
   title: string;
   message: string;
   primaryLabel?: string;
@@ -11,7 +12,7 @@ interface InfoModalProps {
 }
 
 export default function InfoModal({
-  icon = "ℹ️",
+  icon,
   title,
   message,
   primaryLabel,
@@ -35,18 +36,18 @@ export default function InfoModal({
         onClick={(event) => event.stopPropagation()}
       >
         <button className="info-modal-close" onClick={onClose} aria-label="סגור">
-          ✕
+          <CloseIcon size={13} />
         </button>
         <div className="info-modal-icon">{icon}</div>
         <h3 className="info-modal-title">{title}</h3>
         <p className="info-modal-message">{message}</p>
         <div className="info-modal-actions">
           {primaryLabel && onPrimaryAction && (
-            <button className="btn btn-primary" onClick={onPrimaryAction}>
+            <button className="lv2-btn lv2-btn-primary lv2-btn-sm" onClick={onPrimaryAction}>
               {primaryLabel}
             </button>
           )}
-          <button className="btn btn-secondary" onClick={onClose}>
+          <button className="lv2-btn lv2-btn-ghost lv2-btn-sm" onClick={onClose}>
             סגירה
           </button>
         </div>
