@@ -58,7 +58,7 @@
 }
 
 .primary-btn {
-  background: #2E6E7E;
+  background: #48B4D6;
   color: #ffffff;
 }
 
@@ -66,7 +66,7 @@
 .card-btn:hover,
 .secondary-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 18px 40px rgba(46, 110, 126, 0.18);
+  box-shadow: 0 18px 40px rgba(72, 180, 214, 0.18);
 }
 
 .secondary-btn {
@@ -97,7 +97,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #2E6E7E;
+  color: #48B4D6;
 }
 
 .preview-list {
@@ -123,7 +123,7 @@
 .section-label {
   display: inline-block;
   margin-bottom: 14px;
-  color: #2E6E7E;
+  color: #48B4D6;
   font-size: 0.9rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -199,9 +199,9 @@
 }
 
 .featured-card {
-  background: #2E6E7E;
+  background: #48B4D6;
   color: #ffffff;
-  border-color: #2E6E7E;
+  border-color: #48B4D6;
 }
 
 .featured-card h3,
@@ -218,11 +218,11 @@
 .card-btn {
   width: fit-content;
   color: #ffffff;
-  background: #2E6E7E;
+  background: #48B4D6;
 }
 
 .card-btn:hover {
-  background: #3C90A4;
+  background: #71C6DF;
 }
 
 @media (max-width: 900px) {
