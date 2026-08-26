@@ -112,14 +112,14 @@
 }
 
 .top-nav-btn-primary {
-  background-color: #48B4D6;
+  background-color: #1C7AA6;
   color: white;
-  border: 1px solid #48B4D6;
+  border: 1px solid #1C7AA6;
 }
 
 .top-nav-btn-primary:hover {
-  background-color: #71C6DF;
-  border-color: #71C6DF;
+  background-color: #239AD1;
+  border-color: #239AD1;
 }
 
 /* Developers Dropdown */
@@ -193,7 +193,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #48B4D6 0%, #2996B7 100%);
+  background: linear-gradient(135deg, #1C7AA6 0%, #135471 100%);
   color: white;
   display: flex;
   align-items: center;

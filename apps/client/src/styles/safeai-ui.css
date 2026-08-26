@@ -47,8 +47,8 @@
 }
 
 .sub-nav-btn.active {
-  color: #48B4D6;
-  border-bottom-color: #48B4D6;
+  color: #1C7AA6;
+  border-bottom-color: #1C7AA6;
   font-weight: 600;
 }
 
@@ -59,7 +59,7 @@
   margin-left: 4px;
   padding: 0;
   background: transparent;
-  color: #48B4D6;
+  color: #1C7AA6;
   font-size: 14px;
   font-weight: 600;
   border: none;
@@ -78,7 +78,7 @@
   padding: 0;
   border-radius: 0;
   background: transparent;
-  color: #48B4D6;
+  color: #1C7AA6;
   font-size: 12px;
   font-weight: 700;
 }
@@ -525,7 +525,7 @@
   margin-left: 8px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #48B4D6;
+  background: #1C7AA6;
   color: white;
   font-size: 12px;
   font-weight: 700;

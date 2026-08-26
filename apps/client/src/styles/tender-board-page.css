@@ -3,8 +3,8 @@
    ========================================================================== */
 
 :root {
-  --primary-color: #48B4D6;        /* טיל כחול אחיד לכל המערכת */
-  --primary-hover: #71C6DF;
+  --primary-color: #1C7AA6;        /* טיל כחול אחיד לכל המערכת */
+  --primary-hover: #239AD1;
   --secondary-bg: #f8fafc;
   --text-main: #111827;
   --text-muted: #64748b;
@@ -299,7 +299,7 @@
 .primary-button:hover, .button-green:hover, .submit-button:hover, .details-button:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(72, 180, 214, 0.24);
+  box-shadow: 0 12px 24px rgba(28, 122, 166, 0.24);
 }
 
 /* אינפוטים וטקסט-ארפיס גלובליים */
@@ -320,7 +320,7 @@
 .input:focus, .textarea:focus, textarea:focus, input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(72, 180, 214, 0.12);
+  box-shadow: 0 0 0 3px rgba(28, 122, 166, 0.12);
   background: #ffffff;
 }
 
@@ -357,7 +357,7 @@
 .tender-card:focus-within {
   transform: translateY(-6px);
   border-color: #16a34a; /* ירוק בוהק קל */
-  box-shadow: 0 14px 34px rgba(72,180,214,0.12);
+  box-shadow: 0 14px 34px rgba(28,122,166,0.12);
 }
 
 .tender-card:active {

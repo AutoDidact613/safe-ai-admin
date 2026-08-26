@@ -297,7 +297,7 @@ export default function RegisterForm() {
                   border: "1px solid #d1d5db",
                   borderRadius: "3px",
                   background: "#ffffff",
-                  accentColor: "#48B4D6",
+                  accentColor: "#1C7AA6",
                 }}
               />
               <span>
