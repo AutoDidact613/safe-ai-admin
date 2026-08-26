@@ -164,7 +164,8 @@ export function filterApplicantsForRequester(
     : null;
 
   const isOwnerOrAdmin =
-    requesterRole === "admin" || tender.publisherUserCode === requesterUserId;
+    requesterRole === "admin" ||
+    (!!requesterUserId && tender.publisherUserCode === requesterUserId);
   if (isOwnerOrAdmin) {
     return { ...tender, applicantsCount, proposalRange };
   }
