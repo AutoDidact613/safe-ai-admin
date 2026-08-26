@@ -101,15 +101,15 @@
 
 .search-input:focus {
   outline: none;
-  border-color: #25596B;
-  box-shadow: 0 0 0 3px rgba(37, 89, 107, 0.1);
+  border-color: #0C6250;
+  box-shadow: 0 0 0 3px rgba(12, 98, 80, 0.1);
 }
 
 .search-button {
   padding: 14px 24px;
   border: none;
   border-radius: 8px;
-  background: #25596B;
+  background: #0C6250;
   color: white;
   font-size: 20px;
   cursor: pointer;
@@ -117,7 +117,7 @@
 }
 
 .search-button:hover {
-  background: #2E6E7E;
+  background: #129176;
   transform: scale(1.05);
 }
 
@@ -143,9 +143,9 @@
 }
 
 .guide-card:hover {
-  border-color: #25596B;
+  border-color: #0C6250;
   transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(37, 89, 107, 0.15);
+  box-shadow: 0 8px 16px rgba(12, 98, 80, 0.15);
 }
 
 .guide-card-header {
@@ -186,7 +186,7 @@
 }
 
 .guide-link-text {
-  color: #25596B;
+  color: #0C6250;
   font-weight: 600;
   font-size: 14px;
 }
@@ -212,7 +212,7 @@
 }
 
 .clear-search-button {
-  background: #25596B;
+  background: #0C6250;
   color: white;
   border: none;
   padding: 12px 24px;
@@ -224,7 +224,7 @@
 }
 
 .clear-search-button:hover {
-  background: #2E6E7E;
+  background: #129176;
   transform: scale(1.05);
 }
 
@@ -441,7 +441,7 @@
 }
 
 .resource-link:hover {
-  border-color: #25596B;
+  border-color: #0C6250;
   background: #f0fdf4;
   transform: translateX(-4px);
 }
