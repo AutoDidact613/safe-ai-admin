@@ -79,6 +79,10 @@ export const API_ENDPOINTS = {
     delete: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
     apply: (id: string) => `${API_BASE_URL}/tender-board/${id}/apply`,
   },
+  // Upload endpoints
+  upload: {
+    getUrl: `${API_BASE_URL}/api/upload/get-url`,
+  },
   // Articles / Docs endpoints
   articles: {
     list: `${API_BASE_URL}/articles`,

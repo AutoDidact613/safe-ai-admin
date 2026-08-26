@@ -91,13 +91,13 @@ src/**/*.d.ts.map
 !infra/legacy/ecosystem.config.js
 
 # =========================
-# Python (apps/agent)
+# Python (apps/agents/*)
 # =========================
 __pycache__/
 *.pyc
 .venv/
-apps/agent/.pytest_cache/
-apps/agent/.ruff_cache/
+apps/agents/*/.pytest_cache/
+apps/agents/*/.ruff_cache/
 
 docs/production/*
 

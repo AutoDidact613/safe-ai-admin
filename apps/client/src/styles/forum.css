@@ -1485,6 +1485,11 @@
   cursor: pointer;
 }
 
+.forum-comment-submit-btn:disabled {
+  background-color: #a7f3d0;
+  cursor: not-allowed;
+}
+
 .forum-attach-comment-btn {
   background: none;
   border: none;

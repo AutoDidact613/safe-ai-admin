@@ -41,6 +41,7 @@ export const PostThreadPage: React.FC = () => {
   const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
   const currentUserInitial = currentUser?.name?.charAt(0).toUpperCase() || 'U';
   const isAdmin = currentUser?.role === 'admin';
+  const isCommentBlocked = !isAdmin && currentUser?.canComment === false;
 
   const editor = useEditor({
     extensions: [
@@ -200,7 +201,7 @@ export const PostThreadPage: React.FC = () => {
       if (response.ok) {
         const savedComment = await response.json();
         setComments((prevComments) => [...prevComments, savedComment]);
-        editor.commands.clearContent(); 
+        editor.commands.clearContent();
         setSelectedFile(null);
         navigate('/forum');
       } else {
@@ -710,7 +711,12 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
             </div>
 
             <div className="forum-comment-form-footer">
-              <button type="submit" disabled={commentLoading} className="forum-comment-submit-btn">
+              <button
+                type="submit"
+                disabled={commentLoading || isCommentBlocked}
+                title={isCommentBlocked ? 'אין לך הרשאה להגיב לפוסטים' : undefined}
+                className="forum-comment-submit-btn"
+              >
                 {commentLoading ? 'שומר...' : 'שמור תגובה'}
               </button>
 

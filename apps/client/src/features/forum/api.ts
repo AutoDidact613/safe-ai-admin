@@ -78,7 +78,7 @@ export function incrementPostView(postId: string, userId: string): Promise<Respo
 // --- תגובות ---
 
 export function createComment(postId: string | undefined, payload: unknown): Promise<Response> {
-  return fetch(`${API_BASE_URL}/api/posts/${postId}/comment`, {
+  return authFetch(`${API_BASE_URL}/api/posts/${postId}/comment`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

@@ -38,6 +38,8 @@ const TenderSchema = new Schema(
             email: { type: String, required: true },
             proposal: { type: Number, required: false },
             contactMethod: { type: String, required: false },
+            resumeFileKey: { type: String, required: false },
+            portfolioLink: { type: String, required: false },
             isViewed: { type: Boolean, default: false }
             },
         ],

@@ -60,6 +60,22 @@ export default function TenderOffers({ tender, onClose, onUpdateTender }: Tender
               <p><strong>פרטים:</strong> {applicant.details}</p>
               {applicant.proposal && <p><strong>הצעה:</strong> {applicant.proposal}</p>}
               {applicant.contactMethod && <p><strong>דרכי קשר:</strong> {applicant.contactMethod}</p>}
+              {applicant.resumeFileKey && (
+                <p>
+                  <strong>קורות חיים:</strong>{' '}
+                  <a href={applicant.resumeFileKey} target="_blank" rel="noopener noreferrer">
+                    לפתיחת הקובץ
+                  </a>
+                </p>
+              )}
+              {applicant.portfolioLink && (
+                <p>
+                  <strong>תיק עבודות:</strong>{' '}
+                  <a href={applicant.portfolioLink} target="_blank" rel="noopener noreferrer">
+                    {applicant.portfolioLink}
+                  </a>
+                </p>
+              )}
             </article>
           ))
         ) : (
