@@ -332,19 +332,6 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 {errors.resumeFile && <span className="form-error">{errors.resumeFile}</span>}
               </label>
             )}
-              {errors.contactMethod && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.contactMethod}</span>}
-            </label>
-
-            <label className="form-field">
-              <span className="form-label">קורות חיים (PDF, עד 5MB)</span>
-              <input
-                className="form-input"
-                type="file"
-                accept="application/pdf"
-                onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
-              />
-              {errors.resumeFile && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.resumeFile}</span>}
-            </label>
 
             <label className="form-field">
               <span className="form-label">קישור לתיק עבודות</span>
