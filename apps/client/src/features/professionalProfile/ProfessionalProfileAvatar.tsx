@@ -70,10 +70,7 @@ export default function ProfessionalProfileAvatar() {
         <ProfessionalProfileModal
           profile={profile}
           onClose={() => setIsModalOpen(false)}
-          onSaved={(saved) => {
-            setProfile(saved)
-            setIsModalOpen(false)
-          }}
+          onSaved={(saved) => setProfile(saved)}
         />
       )}
     </div>

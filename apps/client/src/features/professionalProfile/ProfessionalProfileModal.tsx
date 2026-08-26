@@ -30,6 +30,9 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
   const [experience, setExperience] = useState(profile?.experience ?? '')
   const [portfolioLink, setPortfolioLink] = useState(profile?.portfolioLink ?? '')
   const [resumeFiles, setResumeFiles] = useState<ResumeFile[]>(profile?.resumeFiles ?? [])
+  // עוקב אחרי הפרופיל שנשמר בפועל, כדי לדעת אם קיים כבר רשומה בשרת -
+  // רק אז אפשר לצרף אליה קבצי קורות חיים
+  const [savedProfile, setSavedProfile] = useState<ProfessionalProfile | null>(profile)
   const [errors, setErrors] = useState<FormErrors>({})
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingResume, setIsUploadingResume] = useState(false)
@@ -82,7 +85,7 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
     }
 
     try {
-      const response = profile
+      const response = savedProfile
         ? await apiCall<{ success: boolean; profile: RawProfessionalProfile }>(
             API_ENDPOINTS.professionalProfile.update,
             { method: 'PUT', body: JSON.stringify(payload) },
@@ -92,7 +95,9 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
             { method: 'POST', body: JSON.stringify(payload) },
           )
 
-      onSaved(normalizeProfile(response.profile))
+      const saved = normalizeProfile(response.profile)
+      setSavedProfile(saved)
+      onSaved(saved)
     } catch (error) {
       console.error('Failed to save professional profile', error)
       setErrors((prev) => ({ ...prev, name: 'שמירת הפרופיל נכשלה, נסה שוב' }))
@@ -102,7 +107,7 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
   }
 
   const handleResumeUpload = async (file: File | null) => {
-    if (!file) return
+    if (!file || !savedProfile) return
 
     if (resumeFiles.length >= MAX_RESUME_FILES) {
       setErrors((prev) => ({ ...prev, resumeFile: `ניתן לצרף עד ${MAX_RESUME_FILES} קבצים` }))
@@ -258,32 +263,40 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
 
             <div className="form-field form-full">
               <span className="form-label">קבצי קורות חיים ({resumeFiles.length}/{MAX_RESUME_FILES})</span>
-              {resumeFiles.length > 0 && (
-                <ul style={{ listStyle: 'none', padding: 0, margin: '4px 0' }}>
-                  {resumeFiles.map((file) => (
-                    <li
-                      key={file.fileKey}
-                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' }}
-                    >
-                      <span>{file.fileName}</span>
-                      <button type="button" className="secondary-button" onClick={() => handleResumeDelete(file.fileKey)}>
-                        מחיקה
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {resumeFiles.length < MAX_RESUME_FILES && (
-                <input
-                  className="form-input"
-                  type="file"
-                  accept="application/pdf"
-                  disabled={isUploadingResume}
-                  onChange={(e) => {
-                    handleResumeUpload(e.target.files?.[0] ?? null)
-                    e.target.value = ''
-                  }}
-                />
+              {!savedProfile ? (
+                <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '4px 0' }}>
+                  יש לשמור את הפרופיל לפני צירוף קבצי קורות חיים
+                </p>
+              ) : (
+                <>
+                  {resumeFiles.length > 0 && (
+                    <ul style={{ listStyle: 'none', padding: 0, margin: '4px 0' }}>
+                      {resumeFiles.map((file) => (
+                        <li
+                          key={file.fileKey}
+                          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' }}
+                        >
+                          <span>{file.fileName}</span>
+                          <button type="button" className="secondary-button" onClick={() => handleResumeDelete(file.fileKey)}>
+                            מחיקה
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {resumeFiles.length < MAX_RESUME_FILES && (
+                    <input
+                      className="form-input"
+                      type="file"
+                      accept="application/pdf"
+                      disabled={isUploadingResume}
+                      onChange={(e) => {
+                        handleResumeUpload(e.target.files?.[0] ?? null)
+                        e.target.value = ''
+                      }}
+                    />
+                  )}
+                </>
               )}
               {errors.resumeFile && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.resumeFile}</span>}
             </div>
@@ -291,10 +304,10 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
 
           <div className="modal-actions mt-18 actions-row">
             <button type="submit" className="primary-button" disabled={isSaving}>
-              {isSaving ? 'שומר...' : 'שמירה'}
+              {isSaving ? 'שומר...' : savedProfile ? 'שמירה' : 'צור פרופיל'}
             </button>
             <button type="button" className="secondary-button" onClick={onClose} disabled={isSaving}>
-              ביטול
+              {savedProfile ? 'סגירה' : 'ביטול'}
             </button>
           </div>
         </form>
