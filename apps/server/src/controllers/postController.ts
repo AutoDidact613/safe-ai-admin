@@ -91,7 +91,7 @@ export const getPosts = async (req: Request, res: Response) => {
       page: req.query.page,
       userRole: req.query.userRole,
     });
-    res.status(500).json({ message: 'Error fetching posts', error: error.message });
+    res.status(500).json({ message: 'Error fetching posts' });
   }
 };
 
@@ -174,7 +174,7 @@ export const incrementView = async (req: Request, res: Response) => {
       requestId: (req as any).requestId,
       postId: req.params.id,
     });
-    res.status(500).json({ message: 'שגיאה בעדכון הצפיות', error: error.message });
+    res.status(500).json({ message: 'שגיאה בעדכון הצפיות' });
   }
 };
 
@@ -446,7 +446,7 @@ export const searchPosts = async (req: Request, res: Response) => {
       query: req.query.query,
       userRole: req.query.userRole,
     });
-    res.status(500).json({ message: 'שגיאה בביצוע החיפוש', error: error.message });
+    res.status(500).json({ message: 'שגיאה בביצוע החיפוש' });
   }
 };
 export const createComment = async (req: Request, res: Response) => {
@@ -503,7 +503,7 @@ export const createComment = async (req: Request, res: Response) => {
       requestId: (req as any).requestId,
       postId: req.body.postId,
     });
-    res.status(500).json({ message: 'שגיאה בשמירת התגובה', error: error.message });
+    res.status(500).json({ message: 'שגיאה בשמירת התגובה' });
   }
 };
 
@@ -539,7 +539,7 @@ export const deleteCommentByAdmin = async (req: Request, res: Response) => {
       requestId: (req as any).requestId,
       commentId: req.params.commentId,
     });
-    res.status(500).json({ message: 'שגיאה במחיקת התגובה', error: error.message });
+    res.status(500).json({ message: 'שגיאה במחיקת התגובה' });
   }
 };
 
@@ -600,7 +600,7 @@ export const moderatePost = async (req: Request, res: Response) => {
       postId: req.params.id,
       actionType: req.body.actionType,
     });
-    res.status(500).json({ message: 'שגיאה בעדכון סטטוס הפוסט', error: error.message });
+    res.status(500).json({ message: 'שגיאה בעדכון סטטוס הפוסט' });
   }
 };
 
