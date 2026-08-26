@@ -5,6 +5,12 @@ export interface TenderTime {
   unit: TenderTimeUnit
 }
 
+export interface AttachedProfileSummary {
+  name: string
+  description?: string
+  experience?: string
+}
+
 export interface Applicant {
   name: string
   email: string
@@ -13,6 +19,8 @@ export interface Applicant {
   contactMethod?: string
   resumeFileKey?: string
   portfolioLink?: string
+  professionalProfileId?: string
+  professionalProfile?: AttachedProfileSummary
   isViewed?: boolean
 }
 

@@ -60,6 +60,15 @@ export default function TenderOffers({ tender, onClose, onUpdateTender }: Tender
               <p><strong>פרטים:</strong> {applicant.details}</p>
               {applicant.proposal && <p><strong>הצעה:</strong> {applicant.proposal}</p>}
               {applicant.contactMethod && <p><strong>דרכי קשר:</strong> {applicant.contactMethod}</p>}
+              {applicant.professionalProfile && (
+                <div style={{ marginTop: '8px', padding: '8px', background: '#f8fafc', borderRadius: '4px' }}>
+                  <p><strong>פרופיל מקצועי - {applicant.professionalProfile.name}</strong></p>
+                  {applicant.professionalProfile.description && <p>{applicant.professionalProfile.description}</p>}
+                  {applicant.professionalProfile.experience && (
+                    <p><strong>ניסיון:</strong> {applicant.professionalProfile.experience}</p>
+                  )}
+                </div>
+              )}
               {applicant.resumeFileKey && (
                 <p>
                   <strong>קורות חיים:</strong>{' '}

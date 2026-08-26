@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { apiCall, API_ENDPOINTS } from '../../config/api'
+import { normalizeProfile } from '../professionalProfile/normalize'
+import type { ProfessionalProfile, RawProfessionalProfile } from '../professionalProfile/types'
 import type { Applicant, Tender } from './types'
 
 interface Props {
@@ -34,6 +36,16 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
+
+  const [profile, setProfile] = useState<ProfessionalProfile | null>(null)
+  const [attachProfile, setAttachProfile] = useState(false)
+  const [selectedResumeKey, setSelectedResumeKey] = useState('')
+
+  useEffect(() => {
+    apiCall<RawProfessionalProfile | null>(API_ENDPOINTS.professionalProfile.me)
+      .then((raw) => setProfile(raw ? normalizeProfile(raw) : null))
+      .catch((error) => console.error('Failed to load professional profile', error))
+  }, [])
 
   const validateForm = () => {
     const nextErrors: FormErrors = {}
@@ -135,7 +147,9 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
     setIsSubmitting(true)
 
     let resumeFileKey: string | undefined
-    if (resumeFile) {
+    if (attachProfile && selectedResumeKey) {
+      resumeFileKey = selectedResumeKey
+    } else if (resumeFile) {
       try {
         resumeFileKey = await uploadResume(resumeFile)
       } catch (error) {
@@ -154,6 +168,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
       contactMethod: contactMethod.trim() || undefined,
       resumeFileKey,
       portfolioLink: portfolioLink.trim() || undefined,
+      professionalProfileId: attachProfile && profile ? profile.id : undefined,
     })
 
     setIsSubmitting(false)
@@ -272,16 +287,50 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
               {errors.contactMethod && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.contactMethod}</span>}
             </label>
 
-            <label className="form-field">
-              <span className="form-label">קורות חיים (PDF, עד 5MB)</span>
-              <input
-                className="form-input"
-                type="file"
-                accept="application/pdf"
-                onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
-              />
-              {errors.resumeFile && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.resumeFile}</span>}
-            </label>
+            {profile && (
+              <div className="form-field form-full">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="checkbox"
+                    checked={attachProfile}
+                    onChange={(e) => {
+                      setAttachProfile(e.target.checked)
+                      setSelectedResumeKey('')
+                    }}
+                  />
+                  <span className="form-label" style={{ margin: 0 }}>צרף את הפרופיל המקצועי שלי</span>
+                </label>
+
+                {attachProfile && profile.resumeFiles.length > 0 && (
+                  <select
+                    className="form-input"
+                    value={selectedResumeKey}
+                    onChange={(e) => setSelectedResumeKey(e.target.value)}
+                    style={{ marginTop: '8px' }}
+                  >
+                    <option value="">בחר קובץ קורות חיים (אופציונלי)</option>
+                    {profile.resumeFiles.map((file) => (
+                      <option key={file.fileKey} value={file.fileKey}>
+                        {file.fileName}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+
+            {!attachProfile && (
+              <label className="form-field">
+                <span className="form-label">קורות חיים (PDF, עד 5MB)</span>
+                <input
+                  className="form-input"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
+                />
+                {errors.resumeFile && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.resumeFile}</span>}
+              </label>
+            )}
 
             <label className="form-field">
               <span className="form-label">קישור לתיק עבודות</span>

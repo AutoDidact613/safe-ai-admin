@@ -83,6 +83,15 @@ export const API_ENDPOINTS = {
   upload: {
     getUrl: `${API_BASE_URL}/api/upload/get-url`,
   },
+  // Professional profile endpoints (tender board)
+  professionalProfile: {
+    me: `${API_BASE_URL}/professional-profile/me`,
+    create: `${API_BASE_URL}/professional-profile`,
+    update: `${API_BASE_URL}/professional-profile`,
+    addResume: `${API_BASE_URL}/professional-profile/resume`,
+    removeResume: (fileKey: string) =>
+      `${API_BASE_URL}/professional-profile/resume/${encodeURIComponent(fileKey)}`,
+  },
   // Articles / Docs endpoints
   articles: {
     list: `${API_BASE_URL}/articles`,

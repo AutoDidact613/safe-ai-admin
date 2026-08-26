@@ -305,6 +305,7 @@ export async function applyToTender(
     contactMethod?: string;
     resumeFileKey?: string;
     portfolioLink?: string;
+    professionalProfileId?: string;
   }
 ) {
   logger.info("Processing application to tender", { tenderId, applicantEmail: applicant?.email });
@@ -358,6 +359,7 @@ export async function applyToTender(
     contactMethod: applicant.contactMethod?.trim() || undefined,
     resumeFileKey: applicant.resumeFileKey?.trim() || undefined,
     portfolioLink: applicant.portfolioLink?.trim() || undefined,
+    professionalProfileId: applicant.professionalProfileId || undefined,
   };
 
   const updatedApplicants = [
