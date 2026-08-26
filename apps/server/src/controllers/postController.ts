@@ -487,8 +487,8 @@ export const createComment = async (req: Request, res: Response) => {
         logger.error('Failed to update post lastActivity in background', {
           error: err.message,
           stack: err.stack,
-          userId,
-          organizationId: await getOrganizationIdForLog(userId),
+          userId: authenticatedUserId,
+          organizationId: await getOrganizationIdForLog(authenticatedUserId),
           requestId: (req as any).requestId,
           postId,
         });
