@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "../pages/LandingPage";
+import LandingPageV2 from "../pages/LandingPageV2";
 import SafeAIUIPage from "../pages/SafeAIUIPage";
 import NotFound from "../pages/NotFound";
 import OrganizationUsersPage from "../pages/OrganizationUsersPage";
@@ -75,6 +76,8 @@ export default function AppRouter() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
+        {/* טיוטת דף בית חדש (SCRUM-227) — לתצוגה מקדימה בלבד, טרם מוחלף בנתיב הראשי */}
+        <Route path="/landing-preview" element={<LandingPageV2 />} />
         <Route path="/become-org-owner" element={<PublicOrgOwnerSignup />} />
 
         <Route
