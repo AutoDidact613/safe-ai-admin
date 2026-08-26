@@ -33,7 +33,7 @@
 }
 
 .about-section h2 {
-  color: #0C6250;
+  color: #2E6E7E;
   font-size: 24px;
   font-weight: 700;
   margin-bottom: 1rem;
@@ -75,15 +75,15 @@
 
 .about-section ul li::before {
   content: "•";
-  color: #0C6250;
+  color: #2E6E7E;
   font-weight: bold;
   position: absolute;
   right: 0;
 }
 
 .about-cta {
-  background: linear-gradient(135deg, rgba(12, 98, 80, 0.08) 0%, rgba(8, 64, 52, 0.08) 100%);
-  border: 2px solid #0C6250;
+  background: linear-gradient(135deg, rgba(46, 110, 126, 0.08) 0%, rgba(30, 72, 82, 0.08) 100%);
+  border: 2px solid #2E6E7E;
   border-radius: 12px;
   padding: 32px;
   text-align: center;
@@ -91,7 +91,7 @@
 }
 
 .about-cta h2 {
-  color: #0C6250;
+  color: #2E6E7E;
   font-size: 28px;
   font-weight: 700;
   margin-bottom: 1rem;
@@ -126,27 +126,27 @@
 }
 
 .about-cta .btn-primary {
-  background: #0C6250;
+  background: #2E6E7E;
   color: white;
   border: none;
 }
 
 .about-cta .btn-primary:hover {
-  background: #129176;
+  background: #3C90A4;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(12, 98, 80, 0.3);
+  box-shadow: 0 4px 12px rgba(46, 110, 126, 0.3);
 }
 
 .about-cta .btn-secondary {
   background: white;
-  color: #0C6250;
-  border: 2px solid #0C6250;
+  color: #2E6E7E;
+  border: 2px solid #2E6E7E;
 }
 
 .about-cta .btn-secondary:hover {
   background: #f0fdf4;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(12, 98, 80, 0.2);
+  box-shadow: 0 4px 8px rgba(46, 110, 126, 0.2);
 }
 
 .cta-buttons {

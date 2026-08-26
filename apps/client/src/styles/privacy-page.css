@@ -41,7 +41,7 @@
 }
 
 .privacy-section h2 {
-  color: #0C6250;
+  color: #2E6E7E;
   font-size: 22px;
   font-weight: 700;
   margin-bottom: 1rem;
@@ -81,7 +81,7 @@
 
 .privacy-section ul li::before {
   content: "•";
-  color: #0C6250;
+  color: #2E6E7E;
   font-weight: bold;
   position: absolute;
   right: 0;
@@ -108,8 +108,8 @@
 }
 
 .privacy-contact-box {
-  background: linear-gradient(135deg, rgba(12, 98, 80, 0.08) 0%, rgba(8, 64, 52, 0.08) 100%);
-  border: 2px solid #0C6250;
+  background: linear-gradient(135deg, rgba(46, 110, 126, 0.08) 0%, rgba(30, 72, 82, 0.08) 100%);
+  border: 2px solid #2E6E7E;
   border-radius: 12px;
   padding: 24px;
   text-align: center;
@@ -121,7 +121,7 @@
 }
 
 .privacy-contact-box a {
-  color: #0C6250;
+  color: #2E6E7E;
   font-weight: 700;
   text-decoration: none;
 }
