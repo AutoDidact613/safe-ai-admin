@@ -10,6 +10,8 @@ import { getEmbedding, refineContent, suggestTitles, suggestTags } from '../serv
 import { signAttachments } from '../services/s3Service';
 import { buildPostListPipeline, buildPostListWithCountPipeline } from '../services/postAggregationService';
 import { resolveOrCreateTagByName } from '../services/tagService';
+import logger from '../logger';
+import { getOrganizationIdForLog } from '../utils/forumLogContext';
 
 // אתחול זיכרון המטמון הגלובלי בשרת
 const recommendationCache = new NodeCache({ stdTTL: 1800, checkperiod: 60 });
@@ -79,9 +81,17 @@ export const getPosts = async (req: Request, res: Response) => {
     // 4. החזרת הפוסטים יחד עם נתוני העמודים ל-Frontend
     res.status(200).json(responseBody);
 
-  } catch (error) {
-    console.error('Error in getPosts:', error);
-    res.status(500).json({ message: 'Error fetching posts', error });
+  } catch (error: any) {
+    logger.error('Failed to fetch posts list', {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: await getOrganizationIdForLog((req as any).user?.userId),
+      requestId: (req as any).requestId,
+      page: req.query.page,
+      userRole: req.query.userRole,
+    });
+    res.status(500).json({ message: 'Error fetching posts' });
   }
 };
 
@@ -121,11 +131,18 @@ export const getPostById = async (req: Request, res: Response) => {
     // 4. החזרת המידע החתום והטרי ל-React
     return res.status(200).json({ post, comments });
 
-  } catch (error) {
-    console.error('Error in getPostById with presigned URLs:', error);
-    return res.status(500).json({ 
-      message: 'שגיאה בהבאת השרשור והקבצים המאובטחים', 
-      error: error instanceof Error ? error.message : error 
+  } catch (error: any) {
+    logger.error('Failed to fetch post thread with signed attachments', {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: await getOrganizationIdForLog((req as any).user?.userId),
+      requestId: (req as any).requestId,
+      postId: req.params.id,
+    });
+    return res.status(500).json({
+      message: 'שגיאה בהבאת השרשור והקבצים המאובטחים',
+      error: error.message,
     });
   }
 };
@@ -148,8 +165,16 @@ export const incrementView = async (req: Request, res: Response) => {
     await post.save();
 
     res.status(200).json({ viewsCount: post.viewsCount });
-  } catch (error) {
-    res.status(500).json({ message: 'שגיאה בעדכון הצפיות', error });
+  } catch (error: any) {
+    logger.error('Failed to increment post view count', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.body.userId,
+      organizationId: await getOrganizationIdForLog(req.body.userId),
+      requestId: (req as any).requestId,
+      postId: req.params.id,
+    });
+    res.status(500).json({ message: 'שגיאה בעדכון הצפיות' });
   }
 };
 
@@ -214,11 +239,19 @@ export const searchSimilarPosts = async (req: Request, res: Response) => {
     // 5. החזרת התוצאה ל-React
     return res.status(200).json(similar);
 
-  } catch (error) {
-    console.error('Error in semantic searchSimilarPosts with Cache:', error);
-    return res.status(500).json({ 
-      message: 'שגיאה בחיפוש פוסטים דומים', 
-      error: error instanceof Error ? error.message : error 
+  } catch (error: any) {
+    logger.error('Failed to fetch semantically similar posts', {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: await getOrganizationIdForLog((req as any).user?.userId),
+      requestId: (req as any).requestId,
+      postId: req.query.postId,
+      title: req.query.title,
+    });
+    return res.status(500).json({
+      message: 'שגיאה בחיפוש פוסטים דומים',
+      error: error.message,
     });
   }
 };
@@ -277,11 +310,18 @@ export const searchStrictSimilarPosts = async (req: Request, res: Response) => {
 
     return res.status(200).json(similar);
 
-  } catch (error) {
-    console.error('Error in searchStrictSimilarPosts:', error);
-    return res.status(500).json({ 
-      message: 'שגיאה בחיפוש פוסטים דומים למודאל', 
-      error: error instanceof Error ? error.message : error 
+  } catch (error: any) {
+    logger.error('Failed to fetch strict similar posts for modal', {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: await getOrganizationIdForLog((req as any).user?.userId),
+      requestId: (req as any).requestId,
+      title: req.query.title,
+    });
+    return res.status(500).json({
+      message: 'שגיאה בחיפוש פוסטים דומים למודאל',
+      error: error.message,
     });
   }
 };
@@ -332,7 +372,16 @@ export const createPost = async (req: Request, res: Response) => {
     // על יצירת הפוסט, בלי לחכות לזמן התגובה של OpenAI
     getEmbedding(title)
       .then((embedding) => Post.findByIdAndUpdate(savedPost._id, { titleEmbedding: embedding }))
-      .catch((err) => console.error('Error updating titleEmbedding in background:', err));
+      .catch(async (err: any) => {
+        logger.error('Failed to update post titleEmbedding in background', {
+          error: err.message,
+          stack: err.stack,
+          userId: authenticatedUserId,
+          organizationId: await getOrganizationIdForLog(authenticatedUserId),
+          requestId: (req as any).requestId,
+          postId: savedPost._id,
+        });
+      });
 
     const populatedPost = await Post.findById(savedPost._id)
       .populate('author', 'name')
@@ -341,11 +390,19 @@ export const createPost = async (req: Request, res: Response) => {
 
     return res.status(201).json(populatedPost);
 
-  } catch (error) {
-    console.error('Error in createPost controller:', error);
-    return res.status(500).json({ 
-      message: 'שגיאה פנימית ביצירת הפוסט', 
-      error: error instanceof Error ? error.message : error 
+  } catch (error: any) {
+    logger.error('Failed to create post', {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId || req.body.userId,
+      organizationId: await getOrganizationIdForLog((req as any).user?.userId || req.body.userId),
+      requestId: (req as any).requestId,
+      title: req.body.title,
+      category: req.body.category,
+    });
+    return res.status(500).json({
+      message: 'שגיאה פנימית ביצירת הפוסט',
+      error: error.message,
     });
   }
 };
@@ -379,9 +436,17 @@ export const searchPosts = async (req: Request, res: Response) => {
     );
 
     res.status(200).json(postsWithDetails);
-  } catch (error) {
-    console.error('Error in searchPosts:', error);
-    res.status(500).json({ message: 'שגיאה בביצוע החיפוש', error });
+  } catch (error: any) {
+    logger.error('Failed to search posts', {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: await getOrganizationIdForLog((req as any).user?.userId),
+      requestId: (req as any).requestId,
+      query: req.query.query,
+      userRole: req.query.userRole,
+    });
+    res.status(500).json({ message: 'שגיאה בביצוע החיפוש' });
   }
 };
 export const createComment = async (req: Request, res: Response) => {
@@ -418,12 +483,28 @@ export const createComment = async (req: Request, res: Response) => {
     post.lastActivity = new Date();
     post.save({ validateBeforeSave: false })
       .then(() => invalidatePostsListCache())
-      .catch((err) => console.error('Error updating post.lastActivity in background:', err));
+      .catch(async (err: any) => {
+        logger.error('Failed to update post lastActivity in background', {
+          error: err.message,
+          stack: err.stack,
+          userId: authenticatedUserId,
+          organizationId: await getOrganizationIdForLog(authenticatedUserId),
+          requestId: (req as any).requestId,
+          postId,
+        });
+      });
 
     res.status(201).json(populatedComment);
-  } catch (error) {
-    console.error('Error in createComment:', error);
-    res.status(500).json({ message: 'שגיאה בשמירת התגובה', error });
+  } catch (error: any) {
+    logger.error('Failed to create comment', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.body.userId,
+      organizationId: await getOrganizationIdForLog(req.body.userId),
+      requestId: (req as any).requestId,
+      postId: req.body.postId,
+    });
+    res.status(500).json({ message: 'שגיאה בשמירת התגובה' });
   }
 };
 
@@ -450,9 +531,16 @@ export const deleteCommentByAdmin = async (req: Request, res: Response) => {
     });
 
     res.status(200).json({ message: 'התגובה נמחקה ותועדה בהצלחה' });
-  } catch (error) {
-    console.error('Error in deleteCommentByAdmin:', error);
-    res.status(500).json({ message: 'שגיאה במחיקת התגובה', error });
+  } catch (error: any) {
+    logger.error('Failed to delete comment as admin', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.body.userId,
+      organizationId: await getOrganizationIdForLog(req.body.userId),
+      requestId: (req as any).requestId,
+      commentId: req.params.commentId,
+    });
+    res.status(500).json({ message: 'שגיאה במחיקת התגובה' });
   }
 };
 
@@ -503,9 +591,17 @@ export const moderatePost = async (req: Request, res: Response) => {
     });
 
     res.status(200).json({ message: 'סטטוס הפוסט עודכן ותועד בהצלחה', post });
-  } catch (error) {
-    console.error('Error in moderatePost:', error);
-    res.status(500).json({ message: 'שגיאה בעדכון סטטוס הפוסט', error });
+  } catch (error: any) {
+    logger.error('Failed to moderate post', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.body.userId,
+      organizationId: await getOrganizationIdForLog(req.body.userId),
+      requestId: (req as any).requestId,
+      postId: req.params.id,
+      actionType: req.body.actionType,
+    });
+    res.status(500).json({ message: 'שגיאה בעדכון סטטוס הפוסט' });
   }
 };
 
@@ -547,8 +643,16 @@ export const ratePost = async (req: Request, res: Response) => {
       averageRating: post.averageRating,
       ratingCount: post.ratingCount
     });
-  } catch (error) {
-    console.error('Error in ratePost:', error);
+  } catch (error: any) {
+    logger.error('Failed to rate post', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.body.userId,
+      organizationId: await getOrganizationIdForLog(req.body.userId),
+      requestId: (req as any).requestId,
+      postId: req.params.id,
+      rating: req.body.rating,
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -575,8 +679,15 @@ export const generateAiAssistance = async (req: Request, res: Response) => {
 
     return res.status(400).json({ message: 'מצב עבודה לא תקין' });
 
-  } catch (error) {
-    console.error('Error in generateAiAssistance:', error);
+  } catch (error: any) {
+    logger.error('Failed to generate AI assistance for post content', {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: await getOrganizationIdForLog((req as any).user?.userId),
+      requestId: (req as any).requestId,
+      mode: req.body.mode,
+    });
     return res.status(500).json({ message: 'שגיאה פנימית בעיבוד ה-AI' });
   }
 };
