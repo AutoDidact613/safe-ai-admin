@@ -29,10 +29,16 @@ jest.mock('../../services/aiService', () => ({
 }));
 
 jest.mock('../../models/Post');
+jest.mock('../../models/user');
 
 import app from '../../index';
 import Post from '../../models/Post';
+import { User } from '../../models/user';
 import { generateAccessToken } from '../jwt';
+
+// requireForumPermission שולף את המשתמש מה-DB לפי userId שנלקח מהטוקן, ולכן
+// חייב להיות ObjectId תקני (24 hex) - שלא כמו לפני שהמידלוור הזה חובר לראוט.
+const USER_ID = '507f1f77bcf86cd799439011';
 
 describe('POST /api/posts - יצירת פוסט חדש', () => {
   afterEach(() => {
@@ -47,7 +53,30 @@ describe('POST /api/posts - יצירת פוסט חדש', () => {
     expect(res.status).toBe(401);
   });
 
-  test('יוצר פוסט בהצלחה עבור משתמשת מחוברת עם טוקן תקין', async () => {
+  test('מחזיר 403 עבור משתמשת מחוברת שאין לה הרשאת canCreatePosts', async () => {
+    (User.findById as jest.Mock).mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue({ canCreatePosts: false }),
+      }),
+    });
+
+    const token = generateAccessToken({ userId: USER_ID, email: 'a@b.com', role: 'user' });
+
+    const res = await request(app)
+      .post('/api/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'כותרת חדשה', content: 'תוכן הפוסט', category: 'פיתוח', tags: [] });
+
+    expect(res.status).toBe(403);
+  });
+
+  test('יוצר פוסט בהצלחה עבור משתמשת מחוברת עם הרשאת canCreatePosts וטוקן תקין', async () => {
+    (User.findById as jest.Mock).mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue({ canCreatePosts: true }),
+      }),
+    });
+
     (Post as any).mockImplementation(() => ({
       save: jest.fn().mockResolvedValue({ _id: 'newpost1' }),
     }));
@@ -64,7 +93,7 @@ describe('POST /api/posts - יצירת פוסט חדש', () => {
 
     // מייצרים טוקן אמיתי (לא מדומה) - verifyAccessToken בשרת לא נוגע ב-DB בכלל,
     // אז אפשר להשתמש בפועל בפונקציה האמיתית ליצירת הטוקן ולתת למידלוור לאמת אותו
-    const token = generateAccessToken({ userId: 'u1', email: 'a@b.com', role: 'user' });
+    const token = generateAccessToken({ userId: USER_ID, email: 'a@b.com', role: 'user' });
 
     const res = await request(app)
       .post('/api/posts')

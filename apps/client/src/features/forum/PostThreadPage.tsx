@@ -54,6 +54,7 @@ export const PostThreadPage: React.FC = () => {
   const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
   const currentUserInitial = currentUser?.name?.charAt(0).toUpperCase() || 'U';
   const isAdmin = currentUser?.role === 'admin';
+  const isCommentBlocked = !isAdmin && currentUser?.canComment === false;
 
   const editor = useEditor({
     extensions: [
@@ -227,16 +228,20 @@ export const PostThreadPage: React.FC = () => {
     };
 
     try {
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
       const response = await fetch(`${API_BASE_URL}/api/posts/${id}/comment`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(commentPayload)
       });
 
       if (response.ok) {
         const savedComment = await response.json();
         setComments((prevComments) => [...prevComments, savedComment]);
-        editor.commands.clearContent(); 
+        editor.commands.clearContent();
         setSelectedFile(null);
         navigate('/forum');
       } else {
@@ -772,7 +777,21 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', backgroundColor: '#fafafa', borderTop: '1px solid #f3f4f6' }}>
-              <button type="submit" disabled={commentLoading} style={{ backgroundColor: '#10b981', color: 'white', padding: '6px 20px', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>
+              <button
+                type="submit"
+                disabled={commentLoading || isCommentBlocked}
+                title={isCommentBlocked ? 'אין לך הרשאה להגיב לפוסטים' : undefined}
+                style={{
+                  backgroundColor: isCommentBlocked ? '#a7f3d0' : '#10b981',
+                  color: 'white',
+                  padding: '6px 20px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: isCommentBlocked ? 'not-allowed' : 'pointer',
+                }}
+              >
                 {commentLoading ? 'שומר...' : 'שמור תגובה'}
               </button>
               
