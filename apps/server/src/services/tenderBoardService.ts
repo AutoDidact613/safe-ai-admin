@@ -401,10 +401,15 @@ export async function applyToTender(
     if (tender.publisherUserCode && tender.wantsEmails) {
       const adminEmail = await getPublisherEmail(tender.publisherUserCode);
       if (adminEmail) {
+        // המועמד שנרשם כרגע הוא תמיד האחרון במערך המעודכן שחזר מה-DB,
+        // כך שה-_id שלו ניתן לשימוש כדי לקשר ישירות להצעה במייל.
+        const newApplicantId = result?.applicants?.[result.applicants.length - 1]?._id?.toString();
+
         await sendApplicantRegisteredEmail({
           adminEmail,
           tenderTitle: tender.title,
           tenderId,
+          applicantId: newApplicantId,
           applicant: {
             ...normalizedApplicant,
             proposal: normalizedApplicant.proposal?.toString(),

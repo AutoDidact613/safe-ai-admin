@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { apiCall, API_ENDPOINTS } from '../config/api'
 import Card from '../features/tenders/Card.tsx'
 import TenderDetails from '../features/tenders/TenderDetails.tsx'
@@ -72,6 +73,23 @@ export default function TenderBoardPage() {
   const [activeScreen, setActiveScreen] = useState<'dashboard' | 'create' | 'manage'>('dashboard')
   const [currentUserCode, setCurrentUserCode] = useState('tnd-98234')
   const [refreshKey, setRefreshKey] = useState(0)
+
+  // פתיחה ישירה של הצעה ספציפית מקישור שהגיע במייל (screen=manage&tenderId=&applicantId=)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [deepLinkTenderId, setDeepLinkTenderId] = useState<string | null>(null)
+  const [deepLinkApplicantId, setDeepLinkApplicantId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const screen = searchParams.get('screen')
+    const tenderId = searchParams.get('tenderId')
+    if (screen === 'manage' && tenderId) {
+      setActiveScreen('manage')
+      setDeepLinkTenderId(tenderId)
+      setDeepLinkApplicantId(searchParams.get('applicantId'))
+      setSearchParams({}, { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!successMessage) return undefined
@@ -311,6 +329,8 @@ export default function TenderBoardPage() {
           tenders={tenders}
           onUpdateTender={handleUpdateTender}
           onDeleteTender={handleDeleteTender}
+          initialOffersTenderId={deepLinkTenderId}
+          initialHighlightApplicantId={deepLinkApplicantId}
         />
       )
     }

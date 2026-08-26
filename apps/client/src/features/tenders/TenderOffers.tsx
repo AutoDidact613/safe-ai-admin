@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { apiCall, API_ENDPOINTS } from '../../config/api'
 import type { Tender } from './types'
 
@@ -6,10 +6,18 @@ interface TenderOffersProps {
   tender: Tender
   onClose: () => void
   onUpdateTender: (updatedTender: Tender) => void
+  highlightApplicantId?: string | null
 }
 
-export default function TenderOffers({ tender, onClose, onUpdateTender }: TenderOffersProps) {
+export default function TenderOffers({ tender, onClose, onUpdateTender, highlightApplicantId }: TenderOffersProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const highlightedRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (highlightApplicantId && highlightedRef.current) {
+      highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [highlightApplicantId])
 
   // כניסה למסך ההצעות מסמנת אותן כנצפו, כדי שהחיווי ב"המכרזים שלי" יתאפס.
   // מעדכנים את המצב המקומי מיד (ולא מתוך תגובת השרת), כדי לא להסתמך על הצורה
@@ -53,15 +61,29 @@ export default function TenderOffers({ tender, onClose, onUpdateTender }: Tender
       <section className="applicants-section">
         <h3>מועמדים ({tender.applicants?.length ?? 0})</h3>
         {tender.applicants && tender.applicants.length > 0 ? (
-          tender.applicants.map((applicant, index) => (
-            <article key={`${applicant.email}-${index}`} className="applicant-card" style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', marginBottom: '10px' }}>
-              <h4>{applicant.name}</h4>
-              <p><strong>אימייל:</strong> {applicant.email}</p>
-              <p><strong>פרטים:</strong> {applicant.details}</p>
-              {applicant.proposal && <p><strong>הצעה:</strong> {applicant.proposal}</p>}
-              {applicant.contactMethod && <p><strong>דרכי קשר:</strong> {applicant.contactMethod}</p>}
-            </article>
-          ))
+          tender.applicants.map((applicant, index) => {
+            const isHighlighted = Boolean(highlightApplicantId) && applicant._id === highlightApplicantId
+            return (
+              <article
+                key={`${applicant.email}-${index}`}
+                ref={isHighlighted ? highlightedRef : undefined}
+                className="applicant-card"
+                style={{
+                  padding: '12px',
+                  border: isHighlighted ? '2px solid #3498db' : '1px solid #e2e8f0',
+                  borderRadius: '6px',
+                  marginBottom: '10px',
+                  backgroundColor: isHighlighted ? '#eaf4fc' : undefined,
+                }}
+              >
+                <h4>{applicant.name}</h4>
+                <p><strong>אימייל:</strong> {applicant.email}</p>
+                <p><strong>פרטים:</strong> {applicant.details}</p>
+                {applicant.proposal && <p><strong>הצעה:</strong> {applicant.proposal}</p>}
+                {applicant.contactMethod && <p><strong>דרכי קשר:</strong> {applicant.contactMethod}</p>}
+              </article>
+            )
+          })
         ) : (
           <p style={{ color: '#666' }}>אין עדיין מועמדים שנרשמו למכרז זה.</p>
         )}

@@ -6,6 +6,7 @@ export interface TenderTime {
 }
 
 export interface Applicant {
+  _id?: string
   name: string
   email: string
   details: string
