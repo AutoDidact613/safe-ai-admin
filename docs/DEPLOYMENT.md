@@ -194,6 +194,41 @@ server {
    ה-`--transpile-only` נדרש כי `ts-node` (עם type-checking מלא) נכשל על שגיאת TS לא-קשורה ב-`seedDevData.ts` (`User.findOne({ email })`, TS2353) שלא מופיעה ב-`npm run build` הרגיל (`tsc`) שמשמש את ה-Dockerfile — ככל הנראה הבדל בהתנהגות type-checking בין השניים. הסקריפט עצמו בטוח להרצה חוזרת (idempotent, בודק לפי מפתח ייחודי).
 9. **403 מהסביבה של Claude עצמה, לא מהשרת.** בדיקת `curl` לדומיין ה-staging מתוך sandbox של Claude Code החזירה `403` עם `x-deny-reason: host_not_allowed` — זה ה-proxy של סביבת ה-agent (allowlist דומיינים), **לא** אינדיקציה לתקלה אמיתית באתר. תמיד לוודא זמינות אמיתית מדפדפן/מכונה רגילה, לא מתוך session של Claude.
 
+## 10.1 CORS על bucket ה-S3 (Presigned Upload URLs)
+
+הדפדפן מעלה קבצים **ישירות ל-S3** דרך Presigned URL (`PutObjectCommand` ב-`apps/server/src/controllers/uploadController.ts`) — זו לא בקשה שעוברת דרך ה-Express server, ולכן `ALLOWED_ORIGINS` (CORS של האפליקציה) **לא רלוונטי כאן בכלל**. אם חסרה הגדרת CORS על ה-bucket עצמו, הדפדפן חוסם את בקשת ה-`OPTIONS` (preflight) עם שגיאה כמו:
+
+```
+Access to fetch at 'https://<bucket>.s3.<region>.amazonaws.com/...' from origin 'http://dev.safeai613.com'
+has been blocked by CORS policy: Response to preflight request doesn't pass access control check:
+No 'Access-Control-Allow-Origin' header is present on the requested resource.
+```
+
+**תיקון**: יש להגדיר CORS Configuration על ה-bucket עצמו (AWS Console → S3 → Bucket → Permissions → Cross-origin resource sharing, או `aws s3api put-bucket-cors`) — זו הגדרת תשתית, לא שינוי קוד:
+
+```json
+[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["PUT", "GET"],
+    "AllowedOrigins": [
+      "http://dev.safeai613.com",
+      "https://safeai613.com",
+      "https://www.safeai613.com",
+      "http://localhost:5173"
+    ],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3000
+  }
+]
+```
+
+```bash
+aws s3api put-bucket-cors --bucket <BUCKET_NAME> --cors-configuration file://cors.json
+```
+
+`GET` נדרש גם כן כי `apps/server/src/services/s3Service.ts` מייצר קישורי הורדה חתומים (`GetObjectCommand`) שגם הם עשויים להיטען ישירות מהדפדפן.
+
 ## 11. מה עוד לא מכוסה
 
 - **מוניטורינג והתראות**: אין היום כלום שמתריע אם שירות נופל.
