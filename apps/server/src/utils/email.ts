@@ -609,6 +609,111 @@ ${data.description}
 }
 
 /**
+ * Notify a system admin about users who registered in the reported period.
+ * Best-effort: failures are logged and swallowed so a mail failure never
+ * fails the report endpoint (same convention as the other admin emails
+ * below).
+ */
+export async function sendNewUsersReportEmail(
+  adminEmail: string,
+  newUsers: Array<{
+    name?: string;
+    email: string;
+    createdAt: Date;
+    emailVerified: boolean;
+    isActive: boolean;
+  }>,
+  since: Date,
+): Promise<void> {
+  const periodLabel = since.toLocaleString("he-IL");
+  const generatedAt = new Date().toLocaleString("he-IL");
+
+  const rows = newUsers
+    .map((user) => {
+      const safeName = escapeHtml(user.name || "-");
+      const safeEmail = escapeHtml(user.email);
+      const registeredAt = new Date(user.createdAt).toLocaleString("he-IL");
+      const status = !user.isActive
+        ? "לא פעיל"
+        : user.emailVerified
+          ? "פעיל ומאומת"
+          : "פעיל, לא מאומת";
+
+      return `
+        <tr>
+          <td style="padding: 10px; border-bottom: 1px solid #eee;">${safeName}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee;">${safeEmail}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee;">${registeredAt}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee;">${status}</td>
+        </tr>`;
+    })
+    .join("");
+
+  const tableOrEmptyState =
+    newUsers.length > 0
+      ? `<table style="width: 100%; border-collapse: collapse; background: white;">
+          <thead>
+            <tr style="background: #ecf0f1;">
+              <th style="padding: 10px; text-align: right;">שם</th>
+              <th style="padding: 10px; text-align: right;">אימייל</th>
+              <th style="padding: 10px; text-align: right;">תאריך הרשמה</th>
+              <th style="padding: 10px; text-align: right;">סטטוס</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`
+      : `<p>אין משתמשים חדשים בטווח הזמן שנבדק.</p>`;
+
+  const mailOptions = {
+    from: EMAIL_FROM,
+    to: adminEmail,
+    subject: `דוח משתמשים חדשים - ${newUsers.length} משתמשים מאז ${sanitizeHeaderValue(periodLabel)}`,
+    html: `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head><meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 700px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header"><h1>📊 דוח משתמשים חדשים</h1></div>
+          <div class="content">
+            <p>נרשמו <strong>${newUsers.length}</strong> משתמשים חדשים מאז ${periodLabel}.</p>
+            ${tableOrEmptyState}
+          </div>
+          <div class="footer"><p>נשלח אוטומטית ב־${generatedAt} · © 2026 SafeAI</p></div>
+        </div>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    await withRetry(async () => {
+      const transporter = await createTransporter();
+      return transporter.sendMail(mailOptions);
+    });
+
+    logger.info("New users report email sent successfully", {
+      adminEmail,
+      newUsersCount: newUsers.length,
+    });
+  } catch (error) {
+    logger.error("Failed to send new users report email", {
+      error: error instanceof Error ? error.message : String(error),
+      adminEmail,
+    });
+    // best-effort - a report email failure shouldn't fail the report endpoint
+  }
+}
+
+/**
  * Notify a system admin that a new organization is awaiting approval
  */
 export async function sendOrgApprovalRequestEmail(

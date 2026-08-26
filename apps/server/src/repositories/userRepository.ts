@@ -53,3 +53,17 @@ export async function updateUser(userId: string, data: any) {
 export async function deleteUser(userId: string) {
   return User.findByIdAndDelete(userId).lean();
 }
+
+export async function getUsersRegisteredSince(since: Date) {
+  return User.find(
+    { createdAt: { $gte: since } },
+    { name: 1, email: 1, createdAt: 1, emailVerified: 1, isActive: 1 }
+  )
+    .sort({ createdAt: -1 })
+    .lean();
+}
+
+export async function getAdminEmails() {
+  const admins = await User.find({ role: "admin" }, { email: 1 }).lean();
+  return admins.map((admin: any) => admin.email).filter(Boolean);
+}
