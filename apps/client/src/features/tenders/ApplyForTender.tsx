@@ -207,7 +207,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 maxLength={INPUT_LIMITS.name}
                 required
               />
-              {errors.name && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.name}</span>}
+              {errors.name && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.name}</span>}
             </label>
 
             <label className="form-field">
@@ -226,7 +226,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 maxLength={INPUT_LIMITS.email}
                 required
               />
-              {errors.email && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.email}</span>}
+              {errors.email && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.email}</span>}
             </label>
 
             <label className="form-field form-full">
@@ -245,7 +245,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 required
                 rows={5}
               />
-              {errors.details && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.details}</span>}
+              {errors.details && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.details}</span>}
             </label>
 
             <label className="form-field">
@@ -266,7 +266,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 max="999999999"
                 inputMode="numeric"
               />
-              {errors.proposal && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.proposal}</span>}
+              {errors.proposal && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.proposal}</span>}
             </label>
 
             <label className="form-field">
@@ -284,7 +284,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 placeholder="טלפון / אימייל"
                 maxLength={INPUT_LIMITS.contactMethod}
               />
-              {errors.contactMethod && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.contactMethod}</span>}
+              {errors.contactMethod && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.contactMethod}</span>}
             </label>
 
             {profile && (
@@ -328,7 +328,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                   accept="application/pdf"
                   onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
                 />
-                {errors.resumeFile && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.resumeFile}</span>}
+                {errors.resumeFile && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.resumeFile}</span>}
               </label>
             )}
 
@@ -347,7 +347,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                 placeholder="https://..."
                 maxLength={INPUT_LIMITS.portfolioLink}
               />
-              {errors.portfolioLink && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.portfolioLink}</span>}
+              {errors.portfolioLink && <span style={{ display: 'block', width: '100%', color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.portfolioLink}</span>}
             </label>
           </div>
 
