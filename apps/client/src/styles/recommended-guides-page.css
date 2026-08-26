@@ -152,7 +152,7 @@
   margin-bottom: 40px;
   padding: 24px;
   background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border: 2px solid #10a37f;
+  border: 2px solid #25596B;
   border-radius: 12px;
 }
 
@@ -166,7 +166,7 @@
 .stat-number {
   font-size: 36px;
   font-weight: 700;
-  color: #10a37f;
+  color: #25596B;
   line-height: 1;
   margin-bottom: 8px;
 }
