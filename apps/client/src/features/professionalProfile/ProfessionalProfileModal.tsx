@@ -30,8 +30,10 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
   const [experience, setExperience] = useState(profile?.experience ?? '')
   const [portfolioLink, setPortfolioLink] = useState(profile?.portfolioLink ?? '')
   const [resumeFiles, setResumeFiles] = useState<ResumeFile[]>(profile?.resumeFiles ?? [])
-  // עוקב אחרי הפרופיל שנשמר בפועל, כדי לדעת אם קיים כבר רשומה בשרת -
-  // רק אז אפשר לצרף אליה קבצי קורות חיים
+  // קבצים שנבחרו לפני שהפרופיל נשמר בשרת בפעם הראשונה - מועלים בפועל רק
+  // אחרי יצירת הפרופיל, כדי שלא יהיה צורך לשמור קודם ורק אז לבחור קבצים
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  // עוקב אחרי הפרופיל שנשמר בפועל, כדי לדעת אם קיימת כבר רשומה בשרת
   const [savedProfile, setSavedProfile] = useState<ProfessionalProfile | null>(profile)
   const [errors, setErrors] = useState<FormErrors>({})
   const [isSaving, setIsSaving] = useState(false)
@@ -68,6 +70,41 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
     return nextErrors
   }
 
+  const uploadAndRegisterResume = async (file: File): Promise<ResumeFile[]> => {
+    const { uploadUrl, fileUrl } = await apiCall<{ uploadUrl: string; fileUrl: string }>(
+      API_ENDPOINTS.upload.getUrl,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          context: 'tenderResume',
+        }),
+      },
+    )
+
+    const awsResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type },
+      body: file,
+    })
+
+    if (!awsResponse.ok) {
+      throw new Error('העלאת הקובץ ל-S3 נכשלה')
+    }
+
+    const response = await apiCall<{ success: boolean; profile: RawProfessionalProfile }>(
+      API_ENDPOINTS.professionalProfile.addResume,
+      {
+        method: 'POST',
+        body: JSON.stringify({ fileKey: fileUrl, fileName: file.name }),
+      },
+    )
+
+    return response.profile.resumeFiles ?? []
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (isSaving) return
@@ -98,6 +135,23 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
       const saved = normalizeProfile(response.profile)
       setSavedProfile(saved)
       onSaved(saved)
+
+      if (pendingFiles.length > 0) {
+        setIsUploadingResume(true)
+        try {
+          let latestResumeFiles = saved.resumeFiles
+          for (const file of pendingFiles) {
+            latestResumeFiles = await uploadAndRegisterResume(file)
+          }
+          setResumeFiles(latestResumeFiles)
+          setPendingFiles([])
+        } catch (uploadError) {
+          console.error('Failed to upload pending resume files', uploadError)
+          setErrors((prev) => ({ ...prev, resumeFile: 'חלק מקבצי קורות החיים לא הועלו, נסה שוב' }))
+        } finally {
+          setIsUploadingResume(false)
+        }
+      }
     } catch (error) {
       console.error('Failed to save professional profile', error)
       setErrors((prev) => ({ ...prev, name: 'שמירת הפרופיל נכשלה, נסה שוב' }))
@@ -106,10 +160,11 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
     }
   }
 
-  const handleResumeUpload = async (file: File | null) => {
-    if (!file || !savedProfile) return
+  const handleFileSelect = async (file: File | null) => {
+    if (!file) return
 
-    if (resumeFiles.length >= MAX_RESUME_FILES) {
+    const currentCount = resumeFiles.length + pendingFiles.length
+    if (currentCount >= MAX_RESUME_FILES) {
       setErrors((prev) => ({ ...prev, resumeFile: `ניתן לצרף עד ${MAX_RESUME_FILES} קבצים` }))
       return
     }
@@ -123,47 +178,26 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
     }
 
     setErrors((prev) => ({ ...prev, resumeFile: undefined }))
+
+    if (!savedProfile) {
+      // הפרופיל עוד לא נשמר - שומרים את הקובץ מקומית ומעלים אותו בפועל בשמירה
+      setPendingFiles((prev) => [...prev, file])
+      return
+    }
+
     setIsUploadingResume(true)
-
     try {
-      const { uploadUrl, fileUrl } = await apiCall<{ uploadUrl: string; fileUrl: string }>(
-        API_ENDPOINTS.upload.getUrl,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            fileName: file.name,
-            fileType: file.type,
-            fileSize: file.size,
-            context: 'tenderResume',
-          }),
-        },
-      )
-
-      const awsResponse = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type },
-        body: file,
-      })
-
-      if (!awsResponse.ok) {
-        throw new Error('העלאת הקובץ ל-S3 נכשלה')
-      }
-
-      const response = await apiCall<{ success: boolean; profile: RawProfessionalProfile }>(
-        API_ENDPOINTS.professionalProfile.addResume,
-        {
-          method: 'POST',
-          body: JSON.stringify({ fileKey: fileUrl, fileName: file.name }),
-        },
-      )
-
-      setResumeFiles(response.profile.resumeFiles ?? [])
+      setResumeFiles(await uploadAndRegisterResume(file))
     } catch (error) {
       console.error('Failed to upload resume file', error)
       setErrors((prev) => ({ ...prev, resumeFile: 'העלאת הקובץ נכשלה, נסה שוב' }))
     } finally {
       setIsUploadingResume(false)
     }
+  }
+
+  const handlePendingFileRemove = (index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleResumeDelete = async (fileKey: string) => {
@@ -178,6 +212,8 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
       setErrors((prev) => ({ ...prev, resumeFile: 'מחיקת הקובץ נכשלה, נסה שוב' }))
     }
   }
+
+  const totalFileCount = resumeFiles.length + pendingFiles.length
 
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true" onClick={onClose}>
@@ -210,7 +246,7 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
                 maxLength={INPUT_LIMITS.name}
                 required
               />
-              {errors.name && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.name}</span>}
+              {errors.name && <span className="form-error">{errors.name}</span>}
             </label>
 
             <label className="form-field form-full">
@@ -226,7 +262,7 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
                 maxLength={INPUT_LIMITS.description}
                 rows={4}
               />
-              {errors.description && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.description}</span>}
+              {errors.description && <span className="form-error">{errors.description}</span>}
             </label>
 
             <label className="form-field form-full">
@@ -242,7 +278,7 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
                 maxLength={INPUT_LIMITS.experience}
                 rows={4}
               />
-              {errors.experience && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.experience}</span>}
+              {errors.experience && <span className="form-error">{errors.experience}</span>}
             </label>
 
             <label className="form-field">
@@ -258,47 +294,49 @@ export default function ProfessionalProfileModal({ profile, onClose, onSaved }: 
                 placeholder="https://..."
                 maxLength={INPUT_LIMITS.portfolioLink}
               />
-              {errors.portfolioLink && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.portfolioLink}</span>}
+              {errors.portfolioLink && <span className="form-error">{errors.portfolioLink}</span>}
             </label>
 
             <div className="form-field form-full">
-              <span className="form-label">קבצי קורות חיים ({resumeFiles.length}/{MAX_RESUME_FILES})</span>
-              {!savedProfile ? (
-                <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '4px 0' }}>
-                  יש לשמור את הפרופיל לפני צירוף קבצי קורות חיים
-                </p>
-              ) : (
-                <>
-                  {resumeFiles.length > 0 && (
-                    <ul style={{ listStyle: 'none', padding: 0, margin: '4px 0' }}>
-                      {resumeFiles.map((file) => (
-                        <li
-                          key={file.fileKey}
-                          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' }}
-                        >
-                          <span>{file.fileName}</span>
-                          <button type="button" className="secondary-button" onClick={() => handleResumeDelete(file.fileKey)}>
-                            מחיקה
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {resumeFiles.length < MAX_RESUME_FILES && (
-                    <input
-                      className="form-input"
-                      type="file"
-                      accept="application/pdf"
-                      disabled={isUploadingResume}
-                      onChange={(e) => {
-                        handleResumeUpload(e.target.files?.[0] ?? null)
-                        e.target.value = ''
-                      }}
-                    />
-                  )}
-                </>
+              <span className="form-label">קבצי קורות חיים ({totalFileCount}/{MAX_RESUME_FILES})</span>
+
+              {totalFileCount > 0 && (
+                <ul className="resume-file-list">
+                  {resumeFiles.map((file) => (
+                    <li key={file.fileKey} className="resume-file-row">
+                      <span>{file.fileName}</span>
+                      <button type="button" className="secondary-button" onClick={() => handleResumeDelete(file.fileKey)}>
+                        מחיקה
+                      </button>
+                    </li>
+                  ))}
+                  {pendingFiles.map((file, index) => (
+                    <li key={`pending-${index}-${file.name}`} className="resume-file-row">
+                      <span>
+                        {file.name}
+                        <em className="pending-badge">ממתין לשמירה</em>
+                      </span>
+                      <button type="button" className="secondary-button" onClick={() => handlePendingFileRemove(index)}>
+                        הסרה
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
-              {errors.resumeFile && <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px' }}>{errors.resumeFile}</span>}
+
+              {totalFileCount < MAX_RESUME_FILES && (
+                <input
+                  className="form-input"
+                  type="file"
+                  accept="application/pdf"
+                  disabled={isUploadingResume}
+                  onChange={(e) => {
+                    handleFileSelect(e.target.files?.[0] ?? null)
+                    e.target.value = ''
+                  }}
+                />
+              )}
+              {errors.resumeFile && <span className="form-error">{errors.resumeFile}</span>}
             </div>
           </div>
 
