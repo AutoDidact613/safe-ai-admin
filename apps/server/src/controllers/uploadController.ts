@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
+import logger from "../logger";
+import { getOrganizationIdForLog } from "../utils/forumLogContext";
 
 // אתחול החיבור מול AWS עם הגדרת משתני הסביבה
 const s3 = new S3Client({
@@ -77,8 +79,16 @@ export const getPresignedUrl = async (
     // החזרת הנתונים ל-Frontend
     return res.json({ uploadUrl, fileUrl });
 
-  } catch (error) {
-    console.error("שגיאה בהפקת URL ב-TypeScript:", error);
+  } catch (error: any) {
+    logger.error("Failed to generate presigned upload URL", {
+      error: error.message,
+      stack: error.stack,
+      userId: (req as any).user?.userId,
+      organizationId: await getOrganizationIdForLog((req as any).user?.userId),
+      requestId: (req as any).requestId,
+      fileName: req.body.fileName,
+      fileType: req.body.fileType,
+    });
     return res.status(500).json({ error: "נכשלה הפקת קישור מאובטח" });
   }
 };
