@@ -1,6 +1,7 @@
 import { traceable } from 'langsmith/traceable';
 import { wrapOpenAI } from 'langsmith/wrappers';
 import { ZodSchema } from 'zod';
+import type { ChatCompletionCreateParamsNonStreaming } from 'openai/resources/chat/completions';
 import { openaiClient, DEFAULT_OPENAI_MODEL, FALLBACK_OPENAI_MODEL } from '../config/openaiclient';
 
 /**
@@ -24,10 +25,33 @@ export async function getEmbedding(text: string): Promise<number[]> {
 }
 
 /**
+ * openaiClient מוגדר עם maxRetries: 0 (ראו config/openaiclient.ts) - הריטריי מנוהל
+ * ידנית בכל קריאה. callAI כבר עושה fallback על 429/503, אבל הפונקציות הבאות
+ * (refineContent/suggestTitles/suggestTags) קדמו ל-callAI ולא היה להן רשת ביטחון
+ * דומה - שגיאת rate-limit או 503 חולפת מ-OpenAI הייתה קורסת ישר ל-500 למשתמש.
+ * הפונקציה הזו מוסיפה ריטריי בודד עם השהיה קצרה במקרים האלה בלבד.
+ */
+async function createChatCompletionWithRetry(
+  params: ChatCompletionCreateParamsNonStreaming
+) {
+  try {
+    return await openaiClient.chat.completions.create(params);
+  } catch (error: any) {
+    const isTransient = error?.status === 429 || error?.status === 503;
+    if (!isTransient) {
+      throw error;
+    }
+    console.warn(`[aiService] ${error.status} מ-OpenAI, מנסה שוב אחרי השהיה קצרה...`);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return await openaiClient.chat.completions.create(params);
+  }
+}
+
+/**
  * משפר את הניסוח של תוכן פוסט קיים בפורום.
  */
 export async function refineContent(content: string): Promise<string> {
-  const response = await openaiClient.chat.completions.create({
+  const response = await createChatCompletionWithRetry({
     model: FALLBACK_OPENAI_MODEL,
     max_tokens: 500,
     messages: [
@@ -48,7 +72,7 @@ export async function refineContent(content: string): Promise<string> {
  * מציע עד 3 כותרות מתאימות לתוכן פוסט בפורום.
  */
 export async function suggestTitles(content: string): Promise<string[]> {
-  const response = await openaiClient.chat.completions.create({
+  const response = await createChatCompletionWithRetry({
     model: FALLBACK_OPENAI_MODEL,
     max_tokens: 150,
     messages: [
@@ -71,7 +95,7 @@ export async function suggestTitles(content: string): Promise<string[]> {
  * מחלץ עד 3 תגיות נושא רלוונטיות מתוך תוכן פוסט בפורום.
  */
 export async function suggestTags(content: string): Promise<string[]> {
-  const response = await openaiClient.chat.completions.create({
+  const response = await createChatCompletionWithRetry({
     model: FALLBACK_OPENAI_MODEL,
     max_tokens: 60,
     messages: [

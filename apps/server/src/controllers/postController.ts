@@ -682,6 +682,12 @@ export const generateAiAssistance = async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error('Failed to generate AI assistance for post content', {
       error: error.message,
+      // error.status/type/code הם השדות שה-SDK של OpenAI מצרף לשגיאות API
+      // (401 מפתח לא תקין, 429 rate limit, 404 מודל לא זמין וכו') - בלעדיהם
+      // אי אפשר להבדיל בלוג בין תקלת קונפיגורציה לתקלה חולפת מול OpenAI.
+      openaiStatus: error.status,
+      openaiType: error.type,
+      openaiCode: error.code,
       stack: error.stack,
       userId: (req as any).user?.userId,
       organizationId: await getOrganizationIdForLog((req as any).user?.userId),
