@@ -26,6 +26,7 @@ import argparse
 import csv
 import json
 import time
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
@@ -33,19 +34,15 @@ from typing import Any, Optional
 from agent.graph import build_graph
 from agent.nodes.analyze import analyze_records
 
+MODEL_COST_PER_1K_TOKENS = os.getenv("MODEL_COST_PER_1K_TOKENS" , " ")
+LIVE_MODEL = os.getenv("LIVE_MODEL" , "gpt-4o-mini" )
+
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 RESULTS_DIR = Path(__file__).parent / "results"
 
 CSV_FIELDNAMES = [
     "fixture_name", "passed", "attempts", "tokens_in", "tokens_out", "cost_usd", "latency_ms", "notes",
 ]
-
-# Rough per-1K-token $ rates, used only for --live cost estimation.
-MODEL_COST_PER_1K_TOKENS = {
-    "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
-}
-LIVE_MODEL = "gpt-4o-mini"
-
 
 class _UsageTrackingLLM:
     """Wraps a real LLM, accumulating token usage across every .invoke() call (including evaluator retries)."""
