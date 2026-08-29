@@ -246,7 +246,8 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
       })
     } catch (error) {
       console.error('Failed to create tender', error)
-      setErrorMessage('לא ניתן לשמור את המכרז כעת. אנא נסה שוב מאוחר יותר.')
+      const serverMessage = error instanceof Error ? error.message : ''
+      setErrorMessage(serverMessage || 'לא ניתן לשמור את המכרז כעת. אנא נסה שוב מאוחר יותר.')
     }
   }
 
