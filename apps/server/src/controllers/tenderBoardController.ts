@@ -13,7 +13,7 @@ import {
   // createSmartTender,  // נעקוף את פונקציית המעבר הבעייתית
   smartSearchTenders,     
 } from "../services/tenderBoardService";
-import { TBAIService } from "../services/tenderBoardAIService";
+import { TBAIService, TenderTopicMismatchError } from "../services/tenderBoardAIService";
 import { generatePresignedDownloadUrl } from "../services/s3Service";
 import { getProfileById } from "../services/professionalProfileService";
 import logger from "../logger";
@@ -306,10 +306,17 @@ export async function createSmartTenderHandler(req: Request, res: Response) {
     }
 
     const parsedAiData = await TBAIService.generateTenderData(text);
-    
+
     // החזרת האובייקט המפורסר מה-AI ללא יצירת המכרז בבסיס הנתונים
     res.status(201).json({ success: true, tender: parsedAiData });
   } catch (error: any) {
+    if (error instanceof TenderTopicMismatchError) {
+      return res.status(400).json({
+        error: "TENDER_TOPIC_MISMATCH",
+        code: "TENDER_TOPIC_MISMATCH",
+        message: error.message,
+      });
+    }
     logger.error("Smart create tender failed", { error: error.message });
     res.status(500).json({ error: error.message || "Failed to generate tender using AI" });
   }

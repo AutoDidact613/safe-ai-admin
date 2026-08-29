@@ -194,7 +194,12 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
       }
     } catch (error) {
       console.error('Failed to create smart tender', error)
-      setErrorMessage('נכשל ניתוח המכרז החכם, אנא נסה שוב או מלא ידנית.')
+      const code = (error as { code?: string } | undefined)?.code
+      if (code === 'TENDER_TOPIC_MISMATCH') {
+        setErrorMessage('הטקסט שהזנת אינו מתאר בקשה ליצירת מכרז. אנא תאר את הפרויקט או השירות שברצונך לפרסם.')
+      } else {
+        setErrorMessage('נכשל ניתוח המכרז החכם, אנא נסה שוב או מלא ידנית.')
+      }
     } finally {
       setIsSmartLoading(false)
     }

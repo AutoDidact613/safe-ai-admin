@@ -2,7 +2,7 @@ import request from "supertest";
 import express from "express";
 import router from "../../routes/tenderBoardRouter"; // נתיב הראוטר שלך
 import * as service from "../tenderBoardService";
-import { AIService } from "../tenderBoardAIService";
+import { AIService, TenderTopicMismatchError } from "../tenderBoardAIService";
 
 // 1. הגדרת מוקים (Mocks) לכל השירותים והשכבות החיצוניות כדי למנוע קריאות אמיתיות ל-DB או ל-AI
 jest.mock("../tenderBoardService");
@@ -167,6 +167,19 @@ describe("Tender Board Feature Tests", () => {
 
       expect(res.status).toBe(400);
       expect(res.body.error).toContain("Text description is required");
+    });
+
+    it("should return 400 with TENDER_TOPIC_MISMATCH code when the text is unrelated to a tender", async () => {
+      AIService.generateTenderData = jest
+        .fn()
+        .mockRejectedValue(new TenderTopicMismatchError());
+
+      const res = await request(app)
+        .post("/tender-board/smart-create")
+        .send({ text: "מה מזג האוויר מחר בתל אביב?" });
+
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("TENDER_TOPIC_MISMATCH");
     });
   });
 
