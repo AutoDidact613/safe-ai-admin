@@ -281,7 +281,7 @@ export default function LandingPageV2() {
           failed={statsFailed}
         />
         <CountUpStat
-          label="פרויקטים תחת SafeAI"
+          label="פרויקטים תחת SafeAI613"
           value={stats?.tenderCount ?? null}
           loading={statsLoading}
           failed={statsFailed}
