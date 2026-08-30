@@ -113,7 +113,7 @@
 }
 
 .guides-link-button.secondary:hover {
-  background: #f0fdf4;
+  background: #DEEFF7;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(28, 122, 166, 0.2);
 }

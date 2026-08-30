@@ -154,8 +154,8 @@
 
 .guide-category {
   display: inline-block;
-  background: #f0fdf4;
-  color: #15803d;
+  background: #DEEFF7;
+  color: #135471;
   padding: 6px 12px;
   border-radius: 6px;
   font-size: 12px;
@@ -442,7 +442,7 @@
 
 .resource-link:hover {
   border-color: #1C7AA6;
-  background: #f0fdf4;
+  background: #DEEFF7;
   transform: translateX(-4px);
 }
 

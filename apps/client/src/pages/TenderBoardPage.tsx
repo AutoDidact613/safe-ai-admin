@@ -358,7 +358,7 @@ export default function TenderBoardPage() {
 
           {isSmartSearching && (
             <div style={{ display: 'flex', justifyContent: 'center', margin: '12px 0' }}>
-              <AiThinkingLoader color="#16a34a" />
+              <AiThinkingLoader color="#1C7AA6" />
             </div>
           )}
           {errorMessage && (
