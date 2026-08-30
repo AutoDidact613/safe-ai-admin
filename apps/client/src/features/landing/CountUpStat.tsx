@@ -22,6 +22,7 @@ export default function CountUpStat({
 }: CountUpStatProps) {
   const [displayValue, setDisplayValue] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [settled, setSettled] = useState(false);
   const frameRef = useRef<number | null>(null);
   const elementRef = useRef<HTMLDivElement>(null);
 
@@ -55,6 +56,8 @@ export default function CountUpStat({
       setDisplayValue(Math.round(easeOutQuad(progress) * value));
       if (progress < 1) {
         frameRef.current = requestAnimationFrame(step);
+      } else {
+        setSettled(true);
       }
     };
 
@@ -66,10 +69,17 @@ export default function CountUpStat({
 
   return (
     <div className="lv2-stat-item" ref={elementRef}>
-      <div className="lv2-stat-value">
+      {/* Visual counter: purely decorative for assistive tech — it changes
+          many times a second while animating, which would otherwise get
+          read aloud frame by frame. */}
+      <div className="lv2-stat-value" aria-hidden="true">
         {loading ? "…" : failed ? "—" : displayValue.toLocaleString("he-IL")}
       </div>
       <div className="lv2-stat-label">{label}</div>
+      {/* Announced once, only after the count-up finishes. */}
+      <span className="lv2-sr-only" aria-live="polite">
+        {settled && !failed ? `${value?.toLocaleString("he-IL")} ${label}` : ""}
+      </span>
     </div>
   );
 }
