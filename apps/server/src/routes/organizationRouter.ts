@@ -27,17 +27,22 @@ import { getOrganizationById } from "../services/organizationService";
 
 const router = express.Router();
 
-// חוסם פעולות ניהול לבעל ארגון כל עוד הארגון אינו מאושר (אדמין עוקף)
-async function requireApprovedOrg(
+// חוסם פעולות ניהול לבעל ארגון כל עוד הארגון אינו מאושר (אדמין עוקף).
+// Always fetches the org (even for admins) and attaches it to req.organization
+// so downstream handlers - e.g. paymeController's isAdminOrOwner - can reuse
+// it instead of issuing a second, identical findById for the same request.
+export async function requireApprovedOrg(
   req: express.Request<{ id: string }>,
   res: express.Response,
   next: express.NextFunction
 ) {
   const user = (req as any).user;
-  if (user?.role === "admin") return next();
   try {
     const org = await getOrganizationById(req.params.id);
     if (!org) return res.status(404).json({ error: "Organization not found" });
+    (req as any).organization = org;
+
+    if (user?.role === "admin") return next();
     if ((org as any).status !== "approved") {
       return res.status(403).json({ error: "Organization is not approved yet" });
     }

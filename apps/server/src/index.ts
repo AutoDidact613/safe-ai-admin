@@ -15,6 +15,7 @@ import proxyKeyRouter from "./routes/proxyKeyRouter";
 import professionalProfileRouter from "./routes/professionalProfileRouter";
 import promptRouter from "./routes/promptRouter";
 import organizationRouter from "./routes/organizationRouter";
+import paymeRouter, { paymeWebhookRouter } from "./routes/paymeRouter";
 import contactRouter from "./routes/contactRouter";
 import tenderBoardRouter from "./routes/tenderBoardRouter";
 import contactTypeRoutes from "./routes/contactTypeRoutes"; // הייבוא של הקובץ שיצרת
@@ -55,6 +56,7 @@ app.use(compression());
 
 // הגדרה ל-50 מגה-בייט כדי להיות בטוחים
 app.use(express.json({ limit: "50mb" }));
+// PayMe's Sale Callback (webhook) is posted as x-www-form-urlencoded.
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 app.use(requestLogger);
@@ -83,7 +85,14 @@ app.use("/proxy-key", proxyKeyRouter); // User's own proxy key management
 app.use("/professional-profile", professionalProfileRouter); // User's own professional profile (tender board)
 app.use("/admin/stats", adminStatsRouter); // Admin stats already has auth middleware
 app.use("/prompts", authenticateToken, promptRouter); // Prompt management (admin routes protected in router)
+// paymeWebhookRouter must be mounted before organizationRouter: its route
+// is intentionally public (PayMe cannot carry our auth token), but
+// organizationRouter applies authenticateToken to every /organizations/*
+// path via a pathless router.use(), which would otherwise shadow it and
+// 401 every PayMe callback before it reaches the handler.
+app.use("/organizations", paymeWebhookRouter); // PayMe webhook (public, see paymeRouter.ts)
 app.use("/organizations", organizationRouter); // Organization management (auth middleware in router)
+app.use("/organizations", paymeRouter); // PayMe wallet top-up (initiate/status - auth middleware in router)
 app.use("/contact", contactRouter); // Contact form (requires authentication)
 app.use("/contact-types", contactTypeRoutes); // Contact form types
 app.use("/articles", articlesRouter);

@@ -431,6 +431,10 @@ export async function topUpOrganizationWalletHandler(
   res: Response
 ) {
   try {
+    if (process.env.NODE_ENV === "production") {
+      return res.status(404).json({ error: "Not found" });
+    }
+
     const user = (req as any).user;
     const orgId = req.params.id;
     const { amount } = req.body;

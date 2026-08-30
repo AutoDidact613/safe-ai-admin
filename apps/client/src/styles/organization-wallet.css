@@ -195,6 +195,27 @@
   border-radius: 10px;
   cursor: pointer;
 }
+
+/* Visually hidden but still announced by screen readers - used for form
+   labels where the placeholder already carries the visible hint. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.topup-error {
+  color: #c32b2b;
+  font-size: 13px;
+  margin: 0;
+  flex-basis: 100%;
+}
   
   .wallet-title {
     margin: 0 0 10px 0;

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { createOrganizationMember, getMyOrganization } from "../features/organizations/api/organizationApi";
+import { apiCall, API_ENDPOINTS } from "../config/api";
 import "../styles/organization-wallet.css";
 
 interface User {
@@ -39,6 +40,7 @@ export default function OrganizationUsersPage() {
 
   const [topUpAmount, setTopUpAmount] = useState<number | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [topUpError, setTopUpError] = useState<string | null>(null);
 
   const [isEditingOrg, setIsEditingOrg] = useState(false);
   const [editName, setEditName] = useState("");
@@ -123,39 +125,22 @@ export default function OrganizationUsersPage() {
 
     try {
       setIsSubmitting(true);
+      setTopUpError(null);
 
-      const token = localStorage.getItem("accessToken");
-
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/organizations/${organization._id}/top-up`,
-        { amount: Number(topUpAmount) },
+      const { iframeUrl } = await apiCall<{ iframeUrl: string; requestId: string }>(
+        API_ENDPOINTS.payme.initiate(organization._id),
         {
-          headers: { Authorization: `Bearer ${token}` },
+          method: "POST",
+          body: JSON.stringify({ amount: Number(topUpAmount) }),
         }
       );
 
-      alert(
-        `הארנק נטען בהצלחה! יתרה חדשה: $${response.data.organization.walletBalance}`
-      );
-
-      setOrganization(response.data.organization);
-      setTopUpAmount("");
+      // Hand off to PayMe - it redirects back to our success/fail page
+      // (see PaymeResultPage.tsx) once the payment is done.
+      window.location.href = iframeUrl;
     } catch (err: unknown) {
-      console.error("Error topping up wallet:", err);
-
-      if (axios.isAxiosError(err)) {
-        const errorMsg =
-          err.response?.data?.error ||
-          err.response?.data?.message ||
-          "נכשל הטעינה לארנק";
-
-        alert(errorMsg);
-      } else if (err instanceof Error) {
-        alert(err.message);
-      } else {
-        alert("נכשל הטעינה לארנק");
-      }
-    } finally {
+      console.error("Error initiating wallet top-up:", err);
+      setTopUpError(err instanceof Error ? err.message : "נכשלה יצירת בקשת התשלום");
       setIsSubmitting(false);
     }
   };
@@ -360,7 +345,11 @@ export default function OrganizationUsersPage() {
             </div>
 
             <form onSubmit={handleTopUp} className="topup-form">
+              <label htmlFor="topup-amount" className="sr-only">
+                סכום להטענה בשקלים
+              </label>
               <input
+                id="topup-amount"
                 type="number"
                 min="1"
                 dir="rtl"
@@ -373,6 +362,11 @@ export default function OrganizationUsersPage() {
               <button type="submit" disabled={isSubmitting} className="topup-button">
                 {isSubmitting ? "מעבד..." : "הטען"}
               </button>
+              {topUpError && (
+                <p className="topup-error" aria-live="polite">
+                  {topUpError}
+                </p>
+              )}
             </form>
           </div>
         </div>

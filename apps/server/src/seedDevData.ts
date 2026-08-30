@@ -6,7 +6,8 @@
  * Creates, if not already present:
  *   - 4 users: 1 admin, 1 org_owner, 2 regular users - all email-verified
  *   - 1 approved organization, owned by the org_owner, with the 2 regular
- *     users attached as members
+ *     users attached as members, a non-zero walletBalance, and one
+ *     WalletTransaction per PayMe status (pending/completed/failed)
  *   - 1 approved + public AI profile named "foo", scoped to allow
  *     programming/technical discussion instead of blocking it
  *   - 1 BYOK provider key (placeholder value) for the first regular user,
@@ -27,7 +28,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { User } from "./models/user";
-import { Organization, AIProfile } from "./models";
+import { Organization, AIProfile, WalletTransaction } from "./models";
 import { ProviderKey } from "./models/providerKey";
 import {
   encryptSecret,
@@ -45,6 +46,24 @@ const DEV_SEED_PASSWORD = "Dev-Seed-Pass-1!";
 
 const DEV_SEED_ORG_NAME = "Foo Org";
 const DEV_SEED_PROFILE_NAME = "foo";
+
+// Non-zero so the wallet card and PayMe status/history views have something
+// to show without requiring a real top-up first.
+const DEV_SEED_ORG_WALLET_BALANCE = 250;
+
+// Fixed requestIds (not crypto.randomUUID()) so re-running the seed finds
+// these by their natural key instead of creating duplicates every time -
+// same upsert-by-natural-key convention as the rest of this file.
+const DEV_SEED_WALLET_TRANSACTIONS: Array<{
+  requestId: string;
+  amount: number;
+  status: "pending" | "completed" | "failed";
+  payMeTransactionId?: string;
+}> = [
+  { requestId: "seed-payme-pending", amount: 40, status: "pending" },
+  { requestId: "seed-payme-completed", amount: 100, status: "completed", payMeTransactionId: "seed-payme-txn-completed" },
+  { requestId: "seed-payme-failed", amount: 25, status: "failed" },
+];
 
 // Obvious placeholder - not shaped like a real provider key, and must never
 // be replaced with one. Real keys are added by the user via /provider-keys.
@@ -110,6 +129,7 @@ async function upsertSeedOrganization(ownerId: any): Promise<any> {
     description: "Seed organization for local development and testing.",
     ownerId,
     status: "approved",
+    walletBalance: DEV_SEED_ORG_WALLET_BALANCE,
   });
 
   console.log(`✓ Created organization: ${DEV_SEED_ORG_NAME}`);
@@ -161,6 +181,34 @@ async function upsertSeedProfile(creator: { id: string; email: string }): Promis
   return profile;
 }
 
+/**
+ * Seeds one WalletTransaction per status (pending/completed/failed) against
+ * the seed organization, so the top-up form, PaymeResultPage, and the
+ * /wallet/payme/status/:transactionId endpoint all have realistic data to
+ * develop and demo against without needing a real PayMe callback (SCRUM-243).
+ */
+async function upsertSeedWalletTransactions(organizationId: any): Promise<void> {
+  for (const spec of DEV_SEED_WALLET_TRANSACTIONS) {
+    const existing = await WalletTransaction.findOne({ requestId: spec.requestId });
+    if (existing) {
+      console.log(`↷ WalletTransaction already exists, skipping: ${spec.requestId}`);
+      continue;
+    }
+
+    await WalletTransaction.create({
+      organizationId,
+      requestId: spec.requestId,
+      amount: spec.amount,
+      currency: "ILS",
+      status: spec.status,
+      ...(spec.payMeTransactionId ? { payMeTransactionId: spec.payMeTransactionId } : {}),
+      ...(spec.status !== "pending" ? { completedAt: new Date() } : {}),
+    });
+
+    console.log(`✓ Created WalletTransaction (${spec.status}): ${spec.requestId}`);
+  }
+}
+
 async function upsertSeedProviderKey(userId: any): Promise<any> {
   const existing = await ProviderKey.findOne({ userId, provider: "openai" });
   if (existing) {
@@ -198,6 +246,8 @@ async function main() {
       await orgOwner.save();
     }
     await attachMembers(organization._id, [userOne._id, userTwo._id]);
+
+    await upsertSeedWalletTransactions(organization._id);
 
     await upsertSeedProfile({ id: String(admin._id), email: admin.email });
 
