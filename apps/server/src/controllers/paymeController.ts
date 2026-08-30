@@ -36,7 +36,12 @@ export async function initiatePaymeTopUpHandler(req: Request<{ id: string }>, re
     const orgId = req.params.id;
     const { amount, currency } = req.body;
 
-    if (amount === undefined || typeof amount !== "number" || amount * 100 < MIN_SALE_PRICE_AGOROT) {
+    if (
+      amount === undefined ||
+      typeof amount !== "number" ||
+      !Number.isFinite(amount) ||
+      amount * 100 < MIN_SALE_PRICE_AGOROT
+    ) {
       return res
         .status(400)
         .json({ error: `A valid amount of at least ${MIN_SALE_PRICE_AGOROT / 100} is required` });
@@ -88,7 +93,7 @@ export async function paymeStatusHandler(req: Request<{ id: string; transactionI
   try {
     if (!(await isAdminOrOwner(req, res))) return;
 
-    const transaction = await getWalletTopUpStatus(req.params.transactionId);
+    const transaction = await getWalletTopUpStatus(req.params.transactionId, req.params.id);
     if (!transaction) {
       return res.status(404).json({ error: "Transaction not found" });
     }

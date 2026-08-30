@@ -34,6 +34,10 @@ export async function findByRequestId(requestId: string) {
   return WalletTransaction.findOne({ requestId }).lean();
 }
 
+export async function findByRequestIdAndOrganization(requestId: string, organizationId: string) {
+  return WalletTransaction.findOne({ requestId, organizationId }).lean();
+}
+
 /**
  * Atomically marks a pending transaction as completed, only if it hasn't
  * already been resolved (completed or failed) by an earlier webhook
@@ -43,7 +47,7 @@ export async function findByRequestId(requestId: string) {
  */
 export async function markCompletedIfPending(
   requestId: string,
-  payMeTransactionId: string,
+  payMeTransactionId: string | undefined,
   rawWebhookPayload: unknown,
 ) {
   try {
@@ -52,7 +56,11 @@ export async function markCompletedIfPending(
       {
         $set: {
           status: "completed",
-          payMeTransactionId,
+          // Omitted entirely (rather than set to "" or null) when PayMe
+          // didn't send one, so the unique+sparse index on this field -
+          // which only exempts missing/null values, not empty strings -
+          // doesn't collide across two callbacks that both lack it.
+          ...(payMeTransactionId ? { payMeTransactionId } : {}),
           rawWebhookPayload,
           completedAt: new Date(),
         },

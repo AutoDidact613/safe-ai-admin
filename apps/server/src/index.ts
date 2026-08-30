@@ -14,7 +14,7 @@ import adminStatsRouter from "./routes/adminStatsRouter";
 import proxyKeyRouter from "./routes/proxyKeyRouter";
 import promptRouter from "./routes/promptRouter";
 import organizationRouter from "./routes/organizationRouter";
-import paymeRouter from "./routes/paymeRouter";
+import paymeRouter, { paymeWebhookRouter } from "./routes/paymeRouter";
 import contactRouter from "./routes/contactRouter";
 import tenderBoardRouter from "./routes/tenderBoardRouter";
 import contactTypeRoutes from "./routes/contactTypeRoutes"; // הייבוא של הקובץ שיצרת
@@ -83,8 +83,14 @@ app.use("/provider-keys", authenticateToken, providerKeyRouter);
 app.use("/proxy-key", proxyKeyRouter); // User's own proxy key management
 app.use("/admin/stats", adminStatsRouter); // Admin stats already has auth middleware
 app.use("/prompts", authenticateToken, promptRouter); // Prompt management (admin routes protected in router)
+// paymeWebhookRouter must be mounted before organizationRouter: its route
+// is intentionally public (PayMe cannot carry our auth token), but
+// organizationRouter applies authenticateToken to every /organizations/*
+// path via a pathless router.use(), which would otherwise shadow it and
+// 401 every PayMe callback before it reaches the handler.
+app.use("/organizations", paymeWebhookRouter); // PayMe webhook (public, see paymeRouter.ts)
 app.use("/organizations", organizationRouter); // Organization management (auth middleware in router)
-app.use("/organizations", paymeRouter); // PayMe wallet top-up (webhook route excluded from auth, see paymeRouter.ts)
+app.use("/organizations", paymeRouter); // PayMe wallet top-up (initiate/status - auth middleware in router)
 app.use("/contact", contactRouter); // Contact form (requires authentication)
 app.use("/contact-types", contactTypeRoutes); // Contact form types
 app.use("/articles", articlesRouter);

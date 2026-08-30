@@ -34,7 +34,7 @@ export async function initiateWalletTopUp(
   amount: number,
   currency = "ILS",
 ): Promise<InitiateTopUpResult> {
-  if (Math.round(amount * 100) < MIN_SALE_PRICE_AGOROT) {
+  if (!Number.isFinite(amount) || Math.round(amount * 100) < MIN_SALE_PRICE_AGOROT) {
     return { success: false, error: `Amount must be at least ${MIN_SALE_PRICE_AGOROT / 100} ${currency}` };
   }
 
@@ -151,7 +151,11 @@ export async function processWalletTopUpWebhook(body: PaymeSaleCallbackBody): Pr
   }
 
   const paymeSuccess = body.notify_type === "sale-complete" && String(body.status_code) === "0";
-  const payMeTransactionId = body.payme_transaction_id || "";
+  // Left undefined (never "") when PayMe omits it, so the model's
+  // unique+sparse index on payMeTransactionId - which only exempts
+  // missing/null values, not empty strings - doesn't collide across two
+  // callbacks that both lack this field.
+  const payMeTransactionId = body.payme_transaction_id || undefined;
 
   if (!paymeSuccess) {
     await walletTransactionRepo.markFailedIfPending(requestId, body);
@@ -182,6 +186,6 @@ export async function processWalletTopUpWebhook(body: PaymeSaleCallbackBody): Pr
   return { handled: true };
 }
 
-export async function getWalletTopUpStatus(requestId: string) {
-  return walletTransactionRepo.findByRequestId(requestId);
+export async function getWalletTopUpStatus(requestId: string, organizationId: string) {
+  return walletTransactionRepo.findByRequestIdAndOrganization(requestId, organizationId);
 }
