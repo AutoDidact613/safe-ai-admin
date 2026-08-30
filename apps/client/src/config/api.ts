@@ -73,11 +73,14 @@ export const API_ENDPOINTS = {
     smartSearch: `${API_BASE_URL}/tender-board/smart-search`,
     getAIApplicationTypes: `${API_BASE_URL}/tender-board/ai-application-types`,
     getProductTypes: `${API_BASE_URL}/tender-board/product-types`,
+    getOne: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
     update: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
     close:  (id: string) => `${API_BASE_URL}/tender-board/${id}/close`,
     viewOffers: (id: string) => `${API_BASE_URL}/tender-board/${id}/view-offers`,
     delete: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
     apply: (id: string) => `${API_BASE_URL}/tender-board/${id}/apply`,
+    generateSpecification: (id: string) => `${API_BASE_URL}/tender-board/${id}/generate-specification-request`,
+    publishSpecification: (id: string) => `${API_BASE_URL}/tender-board/${id}/specification/publish`,
   },
   // Upload endpoints
   upload: {

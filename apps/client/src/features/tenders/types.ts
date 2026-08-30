@@ -24,6 +24,25 @@ export interface Applicant {
   isViewed?: boolean
 }
 
+export interface TenderReference {
+  title: string
+  url: string
+  description?: string
+}
+
+export type TenderSpecificationStatus = 'pending' | 'generating' | 'ready' | 'failed'
+
+export interface TenderSpecification {
+  status: TenderSpecificationStatus
+  techStackRecommendation?: string
+  openSourceReferences?: TenderReference[]
+  readingSources?: TenderReference[]
+  document?: string
+  errorMessage?: string
+  generatedAt?: string
+  isPublished?: boolean
+}
+
 export interface Tender {
   id: string
   title: string
@@ -39,6 +58,7 @@ export interface Tender {
   additionalDetails?: string
   applicants?: Applicant[]
   domains?: string[]
+  specification?: TenderSpecification
 }
 
 export interface RawTender {
@@ -56,4 +76,5 @@ export interface RawTender {
   wantsEmails?: boolean
   additionalDetails?: string
   applicants?: Applicant[]
+  specification?: TenderSpecification
 }

@@ -12,8 +12,12 @@ import {
   smartSearchTendersHandler,
   closeTenderHandler,
   viewTenderOffersHandler,
+  getTenderAgentContextHandler,
+  saveTenderSpecificationHandler,
+  requestTenderSpecificationHandler,
+  publishTenderSpecificationHandler,
 } from "../controllers/tenderBoardController";
-import { authenticateToken } from "../middleware/auth";
+import { authenticateToken, requireAdmin } from "../middleware/auth";
 
 const router = express.Router();
 
@@ -37,5 +41,13 @@ router.patch("/:id/close", closeTenderHandler);
 router.patch("/:id/view-offers", viewTenderOffersHandler);
 router.delete("/:id", deleteTenderHandler);
 router.post("/:id/apply", applyToTenderHandler);
+
+// אפיון אוטומטי + המלצת פיתוח (SCRUM-287/291/293)
+// שני אלה agent-facing בלבד - טוקן שירות (JWT אדמין), כמו אצל inquiry-agent/log-agent
+router.get("/:id/agent-context", requireAdmin, getTenderAgentContextHandler);
+router.post("/:id/specification", requireAdmin, saveTenderSpecificationHandler);
+// אלה מופעלים מה-UI ע"י בעל המכרז/אדמין (נבדק בתוך ה-handler עצמו)
+router.post("/:id/generate-specification-request", requestTenderSpecificationHandler);
+router.patch("/:id/specification/publish", publishTenderSpecificationHandler);
 
 export default router;
