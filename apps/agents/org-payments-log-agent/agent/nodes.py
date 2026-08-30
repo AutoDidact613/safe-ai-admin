@@ -31,10 +31,13 @@ _TOPUP_ANOMALY_WINDOW = timedelta(hours=24)
 def fetch_node(state: GraphState) -> dict:
     """
     LangGraph node that fetches organization/payment log records and adds
-    them to the state under "records".
+    them to the state under "records". Reads an optional "start_date"/
+    "end_date" from the initial state (set by cli.py from CLI args).
     """
     try:
-        records = fetch_org_payment_logs()
+        records = fetch_org_payment_logs(
+            start_date=state.get("start_date"), end_date=state.get("end_date")
+        )
     except PyMongoError as e:
         raise RuntimeError(
             "Failed to connect to the database while fetching organization/payment "
@@ -179,3 +182,23 @@ def guardrails_node(state: GraphState) -> dict:
         str(a["organization_id"]) for a in state.get("anomalies", []) if a.get("organization_id")
     }
     return {"summary": _redact_unknown_ids(summary, known_org_ids)}
+
+
+def present_node(state: GraphState) -> dict:
+    """
+    LangGraph node that produces the final text report shown to the admin.
+    Two shapes, depending on the Gate's outcome: a short "all clear" message,
+    or a detailed report built from the (guarded) LLM summary plus the raw
+    anomaly list.
+    """
+    anomalies = state.get("anomalies", [])
+    if not anomalies:
+        return {"report": "✅ הכל תקין — לא נמצאו חריגות בטווח שנבדק."}
+
+    lines = ["⚠️ נמצאו חריגות:", "", state.get("summary", ""), "", "פירוט:"]
+    for anomaly in anomalies:
+        lines.append(
+            f"- ארגון {anomaly['organization_id']}: "
+            f"{anomaly['count']} טעינות ארנק בין {anomaly['window_start']} ל-{anomaly['window_end']}"
+        )
+    return {"report": "\n".join(lines)}

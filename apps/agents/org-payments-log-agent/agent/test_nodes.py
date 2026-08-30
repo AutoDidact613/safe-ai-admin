@@ -6,7 +6,9 @@ from nodes import (
     classify_event_type,
     classify_node,
     evaluator_node,
+    fetch_node,
     guardrails_node,
+    present_node,
     summarize_node,
 )
 
@@ -226,3 +228,43 @@ def test_guardrails_node_no_summary_is_noop():
     assert guardrails_node({"anomalies": []}) == {}
 
 
+# ---------------------------------------------------------------------------
+# fetch_node: optional start_date/end_date threading (added for cli.py, Story 3)
+# ---------------------------------------------------------------------------
+
+
+def test_fetch_node_passes_date_range_from_state():
+    start = datetime(2026, 8, 1)
+    end = datetime(2026, 8, 31)
+    with patch("nodes.fetch_org_payment_logs") as mock_fetch:
+        mock_fetch.return_value = []
+        fetch_node({"start_date": start, "end_date": end})
+        mock_fetch.assert_called_once_with(start_date=start, end_date=end)
+
+
+# ---------------------------------------------------------------------------
+# present_node
+# ---------------------------------------------------------------------------
+
+
+def test_present_node_all_clear_report():
+    result = present_node({"anomalies": []})
+    assert "הכל תקין" in result["report"]
+
+
+def test_present_node_detailed_report_includes_summary_and_anomaly_details():
+    state = {
+        "summary": "Something looks off.",
+        "anomalies": [
+            {
+                "organization_id": "org-1",
+                "count": 3,
+                "window_start": datetime(2026, 8, 1, 0, 0),
+                "window_end": datetime(2026, 8, 1, 20, 0),
+            }
+        ],
+    }
+    result = present_node(state)
+    assert "Something looks off." in result["report"]
+    assert "org-1" in result["report"]
+    assert "3" in result["report"]
