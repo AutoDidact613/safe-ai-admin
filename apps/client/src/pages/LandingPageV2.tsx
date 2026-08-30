@@ -25,6 +25,7 @@ interface Banner {
   description: string;
   status: BannerStatus;
   onClick: () => void;
+  featured?: boolean;
 }
 
 interface ModalContent {
@@ -136,6 +137,9 @@ export default function LandingPageV2() {
 
   const handleForumClick = () => handleProtectedNav("/forum", "פורום זהירות AI");
   const handleNewsClick = () => handleProtectedNav("/ai-news", "עמוד החדשות");
+  // The route itself isn't gated, but every API call behind it requires a
+  // token — without one the page loads with no data. Same guard as forum/news.
+  const handleTenderBoardClick = () => handleProtectedNav("/tender-board", "לוח הפרויקטים");
 
   const handleHeroSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -143,6 +147,15 @@ export default function LandingPageV2() {
   };
 
   const banners: Banner[] = [
+    {
+      key: "forum",
+      icon: <ChatIcon />,
+      title: "פורום זהירות AI",
+      description: "דיון קהילתי בנושאי בטיחות ואחריות בשימוש בבינה מלאכותית",
+      status: "available",
+      onClick: handleForumClick,
+      featured: true,
+    },
     {
       key: "platform",
       icon: <ShieldIcon />,
@@ -158,14 +171,6 @@ export default function LandingPageV2() {
       description: "קורסים, חדשות, לוח פרויקטים, פורום ומדריכים",
       status: "updating",
       onClick: () => showUpdating("SafeAI Hub"),
-    },
-    {
-      key: "forum",
-      icon: <ChatIcon />,
-      title: "פורום זהירות AI",
-      description: "דיון קהילתי בנושאי בטיחות ואחריות בשימוש בבינה מלאכותית",
-      status: "available",
-      onClick: handleForumClick,
     },
     {
       key: "safechatbox",
@@ -210,7 +215,7 @@ export default function LandingPageV2() {
                   <Link to="/courses" onClick={() => setProductsMenuOpen(false)}>קורסים</Link>
                   <Link to="/recommended-guides" onClick={() => setProductsMenuOpen(false)}>מדריכים מומלצים</Link>
                   <button onClick={() => { setProductsMenuOpen(false); handleNewsClick(); }}>חדשות</button>
-                  <Link to="/tender-board" onClick={() => setProductsMenuOpen(false)}>לוח פרויקטים</Link>
+                  <button onClick={() => { setProductsMenuOpen(false); handleTenderBoardClick(); }}>לוח פרויקטים</button>
                 </div>
               </div>
             )}
@@ -270,7 +275,7 @@ export default function LandingPageV2() {
         {banners.map((banner) => (
           <button
             key={banner.key}
-            className={`lv2-banner-card lv2-status-${banner.status}`}
+            className={`lv2-banner-card lv2-status-${banner.status}${banner.featured ? " lv2-banner-featured" : ""}`}
             onClick={banner.onClick}
           >
             <div className="lv2-banner-icon">{banner.icon}</div>

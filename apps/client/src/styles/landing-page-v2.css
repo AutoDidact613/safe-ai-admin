@@ -424,6 +424,41 @@
   border-color: var(--lv2-accent);
 }
 
+/* The one card that's actually live end-to-end today — visually set apart
+   from "updating"/"soon" so it reads as the thing worth trying right now. */
+.lv2-banner-featured {
+  border: 2px solid var(--lv2-accent);
+  background: var(--lv2-accent-soft);
+}
+
+.lv2-banner-featured .lv2-banner-icon {
+  background: var(--lv2-accent);
+  color: #ffffff;
+  transition: transform 0.25s ease;
+}
+
+.lv2-banner-featured:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(16, 163, 127, 0.22);
+}
+
+.lv2-banner-featured:hover .lv2-banner-icon {
+  transform: scale(1.1) rotate(-4deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lv2-banner-featured,
+  .lv2-banner-featured .lv2-banner-icon {
+    transition: none;
+  }
+  .lv2-banner-featured:hover {
+    transform: none;
+  }
+  .lv2-banner-featured:hover .lv2-banner-icon {
+    transform: none;
+  }
+}
+
 /* Stats banner */
 .lv2-stats {
   display: grid;
