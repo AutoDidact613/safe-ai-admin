@@ -28,8 +28,8 @@ fetch_node -> tech_stack_node -> research_node -> spec_document_node -> save_nod
 
 - **`fetch_node`**: שולף את נתוני המכרז דרך `GET /tender-board/:id/agent-context`.
 - **`tech_stack_node`**: פונה ל-Gemini לקבלת שפה/framework מומלצים + נימוק קצר.
-- **`research_node`**: משתמש ב-Tavily Search API כדי לאתר עד 5 פרויקטי קוד פתוח
-  דומים ועד 5 מקורות קריאה. חיפוש שנכשל לא מפיל את כל הריצה — היא ממשיכה עם
+- **`research_node`**: משתמש ב-Google Custom Search API כדי לאתר עד 5 פרויקטי קוד
+  פתוח דומים ועד 5 מקורות קריאה. חיפוש שנכשל לא מפיל את כל הריצה — היא ממשיכה עם
   רשימה ריקה עבור הקטגוריה שנכשלה, ומסמנת `research_failed` כדי ש-`save_node`
   יוכל לציין את הכשל החלקי.
 - **`spec_document_node`**: מרכיב מסמך אפיון מינימלי (רקע, מטרות, milestones
@@ -47,9 +47,13 @@ fetch_node -> tech_stack_node -> research_node -> spec_document_node -> save_nod
 
 - **Gemini** דרך `google-genai` (`GEMINI_API_KEY`, `LLM_MODEL`) — ספק ה-LLM
   היחיד בפרויקט, בהתאמה ל-`inquiry-agent`/`log-agent`.
-- **Tavily Search API** (`TAVILY_API_KEY`) עבור `research_node` — אין יכולת
-  חיפוש אינטרנט מובנית בשום מקום אחר בריפו, כך שזהו ה-agent הראשון שתלוי בספק
-  חיפוש חיצוני.
+- **Google Custom Search API** (`GOOGLE_SEARCH_API_KEY`, `GOOGLE_SEARCH_ENGINE_ID`)
+  עבור `research_node` — אין יכולת חיפוש אינטרנט מובנית בשום מקום אחר בריפו, כך
+  שזהו ה-agent הראשון שתלוי בספק חיפוש חיצוני. האופציה "Search the entire web"
+  לא הייתה זמינה בחשבון ה-Google ששימש להקמת ה-Programmable Search Engine, כך
+  שהמנוע מוגדר לחפש ברשימת אתרים קבועה (github.com, gitlab.com, stackoverflow.com,
+  dev.to, medium.com, freecodecamp.org) במקום בכל האינטרנט — ראו `_OPEN_SOURCE_SITES`
+  ו-`_READING_SITES` ב-`nodes.py`.
 
 ## אימות (Auth)
 
