@@ -311,9 +311,6 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
             </div>
           )}
 
-          {formMessage && <div className="success-message">{formMessage}</div>}
-          {errorMessage && <div className="error-message">{errorMessage}</div>}
-
           <div className="form-group" style={{ marginTop: '16px' }}>
             <label htmlFor="tenderName">שם המכרז</label>
             <input
@@ -503,6 +500,9 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
             </label>
           </div>
         </div>
+
+        {formMessage && <div className="success-message">{formMessage}</div>}
+        {errorMessage && <div className="error-message">{errorMessage}</div>}
 
         <div className="form-actions">
           <button type="submit" className="button-green submit-button">
