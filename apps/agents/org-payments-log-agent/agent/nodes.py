@@ -106,3 +106,11 @@ def evaluator_node(state: GraphState) -> dict:
     """
     anomalies = _find_topup_anomalies(state.get("classified", []))
     return {"anomalies": anomalies}
+
+
+def anomalies_gate(state: GraphState) -> str:
+    """
+    The Gate: routes to the LLM-backed detailed report path when anomalies
+    were found, or straight to the short "all clear" report otherwise.
+    """
+    return "summarize" if state.get("anomalies") else "present"

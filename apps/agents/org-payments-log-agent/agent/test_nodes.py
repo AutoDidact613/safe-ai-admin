@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from nodes import classify_event_type, classify_node, evaluator_node
+from nodes import anomalies_gate, classify_event_type, classify_node, evaluator_node
 
 
 def test_classify_event_type_approval():
@@ -137,3 +137,19 @@ def test_evaluator_node_tracks_multiple_organizations_independently():
     result = evaluator_node(state)
     org_ids = {a["organization_id"] for a in result["anomalies"]}
     assert org_ids == {"org-1"}
+
+
+# ---------------------------------------------------------------------------
+# anomalies_gate
+# ---------------------------------------------------------------------------
+
+
+def test_anomalies_gate_routes_to_summarize_when_anomalies_found():
+    assert anomalies_gate({"anomalies": [{"organization_id": "org-1"}]}) == "summarize"
+
+
+def test_anomalies_gate_routes_to_present_when_no_anomalies():
+    assert anomalies_gate({"anomalies": []}) == "present"
+    assert anomalies_gate({}) == "present"
+
+
