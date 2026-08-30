@@ -414,7 +414,7 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
               styles={{
                 control: (base) => ({
                   ...base,
-                  borderColor: '#d1fae5',
+                  borderColor: '#DEEFF7',
                   borderWidth: '2px',
                   borderRadius: '6px',
                   minHeight: '40px',
@@ -425,7 +425,7 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
                   paddingLeft: '8px',
                   paddingRight: '8px',
                   boxSizing: 'border-box',
-                  '&:hover': { borderColor: '#10b981' }
+                  '&:hover': { borderColor: '#1C7AA6' }
                 }),
                 valueContainer: (base) => ({
                   ...base,
@@ -440,19 +440,19 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
                 menu: (base) => ({
                   ...base,
                   zIndex: 1050,
-                  border: '1px solid #10b981',
+                  border: '1px solid #1C7AA6',
                   boxShadow: '0 -4px 12px rgba(0,0,0,0.1)'
                 }),
                 multiValue: (base) => ({
                   ...base,
-                  backgroundColor: '#ecfdf5',
+                  backgroundColor: '#DEEFF7',
                   borderRadius: '4px',
-                  border: '1px solid #a7f3d0',
+                  border: '1px solid #A6C9D9',
                   margin: '2px'
                 }),
                 multiValueLabel: (base) => ({
                   ...base,
-                  color: '#065f46',
+                  color: '#135471',
                   fontWeight: 'bold',
                   fontSize: '13px'
                 }),
