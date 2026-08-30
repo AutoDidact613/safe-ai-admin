@@ -5,7 +5,11 @@ import { saveTenderSpecification } from "./tenderBoardService";
 
 const AGENT_DIR =
   process.env.TENDER_SPEC_AGENT_DIR || path.resolve(__dirname, "../../../agents/tender-spec-agent");
-const PYTHON_BIN = process.env.TENDER_SPEC_AGENT_PYTHON_BIN || "python3";
+// Windows installs of Python typically expose only "python" on PATH, not
+// "python3" (unlike Linux/Mac, where "python" is often absent or points at
+// Python 2) - default per-platform so this works out of the box on either.
+const PYTHON_BIN =
+  process.env.TENDER_SPEC_AGENT_PYTHON_BIN || (process.platform === "win32" ? "python" : "python3");
 const RUN_TIMEOUT_MS = Number(process.env.TENDER_SPEC_AGENT_TIMEOUT_MS) || 5 * 60 * 1000;
 
 /**
