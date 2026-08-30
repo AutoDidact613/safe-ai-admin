@@ -61,6 +61,21 @@ fetch_node -> tech_stack_node -> research_node -> spec_document_node -> save_nod
 קונבנציה שכבר קיימת ב-`inquiry-agent`/`log-agent` (עדיין אין מנגנון
 service-account ייעודי בשרת — מתועד כעבודה עתידית, לא חלק מסט הכרטיסים הנוכחי).
 
+## פיתוח מאחורי תוכנת סינון רשת (SSL interception)
+
+תוכנות סינון מסוימות (כמו Netfree) מיירטות תעבורת HTTPS ומחליפות את התעודה —
+מה שגורם לשגיאות כמו `[SSL: CERTIFICATE_VERIFY_FAILED] ... key usage extension`
+בקריאות ל-Gemini/LangSmith/Google Search. שתי דרכים להתמודד:
+
+1. **הדרך הבטוחה (מומלצת):** להוסיף את תעודת השורש של הרשת ל-CA bundle של
+   `certifi` — ראו `add_trusted_cert.py` בתיקייה הזו (סקריפט עזר: מייצאים את
+   התעודה מ-Windows Certificate Manager, ואז `python add_trusted_cert.py <נתיב לתעודה>`).
+2. **קיצור דרך זמני, לא בטוח, פיתוח מקומי בלבד:** `DISABLE_SSL_VERIFY_INSECURE_DEV_ONLY=true`
+   ב-`.env` (ראו `.env.example`). זה מכבה **לגמרי** את בדיקת תעודות ה-TLS לכל
+   קריאת HTTPS שהתהליך הזה עושה — לא רק לקריאה אחת. **חובה להסיר את זה לפני
+   כל deploy ל-staging/production** — `grep -r DISABLE_SSL_VERIFY_INSECURE_DEV_ONLY`
+   על כל הריפו וקבצי `.env` לפני deploy, ולוודא שאין אף הפניה נשארת.
+
 ## שימוש ב-CLI
 
 ```
