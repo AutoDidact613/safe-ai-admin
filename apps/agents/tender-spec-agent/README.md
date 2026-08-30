@@ -1,78 +1,74 @@
 # SafeAI Tender Spec Agent
 
-Standalone LangGraph agent that, for a single tender, produces a technology-stack
-recommendation, up to 5 similar open-source project links, up to 5 reading sources,
-and an initial specification document.
+Agent עצמאי מבוסס LangGraph, שעבור מכרז בודד מפיק המלצה טכנולוגית, עד 5 קישורים
+לפרויקטי קוד פתוח דומים, עד 5 מקורות קריאה, ומסמך אפיון ראשוני.
 
-This agent has no direct dependency on `client/` or `server/` code and no shared
-database. It integrates with the existing SafeAI-613 site exclusively through the
-server's REST API (`SAFEAI_API_BASE_URL`), the same pattern as
-`apps/agents/inquiry-agent` and `apps/agents/log-agent`.
+ל-agent הזה אין תלות ישירה בקוד של `client/` או `server/`, ואין לו בסיס נתונים
+משותף. ההתממשקות עם אתר SafeAI-613 נעשית אך ורק דרך ה-REST API של השרת
+(`SAFEAI_API_BASE_URL`) — אותו דפוס בדיוק כמו ב-`apps/agents/inquiry-agent`
+וב-`apps/agents/log-agent`.
 
-## Setup
+## התקנה
 
 ```
 python -m venv .venv
 .venv/Scripts/activate   # Windows
 pip install -r requirements.txt
-cp .env.example .env     # then fill in real values
+cp .env.example .env     # ואז למלא ערכים אמיתיים
 ```
 
-## Graph
+## הגרף (Graph)
 
 ```
 fetch_node -> tech_stack_node -> research_node -> spec_document_node -> save_node
 ```
 
-No HITL gates and no checkpointer (unlike `inquiry-agent`) - each run is a single,
-one-shot pass for one tender, started and finished within one CLI invocation.
+בשונה מ-`inquiry-agent`, אין כאן HITL gates ואין checkpointer — כל ריצה היא
+מעבר חד-פעמי (one-shot) עבור מכרז בודד, שמתחיל ומסתיים בתוך הפעלת CLI אחת.
 
-- `fetch_node`: pulls tender data via `GET /tender-board/:id/agent-context`.
-- `tech_stack_node`: asks Gemini for a recommended language/framework + short reasoning.
-- `research_node`: uses the Tavily Search API to find up to 5 similar open-source
-  projects and up to 5 reading sources. A failed search does not fail the whole
-  run - it continues with an empty list for that category and flags
-  `research_failed` so `save_node` can note the partial failure.
-- `spec_document_node`: assembles a minimal spec document (background, goals,
-  proposed milestones, initial scope) from the state gathered so far.
-- `save_node`: writes the full result back via `POST /tender-board/:id/specification`.
+- **`fetch_node`**: שולף את נתוני המכרז דרך `GET /tender-board/:id/agent-context`.
+- **`tech_stack_node`**: פונה ל-Gemini לקבלת שפה/framework מומלצים + נימוק קצר.
+- **`research_node`**: משתמש ב-Tavily Search API כדי לאתר עד 5 פרויקטי קוד פתוח
+  דומים ועד 5 מקורות קריאה. חיפוש שנכשל לא מפיל את כל הריצה — היא ממשיכה עם
+  רשימה ריקה עבור הקטגוריה שנכשלה, ומסמנת `research_failed` כדי ש-`save_node`
+  יוכל לציין את הכשל החלקי.
+- **`spec_document_node`**: מרכיב מסמך אפיון מינימלי (רקע, מטרות, milestones
+  מוצעים, היקף ראשוני) מתוך המידע שנאסף עד כה.
+- **`save_node`**: כותב את התוצאה המלאה בחזרה דרך `POST /tender-board/:id/specification`.
 
-## Failure handling
+## טיפול בכשלים
 
-A failure in `fetch_node`/`tech_stack_node` (server unreachable, invalid token,
-Gemini error) is caught in `run_agent.py`, which reports `status: "failed"`
-directly to the server before exiting non-zero - so the tender never stays stuck
-on `"generating"`. This is a second line of defense on top of the server-side
-runner's own timeout handling (SCRUM-293).
+כשל ב-`fetch_node`/`tech_stack_node` (שרת לא זמין, טוקן לא תקין, שגיאת Gemini)
+נתפס ב-`run_agent.py`, שמדווח `status: "failed"` ישירות לשרת לפני יציאה עם קוד
+שגיאה — כך שהמכרז לעולם לא נשאר תקוע במצב `"generating"`. זהו קו הגנה שני,
+בנוסף למנגנון ה-timeout של ה-runner בצד השרת (SCRUM-293).
 
-## LLM / search providers
+## ספקי LLM וחיפוש
 
-- Gemini via `google-genai` (`GEMINI_API_KEY`, `LLM_MODEL`) - the project's only
-  LLM provider, consistent with `inquiry-agent`/`log-agent`.
-- Tavily Search API (`TAVILY_API_KEY`) for `research_node` - there is no built-in
-  web-search capability anywhere else in this repo, so this agent is the first to
-  depend on an external search provider.
+- **Gemini** דרך `google-genai` (`GEMINI_API_KEY`, `LLM_MODEL`) — ספק ה-LLM
+  היחיד בפרויקט, בהתאמה ל-`inquiry-agent`/`log-agent`.
+- **Tavily Search API** (`TAVILY_API_KEY`) עבור `research_node` — אין יכולת
+  חיפוש אינטרנט מובנית בשום מקום אחר בריפו, כך שזהו ה-agent הראשון שתלוי בספק
+  חיפוש חיצוני.
 
-## Auth
+## אימות (Auth)
 
-`SAFEAI_AGENT_API_TOKEN` is a personal admin JWT used as a service token, the
-same convention `inquiry-agent`/`log-agent` already use (there is no dedicated
-service-account mechanism in the server yet - tracked as future work, not part
-of this ticket set).
+`SAFEAI_AGENT_API_TOKEN` הוא כרגע JWT אדמין אישי המשמש כטוקן שירות — אותה
+קונבנציה שכבר קיימת ב-`inquiry-agent`/`log-agent` (עדיין אין מנגנון
+service-account ייעודי בשרת — מתועד כעבודה עתידית, לא חלק מסט הכרטיסים הנוכחי).
 
-## CLI usage
+## שימוש ב-CLI
 
 ```
 python run_agent.py generate --tender-id <id>
 ```
 
-## Activation from the UI
+## הפעלה מה-UI
 
-This agent is not deployed as a long-running service. The server
-(`apps/server/src/services/tenderSpecAgentRunner.ts`) spawns
-`python run_agent.py generate --tender-id <id>` as a one-off subprocess when a
-tender owner/admin clicks the "generate specification" button - see SCRUM-293.
-Running this in a deployed environment (staging/production) requires the
-`server` container to have Python 3 plus this agent's `requirements.txt`
-installed; that Docker/CI packaging work is not part of this agent's code and
-is tracked separately.
+ה-agent הזה אינו פרוס כשירות שרץ ברקע (long-running service). השרת
+(`apps/server/src/services/tenderSpecAgentRunner.ts`) מריץ את
+`python run_agent.py generate --tender-id <id>` כתהליך subprocess חד-פעמי,
+כאשר בעל המכרז/אדמין לוחץ על כפתור "הפקת אפיון" — ראו SCRUM-293.
+כדי שזה יעבוד בסביבת staging/production, על קונטיינר ה-`server` להתקין גם
+Python 3 ואת התלויות מ-`requirements.txt` של ה-agent; עבודת ה-packaging הזו
+ב-Docker/CI אינה חלק מהקוד של ה-agent עצמו ומתועדת בנפרד.
