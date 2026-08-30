@@ -6,8 +6,8 @@
   padding: 0 24px 60px;
   position: relative;
 
-  /* Color tokens — deep petrol/navy neutral + a single muted brass accent.
-     Deliberately not the bright OpenAI green: this is SafeAI's own palette. */
+  /* Color tokens — kept as the existing site green for now (per request);
+     revisit once a final brand color is chosen for the whole site. */
   --lv2-ink: #16232a;
   --lv2-ink-soft: #3d4d54;
   --lv2-muted: #6b7a80;
@@ -15,12 +15,12 @@
   --lv2-line-soft: #eceae3;
   --lv2-surface: #ffffff;
   --lv2-canvas: #f6f5f1;
-  --lv2-accent: #1f4b52;
-  --lv2-accent-hover: #16373c;
-  --lv2-accent-soft: rgba(31, 75, 82, 0.08);
-  --lv2-gold: #a9782f;
-  --lv2-gold-hover: #8f6526;
-  --lv2-gold-soft: rgba(169, 120, 47, 0.1);
+  --lv2-accent: #10a37f;
+  --lv2-accent-hover: #0d8f6f;
+  --lv2-accent-soft: rgba(16, 163, 127, 0.08);
+  --lv2-gold: #10a37f;
+  --lv2-gold-hover: #0d8f6f;
+  --lv2-gold-soft: rgba(16, 163, 127, 0.1);
   --lv2-dark-panel: #16232a;
   --lv2-dark-panel-2: #1e2f37;
 }
@@ -532,11 +532,11 @@
   --lv2-line-soft: #23292c;
   --lv2-surface: #1a2226;
   --lv2-canvas: #14191c;
-  --lv2-accent: #4c9aa3;
-  --lv2-accent-hover: #63aeb6;
-  --lv2-accent-soft: rgba(76, 154, 163, 0.14);
-  --lv2-gold: #cf9c4e;
-  --lv2-gold-hover: #e0af62;
-  --lv2-gold-soft: rgba(207, 156, 78, 0.14);
+  --lv2-accent: #2fd6a7;
+  --lv2-accent-hover: #24b088;
+  --lv2-accent-soft: rgba(47, 214, 167, 0.14);
+  --lv2-gold: #2fd6a7;
+  --lv2-gold-hover: #24b088;
+  --lv2-gold-soft: rgba(47, 214, 167, 0.14);
   --lv2-dark-panel: #0e1416;
 }
