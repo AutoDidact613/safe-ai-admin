@@ -105,13 +105,16 @@ export default function LandingPageV2() {
     });
   };
 
-  // SafeAI Platform already exists (today's "איזור אישי"), but is intentionally
-  // not linked yet — it's being restructured and re-branded before connecting it here.
-  const showPlatformUpdating = () => {
+  // For products that already have real content behind them elsewhere in the
+  // app (SafeAI Platform → /safeai-ui, SafeAI Hub → courses/news/tender-board/
+  // guides/docs), but are intentionally not linked here yet because they're
+  // being restructured/unified first. Different from "coming soon", which
+  // means there's no code behind it at all yet.
+  const showUpdating = (name: string) => {
     setModal({
       icon: <ClockIcon />,
       title: "בעדכון",
-      message: "SafeAI Platform נמצא כרגע בשלבי עדכון ומיתוג מחדש. הקישור יתעדכן כשהעבודה תושלם.",
+      message: `${name} נמצא כרגע בשלבי עדכון ואיחוד. הקישור יתעדכן כשהעבודה תושלם.`,
     });
   };
 
@@ -141,15 +144,15 @@ export default function LandingPageV2() {
       title: "SafeAI Platform",
       description: "איזור אישי, תיעוד, יצירת קשר וניהול ארגונים",
       status: "updating",
-      onClick: showPlatformUpdating,
+      onClick: () => showUpdating("SafeAI Platform"),
     },
     {
       key: "hub",
       icon: <BookIcon />,
       title: "SafeAI Hub",
       description: "קורסים, חדשות, לוח פרויקטים, פורום ומדריכים",
-      status: "soon",
-      onClick: () => showComingSoon("SafeAI Hub"),
+      status: "updating",
+      onClick: () => showUpdating("SafeAI Hub"),
     },
     {
       key: "forum",
@@ -192,8 +195,8 @@ export default function LandingPageV2() {
               <div className="lv2-dropdown lv2-dropdown-products">
                 <div className="lv2-dropdown-col">
                   <span className="lv2-dropdown-heading">מוצרים</span>
-                  <button onClick={() => { setProductsMenuOpen(false); showPlatformUpdating(); }}>SafeAI Platform</button>
-                  <button onClick={() => { setProductsMenuOpen(false); showComingSoon("SafeAI Hub"); }}>SafeAI Hub</button>
+                  <button onClick={() => { setProductsMenuOpen(false); showUpdating("SafeAI Platform"); }}>SafeAI Platform</button>
+                  <button onClick={() => { setProductsMenuOpen(false); showUpdating("SafeAI Hub"); }}>SafeAI Hub</button>
                   <button onClick={() => { setProductsMenuOpen(false); showComingSoon("SafeChatbox"); }}>SafeChatbox</button>
                 </div>
                 <div className="lv2-dropdown-col">
@@ -252,7 +255,7 @@ export default function LandingPageV2() {
           <button className="lv2-chip" onClick={() => navigate("/login")}>כניסה לפלטפורמה</button>
           <button className="lv2-chip" onClick={handleForumClick}>פורום זהירות AI</button>
           <button className="lv2-chip" onClick={() => navigate("/register")}>הרשמה חדשה</button>
-          <button className="lv2-chip" onClick={() => showComingSoon("SafeAI Hub")}>SafeAI Hub</button>
+          <button className="lv2-chip" onClick={() => showUpdating("SafeAI Hub")}>SafeAI Hub</button>
         </div>
       </section>
 
@@ -309,8 +312,8 @@ export default function LandingPageV2() {
       <footer className="lv2-footer">
         <div className="lv2-footer-col">
           <span className="lv2-footer-heading">מוצרים</span>
-          <button onClick={showPlatformUpdating}>SafeAI Platform</button>
-          <button onClick={() => showComingSoon("SafeAI Hub")}>SafeAI Hub</button>
+          <button onClick={() => showUpdating("SafeAI Platform")}>SafeAI Platform</button>
+          <button onClick={() => showUpdating("SafeAI Hub")}>SafeAI Hub</button>
           <button onClick={() => showComingSoon("SafeChatbox")}>SafeChatbox</button>
           <button onClick={handleForumClick}>פורום זהירות AI</button>
         </div>

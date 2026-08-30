@@ -386,10 +386,12 @@
   margin: 0;
 }
 
+/* Fixed amber, independent of the brand accent color — a "not built yet"
+   status should read the same regardless of what the site's accent is. */
 .lv2-soon-tag {
   flex-shrink: 0;
-  background: var(--lv2-gold-soft);
-  color: var(--lv2-gold-hover);
+  background: #fef3c7;
+  color: #92400e;
   font-size: 11px;
   font-weight: 700;
   padding: 3px 10px;
