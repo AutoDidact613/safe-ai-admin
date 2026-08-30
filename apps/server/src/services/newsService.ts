@@ -1,12 +1,31 @@
 import { INews } from "../models/news";
 import { newsRepository } from "../repositories/newsRepository";
 import logger from "../logger";
+import { getPresignedViewUrl } from "../utils/s3Client";
+
+// ה-bucket שבו נשמרות תמונות החדשות חוסם קריאה ציבורית ישירה, לכן בכל
+// הגשה מוחלף ה-URL הקבוע בקישור צפייה חתום וזמני
+async function withResolvedImage(item: INews): Promise<INews> {
+  if (!item.imageUrl) return item;
+
+  try {
+    item.imageUrl = await getPresignedViewUrl(item.imageUrl);
+  } catch (error: any) {
+    logger.warn("Failed to sign news image URL", {
+      id: item._id,
+      error: error.message,
+    });
+  }
+
+  return item;
+}
 
 export const newsService = {
   // Get all news
   async getAllNews(page = 1, limit = 10): Promise<INews[]> {
     logger.info("Fetching all news");
-    return await newsRepository.findAll(page, limit);
+    const news = await newsRepository.findAll(page, limit);
+    return Promise.all(news.map(withResolvedImage));
   },
 
   // Get news by ID
@@ -18,7 +37,7 @@ export const newsService = {
       throw new Error("News not found");
     }
 
-    return news;
+    return withResolvedImage(news);
   },
 
   // Create news

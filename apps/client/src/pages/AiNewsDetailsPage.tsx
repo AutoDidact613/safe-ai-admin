@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { API_ENDPOINTS, apiCall } from "../config/api";
 import "../styles/news-page.css";
 
@@ -9,6 +11,7 @@ interface NewsItem {
   content: string;
   source?: string;
   tags?: string[];
+  imageUrl?: string;
   createdAt?: string;
 }
 
@@ -55,8 +58,8 @@ export default function AiNewsDetailsPage() {
 
   if (error) {
     return (
-      <div className="news-page-container">
-        <div className="news-card-wrapper">
+      <div className="news-details-page">
+        <div className="news-details-container">
           <div className="news-error-message">{error}</div>
         </div>
       </div>
@@ -68,35 +71,42 @@ export default function AiNewsDetailsPage() {
   }
 
   return (
-    <div className="news-page-container">
-      <div className="news-card-wrapper">
-        <div className="news-header-section">
-          <div className="news-header-content">
-            <h1 className="news-header-title">{news.title}</h1>
-            <div className="news-tags-row">
-              {news.tags?.map((tag) => (
-                <span key={tag} className="news-tag">
-                  #{tag}
-                </span>
-              ))}
-            </div>
-            <div className="news-item-meta">
-              <span className="news-date">
-                {new Date(news.createdAt || "").toLocaleDateString("he-IL", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+    <div className="news-details-page">
+      <div className="news-details-container">
+        <Link to="/ai-news" className="news-back-link">
+          → חזרה לחדשות
+        </Link>
+
+        {news.tags?.length ? (
+          <div className="news-details-eyebrow">
+            {news.tags.map((tag) => (
+              <span key={tag} className="news-tag">
+                #{tag}
               </span>
-            </div>
-            <p className="news-header-subtitle">
-              {news.source ? `מקור: ${news.source}` : "מקור: User"}
-            </p>
+            ))}
           </div>
+        ) : null}
+
+        <h1 className="news-header-title">{news.title}</h1>
+
+        <div className="news-byline">
+          <span className="news-byline-source">{news.source || "User"}</span>
+          <span className="news-byline-dot">·</span>
+          <span>{new Date(news.createdAt || "").toLocaleDateString("he-IL", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}</span>
         </div>
-        <article className="news-article-card">
-          <p className="news-article-content">{news.content}</p>
-        </article>
+
+        {news.imageUrl && (
+          <img src={news.imageUrl} alt={news.title} className="news-details-image" />
+        )}
+
+        <div className="news-article-content">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{news.content}</ReactMarkdown>
+        </div>
+
         <div className="news-details-footer">
           <Link to="/ai-news" className="btn-reset">
             חזרה לחדשות
