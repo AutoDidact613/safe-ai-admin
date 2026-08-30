@@ -6,6 +6,7 @@ from nodes import (
     classify_event_type,
     classify_node,
     evaluator_node,
+    guardrails_node,
     summarize_node,
 )
 
@@ -192,5 +193,36 @@ def test_summarize_node_returns_llm_text(client_cls):
     assert result == {
         "summary": "Organization org-1 had 3 wallet top-ups within 24 hours."
     }
+
+
+# ---------------------------------------------------------------------------
+# guardrails_node
+# ---------------------------------------------------------------------------
+
+
+def test_guardrails_node_passes_through_known_organization_id():
+    state = {
+        "summary": "Organization 507f1f77bcf86cd799439011 looks suspicious.",
+        "anomalies": [{"organization_id": "507f1f77bcf86cd799439011"}],
+    }
+    result = guardrails_node(state)
+    assert result == {
+        "summary": "Organization 507f1f77bcf86cd799439011 looks suspicious."
+    }
+
+
+def test_guardrails_node_redacts_unknown_id_like_token():
+    state = {
+        "summary": "User 507f1f77bcf86cd799439099 triggered this from org 507f1f77bcf86cd799439011.",
+        "anomalies": [{"organization_id": "507f1f77bcf86cd799439011"}],
+    }
+    result = guardrails_node(state)
+    assert result == {
+        "summary": "User [REDACTED] triggered this from org 507f1f77bcf86cd799439011."
+    }
+
+
+def test_guardrails_node_no_summary_is_noop():
+    assert guardrails_node({"anomalies": []}) == {}
 
 

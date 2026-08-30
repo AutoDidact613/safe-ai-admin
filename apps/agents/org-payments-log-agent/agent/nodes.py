@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 import json
+import re
 
 from google import genai
 from langsmith import traceable
@@ -149,3 +150,32 @@ def summarize_node(state: GraphState, agent_config: Config) -> dict:
     anomalies_json = json.dumps(state.get("anomalies", []), default=str)
     prompt = _SUMMARY_PROMPT_TEMPLATE.format(anomalies_json=anomalies_json)
     return {"summary": _call_llm(prompt, agent_config)}
+
+
+# Matches Mongo ObjectIds (24 hex chars) - e.g. a raw userId that must never be
+# shown to the admin unless it's one of the organization ids the report is
+# already, legitimately, about.
+_OBJECT_ID_PATTERN = re.compile(r"\b[0-9a-fA-F]{24}\b")
+
+
+def _redact_unknown_ids(text: str, known_ids: set) -> str:
+    return _OBJECT_ID_PATTERN.sub(
+        lambda m: m.group(0) if m.group(0) in known_ids else "[REDACTED]", text
+    )
+
+
+def guardrails_node(state: GraphState) -> dict:
+    """
+    LangGraph node that filters the LLM-generated summary before it's shown
+    to the admin: any id-like token that isn't one of the organization ids
+    already present in "anomalies" (i.e. anything the LLM may have
+    hallucinated or copied in from elsewhere) is redacted.
+    """
+    summary = state.get("summary")
+    if not summary:
+        return {}
+
+    known_org_ids = {
+        str(a["organization_id"]) for a in state.get("anomalies", []) if a.get("organization_id")
+    }
+    return {"summary": _redact_unknown_ids(summary, known_org_ids)}
