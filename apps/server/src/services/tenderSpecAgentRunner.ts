@@ -12,6 +12,13 @@ const PYTHON_BIN =
   process.env.TENDER_SPEC_AGENT_PYTHON_BIN || (process.platform === "win32" ? "python" : "python3");
 const RUN_TIMEOUT_MS = Number(process.env.TENDER_SPEC_AGENT_TIMEOUT_MS) || 5 * 60 * 1000;
 
+// Defense-in-depth: tenderId always matched an existing tender's _id/id in the
+// DB before this function is called (see requestTenderSpecificationHandler),
+// but we still validate the exact shape here before it reaches a shell:true
+// spawn (needed for Windows PATH resolution below), rather than relying only
+// on that earlier check.
+const SAFE_TENDER_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
+
 /**
  * מפעיל את tender-spec-agent (apps/agents/tender-spec-agent) כתהליך subprocess
  * נפרד, ללא חסימה של event loop השרת (SCRUM-293, אופציה 1 - runner קליל).
@@ -22,12 +29,6 @@ const RUN_TIMEOUT_MS = Number(process.env.TENDER_SPEC_AGENT_TIMEOUT_MS) || 5 * 6
  */
 export function triggerTenderSpecAgent(tenderId: string): void {
   logger.info("Triggering tender-spec-agent run", { tenderId, agentDir: AGENT_DIR });
-
-  const child = spawn(PYTHON_BIN, ["run_agent.py", "generate", "--tender-id", tenderId], {
-    cwd: AGENT_DIR,
-    env: process.env,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
 
   let settled = false;
   let stderr = "";
@@ -43,6 +44,23 @@ export function triggerTenderSpecAgent(tenderId: string): void {
       logger.error("Failed to mark tender specification as failed", { tenderId, error });
     }
   };
+
+  if (!SAFE_TENDER_ID_PATTERN.test(tenderId)) {
+    void markFailed(`Refusing to spawn agent for unexpected tender id shape: ${tenderId}`);
+    return;
+  }
+
+  // On Windows, Node's spawn() frequently fails to resolve "python"/"python3"
+  // via PATH even when the same command works fine in a regular terminal
+  // (a long-standing Node-on-Windows quirk with CreateProcess's PATH lookup) -
+  // routing through the shell (cmd.exe) fixes it by using Windows' own PATH
+  // resolution instead of Node's.
+  const child = spawn(PYTHON_BIN, ["run_agent.py", "generate", "--tender-id", tenderId], {
+    cwd: AGENT_DIR,
+    env: process.env,
+    stdio: ["ignore", "pipe", "pipe"],
+    shell: process.platform === "win32",
+  });
 
   const timer = setTimeout(() => {
     child.kill("SIGKILL");
