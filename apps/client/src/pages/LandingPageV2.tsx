@@ -98,6 +98,18 @@ export default function LandingPageV2() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Keyboard users (no mouse) need a way to close an open dropdown too.
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setProductsMenuOpen(false);
+        setLoginMenuOpen(false);
+      }
+    }
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, []);
+
   const showComingSoon = (name: string) => {
     setModal({
       icon: <ClockIcon />,
