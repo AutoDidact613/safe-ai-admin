@@ -33,6 +33,7 @@ import tagRoutes from './routes/tagRoutes';
 import uploadRouter from "./routes/uploadRoutes";
 import cookieParser from 'cookie-parser';
 import { initializeAutoPostBot } from './services/autoPostService';
+import { initializeAttachmentCleanupJob } from './services/attachmentService';
 
 const PORT = process.env.PORT || 3001;
 
@@ -117,6 +118,7 @@ async function start() {
       logger.info(`Server running on port ${PORT}`);
     });
     initializeAutoPostBot();
+    initializeAttachmentCleanupJob();
 
   } catch (err) {
     logger.error("Startup failed:", err);

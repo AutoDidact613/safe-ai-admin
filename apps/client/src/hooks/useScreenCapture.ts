@@ -11,12 +11,45 @@ const stopStream = (stream: MediaStream) => {
   window.focus();
 };
 
+const GRAB_FRAME_TIMEOUT_MS = 8000;
+
 // Grabs one frame from a live video track and encodes it as a PNG File.
 const grabFrame = (stream: MediaStream): Promise<File> =>
   new Promise((resolve, reject) => {
+    // Some browsers never fire loadedmetadata/play on a <video> that isn't
+    // attached to the document, which used to leave this promise pending
+    // forever (no error, no network request - it just hung). Keeping it
+    // fully off-screen means nothing is visibly shown to the user.
     const video = document.createElement("video");
-    video.srcObject = stream;
     video.muted = true;
+    video.playsInline = true;
+    video.style.position = "fixed";
+    video.style.left = "-9999px";
+    video.style.width = "1px";
+    video.style.height = "1px";
+    document.body.appendChild(video);
+
+    let settled = false;
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      video.onloadedmetadata = null;
+      video.onerror = null;
+      video.remove();
+      fn();
+    };
+
+    // Safety net: loadedmetadata firing on a live display-capture stream
+    // should take milliseconds, never seconds. If it doesn't fire at all,
+    // fail loudly instead of hanging silently like before.
+    const timeoutId = setTimeout(() => {
+      finish(() => reject(new Error("צילום המסך נכשל (הזמן המוקצב תם)")));
+    }, GRAB_FRAME_TIMEOUT_MS);
+
+    video.onerror = () => {
+      finish(() => reject(new Error("שגיאה בטעינת המסך המשותף")));
+    };
 
     video.onloadedmetadata = () => {
       video.play().then(() => {
@@ -25,19 +58,21 @@ const grabFrame = (stream: MediaStream): Promise<File> =>
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext("2d");
         if (!ctx) {
-          reject(new Error("לא ניתן ליצור canvas לצילום המסך"));
+          finish(() => reject(new Error("לא ניתן ליצור canvas לצילום המסך")));
           return;
         }
         ctx.drawImage(video, 0, 0);
         canvas.toBlob((blob) => {
           if (!blob) {
-            reject(new Error("נכשלה יצירת קובץ הצילום"));
+            finish(() => reject(new Error("נכשלה יצירת קובץ הצילום")));
             return;
           }
-          resolve(new File([blob], `screenshot-${Date.now()}.png`, { type: "image/png" }));
+          finish(() => resolve(new File([blob], `screenshot-${Date.now()}.png`, { type: "image/png" })));
         }, "image/png");
-      }, reject);
+      }, (err) => finish(() => reject(err)));
     };
+
+    video.srcObject = stream;
   });
 
 export function useScreenCapture(onRecordingStop: (file: File | null) => void) {

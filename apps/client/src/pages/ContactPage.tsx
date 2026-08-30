@@ -6,11 +6,45 @@ import "../styles/contact-page.css";
 
 const MAX_ATTACHMENTS = 5;
 
+// Fallback cap when S3 is unavailable and the file is stored directly in
+// MongoDB instead (as a base64 data URI) - must match the server's own cap
+// in contactController.ts's registerAttachment (kept well under the 16MB
+// BSON document limit even with several attachments on one message).
+const MAX_FALLBACK_FILE_SIZE = 2 * 1024 * 1024;
+
+// No single step in the upload chain (get-url, S3 PUT, registering the
+// attachment, reading a file as base64) should ever be able to hang
+// indefinitely - each is wrapped in this so a stalled request fails loudly
+// with a clear message instead of leaving the UI stuck with no error and
+// no network activity to point at.
+const UPLOAD_STEP_TIMEOUT_MS = 15000;
+
+const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
+  new Promise<T>((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error(`${label} - הזמן המוקצב תם`));
+    }, ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timeoutId);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timeoutId);
+        reject(err);
+      },
+    );
+  });
+
+type UploadStatus = "uploading" | "uploaded" | "error";
+
 interface CapturedAttachment {
   id: string;
   file: File;
   previewUrl: string;
   type: "image" | "video";
+  uploadStatus: UploadStatus;
+  uploadedUrl?: string;
 }
 
 export default function ContactPage() {
@@ -24,15 +58,130 @@ export default function ContactPage() {
 
   const [attachments, setAttachments] = useState<CapturedAttachment[]>([]);
   const attachmentLimitReached = attachments.length >= MAX_ATTACHMENTS;
+  const hasUploadingAttachment = attachments.some((a) => a.uploadStatus === "uploading");
+
+  const updateAttachment = (id: string, patch: Partial<CapturedAttachment>) => {
+    setAttachments((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+  };
+
+  const readFileAsDataUri = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error ?? new Error("נכשלה קריאת הקובץ"));
+      reader.readAsDataURL(file);
+    });
+
+  // Used when the S3 upload itself fails (e.g. the bucket's CORS isn't
+  // configured yet) - stores the file directly in MongoDB via the same
+  // registerAttachment endpoint, just with `data` instead of `url`. Only a
+  // stopgap: capped at MAX_FALLBACK_FILE_SIZE, nowhere near S3's headroom.
+  const uploadAttachmentToMongoFallback = async (id: string, file: File, type: "image" | "video") => {
+    if (file.size > MAX_FALLBACK_FILE_SIZE) {
+      console.error(
+        `[attachment-upload ${id}] file too large for MongoDB fallback (${file.size} bytes > ${MAX_FALLBACK_FILE_SIZE}).`,
+      );
+      setMessage("S3 לא זמין והקובץ גדול מדי לגיבוי. יש להגדיר S3 כדי להעלות קבצים גדולים.");
+      updateAttachment(id, { uploadStatus: "error" });
+      return;
+    }
+    try {
+      console.log(`[attachment-upload ${id}] reading file as data URI for MongoDB fallback...`);
+      const dataUri = await withTimeout(readFileAsDataUri(file), UPLOAD_STEP_TIMEOUT_MS, "קריאת הקובץ");
+
+      console.log(`[attachment-upload ${id}] registering fallback attachment in MongoDB...`);
+      await withTimeout(
+        apiCall(API_ENDPOINTS.contactAttachments, {
+          method: "POST",
+          body: JSON.stringify({ data: dataUri, type }),
+        }),
+        UPLOAD_STEP_TIMEOUT_MS,
+        "שמירת קובץ הגיבוי",
+      );
+
+      console.log(`[attachment-upload ${id}] done via MongoDB fallback.`);
+      updateAttachment(id, { uploadStatus: "uploaded", uploadedUrl: dataUri });
+    } catch (fallbackErr) {
+      console.error(`[attachment-upload ${id}] MongoDB fallback also failed:`, fallbackErr);
+      setMessage("ההעלאה נכשלה גם ל-S3 וגם לגיבוי. נסה שוב.");
+      updateAttachment(id, { uploadStatus: "error" });
+    }
+  };
+
+  // Uploads a single captured file to S3 (same get-url + PUT pattern as
+  // AddPostModal.tsx) and registers it with the server as "pending", right
+  // away instead of waiting for form submit - so the file survives even if
+  // the user closes the page before ever clicking "שלח הודעה". The daily
+  // cleanup job (server-side) removes anything left "pending" for 24h.
+  //
+  // Every network step is wrapped in withTimeout and logged with the
+  // attachment's id, so a stuck upload is always diagnosable from the
+  // console instead of showing as a silent, indefinite spinner.
+  const uploadAttachment = async (id: string, file: File, type: "image" | "video") => {
+    updateAttachment(id, { uploadStatus: "uploading" });
+    console.log(`[attachment-upload ${id}] start (size=${file.size}, type=${type})`);
+    try {
+      console.log(`[attachment-upload ${id}] requesting presigned S3 URL...`);
+      const urlResponse = await withTimeout(
+        fetch(API_ENDPOINTS.upload.getUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileName: file.name, fileType: file.type }),
+        }),
+        UPLOAD_STEP_TIMEOUT_MS,
+        "בקשת קישור מאובטח",
+      );
+      if (!urlResponse.ok) throw new Error("נכשלה קבלת קישור מאובטח מהשרת");
+      const { uploadUrl, fileUrl } = await urlResponse.json();
+
+      console.log(`[attachment-upload ${id}] uploading to S3...`);
+      const s3Response = await withTimeout(
+        fetch(uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file,
+        }),
+        UPLOAD_STEP_TIMEOUT_MS,
+        "העלאה ל-S3",
+      );
+      if (!s3Response.ok) throw new Error("העלאת קובץ מצורף נכשלה");
+
+      console.log(`[attachment-upload ${id}] S3 upload ok, registering as pending...`);
+      await withTimeout(
+        apiCall(API_ENDPOINTS.contactAttachments, {
+          method: "POST",
+          body: JSON.stringify({ url: fileUrl, type }),
+        }),
+        UPLOAD_STEP_TIMEOUT_MS,
+        "רישום הקובץ בשרת",
+      );
+
+      console.log(`[attachment-upload ${id}] done via S3.`);
+      updateAttachment(id, { uploadStatus: "uploaded", uploadedUrl: fileUrl });
+    } catch (err) {
+      console.error(`[attachment-upload ${id}] S3 path failed, falling back to MongoDB:`, err);
+      await uploadAttachmentToMongoFallback(id, file, type);
+    }
+  };
 
   const addCapturedAttachment = (file: File, type: "image" | "video") => {
-    setAttachments((prev) => {
-      if (prev.length >= MAX_ATTACHMENTS) return prev;
-      return [
-        ...prev,
-        { id: `${Date.now()}-${prev.length}`, file, type, previewUrl: URL.createObjectURL(file) },
-      ];
-    });
+    // Built outside the setAttachments updater, on purpose: React doesn't run
+    // that updater synchronously, so a variable only assigned inside it (the
+    // previous approach) is still null on the very next line - uploadAttachment
+    // would silently never be called and the attachment would stay stuck on
+    // "uploading" forever. Guard against the attachment limit here too so we
+    // don't kick off an upload for an item that the updater below ends up
+    // dropping.
+    if (attachments.length >= MAX_ATTACHMENTS) return;
+    const item: CapturedAttachment = {
+      id: `${Date.now()}-${attachments.length}`,
+      file,
+      type,
+      previewUrl: URL.createObjectURL(file),
+      uploadStatus: "uploading",
+    };
+    setAttachments((prev) => (prev.length >= MAX_ATTACHMENTS ? prev : [...prev, item]));
+    uploadAttachment(item.id, item.file, item.type);
   };
 
   const handleRemoveAttachment = (id: string) => {
@@ -114,33 +263,25 @@ useEffect(() => {
       return;
     }
 
+    if (hasUploadingAttachment) {
+      setMessage("יש קבצים שעדיין מועלים - יש להמתין לסיום ההעלאה לפני השליחה.");
+      return;
+    }
+    if (attachments.some((a) => a.uploadStatus === "error")) {
+      setMessage("יש קובץ שנכשל בהעלאה - הסירי אותו או נסי שוב לפני השליחה.");
+      return;
+    }
+
     setIsSubmitting(true);
     setMessage("");
 
     try {
-      // Upload every captured screenshot/recording directly to S3 first
-      // (same get-url + PUT pattern as AddPostModal.tsx, one per file, run
-      // concurrently), then send only the resulting file URLs alongside
-      // the rest of the form.
-      const uploadedAttachments = await Promise.all(
-        attachments.map(async ({ file, type }) => {
-          const urlResponse = await fetch(API_ENDPOINTS.upload.getUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ fileName: file.name, fileType: file.type }),
-          });
-          if (!urlResponse.ok) throw new Error("נכשלה קבלת קישור מאובטח מהשרת");
-          const { uploadUrl, fileUrl } = await urlResponse.json();
-
-          const s3Response = await fetch(uploadUrl, {
-            method: "PUT",
-            headers: { "Content-Type": file.type },
-            body: file,
-          });
-          if (!s3Response.ok) throw new Error("העלאת קובץ מצורף נכשלה");
-          return { url: fileUrl, type };
-        }),
-      );
+      // Every attachment was already uploaded to S3 and registered as
+      // "pending" the moment it was captured (see uploadAttachment) - just
+      // send the URLs already on hand, no re-uploading here.
+      const uploadedAttachments = attachments
+        .filter((a) => a.uploadStatus === "uploaded" && a.uploadedUrl)
+        .map((a) => ({ url: a.uploadedUrl as string, type: a.type }));
 
       // Send contact form to backend
       const response = await apiCall<{ success: boolean; message: string }>(
@@ -308,10 +449,30 @@ useEffect(() => {
                 <div className="attachment-preview-list">
                   {attachments.map((att) => (
                     <div key={att.id} className="attachment-preview">
-                      {att.type === "image" ? (
-                        <img src={att.previewUrl} alt="תצוגה מקדימה של צילום המסך" />
-                      ) : (
-                        <video src={att.previewUrl} controls />
+                      <div className="attachment-thumb-wrap">
+                        {att.type === "image" ? (
+                          <img src={att.previewUrl} alt="תצוגה מקדימה של צילום המסך" />
+                        ) : (
+                          <video src={att.previewUrl} controls />
+                        )}
+                        {att.uploadStatus === "uploading" && (
+                          <div className="attachment-spinner-overlay" aria-label="מעלה קובץ...">
+                            <span className="attachment-spinner" />
+                          </div>
+                        )}
+                      </div>
+                      {att.uploadStatus === "error" && (
+                        <div className="attachment-error">
+                          <span>העלאה נכשלה</span>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => uploadAttachment(att.id, att.file, att.type)}
+                            disabled={isSubmitting}
+                          >
+                            נסה שוב
+                          </button>
+                        </div>
                       )}
                       <button
                         type="button"
@@ -329,7 +490,7 @@ useEffect(() => {
           )}
 
           {message && (
-            <div className={`message ${message.includes("שגיאה") ? "error" : "success"}`}>
+            <div className={`message ${message.includes("שגיאה") || message.includes("נכשל") ? "error" : "success"}`}>
               {message}
             </div>
           )}
@@ -337,9 +498,9 @@ useEffect(() => {
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={isSubmitting}
+            disabled={isSubmitting || hasUploadingAttachment}
           >
-            {isSubmitting ? "שולח..." : "שלח הודעה"}
+            {isSubmitting ? "שולח..." : hasUploadingAttachment ? "מעלה קבצים..." : "שלח הודעה"}
           </button>
         </form>
       </div>
