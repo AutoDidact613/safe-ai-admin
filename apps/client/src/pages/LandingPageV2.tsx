@@ -348,10 +348,10 @@ export default function LandingPageV2() {
           <Link to="/recommended-guides">מדריכים מומלצים</Link>
         </div>
         <div className="lv2-footer-col">
+          {/* מדיניות פרטיות לא כפולה כאן בכוונה — הפוטר הגלובלי הקבוע (Footer.tsx) שמופיע מתחת כבר מציג אותה בכל דף */}
           <span className="lv2-footer-heading">החברה</span>
           <Link to="/about">אודות</Link>
           <Link to="/contact">צור קשר</Link>
-          <Link to="/privacy">מדיניות פרטיות</Link>
         </div>
         <div className="lv2-footer-col">
           <span className="lv2-footer-heading">חשבון</span>
