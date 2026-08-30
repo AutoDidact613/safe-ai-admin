@@ -40,6 +40,13 @@ export const newsService = {
     return withResolvedImage(news);
   },
 
+  // Get every distinct tag used across all news, sorted for display
+  async getAllTags(): Promise<string[]> {
+    logger.info("Fetching all news tags");
+    const tags = await newsRepository.findAllTags();
+    return tags.filter(Boolean).sort((a, b) => a.localeCompare(b, "he"));
+  },
+
   // Create news
   async createNews(data: Partial<INews>): Promise<INews> {
     logger.info("Creating news", { data });

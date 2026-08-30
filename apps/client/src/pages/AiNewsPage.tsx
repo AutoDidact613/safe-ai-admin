@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { he } from "date-fns/locale";
@@ -19,7 +19,7 @@ interface NewsFormState {
   title: string;
   content: string;
   source: string;
-  tags: string;
+  tags: string[];
   imageUrl: string;
 }
 
@@ -27,13 +27,79 @@ const initialFormState: NewsFormState = {
   title: "",
   content: "",
   source: "",
-  tags: "",
+  tags: [],
   imageUrl: "",
 };
 
 function formatRelativeTime(value?: string) {
   if (!value) return "";
   return formatDistanceToNow(new Date(value), { locale: he, addSuffix: true });
+}
+
+// מילות קישור נפוצות בעברית ובאנגלית - לא מוצעות כתגיות מוצע מילות מפתח
+const STOPWORDS = new Set([
+  "של", "את", "עם", "על", "אל", "כי", "גם", "רק", "לא", "כן", "יש", "אין",
+  "הוא", "היא", "הם", "הן", "אני", "אתה", "את", "אנחנו", "אתם", "אתן",
+  "זה", "זאת", "זו", "אלה", "אלו", "אבל", "או", "אם", "כל", "כמה", "עוד",
+  "כבר", "פה", "שם", "כאן", "הזה", "הזאת", "מה", "מי", "איך", "למה", "מתי",
+  "כאשר", "כדי", "היה", "היתה", "יהיה", "תהיה", "ולא", "וגם", "ואת",
+  "the", "a", "an", "and", "or", "but", "is", "are", "was", "were", "in",
+  "on", "at", "to", "for", "of", "with", "this", "that", "these", "those",
+  "it", "as", "be", "by", "from", "will", "can", "not",
+]);
+
+function tokenize(text: string): string[] {
+  return text.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+}
+
+// מילות חיבור עבריות (ו-, ה-, ב-, ל-, כ-, מ-, ש-) נדבקות ישירות למילה
+// שאחריהן בלי רווח, למשל "וטכנולוגיה". בודקים אם הסרת אות מוביל אחת
+// הופכת את המילה לתגית שכבר מוכרת - כדי לא להציע גם את הגרסה עם המילית
+// וגם את המילה עצמה כשתי הצעות נפרדות. לעולם לא מציגים את הצורה המקוצרת
+// עצמה (זו לא בהכרח מילה תקנית), רק משתמשים בה לבדיקת כפילות.
+function isPrefixedKnownTag(word: string, knownLower: Set<string>): boolean {
+  if (word.length <= 3 || !"והבלכמש".includes(word[0])) return false;
+  return knownLower.has(word.slice(1));
+}
+
+// הצעה בסיסית של תגיות: תגיות קיימות שמופיעות בתוכן, ומילים חוזרות
+// (2+ הופעות) שאינן מילות קישור ואינן כבר בשימוש
+function getSuggestedTags(
+  title: string,
+  content: string,
+  selectedTags: string[],
+  existingTags: string[],
+): string[] {
+  const text = `${title} ${content}`;
+  const normalizedText = text.toLowerCase();
+  const selectedLower = new Set(selectedTags.map((t) => t.toLowerCase()));
+  const existingLower = new Set(existingTags.map((t) => t.toLowerCase()));
+  const knownLower = new Set([...selectedLower, ...existingLower]);
+
+  const fromExisting = existingTags.filter((tag) => {
+    const lower = tag.toLowerCase();
+    return !selectedLower.has(lower) && normalizedText.includes(lower);
+  });
+
+  const counts = new Map<string, number>();
+  for (const raw of tokenize(text)) {
+    const word = raw.toLowerCase();
+    if (
+      word.length < 2 ||
+      STOPWORDS.has(word) ||
+      knownLower.has(word) ||
+      isPrefixedKnownTag(word, knownLower)
+    ) {
+      continue;
+    }
+    counts.set(word, (counts.get(word) || 0) + 1);
+  }
+  const fromFrequency = Array.from(counts.entries())
+    .filter(([, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .map(([word]) => word);
+
+  return Array.from(new Set([...fromExisting, ...fromFrequency])).slice(0, 6);
 }
 
 function SearchIcon() {
@@ -77,6 +143,8 @@ export default function AiNewsPage() {
   const [hasMore, setHasMore] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const [allExistingTags, setAllExistingTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const PAGE_LIMIT = 10;
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -85,6 +153,20 @@ export default function AiNewsPage() {
   useEffect(() => {
     void loadNews(page);
   }, [page]);
+
+  useEffect(() => {
+    void loadAllTags();
+  }, []);
+
+  const loadAllTags = async () => {
+    try {
+      const tags = await apiCall<string[]>(`${API_ENDPOINTS.news}/tags`);
+      setAllExistingTags(tags);
+    } catch {
+      // תגיות קיימות הן נוחות בלבד (autocomplete) - כשל בטעינתן לא אמור
+      // לחסום את שאר העמוד
+    }
+  };
 
   const loadNews = async (pageNumber = 1) => {
     try {
@@ -108,6 +190,7 @@ export default function AiNewsPage() {
     setEditingId(null);
     setShowForm(false);
     setSelectedFileName(null);
+    setTagInput("");
   };
 
   const handleStartCreate = () => {
@@ -116,6 +199,31 @@ export default function AiNewsPage() {
     setShowForm(true);
     setError(null);
     setSelectedFileName(null);
+    setTagInput("");
+  };
+
+  const addTag = (raw: string) => {
+    const value = raw.trim();
+    if (!value) return;
+    setFormData((prev) =>
+      prev.tags.some((t) => t.toLowerCase() === value.toLowerCase())
+        ? prev
+        : { ...prev, tags: [...prev.tags, value] },
+    );
+    setTagInput("");
+  };
+
+  const removeTag = (tag: string) => {
+    setFormData((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) }));
+  };
+
+  const handleTagInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addTag(tagInput);
+    } else if (e.key === "Backspace" && !tagInput && formData.tags.length > 0) {
+      removeTag(formData.tags[formData.tags.length - 1]);
+    }
   };
 
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -180,16 +288,11 @@ export default function AiNewsPage() {
       setSubmitting(true);
       setError(null);
 
-      const tagsArray = formData.tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean);
-
       const payload = {
         title: formData.title.trim(),
         content: formData.content.trim(),
         source: formData.source.trim() || "User",
-        tags: tagsArray,
+        tags: formData.tags,
         imageUrl: formData.imageUrl || undefined,
       };
 
@@ -206,6 +309,7 @@ export default function AiNewsPage() {
       }
 
       await loadNews();
+      void loadAllTags();
       resetForm();
     } catch (err) {
       setError(err instanceof Error ? err.message : "שגיאה בשמירת החדשות");
@@ -220,12 +324,13 @@ export default function AiNewsPage() {
       title: item.title,
       content: item.content,
       source: item.source || "",
-      tags: item.tags?.join(", ") || "",
+      tags: item.tags || [],
       imageUrl: item.imageUrl || "",
     });
     setShowForm(true);
     setError(null);
     setSelectedFileName(null);
+    setTagInput("");
   };
 
   const openDeleteModal = (item: NewsItem) => {
@@ -258,11 +363,19 @@ export default function AiNewsPage() {
     }
   };
 
-  const allTags = useMemo(() => {
-    const set = new Set<string>();
-    news.forEach((item) => item.tags?.forEach((tag) => set.add(tag)));
-    return Array.from(set);
-  }, [news]);
+  const tagAutocompleteMatches = useMemo(() => {
+    const query = tagInput.trim().toLowerCase();
+    if (!query) return [];
+    const selectedLower = new Set(formData.tags.map((t) => t.toLowerCase()));
+    return allExistingTags
+      .filter((tag) => !selectedLower.has(tag.toLowerCase()) && tag.toLowerCase().includes(query))
+      .slice(0, 8);
+  }, [tagInput, allExistingTags, formData.tags]);
+
+  const keywordTagSuggestions = useMemo(
+    () => getSuggestedTags(formData.title, formData.content, formData.tags, allExistingTags),
+    [formData.title, formData.content, formData.tags, allExistingTags],
+  );
 
   const filteredNews = news.filter((item) => {
     const matchesSearch = item.title
@@ -307,7 +420,7 @@ export default function AiNewsPage() {
             </span>
           </div>
 
-          {allTags.length > 0 && (
+          {allExistingTags.length > 0 && (
             <div className="news-tag-filter">
               <button
                 type="button"
@@ -316,7 +429,7 @@ export default function AiNewsPage() {
               >
                 הכל
               </button>
-              {allTags.map((tag) => (
+              {allExistingTags.map((tag) => (
                 <button
                   key={tag}
                   type="button"
@@ -480,13 +593,69 @@ export default function AiNewsPage() {
                 className="news-input-field"
               />
 
-              <input
-                type="text"
-                placeholder="תגיות (מופרדות בפסיק)"
-                value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                className="news-input-field"
-              />
+              <div className="news-tags-field">
+                <div className="news-tags-chips">
+                  {formData.tags.map((tag) => (
+                    <span key={tag} className="news-tag-chip">
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        aria-label={`הסר תגית ${tag}`}
+                        className="news-tag-chip-remove"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={handleTagInputKeyDown}
+                    placeholder={formData.tags.length ? "" : "הקלד תגית ולחץ Enter"}
+                    className="news-tags-input"
+                    role="combobox"
+                    aria-expanded={tagAutocompleteMatches.length > 0}
+                    aria-autocomplete="list"
+                    aria-controls="news-tag-suggestions-list"
+                  />
+                </div>
+
+                {tagAutocompleteMatches.length > 0 && (
+                  <ul id="news-tag-suggestions-list" className="news-tag-suggestions" role="listbox">
+                    {tagAutocompleteMatches.map((tag) => (
+                      <li key={tag}>
+                        <button
+                          type="button"
+                          onClick={() => addTag(tag)}
+                          className="news-tag-suggestion-item"
+                          role="option"
+                          aria-selected={false}
+                        >
+                          #{tag}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {!tagInput && keywordTagSuggestions.length > 0 && (
+                  <div className="news-tag-keyword-suggestions">
+                    <span className="news-tag-keyword-label">הצעות תגיות לפי התוכן:</span>
+                    {keywordTagSuggestions.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => addTag(tag)}
+                        className="news-tag-suggestion-chip"
+                      >
+                        + {tag}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="news-image-upload">
                 {formData.imageUrl ? (
