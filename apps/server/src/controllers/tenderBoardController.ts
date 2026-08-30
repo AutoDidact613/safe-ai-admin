@@ -11,11 +11,16 @@ import {
   getProductTypeList,
   getAIApplicationTypeList,
   // createSmartTender,  // נעקוף את פונקציית המעבר הבעייתית
-  smartSearchTenders,     
+  smartSearchTenders,
+  getTenderAgentContext,
+  requestTenderSpecification,
+  saveTenderSpecification,
+  setTenderSpecificationPublished,
 } from "../services/tenderBoardService";
 import { TBAIService } from "../services/tenderBoardAIService";
 import { generatePresignedDownloadUrl } from "../services/s3Service";
 import { getProfileById } from "../services/professionalProfileService";
+import { triggerTenderSpecAgent } from "../services/tenderSpecAgentRunner";
 import logger from "../logger";
 
 /**
@@ -283,6 +288,97 @@ export async function viewTenderOffersHandler(req: Request<{ id: string }>, res:
   } catch (error) {
     logger.error("Mark tender offers as viewed failed", { error });
     res.status(500).json({ error: "Failed to mark tender offers as viewed" });
+  }
+}
+
+/**
+ * ========================================================
+ * אפיון אוטומטי + המלצת פיתוח (SCRUM-287/291/293)
+ * ========================================================
+ */
+
+/**
+ * GET /tender-board/:id/agent-context
+ * Agent-facing (service-token / admin JWT via requireAdmin, see router).
+ */
+export async function getTenderAgentContextHandler(req: Request<{ id: string }>, res: Response) {
+  try {
+    const context = await getTenderAgentContext(req.params.id);
+
+    if (!context) {
+      return res.status(404).json({ error: "Tender not found" });
+    }
+
+    res.json(context);
+  } catch (error) {
+    logger.error("Get tender agent context failed", { error });
+    res.status(500).json({ error: "Failed to fetch tender agent context" });
+  }
+}
+
+/**
+ * POST /tender-board/:id/specification
+ * Agent-facing write-back (service-token / admin JWT via requireAdmin, see router).
+ * Body: { status, techStackRecommendation?, openSourceReferences?, readingSources?, document?, errorMessage? }
+ */
+export async function saveTenderSpecificationHandler(req: Request<{ id: string }>, res: Response) {
+  try {
+    const tender = await saveTenderSpecification(req.params.id, req.body);
+    res.json({ success: true, tender });
+  } catch (error: any) {
+    logger.error("Save tender specification failed", { error: error.message, tenderId: req.params.id });
+    res.status(400).json({ error: error.message || "Failed to save tender specification" });
+  }
+}
+
+/**
+ * POST /tender-board/:id/generate-specification-request
+ * בעל המכרז/אדמין בלבד - מסמן status=pending ומפעיל את ה-agent (SCRUM-293).
+ */
+export async function requestTenderSpecificationHandler(req: Request<{ id: string }>, res: Response) {
+  try {
+    const existing = await getTenderById(req.params.id);
+
+    if (!existing) {
+      return res.status(404).json({ error: "Tender not found" });
+    }
+
+    if (!isOwnerOrAdmin(req, existing)) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const tender = await requestTenderSpecification(req.params.id);
+    triggerTenderSpecAgent(req.params.id);
+
+    res.status(202).json({ success: true, tender });
+  } catch (error: any) {
+    logger.error("Request tender specification failed", { error: error.message, tenderId: req.params.id });
+    res.status(500).json({ error: error.message || "Failed to request tender specification" });
+  }
+}
+
+/**
+ * PATCH /tender-board/:id/specification/publish
+ * בעל המכרז/אדמין בלבד - הבחירה אם לפרסם את האפיון יחד עם המכרז או להשאיר פרטי.
+ * Body: { isPublished: boolean }
+ */
+export async function publishTenderSpecificationHandler(req: Request<{ id: string }>, res: Response) {
+  try {
+    const existing = await getTenderById(req.params.id);
+
+    if (!existing) {
+      return res.status(404).json({ error: "Tender not found" });
+    }
+
+    if (!isOwnerOrAdmin(req, existing)) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const tender = await setTenderSpecificationPublished(req.params.id, Boolean(req.body?.isPublished));
+    res.json({ success: true, tender });
+  } catch (error: any) {
+    logger.error("Publish tender specification failed", { error: error.message, tenderId: req.params.id });
+    res.status(400).json({ error: error.message || "Failed to update specification publish state" });
   }
 }
 

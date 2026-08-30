@@ -95,6 +95,7 @@ export default function TenderBoardPage() {
     wantsEmails: tender.wantsEmails,
     additionalDetails: tender.additionalDetails,
     applicants: tender.applicants,
+    specification: tender.specification,
   })
 
   useEffect(() => {
