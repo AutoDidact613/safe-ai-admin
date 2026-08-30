@@ -1,7 +1,17 @@
 import { useState, type FormEvent, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_ENDPOINTS, apiCall } from "../config/api";
+import { useScreenCapture } from "../hooks/useScreenCapture";
 import "../styles/contact-page.css";
+
+const MAX_ATTACHMENTS = 5;
+
+interface CapturedAttachment {
+  id: string;
+  file: File;
+  previewUrl: string;
+  type: "image" | "video";
+}
 
 export default function ContactPage() {
   const navigate = useNavigate();
@@ -11,7 +21,68 @@ export default function ContactPage() {
   const [message, setMessage] = useState("");
   const [requestType, setRequestType] = useState("כללי"); // ערך ברירת מחדל
   const [contactTypes, setContactTypes] = useState<{ label: string; value: string }[]>([]);
-  
+
+  const [attachments, setAttachments] = useState<CapturedAttachment[]>([]);
+  const attachmentLimitReached = attachments.length >= MAX_ATTACHMENTS;
+
+  const addCapturedAttachment = (file: File, type: "image" | "video") => {
+    setAttachments((prev) => {
+      if (prev.length >= MAX_ATTACHMENTS) return prev;
+      return [
+        ...prev,
+        { id: `${Date.now()}-${prev.length}`, file, type, previewUrl: URL.createObjectURL(file) },
+      ];
+    });
+  };
+
+  const handleRemoveAttachment = (id: string) => {
+    setAttachments((prev) => {
+      const toRemove = prev.find((a) => a.id === id);
+      if (toRemove) URL.revokeObjectURL(toRemove.previewUrl);
+      return prev.filter((a) => a.id !== id);
+    });
+  };
+
+  const clearAttachments = () => {
+    setAttachments((prev) => {
+      prev.forEach((a) => URL.revokeObjectURL(a.previewUrl));
+      return [];
+    });
+  };
+
+  // Called whenever a recording finishes, whether stopped via our own
+  // button or via the browser's own "stop sharing" control. `file` is null
+  // if the recording came out empty (see useScreenCapture for why that can
+  // happen) - surface that instead of silently doing nothing.
+  const { isSupported: isCaptureSupported, isRecording, captureScreenshot, startRecording, stopRecording } =
+    useScreenCapture((file) => {
+      if (file) addCapturedAttachment(file, "video");
+      else setMessage("ההקלטה יצאה ריקה. נסה שוב, ועדיף לוודא שהטאב הזה נשאר פתוח וגלוי תוך כדי ההקלטה.");
+    });
+
+  const handleScreenshotClick = async () => {
+    try {
+      const file = await captureScreenshot();
+      if (file) addCapturedAttachment(file, "image");
+    } catch (err) {
+      console.error("Error capturing screenshot:", err);
+      setMessage("שגיאה בצילום המסך. נסה שוב.");
+    }
+  };
+
+  const handleRecordingClick = async () => {
+    if (isRecording) {
+      stopRecording();
+      return;
+    }
+    try {
+      await startRecording();
+    } catch (err) {
+      console.error("Error starting screen recording:", err);
+      setMessage("שגיאה בהתחלת הקלטת המסך. נסה שוב.");
+    }
+  };
+
   // הוספת useEffect לטעינת הנתונים מהשרת
 useEffect(() => {
   const fetchTypes = async () => {
@@ -47,6 +118,30 @@ useEffect(() => {
     setMessage("");
 
     try {
+      // Upload every captured screenshot/recording directly to S3 first
+      // (same get-url + PUT pattern as AddPostModal.tsx, one per file, run
+      // concurrently), then send only the resulting file URLs alongside
+      // the rest of the form.
+      const uploadedAttachments = await Promise.all(
+        attachments.map(async ({ file, type }) => {
+          const urlResponse = await fetch(API_ENDPOINTS.upload.getUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fileName: file.name, fileType: file.type }),
+          });
+          if (!urlResponse.ok) throw new Error("נכשלה קבלת קישור מאובטח מהשרת");
+          const { uploadUrl, fileUrl } = await urlResponse.json();
+
+          const s3Response = await fetch(uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": file.type },
+            body: file,
+          });
+          if (!s3Response.ok) throw new Error("העלאת קובץ מצורף נכשלה");
+          return { url: fileUrl, type };
+        }),
+      );
+
       // Send contact form to backend
       const response = await apiCall<{ success: boolean; message: string }>(
         API_ENDPOINTS.contact,
@@ -56,6 +151,7 @@ useEffect(() => {
             title: title.trim(),
             description: description.trim(),
             requestType: requestType.trim(),
+            ...(uploadedAttachments.length ? { attachments: uploadedAttachments } : {}),
           }),
         }
       );
@@ -63,6 +159,7 @@ useEffect(() => {
       setMessage(response.message || "ההודעה נשלחה בהצלחה!");
       setTitle("");
       setDescription("");
+      clearAttachments();
 
       // Redirect after 2 seconds
       setTimeout(() => {
@@ -179,6 +276,57 @@ useEffect(() => {
               maxLength={1000}
             />
           </div>
+
+          {isCaptureSupported && (
+            <div className="form-group">
+              <label>{`צירופים (אופציונלי, עד ${MAX_ATTACHMENTS} קבצים)`}</label>
+              <div className="screen-capture-buttons">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleScreenshotClick}
+                  disabled={isSubmitting || isRecording || attachmentLimitReached}
+                >
+                  צילום מסך
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${isRecording ? "btn-danger" : "btn-secondary"}`}
+                  onClick={handleRecordingClick}
+                  disabled={isSubmitting || (attachmentLimitReached && !isRecording)}
+                >
+                  {isRecording ? "עצור הקלטה" : "הקלטת מסך"}
+                </button>
+              </div>
+              <small className="capture-hint">
+                {attachmentLimitReached
+                  ? `הגעת למספר המרבי של ${MAX_ATTACHMENTS} צירופים. אפשר להסיר אחד כדי לצרף עוד.`
+                  : 'כדי שגם השמע יוקלט, יש לסמן את תיבת "שיתוף אודיו" בחלונית הבחירה של הדפדפן'}
+              </small>
+
+              {attachments.length > 0 && (
+                <div className="attachment-preview-list">
+                  {attachments.map((att) => (
+                    <div key={att.id} className="attachment-preview">
+                      {att.type === "image" ? (
+                        <img src={att.previewUrl} alt="תצוגה מקדימה של צילום המסך" />
+                      ) : (
+                        <video src={att.previewUrl} controls />
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-secondary attachment-remove-btn"
+                        onClick={() => handleRemoveAttachment(att.id)}
+                        disabled={isSubmitting}
+                      >
+                        הסר צירוף
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {message && (
             <div className={`message ${message.includes("שגיאה") ? "error" : "success"}`}>

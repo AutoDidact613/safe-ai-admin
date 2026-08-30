@@ -58,6 +58,10 @@ export const API_ENDPOINTS = {
     users: `${API_BASE_URL}/admin/stats/users`,
     models: `${API_BASE_URL}/admin/stats/models`,
   },
+  // Direct-to-S3 upload endpoint (generic, used for post/comment attachments and screen captures)
+  upload: {
+    getUrl: `${API_BASE_URL}/api/upload/get-url`,
+  },
   // Contact form endpoint
   contact: `${API_BASE_URL}/contact`,
   contactTypes: `${API_BASE_URL}/contact-types`,

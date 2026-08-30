@@ -3,12 +3,14 @@ import { sendContactEmail } from "../utils/email";
 import logger from "../logger";
 import { saveMessage } from "../services/contactMessageService";
 
+const MAX_ATTACHMENTS = 5;
+
 /**
  * Handle contact form submission
  */
 export async function submitContactForm(req: Request, res: Response) {
   try {
-    const { title, description, requestType } = req.body;
+    const { title, description, requestType, attachments } = req.body;
     const user = (req as any).user; // User from JWT token
     const userId = user?.userId || user?.id;
 
@@ -46,11 +48,36 @@ export async function submitContactForm(req: Request, res: Response) {
       });
     }
 
+    let validatedAttachments: { url: string; type: "image" | "video" }[] = [];
+    if (attachments !== undefined) {
+      if (!Array.isArray(attachments) || attachments.length > MAX_ATTACHMENTS) {
+        return res.status(400).json({
+          success: false,
+          message: `ניתן לצרף עד ${MAX_ATTACHMENTS} קבצים`,
+        });
+      }
+      const isValidAttachment = (a: unknown): a is { url: string; type: "image" | "video" } =>
+        !!a &&
+        typeof a === "object" &&
+        typeof (a as any).url === "string" &&
+        !!(a as any).url &&
+        ((a as any).type === "image" || (a as any).type === "video");
+
+      if (!attachments.every(isValidAttachment)) {
+        return res.status(400).json({
+          success: false,
+          message: "צירוף לא תקין",
+        });
+      }
+      validatedAttachments = attachments;
+    }
+
     await saveMessage(
       {
         title: title.trim(),
         description: description.trim(),
         requestType: requestType.trim(),
+        ...(validatedAttachments.length ? { attachments: validatedAttachments } : {}),
       },
       userId,
     );
