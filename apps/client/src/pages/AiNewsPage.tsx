@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { he } from "date-fns/locale";
 import { API_ENDPOINTS, apiCall } from "../config/api";
+import { stripMarkdown } from "../utils/markdown";
 import "../styles/news-page.css";
 
 interface NewsItem {
@@ -483,7 +484,7 @@ export default function AiNewsPage() {
                     <Link to={`/ai-news/${featured._id}`} className="news-article-title">
                       {featured.title}
                     </Link>
-                    <p className="news-preview">{featured.content}</p>
+                    <p className="news-preview">{stripMarkdown(featured.content)}</p>
                     <div className="news-card-footer">
                       <div className="news-item-meta">
                         <span className="news-byline-source">{featured.source || "User"}</span>
@@ -521,7 +522,7 @@ export default function AiNewsPage() {
                     <Link to={`/ai-news/${item._id}`} className="news-article-title">
                       {item.title}
                     </Link>
-                    <p className="news-preview">{item.content}</p>
+                    <p className="news-preview">{stripMarkdown(item.content)}</p>
                     <div className="news-card-footer">
                       <div className="news-item-meta">
                         <span className="news-byline-source">{item.source || "User"}</span>

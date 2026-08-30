@@ -106,12 +106,6 @@ export default function AiNewsDetailsPage() {
         <div className="news-article-content">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{news.content}</ReactMarkdown>
         </div>
-
-        <div className="news-details-footer">
-          <Link to="/ai-news" className="btn-reset">
-            חזרה לחדשות
-          </Link>
-        </div>
       </div>
     </div>
   );
