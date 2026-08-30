@@ -11,3 +11,5 @@ process.env.AWS_REGION = process.env.AWS_REGION || "us-east-1";
 process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "test-aws-key-id";
 process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "test-aws-secret";
 process.env.AWS_BUCKET_NAME = process.env.AWS_BUCKET_NAME || "test-bucket";
+process.env.ENCRYPTION_KEY =
+  process.env.ENCRYPTION_KEY || "0".repeat(64); // src/utils/crypto.ts requires 64 hex chars
