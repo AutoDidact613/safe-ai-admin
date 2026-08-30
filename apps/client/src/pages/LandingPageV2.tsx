@@ -204,6 +204,8 @@ export default function LandingPageV2() {
                   <Link to="/docs" onClick={() => setProductsMenuOpen(false)}>תיעוד</Link>
                   <Link to="/courses" onClick={() => setProductsMenuOpen(false)}>קורסים</Link>
                   <Link to="/recommended-guides" onClick={() => setProductsMenuOpen(false)}>מדריכים מומלצים</Link>
+                  <Link to="/ai-news" onClick={() => setProductsMenuOpen(false)}>חדשות</Link>
+                  <Link to="/tender-board" onClick={() => setProductsMenuOpen(false)}>לוח פרויקטים</Link>
                 </div>
               </div>
             )}
