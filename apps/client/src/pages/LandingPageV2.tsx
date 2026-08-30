@@ -253,12 +253,16 @@ export default function LandingPageV2() {
             className={`lv2-banner-card lv2-status-${banner.status}`}
             onClick={banner.onClick}
           >
-            <span className={banner.status === "soon" ? "lv2-soon-tag" : "lv2-available-tag"}>
-              {banner.status === "soon" ? "בקרוב" : "זמין"}
-            </span>
             <div className="lv2-banner-icon">{banner.icon}</div>
-            <h3 className="lv2-banner-title">{banner.title}</h3>
-            <p className="lv2-banner-desc">{banner.description}</p>
+            <div className="lv2-banner-content">
+              <div className="lv2-banner-heading">
+                <h3 className="lv2-banner-title">{banner.title}</h3>
+                <span className={banner.status === "soon" ? "lv2-soon-tag" : "lv2-available-tag"}>
+                  {banner.status === "soon" ? "בקרוב" : "זמין"}
+                </span>
+              </div>
+              <p className="lv2-banner-desc">{banner.description}</p>
+            </div>
           </button>
         ))}
       </section>

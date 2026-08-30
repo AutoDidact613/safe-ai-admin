@@ -21,10 +21,32 @@ export default function CountUpStat({
   durationMs = 1400,
 }: CountUpStatProps) {
   const [displayValue, setDisplayValue] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
   const frameRef = useRef<number | null>(null);
+  const elementRef = useRef<HTMLDivElement>(null);
+
+  // Only start counting once the banner has actually scrolled into view,
+  // not the moment the page loads.
+  useEffect(() => {
+    const element = elementRef.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.4 },
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
-    if (value === null) return;
+    if (value === null || !isVisible) return;
 
     const startTime = performance.now();
 
@@ -40,10 +62,10 @@ export default function CountUpStat({
     return () => {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     };
-  }, [value, durationMs]);
+  }, [value, isVisible, durationMs]);
 
   return (
-    <div className="lv2-stat-item">
+    <div className="lv2-stat-item" ref={elementRef}>
       <div className="lv2-stat-value">
         {loading ? "…" : failed ? "—" : displayValue.toLocaleString("he-IL")}
       </div>

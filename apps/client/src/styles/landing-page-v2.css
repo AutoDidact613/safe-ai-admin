@@ -318,9 +318,9 @@
 
 /* Banners grid */
 .lv2-banners {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   margin-bottom: 56px;
 }
 
@@ -330,12 +330,13 @@
   background: var(--lv2-surface);
   border: 1px solid var(--lv2-line);
   border-radius: 8px;
-  padding: 26px 22px;
+  padding: 20px 24px;
   cursor: pointer;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
   font-family: inherit;
 }
 
@@ -345,6 +346,7 @@
 }
 
 .lv2-banner-icon {
+  flex-shrink: 0;
   width: 44px;
   height: 44px;
   border-radius: 8px;
@@ -353,7 +355,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 4px;
+}
+
+.lv2-banner-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lv2-banner-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .lv2-banner-title {
@@ -371,9 +387,7 @@
 }
 
 .lv2-soon-tag {
-  position: absolute;
-  top: 16px;
-  left: 16px;
+  flex-shrink: 0;
   background: var(--lv2-gold-soft);
   color: var(--lv2-gold-hover);
   font-size: 11px;
@@ -383,9 +397,7 @@
 }
 
 .lv2-available-tag {
-  position: absolute;
-  top: 16px;
-  left: 16px;
+  flex-shrink: 0;
   background: var(--lv2-accent-soft);
   color: var(--lv2-accent);
   font-size: 11px;
@@ -510,6 +522,18 @@
   .lv2-hero-search {
     flex-wrap: wrap;
     border-radius: 16px;
+  }
+
+  .lv2-banner-card {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: right;
+  }
+
+  .lv2-banner-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
   }
 
   .landing-v2 {
