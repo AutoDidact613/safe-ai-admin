@@ -2,6 +2,7 @@ import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import * as organizationService from "../organizationService";
 import * as repo from "../../repositories/organizationRepository";
 import * as userRepo from "../../repositories/userRepository";
+import * as usageRepo from "../../repositories/usageRepository";
 import {
   sendOrgApprovedEmail,
   sendOrgStatusEmail,
@@ -9,20 +10,17 @@ import {
   sendInviteEmail,
 } from "../../utils/email";
 import { register } from "../authService";
-import { UsageLog } from "../../models";
 
 jest.mock("../../repositories/organizationRepository");
 jest.mock("../../repositories/userRepository");
+jest.mock("../../repositories/usageRepository");
 jest.mock("../../utils/email");
 jest.mock("../authService", () => ({ register: jest.fn() }));
-jest.mock("../../models", () => ({
-  UsageLog: { aggregate: jest.fn() },
-}));
 
 const mockedRepo = jest.mocked(repo);
 const mockedUserRepo = jest.mocked(userRepo);
+const mockedUsageRepo = jest.mocked(usageRepo);
 const mockedRegister = jest.mocked(register);
-const mockedUsageLog = jest.mocked(UsageLog);
 const mockedSendInviteEmail = jest.mocked(sendInviteEmail);
 
 beforeEach(() => {
@@ -589,23 +587,18 @@ describe("organizationService.getOrganizationUsageSummary", () => {
       { _id: "u1", organizationId: "org1" },
       { _id: "u2", organizationId: "org1" },
     ] as any);
-    mockedUsageLog.aggregate.mockResolvedValue([
-      { totalRequests: 5, totalTokens: 1000, totalCost: 2.5 },
-    ] as any);
+    mockedUsageRepo.aggregateUsageStats.mockResolvedValue({
+      totalRequests: 5,
+      successfulRequests: 5,
+      totalTokens: 1000,
+      totalCost: 2.5,
+      avgResponseTime: 0,
+      avgTokensPerRequest: 0,
+    });
 
     const result = await organizationService.getOrganizationUsageSummary("org1");
 
-    expect(mockedUsageLog.aggregate).toHaveBeenCalledWith([
-      { $match: { userId: { $in: ["u1", "u2"] }, success: true } },
-      {
-        $group: {
-          _id: null,
-          totalRequests: { $sum: 1 },
-          totalTokens: { $sum: "$totalTokens" },
-          totalCost: { $sum: "$cost" },
-        },
-      },
-    ]);
+    expect(mockedUsageRepo.aggregateUsageStats).toHaveBeenCalledWith(["u1", "u2"]);
     expect(result).toEqual({
       userCount: 2,
       totalRequests: 5,
@@ -618,7 +611,14 @@ describe("organizationService.getOrganizationUsageSummary", () => {
     mockedUserRepo.getUsersByOrganization.mockResolvedValue([
       { _id: "u1", organizationId: "org1" },
     ] as any);
-    mockedUsageLog.aggregate.mockResolvedValue([] as any);
+    mockedUsageRepo.aggregateUsageStats.mockResolvedValue({
+      totalRequests: 0,
+      successfulRequests: 0,
+      totalTokens: 0,
+      totalCost: 0,
+      avgResponseTime: 0,
+      avgTokensPerRequest: 0,
+    });
 
     const result = await organizationService.getOrganizationUsageSummary("org1");
 
