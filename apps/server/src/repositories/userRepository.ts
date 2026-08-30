@@ -50,6 +50,25 @@ export async function updateUser(userId: string, data: any) {
   }).lean();
 }
 
+export async function incrementUserMonthlySpend(userId: string, amount: number) {
+  await User.updateOne(
+    { _id: userId },
+    { $inc: { "costLimits.currentMonthSpent": amount } }
+  );
+}
+
+export async function resetUserMonthlyBudget(userId: string, resetDate: Date) {
+  await User.updateOne(
+    { _id: userId },
+    {
+      $set: {
+        "costLimits.currentMonthSpent": 0,
+        "costLimits.lastResetDate": resetDate,
+      },
+    }
+  );
+}
+
 export async function deleteUser(userId: string) {
   return User.findByIdAndDelete(userId).lean();
 }
