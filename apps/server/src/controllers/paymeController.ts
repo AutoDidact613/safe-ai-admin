@@ -9,6 +9,10 @@ import {
 } from "../services/paymeService";
 import { MIN_SALE_PRICE_AGOROT } from "../services/paymeClient";
 
+// PayMe's sale currency is a free-text field in the request - restrict it
+// to what the seller account is actually configured for.
+const SUPPORTED_CURRENCIES = ["ILS"];
+
 /**
  * Admin or the organization's own owner may initiate/check a top-up -
  * same ownership rule as topUpOrganizationWalletHandler in
@@ -46,6 +50,10 @@ export async function initiatePaymeTopUpHandler(req: Request<{ id: string }>, re
       return res
         .status(400)
         .json({ error: `A valid amount of at least ${MIN_SALE_PRICE_AGOROT / 100} is required` });
+    }
+
+    if (currency !== undefined && !SUPPORTED_CURRENCIES.includes(currency)) {
+      return res.status(400).json({ error: `Unsupported currency. Allowed: ${SUPPORTED_CURRENCIES.join(", ")}` });
     }
 
     if (!(await isAdminOrOwner(req, res))) return;

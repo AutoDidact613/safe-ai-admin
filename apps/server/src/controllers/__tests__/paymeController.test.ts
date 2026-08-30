@@ -124,3 +124,42 @@ describe("paymeController.initiatePaymeTopUpHandler - authorization (isAdminOrOw
     expect(mockedPaymeService.initiateWalletTopUp).not.toHaveBeenCalled();
   });
 });
+
+describe("paymeController.initiatePaymeTopUpHandler - currency validation", () => {
+  function mockReq(body: Record<string, unknown>) {
+    return {
+      params: { id: "org1" },
+      body,
+      user: { userId: "owner1", role: "admin" },
+    } as any;
+  }
+
+  it("rejects an unsupported currency with 400 and never calls the PayMe service", async () => {
+    const req = mockReq({ amount: 100, currency: "USD" });
+    const res = mockRes();
+
+    await initiatePaymeTopUpHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(mockedOrganizationService.getOrganizationById).not.toHaveBeenCalled();
+    expect(mockedPaymeService.initiateWalletTopUp).not.toHaveBeenCalled();
+  });
+
+  it("allows a request with no currency field (service applies the ILS default)", async () => {
+    const org = { _id: "org1", ownerId: "owner1" };
+    (mockedOrganizationService.getOrganizationById as jest.Mock).mockResolvedValue(org as never);
+    (mockedPaymeService.initiateWalletTopUp as jest.Mock).mockResolvedValue({
+      success: true,
+      iframeUrl: "https://sandbox.payme.io/x",
+      requestId: "req1",
+    } as never);
+
+    const req = mockReq({ amount: 100 });
+    const res = mockRes();
+
+    await initiatePaymeTopUpHandler(req, res);
+
+    expect(res.status).not.toHaveBeenCalledWith(400);
+    expect(mockedPaymeService.initiateWalletTopUp).toHaveBeenCalled();
+  });
+});
