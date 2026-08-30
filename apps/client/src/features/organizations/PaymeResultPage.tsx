@@ -85,7 +85,7 @@ export default function PaymeResultPage() {
     return (
       <div className="auth-form-container">
         <div className="auth-form-wrapper">
-          <div style={{ textAlign: "center", padding: "40px" }}>
+          <div role="status" aria-live="polite" style={{ textAlign: "center", padding: "40px" }}>
             <div className="spinner" style={{ margin: "0 auto 20px" }}></div>
             <h2>בודק את סטטוס התשלום...</h2>
             <p style={{ color: "#666" }}>אנא המתן</p>
@@ -99,7 +99,7 @@ export default function PaymeResultPage() {
     return (
       <div className="auth-form-container">
         <div className="auth-form-wrapper">
-          <div style={{ textAlign: "center", padding: "40px" }}>
+          <div role="status" aria-live="polite" style={{ textAlign: "center", padding: "40px" }}>
             <h2>הטעינה הצליחה!</h2>
             <p>יתרת הארנק המעודכנת: <strong>{view.walletBalance.toFixed(2)}</strong></p>
             <button className="btn-primary" onClick={() => navigate("/organization/users")}>
@@ -114,7 +114,7 @@ export default function PaymeResultPage() {
   return (
     <div className="auth-form-container">
       <div className="auth-form-wrapper">
-        <div style={{ textAlign: "center", padding: "40px" }}>
+        <div role="status" aria-live="polite" style={{ textAlign: "center", padding: "40px" }}>
           <h2>הטעינה נכשלה</h2>
           <p style={{ color: "#666" }}>
             {view.phase === "error" ? view.message : "התשלום לא הושלם או בוטל."}

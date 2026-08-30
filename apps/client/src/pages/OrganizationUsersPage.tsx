@@ -40,6 +40,7 @@ export default function OrganizationUsersPage() {
 
   const [topUpAmount, setTopUpAmount] = useState<number | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [topUpError, setTopUpError] = useState<string | null>(null);
 
   const [isEditingOrg, setIsEditingOrg] = useState(false);
   const [editName, setEditName] = useState("");
@@ -124,6 +125,7 @@ export default function OrganizationUsersPage() {
 
     try {
       setIsSubmitting(true);
+      setTopUpError(null);
 
       const { iframeUrl } = await apiCall<{ iframeUrl: string; requestId: string }>(
         API_ENDPOINTS.payme.initiate(organization._id),
@@ -138,7 +140,7 @@ export default function OrganizationUsersPage() {
       window.location.href = iframeUrl;
     } catch (err: unknown) {
       console.error("Error initiating wallet top-up:", err);
-      alert(err instanceof Error ? err.message : "נכשלה יצירת בקשת התשלום");
+      setTopUpError(err instanceof Error ? err.message : "נכשלה יצירת בקשת התשלום");
       setIsSubmitting(false);
     }
   };
@@ -343,7 +345,11 @@ export default function OrganizationUsersPage() {
             </div>
 
             <form onSubmit={handleTopUp} className="topup-form">
+              <label htmlFor="topup-amount" className="sr-only">
+                סכום להטענה בשקלים
+              </label>
               <input
+                id="topup-amount"
                 type="number"
                 min="1"
                 dir="rtl"
@@ -356,6 +362,11 @@ export default function OrganizationUsersPage() {
               <button type="submit" disabled={isSubmitting} className="topup-button">
                 {isSubmitting ? "מעבד..." : "הטען"}
               </button>
+              {topUpError && (
+                <p className="topup-error" aria-live="polite">
+                  {topUpError}
+                </p>
+              )}
             </form>
           </div>
         </div>
