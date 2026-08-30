@@ -100,7 +100,7 @@ export default function Card({
       {(productType || aiApplicationType) && (
         <div className="tender-card__tags" style={{ marginTop: 'auto', paddingTop: '10px' }}>
           {productType && (
-            <span className="domain-pill" style={{ backgroundColor: '#f1f5f9', color: '#334155', borderColor: '#cbd5e1' }}>
+            <span className="domain-pill" style={{ backgroundColor: 'var(--gray-100)', color: 'var(--text-secondary)', borderColor: 'var(--border-strong)' }}>
               {productType}
             </span>
           )}
@@ -135,8 +135,8 @@ export default function Card({
                   height: '18px',
                   padding: '0 4px',
                   borderRadius: '9px',
-                  backgroundColor: '#dc2626',
-                  color: '#fff',
+                  backgroundColor: 'var(--color-danger)',
+                  color: 'var(--text-inverse)',
                   fontSize: '11px',
                   fontWeight: 700,
                   display: 'flex',

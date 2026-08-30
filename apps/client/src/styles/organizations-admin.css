@@ -2,61 +2,61 @@
 .orgs-admin-container { padding: 24px; direction: rtl; }
 .orgs-admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 12px; }
 .orgs-admin-title { font-size: 24px; font-weight: bold; }
-.orgs-admin-subtitle { margin-bottom: 20px; color: #666; }
-.orgs-admin-link { color: #2563eb; text-decoration: none; font-size: 14px; }
+.orgs-admin-subtitle { margin-bottom: 20px; color: var(--text-muted); }
+.orgs-admin-link { color: var(--link-color); text-decoration: none; font-size: 14px; }
 .orgs-admin-link:hover { text-decoration: underline; }
 
 /* Toolbar: search + status filter */
 .orgs-toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-.orgs-search { flex: 1; min-width: 220px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
-.orgs-filter { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: #fff; }
+.orgs-search { flex: 1; min-width: 220px; padding: 8px 12px; border: 1px solid var(--border-default); border-radius: 6px; font-size: 14px; }
+.orgs-filter { padding: 8px 12px; border: 1px solid var(--border-default); border-radius: 6px; font-size: 14px; background: var(--bg-surface); }
 
 /* Table */
 .orgs-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-.orgs-table th { background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; text-align: right; padding: 12px; font-size: 14px; }
-.orgs-table tr { border-bottom: 1px solid #dee2e6; }
+.orgs-table th { background-color: var(--bg-elevated); border-bottom: 2px solid var(--border-default); text-align: right; padding: 12px; font-size: 14px; }
+.orgs-table tr { border-bottom: 1px solid var(--border-default); }
 .orgs-table td { padding: 12px; font-size: 14px; }
-.orgs-table tbody tr:hover { background-color: #fafafa; }
-.orgs-name-cell { font-weight: 500; cursor: pointer; color: #2563eb; }
+.orgs-table tbody tr:hover { background-color: var(--bg-elevated); }
+.orgs-name-cell { font-weight: 500; cursor: pointer; color: var(--link-color); }
 .orgs-name-cell:hover { text-decoration: underline; }
 
 /* Status badges */
 .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; white-space: nowrap; }
-.status-badge.active { background-color: #d1e7dd; color: #0f5132; }
-.status-badge.inactive { background-color: #f8d7da; color: #842029; }
-.status-badge.approved { background-color: #d1e7dd; color: #0f5132; }
-.status-badge.pending { background-color: #fff3cd; color: #856404; }
-.status-badge.rejected { background-color: #f8d7da; color: #842029; }
+.status-badge.active { background-color: var(--color-success-bg); color: var(--color-success); }
+.status-badge.inactive { background-color: var(--color-danger-bg); color: var(--color-danger); }
+.status-badge.approved { background-color: var(--color-success-bg); color: var(--color-success); }
+.status-badge.pending { background-color: var(--color-warning-bg); color: var(--color-warning); }
+.status-badge.rejected { background-color: var(--color-danger-bg); color: var(--color-danger); }
 
 /* Action buttons */
 .orgs-btn { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
-.orgs-btn-suspend { background-color: #dc3545; color: white; }
-.orgs-btn-activate { background-color: #28a745; color: white; }
+.orgs-btn-suspend { background-color: var(--color-danger); color: var(--text-inverse); }
+.orgs-btn-activate { background-color: var(--color-success); color: var(--text-inverse); }
 .orgs-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* Empty / states */
-.orgs-empty { padding: 16px; background: #f5f5f5; border-radius: 6px; text-align: center; color: #666; }
+.orgs-empty { padding: 16px; background: var(--bg-elevated); border-radius: 6px; text-align: center; color: var(--text-muted); }
 .orgs-loading { padding: 20px; text-align: center; }
-.orgs-error { padding: 20px; color: #dc3545; }
-.orgs-success { padding: 8px 0; color: #16a34a; }
-.orgs-warning { padding: 8px 0; color: #b45309; }
+.orgs-error { padding: 20px; color: var(--color-danger); }
+.orgs-success { padding: 8px 0; color: var(--color-success); }
+.orgs-warning { padding: 8px 0; color: var(--color-warning); }
 
 /* Internal sub-toggle (all / pending) */
-.orgs-subtoggle { display: flex; gap: 8px; margin: 12px 0 20px; border-bottom: 1px solid #e5e7eb; }
-.orgs-subtoggle-btn { padding: 8px 16px; border: none; background: none; cursor: pointer; font-size: 14px; color: #6b7280; border-bottom: 2px solid transparent; }
-.orgs-subtoggle-btn.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
+.orgs-subtoggle { display: flex; gap: 8px; margin: 12px 0 20px; border-bottom: 1px solid var(--border-default); }
+.orgs-subtoggle-btn { padding: 8px 16px; border: none; background: none; cursor: pointer; font-size: 14px; color: var(--text-muted); border-bottom: 2px solid transparent; }
+.orgs-subtoggle-btn.active { color: var(--link-color); border-bottom-color: var(--link-color); font-weight: 600; }
 
 /* Org request form + pending screen */
 .org-request-form { display: flex; flex-direction: column; gap: 8px; max-width: 480px; }
-.org-field-label { font-size: 14px; color: #374151; margin-top: 8px; }
-.org-textarea { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: inherit; }
-.org-pending-card { max-width: 560px; margin: 24px auto; padding: 32px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; text-align: center; }
+.org-field-label { font-size: 14px; color: var(--text-secondary); margin-top: 8px; }
+.org-textarea { padding: 8px 12px; border: 1px solid var(--border-default); border-radius: 6px; font-size: 14px; font-family: inherit; }
+.org-pending-card { max-width: 560px; margin: 24px auto; padding: 32px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--bg-surface); text-align: center; }
 .org-pending-card h2 { margin-bottom: 12px; }
-.org-pending-card p { color: #4b5563; line-height: 1.7; }
+.org-pending-card p { color: var(--gray-600); line-height: 1.7; }
 
 /* Detail page cards */
-.org-detail-back { display: inline-block; margin-bottom: 16px; color: #2563eb; text-decoration: none; }
+.org-detail-back { display: inline-block; margin-bottom: 16px; color: var(--link-color); text-decoration: none; }
 .org-detail-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin: 20px 0; }
-.org-card { padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }
-.org-card-label { color: #6b7280; font-size: 13px; margin-bottom: 6px; }
+.org-card { padding: 16px; border: 1px solid var(--border-default); border-radius: 8px; background: var(--bg-surface); }
+.org-card-label { color: var(--text-muted); font-size: 13px; margin-bottom: 6px; }
 .org-card-value { font-size: 22px; font-weight: 700; }

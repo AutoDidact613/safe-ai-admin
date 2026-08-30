@@ -269,13 +269,13 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
                 alignItems: 'center',
                 gap: '8px',
                 background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                color: 'white',
+                color: 'var(--text-inverse)',
                 border: 'none',
                 padding: '10px 16px',
                 borderRadius: '20px',
                 cursor: 'pointer',
                 fontWeight: 'bold',
-                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                boxShadow: 'var(--shadow-sm)'
               }}
             >
               <span>✨</span>
@@ -285,7 +285,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
 
           {/* תיבת הטקסט החכמה שנפתחת בלחיצה */}
           {isSmartOpen && (
-            <div className="smart-create-box" style={{ width: '100%', marginTop: '16px', padding: '16px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
+            <div className="smart-create-box" style={{ width: '100%', marginTop: '16px', padding: '16px', border: '1px solid var(--border-default)', borderRadius: '8px', backgroundColor: 'var(--bg-elevated)' }}>
               <label htmlFor="smartText" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>תאר את המכרז שברצונך לפתוח (ה-AI ימלא את השדות עבורך):</label>
               <textarea
                 id="smartText"

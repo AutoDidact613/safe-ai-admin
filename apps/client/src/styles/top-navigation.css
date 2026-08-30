@@ -1,12 +1,12 @@
 /* OpenAI-Inspired Top Navigation */
 
 .top-navigation {
-  background-color: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
   position: sticky;
   top: 0;
   z-index: 1000;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .top-nav-container {
@@ -32,7 +32,7 @@
   align-items: center;
   gap: 12px;
   text-decoration: none;
-  color: #202123;
+  color: var(--text-primary);
   font-weight: 600;
   font-size: 18px;
   transition: opacity 0.2s;
@@ -63,7 +63,7 @@
 
 .top-nav-link {
   padding: 8px 12px;
-  color: #374151;
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
@@ -76,13 +76,13 @@
 }
 
 .top-nav-link:hover {
-  background-color: #f3f4f6;
-  color: #111827;
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
 }
 
 .top-nav-link.active {
-  background-color: #f3f4f6;
-  color: #111827;
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
 }
 
 /* Navigation Buttons */
@@ -102,24 +102,24 @@
 
 .top-nav-btn-secondary {
   background-color: transparent;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
 }
 
 .top-nav-btn-secondary:hover {
-  background-color: #f9fafb;
-  border-color: #9ca3af;
+  background-color: var(--bg-page);
+  border-color: var(--gray-400);
 }
 
 .top-nav-btn-primary {
-  background-color: #10a37f;
-  color: white;
-  border: 1px solid #10a37f;
+  background-color: var(--brand-secondary);
+  color: var(--text-inverse);
+  border: 1px solid var(--brand-secondary);
 }
 
 .top-nav-btn-primary:hover {
-  background-color: #0d8f6f;
-  border-color: #0d8f6f;
+  background-color: var(--brand-secondary-hover);
+  border-color: var(--brand-secondary-hover);
 }
 
 /* Developers Dropdown */
@@ -141,10 +141,10 @@
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-md);
   min-width: 160px;
   z-index: 1000;
   padding: 4px 0;
@@ -154,15 +154,15 @@
   display: block;
   padding: 10px 16px;
   font-size: 14px;
-  color: #374151;
+  color: var(--text-secondary);
   text-decoration: none;
   white-space: nowrap;
   transition: background-color 0.15s;
 }
 
 .dev-menu-item:hover {
-  background-color: #f3f4f6;
-  color: #111827;
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
 }
 
 /* User Menu */
@@ -176,25 +176,25 @@
   gap: 8px;
   padding: 6px 12px;
   background: transparent;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
   font-size: 14px;
-  color: #374151;
+  color: var(--text-secondary);
 }
 
 .user-menu-trigger:hover {
-  background-color: #f9fafb;
-  border-color: #9ca3af;
+  background-color: var(--bg-page);
+  border-color: var(--gray-400);
 }
 
 .user-avatar {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #10a37f 0%, #0d8f6f 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--brand-secondary) 0%, var(--brand-secondary-hover) 100%);
+  color: var(--text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -212,7 +212,7 @@
 
 .dropdown-arrow {
   transition: transform 0.2s;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 .dropdown-arrow.open {
@@ -225,10 +225,10 @@
   top: calc(100% + 8px);
   right: 0;
   min-width: 240px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg);
   padding: 8px;
   z-index: 1001;
   animation: slideDown 0.2s ease;
@@ -248,19 +248,19 @@
 .user-menu-header {
   padding: 12px;
   border-radius: 6px;
-  background-color: #f9fafb;
+  background-color: var(--bg-page);
 }
 
 .user-menu-name {
   font-weight: 600;
   font-size: 14px;
-  color: #111827;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .user-menu-email {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -268,7 +268,7 @@
 
 .user-menu-divider {
   height: 1px;
-  background-color: #e5e7eb;
+  background-color: var(--border-default);
   margin: 8px 0;
 }
 
@@ -277,7 +277,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  color: #374151;
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
@@ -291,12 +291,12 @@
 }
 
 .user-menu-item:hover {
-  background-color: #f3f4f6;
-  color: #111827;
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
 }
 
 .user-menu-item svg {
-  color: #6b7280;
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 

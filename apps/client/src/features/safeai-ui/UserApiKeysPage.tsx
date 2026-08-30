@@ -167,7 +167,7 @@ export default function UserApiKeysPage() {
       <div className="management-header">
         <div>
           <h2>🔑 ניהול מפתחות API</h2>
-          <p style={{ margin: "10px 0 0 0", color: "#666" }}>
+          <p style={{ margin: "10px 0 0 0", color: "var(--text-muted)" }}>
             שלום {user.name} ({user.email})
           </p>
         </div>
@@ -194,14 +194,14 @@ export default function UserApiKeysPage() {
                 border: "2px solid #667eea",
                 borderRadius: "8px",
                 padding: "20px",
-                backgroundColor: proxyKey.isActive ? "#f8f9ff" : "#f5f5f5",
+                backgroundColor: proxyKey.isActive ? "#f8f9ff" : "var(--bg-elevated)",
                 marginBottom: "15px",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
                 <div>
                   <h4 style={{ margin: 0, marginBottom: "5px" }}>מפתח הגישה שלך למערכת</h4>
-                  <p style={{ margin: 0, fontSize: "14px", color: "#666", fontFamily: "monospace" }}>
+                  <p style={{ margin: 0, fontSize: "14px", color: "var(--text-muted)", fontFamily: "monospace" }}>
                     {proxyKey.proxyKeyPrefix}...
                   </p>
                 </div>
@@ -211,7 +211,7 @@ export default function UserApiKeysPage() {
               </div>
 
               {proxyKey.createdAt && (
-                <p style={{ margin: "0 0 15px 0", fontSize: "12px", color: "#999" }}>
+                <p style={{ margin: "0 0 15px 0", fontSize: "12px", color: "var(--text-muted)" }}>
                   נוצר: {new Date(proxyKey.createdAt).toLocaleDateString("he-IL")}
                 </p>
               )}
@@ -280,10 +280,10 @@ export default function UserApiKeysPage() {
                   <div 
                     key={key._id} 
                     style={{
-                      border: "1px solid #ddd",
+                      border: "1px solid var(--border-default)",
                       borderRadius: "8px",
                       padding: "15px",
-                      backgroundColor: key.isActive ? "#fff" : "#f5f5f5",
+                      backgroundColor: key.isActive ? "var(--bg-surface)" : "var(--bg-elevated)",
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -299,7 +299,7 @@ export default function UserApiKeysPage() {
                              key.provider === "anthropic" ? "Anthropic (Claude)" : 
                              key.provider === "google" ? "Google (Gemini)" : "Groq"}
                           </h4>
-                          <p style={{ margin: "5px 0 0 0", fontSize: "13px", color: "#666", fontFamily: "monospace" }}>
+                          <p style={{ margin: "5px 0 0 0", fontSize: "13px", color: "var(--text-muted)", fontFamily: "monospace" }}>
                             {key.keyPrefix}...
                           </p>
                         </div>
@@ -309,7 +309,7 @@ export default function UserApiKeysPage() {
                       </span>
                     </div>
                     {key.createdAt && (
-                      <p style={{ margin: "10px 0 0 0", fontSize: "12px", color: "#999" }}>
+                      <p style={{ margin: "10px 0 0 0", fontSize: "12px", color: "var(--text-muted)" }}>
                         נוצר: {new Date(key.createdAt).toLocaleDateString("he-IL")}
                       </p>
                     )}
@@ -348,7 +348,7 @@ export default function UserApiKeysPage() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            backgroundColor: "var(--bg-overlay)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -359,7 +359,7 @@ export default function UserApiKeysPage() {
         >
           <div
             style={{
-              backgroundColor: "white",
+              backgroundColor: "var(--bg-surface)",
               borderRadius: "12px",
               padding: "30px",
               maxWidth: "600px",
@@ -383,7 +383,7 @@ export default function UserApiKeysPage() {
             >
               <p
                 style={{
-                  color: "white",
+                  color: "var(--text-inverse)",
                   marginBottom: "15px",
                   fontWeight: "bold",
                   fontSize: "16px",
@@ -393,14 +393,14 @@ export default function UserApiKeysPage() {
               </p>
               <div
                 style={{
-                  background: "white",
+                  background: "var(--bg-surface)",
                   padding: "15px",
                   borderRadius: "8px",
                   fontFamily: "monospace",
                   fontSize: "13px",
                   wordBreak: "break-all",
-                  border: "3px solid #fff",
-                  boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                  border: "3px solid var(--bg-surface)",
+                  boxShadow: "var(--shadow-md)",
                 }}
               >
                 {newProxyKey}
@@ -410,17 +410,17 @@ export default function UserApiKeysPage() {
             <div
               className="alert alert-warning"
               style={{
-                background: "#fff3cd",
-                border: "2px solid #ffc107",
+                background: "var(--color-warning-bg)",
+                border: "2px solid var(--color-warning-border)",
                 borderRadius: "8px",
                 padding: "15px",
                 marginBottom: "20px",
               }}
             >
-              <h4 style={{ color: "#856404", marginTop: 0, marginBottom: "10px" }}>
+              <h4 style={{ color: "var(--color-warning)", marginTop: 0, marginBottom: "10px" }}>
                 ⚠️ חשוב מאוד!
               </h4>
-              <ul style={{ margin: 0, paddingRight: "20px", color: "#856404" }}>
+              <ul style={{ margin: 0, paddingRight: "20px", color: "var(--color-warning)" }}>
                 <li>שמור מפתח זה במקום בטוח</li>
                 <li>
                   <strong>זו ההזדמנות האחרונה שלך לראות אותו!</strong>

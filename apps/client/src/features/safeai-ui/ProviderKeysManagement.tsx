@@ -157,8 +157,8 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
 
         <div style={{ padding: "20px" }}>
           <div style={{ 
-            backgroundColor: "#e7f3ff", 
-            border: "1px solid #2196F3", 
+            backgroundColor: "var(--color-info-bg)",
+            border: "1px solid var(--color-info-border)",
             borderRadius: "4px", 
             padding: "15px", 
             marginBottom: "20px" 
@@ -195,10 +195,10 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
                 <div 
                   key={key._id} 
                   style={{
-                    border: "1px solid #ddd",
+                    border: "1px solid var(--border-default)",
                     borderRadius: "8px",
                     padding: "15px",
-                    backgroundColor: key.isActive ? "#fff" : "#f5f5f5",
+                    backgroundColor: key.isActive ? "var(--bg-surface)" : "var(--bg-elevated)",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -206,7 +206,7 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
                       <span style={{ fontSize: "24px" }}>{getProviderIcon(key.provider)}</span>
                       <div>
                         <h4 style={{ margin: 0 }}>{getProviderName(key.provider)}</h4>
-                        <p style={{ margin: "5px 0 0 0", fontSize: "13px", color: "#666", fontFamily: "monospace" }}>
+                        <p style={{ margin: "5px 0 0 0", fontSize: "13px", color: "var(--text-muted)", fontFamily: "monospace" }}>
                           {key.keyPrefix}...
                         </p>
                       </div>
@@ -232,7 +232,7 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
                     </div>
                   </div>
                   {key.createdAt && (
-                    <p style={{ margin: "10px 0 0 0", fontSize: "12px", color: "#999" }}>
+                    <p style={{ margin: "10px 0 0 0", fontSize: "12px", color: "var(--text-muted)" }}>
                       נוצר: {new Date(key.createdAt).toLocaleDateString("he-IL")} {new Date(key.createdAt).toLocaleTimeString("he-IL")}
                     </p>
                   )}
@@ -285,7 +285,7 @@ export default function ProviderKeysManagement({ userId, userEmail, onClose }: P
                   placeholder="sk-..."
                   style={{ fontFamily: "monospace" }}
                 />
-                <small style={{ display: "block", marginTop: "5px", color: "#666" }}>
+                <small style={{ display: "block", marginTop: "5px", color: "var(--text-muted)" }}>
                   המפתח יוצפן ויישמר בצורה מאובטחת
                 </small>
               </div>

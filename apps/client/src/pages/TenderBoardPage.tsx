@@ -342,9 +342,9 @@ export default function TenderBoardPage() {
                   onChange={(e) => setSmartSearchQuery(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSmartSearch() }}
                   placeholder='הקלד חיפוש חופשי'
-                  style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', flex: 1, maxWidth: '400px' }}
+                  style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-strong)', flex: 1, maxWidth: '400px' }}
                 />
-                <button type="button" className="tab-button" onClick={handleSmartSearch} style={{ backgroundColor: '#f1f5f9' }}>
+                <button type="button" className="tab-button" onClick={handleSmartSearch} style={{ backgroundColor: 'var(--gray-100)' }}>
                   חפש
                 </button>
                 {smartSearchResults !== null && (
@@ -470,7 +470,7 @@ export default function TenderBoardPage() {
                   }
                 }}
                 placeholder="לדוגמה: 5000"
-                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', width: '140px' }}
+                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-strong)', width: '140px' }}
               />
             </div>
 
@@ -482,7 +482,7 @@ export default function TenderBoardPage() {
                 value={maxTimeDays}
                 onChange={(e) => setMaxTimeDays(e.target.value)}
                 placeholder="לדוגמה: 30"
-                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', width: '140px' }}
+                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-strong)', width: '140px' }}
               />
             </div>
 

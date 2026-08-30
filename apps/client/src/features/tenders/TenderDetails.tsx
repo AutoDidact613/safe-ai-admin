@@ -69,7 +69,7 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
           {tender.shortDescription && (
             <div style={{ background: 'var(--secondary-bg)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
               <strong>הסבר על הפרויקט:</strong>
-              <p style={{ margin: '8px 0 0', color: '#475569', lineHeight: '1.6' }}>{tender.shortDescription}</p>
+              <p style={{ margin: '8px 0 0', color: 'var(--text-secondary)', lineHeight: '1.6' }}>{tender.shortDescription}</p>
             </div>
           )}
 
@@ -95,11 +95,11 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
 
           {/* תגיות סיווג מוצר ו-AI */}
           {(tender.productType || tender.aiApplicationType) && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', borderTop: '1px solid var(--border-muted)', paddingTop: '14px' }}>
               {tender.productType && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>סוג מוצר:</span>
-                  <span className="domain-pill" style={{ backgroundColor: '#f1f5f9', color: '#334155', borderColor: '#cbd5e1' }}>{tender.productType}</span>
+                  <span className="domain-pill" style={{ backgroundColor: 'var(--gray-100)', color: 'var(--text-secondary)', borderColor: 'var(--border-strong)' }}>{tender.productType}</span>
                 </div>
               )}
               {tender.aiApplicationType && (
@@ -113,7 +113,7 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
 
           {/* סעיף אג'נטים נדרשים */}
           {tender.agentsRequired && tender.agentsRequired.length > 0 && (
-            <div className="agents-required" style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
+            <div className="agents-required" style={{ borderTop: '1px solid var(--border-muted)', paddingTop: '14px' }}>
               <strong style={{ display: 'block', marginBottom: '8px' }}>האג'נטים הנדרשים:</strong>
               <div className="agents-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {tender.agentsRequired.map((a) => (
@@ -125,9 +125,9 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
 
           {/* פרטים נוספים חופשיים */}
           {tender.additionalDetails && (
-            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
+            <div style={{ borderTop: '1px solid var(--border-muted)', paddingTop: '14px' }}>
               <strong>פרטים נוספים:</strong>
-              <p style={{ marginTop: '8px', color: '#475569', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{tender.additionalDetails}</p>
+              <p style={{ marginTop: '8px', color: 'var(--text-secondary)', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{tender.additionalDetails}</p>
             </div>
           )}
 

@@ -211,7 +211,7 @@ export default function RegisterForm() {
               <div className="password-requirements">
                 <ul>
                   {passwordErrors.map((err, idx) => (
-                    <li key={idx} style={{ color: "#dc3545", fontSize: "12px" }}>
+                    <li key={idx} style={{ color: "var(--color-danger)", fontSize: "12px" }}>
                       {err}
                     </li>
                   ))}
@@ -251,7 +251,7 @@ export default function RegisterForm() {
                 </option>
               ))}
             </select>
-            <small style={{ display: "block", marginTop: "5px", color: "#666" }}>
+            <small style={{ display: "block", marginTop: "5px", color: "var(--text-muted)" }}>
               בחר את הארגון שאליו אתה משתייך
             </small>
           </div>
@@ -268,7 +268,7 @@ export default function RegisterForm() {
               <option value="BYOK">🔑 BYOK - הבא מפתח משלך</option>
               <option value="MANAGED">🏢 MANAGED - שימוש במפתחות המערכת</option>
             </select>
-            <small style={{ display: "block", marginTop: "5px", color: "#666" }}>
+            <small style={{ display: "block", marginTop: "5px", color: "var(--text-muted)" }}>
               {formData.mode === "BYOK"
                 ? "תוכל להוסיף מפתחות API משלך לספקים שונים"
                 : "המערכת תנהל את המפתחות עבורך"}
@@ -282,7 +282,7 @@ export default function RegisterForm() {
           )}
 
           <div className="form-group">
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#666", whiteSpace: "nowrap" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
               <input
                 type="checkbox"
                 checked={agreedToPrivacyPolicy}
@@ -294,10 +294,10 @@ export default function RegisterForm() {
                   padding: 0,
                   margin: 0,
                   flexShrink: 0,
-                  border: "1px solid #d1d5db",
+                  border: "1px solid var(--border-default)",
                   borderRadius: "3px",
-                  background: "#ffffff",
-                  accentColor: "#10a37f",
+                  background: "var(--bg-surface)",
+                  accentColor: "var(--brand-secondary)",
                 }}
               />
               <span>

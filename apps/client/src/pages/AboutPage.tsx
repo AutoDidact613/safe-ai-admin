@@ -174,8 +174,8 @@ export default function AboutPage() {
                 x2="100%"
                 y2="100%"
               >
-                <stop offset="0%" stopColor="#10a37f" stopOpacity="1" />
-                <stop offset="100%" stopColor="#0d8f6f" stopOpacity="1" />  
+                <stop offset="0%" stopColor="var(--brand-secondary)" stopOpacity="1" />
+                <stop offset="100%" stopColor="var(--brand-secondary-hover)" stopOpacity="1" />
               </linearGradient>
 
               <filter
@@ -297,7 +297,7 @@ export default function AboutPage() {
                   font-family="'Segoe UI', Tahoma, sans-serif"
                   font-size="16"
                   font-weight="900"
-                  fill="#ffffff"
+                  fill="var(--text-inverse)"
                   text-anchor="middle"
                 >
                   https://safeai613.com/v1
