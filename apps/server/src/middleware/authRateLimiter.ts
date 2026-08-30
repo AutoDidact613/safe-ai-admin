@@ -29,3 +29,23 @@ export const passwordResetRateLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Too many password reset attempts. Please try again later." },
 });
+
+// Each successful call creates a pending WalletTransaction row and a
+// PayMe generate-sale request - cap how many an org/IP can spam.
+export const paymeInitiateRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many top-up attempts. Please try again later." },
+});
+
+// Called by PayMe itself, so this is a flood guard rather than a normal
+// per-user cap - kept high enough not to drop legitimate callbacks.
+export const paymeWebhookRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many webhook requests." },
+});
