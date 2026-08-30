@@ -1,6 +1,13 @@
 from datetime import datetime, timedelta
+from unittest.mock import MagicMock, patch
 
-from nodes import anomalies_gate, classify_event_type, classify_node, evaluator_node
+from nodes import (
+    anomalies_gate,
+    classify_event_type,
+    classify_node,
+    evaluator_node,
+    summarize_node,
+)
 
 
 def test_classify_event_type_approval():
@@ -151,5 +158,39 @@ def test_anomalies_gate_routes_to_summarize_when_anomalies_found():
 def test_anomalies_gate_routes_to_present_when_no_anomalies():
     assert anomalies_gate({"anomalies": []}) == "present"
     assert anomalies_gate({}) == "present"
+
+
+# ---------------------------------------------------------------------------
+# summarize_node (LLM, mocked)
+# ---------------------------------------------------------------------------
+
+
+def _config():
+    config = MagicMock()
+    config.gemini_api_key = "test-key"
+    config.llm_model = "gemini-1.5-pro"
+    return config
+
+
+@patch("nodes.genai.Client")
+def test_summarize_node_returns_llm_text(client_cls):
+    client_cls.return_value.models.generate_content.return_value.text = (
+        "Organization org-1 had 3 wallet top-ups within 24 hours."
+    )
+    state = {
+        "anomalies": [
+            {
+                "organization_id": "org-1",
+                "type": "excessive_topups",
+                "count": 3,
+                "window_start": datetime(2026, 8, 1, 0, 0),
+                "window_end": datetime(2026, 8, 1, 20, 0),
+            }
+        ]
+    }
+    result = summarize_node(state, _config())
+    assert result == {
+        "summary": "Organization org-1 had 3 wallet top-ups within 24 hours."
+    }
 
 

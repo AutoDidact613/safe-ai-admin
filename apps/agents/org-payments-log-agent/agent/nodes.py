@@ -1,7 +1,12 @@
 from datetime import timedelta
 
+import json
+
+from google import genai
+from langsmith import traceable
 from pymongo.errors import PyMongoError
 
+from config import Config
 from fetch_logs import fetch_org_payment_logs
 from graph_state import GraphState
 
@@ -114,3 +119,33 @@ def anomalies_gate(state: GraphState) -> str:
     were found, or straight to the short "all clear" report otherwise.
     """
     return "summarize" if state.get("anomalies") else "present"
+
+
+_SUMMARY_PROMPT_TEMPLATE = """You are writing a short status report for a system
+administrator about suspicious organization wallet activity detected in the logs.
+
+For each anomaly below, write one clear sentence explaining what was found and why
+it's worth a look (do not invent details beyond what's given; do not address the
+administrator directly with imperative instructions - just report the facts).
+
+Anomalies (JSON):
+{anomalies_json}
+"""
+
+
+@traceable
+def _call_llm(prompt: str, config: Config) -> str:
+    client = genai.Client(api_key=config.gemini_api_key)
+    response = client.models.generate_content(model=config.llm_model, contents=prompt)
+    return response.text
+
+
+def summarize_node(state: GraphState, agent_config: Config) -> dict:
+    """
+    LangGraph node (LLM) that turns the structured "anomalies" list into a
+    short natural-language summary for the admin. Only runs on the
+    "anomalies found" path (see anomalies_gate).
+    """
+    anomalies_json = json.dumps(state.get("anomalies", []), default=str)
+    prompt = _SUMMARY_PROMPT_TEMPLATE.format(anomalies_json=anomalies_json)
+    return {"summary": _call_llm(prompt, agent_config)}
