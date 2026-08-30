@@ -118,19 +118,24 @@ export default function LandingPageV2() {
     });
   };
 
-  const handleForumClick = () => {
+  // Shared guard for routes that require login: navigate straight there if
+  // already authenticated, otherwise explain why and offer a way to log in.
+  const handleProtectedNav = (path: string, itemName: string) => {
     if (isAuthenticated) {
-      navigate("/forum");
+      navigate(path);
       return;
     }
     setModal({
       icon: <LockIcon />,
       title: "נדרשת התחברות",
-      message: "כדי להיכנס לפורום זהירות AI יש להתחבר קודם למערכת.",
+      message: `כדי להיכנס ל${itemName} יש להתחבר קודם למערכת.`,
       primaryLabel: "מעבר להתחברות",
       onPrimaryAction: () => navigate("/login"),
     });
   };
+
+  const handleForumClick = () => handleProtectedNav("/forum", "פורום זהירות AI");
+  const handleNewsClick = () => handleProtectedNav("/ai-news", "עמוד החדשות");
 
   const handleHeroSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -204,7 +209,7 @@ export default function LandingPageV2() {
                   <Link to="/docs" onClick={() => setProductsMenuOpen(false)}>תיעוד</Link>
                   <Link to="/courses" onClick={() => setProductsMenuOpen(false)}>קורסים</Link>
                   <Link to="/recommended-guides" onClick={() => setProductsMenuOpen(false)}>מדריכים מומלצים</Link>
-                  <Link to="/ai-news" onClick={() => setProductsMenuOpen(false)}>חדשות</Link>
+                  <button onClick={() => { setProductsMenuOpen(false); handleNewsClick(); }}>חדשות</button>
                   <Link to="/tender-board" onClick={() => setProductsMenuOpen(false)}>לוח פרויקטים</Link>
                 </div>
               </div>
