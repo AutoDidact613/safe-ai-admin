@@ -396,6 +396,18 @@
   border-radius: 4px;
 }
 
+/* Neutral — for something that already exists but isn't linked here yet
+   (as opposed to "soon", which means not built at all). */
+.lv2-updating-tag {
+  flex-shrink: 0;
+  background: var(--lv2-line-soft);
+  color: var(--lv2-muted);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+
 .lv2-available-tag {
   flex-shrink: 0;
   background: var(--lv2-accent-soft);

@@ -16,7 +16,7 @@ import {
   ArrowUpIcon,
 } from "../features/landing/icons";
 
-type BannerStatus = "available" | "soon";
+type BannerStatus = "available" | "soon" | "updating";
 
 interface Banner {
   key: string;
@@ -105,6 +105,16 @@ export default function LandingPageV2() {
     });
   };
 
+  // SafeAI Platform already exists (today's "איזור אישי"), but is intentionally
+  // not linked yet — it's being restructured and re-branded before connecting it here.
+  const showPlatformUpdating = () => {
+    setModal({
+      icon: <ClockIcon />,
+      title: "בעדכון",
+      message: "SafeAI Platform נמצא כרגע בשלבי עדכון ומיתוג מחדש. הקישור יתעדכן כשהעבודה תושלם.",
+    });
+  };
+
   const handleForumClick = () => {
     if (isAuthenticated) {
       navigate("/forum");
@@ -130,8 +140,8 @@ export default function LandingPageV2() {
       icon: <ShieldIcon />,
       title: "SafeAI Platform",
       description: "איזור אישי, תיעוד, יצירת קשר וניהול ארגונים",
-      status: "soon",
-      onClick: () => showComingSoon("SafeAI Platform"),
+      status: "updating",
+      onClick: showPlatformUpdating,
     },
     {
       key: "hub",
@@ -182,7 +192,7 @@ export default function LandingPageV2() {
               <div className="lv2-dropdown lv2-dropdown-products">
                 <div className="lv2-dropdown-col">
                   <span className="lv2-dropdown-heading">מוצרים</span>
-                  <button onClick={() => { setProductsMenuOpen(false); showComingSoon("SafeAI Platform"); }}>SafeAI Platform</button>
+                  <button onClick={() => { setProductsMenuOpen(false); showPlatformUpdating(); }}>SafeAI Platform</button>
                   <button onClick={() => { setProductsMenuOpen(false); showComingSoon("SafeAI Hub"); }}>SafeAI Hub</button>
                   <button onClick={() => { setProductsMenuOpen(false); showComingSoon("SafeChatbox"); }}>SafeChatbox</button>
                 </div>
@@ -257,8 +267,16 @@ export default function LandingPageV2() {
             <div className="lv2-banner-content">
               <div className="lv2-banner-heading">
                 <h3 className="lv2-banner-title">{banner.title}</h3>
-                <span className={banner.status === "soon" ? "lv2-soon-tag" : "lv2-available-tag"}>
-                  {banner.status === "soon" ? "בקרוב" : "זמין"}
+                <span
+                  className={
+                    banner.status === "soon"
+                      ? "lv2-soon-tag"
+                      : banner.status === "updating"
+                        ? "lv2-updating-tag"
+                        : "lv2-available-tag"
+                  }
+                >
+                  {banner.status === "soon" ? "בקרוב" : banner.status === "updating" ? "בעדכון" : "זמין"}
                 </span>
               </div>
               <p className="lv2-banner-desc">{banner.description}</p>
@@ -291,7 +309,7 @@ export default function LandingPageV2() {
       <footer className="lv2-footer">
         <div className="lv2-footer-col">
           <span className="lv2-footer-heading">מוצרים</span>
-          <button onClick={() => showComingSoon("SafeAI Platform")}>SafeAI Platform</button>
+          <button onClick={showPlatformUpdating}>SafeAI Platform</button>
           <button onClick={() => showComingSoon("SafeAI Hub")}>SafeAI Hub</button>
           <button onClick={() => showComingSoon("SafeChatbox")}>SafeChatbox</button>
           <button onClick={handleForumClick}>פורום זהירות AI</button>
