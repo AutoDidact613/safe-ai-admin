@@ -95,5 +95,7 @@ def send_node(state: GraphState, client: SafeAIClient) -> GraphState:
     for inquiry_id in approved:
         draft = state["drafts"][inquiry_id]
         client.post_reply(inquiry_id, draft["text"])
-        client.mark_handled(inquiry_id)
+        # הפנייה לא נסגרת אוטומטית אחרי שליחת התשובה: ייתכן שלמשתמש תהיה
+        # שאלת המשך על אותה פנייה, ולכן היא צריכה להישאר open. סגירת
+        # הפנייה היא פעולה ידנית שהמנהל מבצע בעצמו דרך פאנל הניהול.
     return state

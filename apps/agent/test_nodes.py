@@ -107,7 +107,9 @@ def test_send_node_only_sends_explicitly_approved_ids():
     send_node(state, client)
 
     client.post_reply.assert_called_once_with("1", "draft one")
-    client.mark_handled.assert_called_once_with("1")
+    # הפנייה לא נסגרת אוטומטית - זו פעולה ידנית של המנהל (ייתכן שיהיה
+    # למשתמש המשך שאלה על אותה פנייה).
+    client.mark_handled.assert_not_called()
 
 
 def test_send_node_sends_nothing_when_no_ids_approved():

@@ -4,6 +4,7 @@ import requests
 from fastapi import FastAPI, HTTPException
 from google.genai import errors as genai_errors
 from pydantic import BaseModel
+from pymongo import MongoClient
 
 from agent_ops import GraphStateError, edit_draft, resume_with_approval, resume_with_selection
 from api_client import SafeAIClient
@@ -11,6 +12,19 @@ from config import ConfigError, load_config
 from graph import build_graph
 
 app = FastAPI(title="inquiry-agent")
+
+# מופע יחיד ומשותף לכל בקשות ה-API, שנוצר פעם אחת (lazy) ונשאר פתוח לכל
+# אורך חיי התהליך - לא ליצור MongoClient חדש בכל בקשה, אחרת כל קריאה
+# ל-run/list או run/process הייתה פותחת connection pool נוסף ל-Atlas
+# בלי לסגור את הקודם (בניגוד ל-CLI, ששם תהליך חדש נפתח ונסגר בכל הרצה).
+_mongo_client: MongoClient | None = None
+
+
+def _get_mongo_client() -> MongoClient:
+    global _mongo_client
+    if _mongo_client is None:
+        _mongo_client = MongoClient(load_config().mongodb_atlas_uri)
+    return _mongo_client
 
 
 class ProcessRequest(BaseModel):
@@ -37,7 +51,7 @@ def _build_graph_for(thread_id: str):
     config = load_config()
     config.thread_id = thread_id
     client = SafeAIClient(config)
-    return build_graph(config, client)
+    return build_graph(config, client, mongo_client=_get_mongo_client())
 
 
 @app.get("/health")
@@ -50,7 +64,7 @@ def run_list() -> dict:
     try:
         config = load_config()
         client = SafeAIClient(config)
-        graph = build_graph(config, client)
+        graph = build_graph(config, client, mongo_client=_get_mongo_client())
 
         thread_id = str(uuid.uuid4())
         config.thread_id = thread_id

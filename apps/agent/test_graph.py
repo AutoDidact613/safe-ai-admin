@@ -128,7 +128,8 @@ def test_explicit_approval_sends_only_the_approved_ids():
     graph.invoke(None, thread_config)
 
     client.post_reply.assert_called_once_with("1", "draft for 1")
-    client.mark_handled.assert_called_once_with("1")
+    # הפנייה לא נסגרת אוטומטית - זו פעולה ידנית של המנהל.
+    client.mark_handled.assert_not_called()
 
 
 @patch("nodes.check_draft")

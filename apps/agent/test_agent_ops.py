@@ -29,7 +29,9 @@ def test_resume_with_selection_rejects_wrong_gate():
 def test_resume_with_selection_returns_drafts_for_selected_ids_on_first_pass():
     graph = MagicMock()
     graph.get_state.side_effect = [
-        _snapshot(("draft_node",)),  # initial gate check
+        _snapshot(  # initial gate check
+            ("draft_node",), {"inquiries": [{"id": "1", "title": "t", "description": "d"}]}
+        ),
         _snapshot(  # after the single invoke, already at gate 3
             ("send_node",),
             {
@@ -53,7 +55,9 @@ def test_resume_with_selection_returns_drafts_for_selected_ids_on_first_pass():
 def test_resume_with_selection_loops_through_guardrails_retries():
     graph = MagicMock()
     graph.get_state.side_effect = [
-        _snapshot(("draft_node",)),  # initial gate check
+        _snapshot(  # initial gate check
+            ("draft_node",), {"inquiries": [{"id": "1", "title": "t", "description": "d"}]}
+        ),
         _snapshot(("draft_node",)),  # after invoke #1: guardrails failed, retrying
         _snapshot(  # after invoke #2: guardrails passed, at gate 3
             ("send_node",),
@@ -85,7 +89,11 @@ def test_resume_with_selection_gives_up_after_max_attempts_as_a_safety_backstop(
     graph = MagicMock()
     # Always reports "still retrying" - simulates the graph's own cap somehow
     # never engaging (the exact bug this function is a backstop against).
-    graph.get_state.return_value = _snapshot(("draft_node",))
+    # inquiries must include id "1" so the test fails for the intended reason
+    # (the retry backstop) rather than the unrelated unknown-id validation.
+    graph.get_state.return_value = _snapshot(
+        ("draft_node",), {"inquiries": [{"id": "1", "title": "t", "description": "d"}]}
+    )
 
     with pytest.raises(GraphStateError):
         resume_with_selection(graph, {}, ["1"])
@@ -138,7 +146,15 @@ def test_resume_with_approval_rejects_wrong_gate():
 
 def test_resume_with_approval_updates_state_and_resumes():
     graph = MagicMock()
-    graph.get_state.return_value = _snapshot(("send_node",))
+    graph.get_state.return_value = _snapshot(
+        ("send_node",),
+        {
+            "drafts": {
+                "1": {"inquiry_id": "1", "text": "draft one"},
+                "2": {"inquiry_id": "2", "text": "draft two"},
+            }
+        },
+    )
     thread_config = {"configurable": {"thread_id": "t1"}}
 
     result = resume_with_approval(graph, thread_config, ["1", "2"])

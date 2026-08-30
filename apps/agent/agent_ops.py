@@ -31,6 +31,15 @@ def resume_with_selection(graph, thread_config: dict, selected_ids: list) -> dic
     if "draft_node" not in snapshot.next:
         raise GraphStateError("This run is not waiting for inquiry selection (gate 1)")
 
+    # מוודאים שכל ה-ID-ים שנבחרו אכן קיימים ברשימת הפניות שנשלפה בריצה הזו.
+    # בלי הבדיקה הזו, ID לא תקין (הקלדה שגויה, פנייה שכבר לא open) היה
+    # מגיע עד ל-draft_node ומפיל אותו עם KeyError גולמי (by_id[inquiry_id])
+    # במקום שגיאה ברורה שהקורא ל-API/CLI יכול להבין.
+    known_ids = {inquiry["id"] for inquiry in snapshot.values.get("inquiries", [])}
+    unknown_ids = [inquiry_id for inquiry_id in selected_ids if inquiry_id not in known_ids]
+    if unknown_ids:
+        raise GraphStateError(f"Unknown inquiry id(s), not part of this run: {unknown_ids}")
+
     graph.update_state(thread_config, {"selected_ids": selected_ids})
 
     for _ in range(_MAX_DRAFT_ATTEMPTS):
@@ -69,6 +78,11 @@ def edit_draft(graph, thread_config: dict, inquiry_id: str, text: str) -> dict:
         raise GraphStateError("This run is not waiting for approval (gate 3)")
 
     drafts = dict(snapshot.values.get("drafts", {}))
+    # מאפשרים לערוך רק טיוטה שכבר קיימת (עברה draft_node/guardrails_node) -
+    # לא ליצור כאן ID חדש שמעולם לא נוסח או נבדק ב-guardrails.
+    if inquiry_id not in drafts:
+        raise GraphStateError(f"No draft exists for inquiry id: {inquiry_id}")
+
     drafts[inquiry_id] = {"inquiry_id": inquiry_id, "text": text}
     graph.update_state(thread_config, {"drafts": drafts})
 
@@ -82,6 +96,14 @@ def resume_with_approval(graph, thread_config: dict, approved_ids: list) -> dict
     snapshot = graph.get_state(thread_config)
     if "send_node" not in snapshot.next:
         raise GraphStateError("This run is not waiting for approval (gate 3)")
+
+    # אותו רציונל כמו ב-resume_with_selection: בלי הבדיקה הזו, send_node
+    # היה קורס עם KeyError גולמי (state["drafts"][inquiry_id]) על ID
+    # שאף פעם לא נוסחה עבורו טיוטה בריצה הזו.
+    known_ids = set(snapshot.values.get("drafts", {}))
+    unknown_ids = [inquiry_id for inquiry_id in approved_ids if inquiry_id not in known_ids]
+    if unknown_ids:
+        raise GraphStateError(f"Unknown inquiry id(s), no draft exists for: {unknown_ids}")
 
     graph.update_state(thread_config, {"approved_ids": approved_ids})
     graph.invoke(None, thread_config)

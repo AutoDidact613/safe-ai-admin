@@ -1,10 +1,24 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 
+import api
 from api import app
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _mock_mongo_client():
+    # _get_mongo_client() בונה MongoClient אמיתי מ-config.mongodb_atlas_uri -
+    # ב-unit tests ה-load_config מזויף ואין URI תקין, אז בלי המוק הזה
+    # pymongo היה זורק ConfigurationError. מאפסים גם את הסינגלטון המודולרי
+    # לפני ואחרי כל בדיקה כדי שבדיקות לא יזהמו אחת את השנייה עם client מקובע.
+    api._mongo_client = None
+    with patch("api.MongoClient"):
+        yield
+    api._mongo_client = None
 
 
 def test_health() -> None:

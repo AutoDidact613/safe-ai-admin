@@ -19,6 +19,17 @@ Reply text:
 {draft}
 """
 
+_RELEVANCE_PROMPT_TEMPLATE = """Does the following support reply include information the customer did not ask for and that is not relevant to their inquiry (e.g. unsolicited step-by-step instructions for an unrelated topic, such as explaining password reset when the customer only said thank you)?
+
+Customer inquiry:
+{inquiry}
+
+Reply text:
+{draft}
+
+Respond with ONLY a JSON object: {{"irrelevant": true/false, "reason": "short explanation or empty string"}}
+"""
+
 
 @traceable
 def _check_overpromise(draft: str, config: Config) -> dict:
@@ -26,6 +37,18 @@ def _check_overpromise(draft: str, config: Config) -> dict:
     response = client.models.generate_content(
         model=config.llm_model,
         contents=_OVERPROMISE_PROMPT_TEMPLATE.format(draft=draft),
+    )
+    if response.usage_metadata:
+        add_tokens(response.usage_metadata.total_token_count, config.thread_id)
+    return parse_json_response(response.text)
+
+
+@traceable
+def _check_relevance(draft: str, inquiry_text: str, config: Config) -> dict:
+    client = genai.Client(api_key=config.gemini_api_key)
+    response = client.models.generate_content(
+        model=config.llm_model,
+        contents=_RELEVANCE_PROMPT_TEMPLATE.format(inquiry=inquiry_text, draft=draft),
     )
     if response.usage_metadata:
         add_tokens(response.usage_metadata.total_token_count, config.thread_id)
@@ -42,13 +65,22 @@ def check_draft(draft: str, inquiry: Inquiry, config: Config) -> GuardrailResult
     if _PHONE_RE.search(draft):
         reasons.append("draft contains what looks like a phone number")
 
-    # Skip the semantic Gemini check once the cheap regex checks already failed
+    # Skip the semantic Gemini checks once the cheap regex checks already failed
     # the draft - no need to spend an LLM call on a draft that's already rejected.
     if not reasons:
         overpromise_result = _check_overpromise(draft, config)
         if overpromise_result.get("overpromises"):
             reason = overpromise_result.get("reason") or "draft makes an unsupported promise"
             reasons.append(f"draft contains an unsupported promise: {reason}")
+
+    # Same skip logic applies here - no need for a second LLM call once the
+    # draft already failed on overpromise.
+    if not reasons:
+        inquiry_text = f"{inquiry.get('title', '')}\n{inquiry.get('description', '')}".strip()
+        relevance_result = _check_relevance(draft, inquiry_text, config)
+        if relevance_result.get("irrelevant"):
+            reason = relevance_result.get("reason") or "draft includes information unrelated to the inquiry"
+            reasons.append(f"draft includes unrequested, irrelevant information: {reason}")
 
     return {
         "inquiry_id": inquiry["id"],

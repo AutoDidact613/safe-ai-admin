@@ -9,6 +9,12 @@ _PROMPT_TEMPLATE = """Write a helpful, professional reply to the following user 
 inquiry (category: {category}). Do not reveal information about other users, and do not
 promise anything the support team cannot guarantee.
 
+Only address what the customer actually wrote. Do not add unsolicited instructions,
+explanations, or tips about unrelated topics (for example, do not explain how to reset a
+password just because it might be generally useful) unless the inquiry itself is about that
+topic. If the inquiry is a simple thank-you or a short comment, a short, matching reply is
+enough - it does not need padding.
+
 Title: {title}
 Description: {description}
 {articles_section}"""

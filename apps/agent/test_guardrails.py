@@ -56,3 +56,19 @@ def test_flags_overpromise_via_semantic_check(client_cls):
 
     assert result["passed"] is False
     assert any("unsupported promise" in reason for reason in result["reasons"])
+
+
+@patch("guardrails.genai.Client")
+def test_flags_irrelevant_content_via_semantic_check(client_cls):
+    responses = [
+        MagicMock(text='{"overpromises": false, "reason": ""}'),
+        MagicMock(text='{"irrelevant": true, "reason": "explains password reset, unrelated to a thank-you note"}'),
+    ]
+    client_cls.return_value.models.generate_content.side_effect = responses
+
+    inquiry = _inquiry(title="Thanks", description="Just wanted to say thank you!")
+    draft = "You're welcome! By the way, to reset your password, go to the login screen..."
+    result = check_draft(draft, inquiry, _config())
+
+    assert result["passed"] is False
+    assert any("unrequested, irrelevant information" in reason for reason in result["reasons"])

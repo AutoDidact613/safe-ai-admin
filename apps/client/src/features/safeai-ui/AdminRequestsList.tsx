@@ -96,7 +96,7 @@ export default function AdminRequestsList() {
       setDraftError(null);
       setSendResultMessage(null);
       setAgentResultMessage(
-        `סוכן ה-AI סיווג ${result.inquiries.length} פניות פתוחות (thread-id: ${result.thread_id})`,
+        `סוכן ה-AI סיווג ${result.inquiries.length} פניות פתוחות`,
       );
     } catch (err) {
       console.error("שגיאה בהפעלת סוכן ה-AI:", err);

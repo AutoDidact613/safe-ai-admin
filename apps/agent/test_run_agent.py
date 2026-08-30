@@ -75,7 +75,15 @@ def test_approve_resumes_graph_with_exactly_the_approved_ids(
     load_config_mock, client_cls, build_graph_mock
 ):
     graph = MagicMock()
-    graph.get_state.return_value = _snapshot(("send_node",), {"drafts": {}})
+    graph.get_state.return_value = _snapshot(
+        ("send_node",),
+        {
+            "drafts": {
+                "1": {"inquiry_id": "1", "text": "draft one"},
+                "2": {"inquiry_id": "2", "text": "draft two"},
+            }
+        },
+    )
     graph.invoke.return_value = {}
     build_graph_mock.return_value = graph
 

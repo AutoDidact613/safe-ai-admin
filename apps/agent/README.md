@@ -49,6 +49,12 @@ the generated reply in them.
   using any fixed keyword, so a phrase list would miss most real cases; the
   semantic check only runs when the regex checks already passed, to avoid an
   extra LLM call on a draft that's already rejected.
+- **Irrelevant / unsolicited content** - a semantic check via Gemini
+  (`_check_relevance`) that compares the draft against the original inquiry
+  text. Catches cases like the draft padding a simple "thank you" reply with
+  unrequested step-by-step instructions (e.g. explaining password reset) that
+  have nothing to do with what the customer actually wrote. Only runs when the
+  regex checks and the overpromise check already passed, for the same reason.
 
 A failed check routes back to `draft_node` for another attempt, up to
 `_MAX_DRAFT_RETRIES` (2) retries per inquiry, before falling through to

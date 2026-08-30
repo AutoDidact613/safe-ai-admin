@@ -38,12 +38,6 @@ class SafeAIClient:
         )
         response.raise_for_status()
 
-    def mark_handled(self, inquiry_id: str) -> None:
-        response = self._session.patch(
-            f"{self._base_url}/contact/my-requests/{inquiry_id}/close"
-        )
-        response.raise_for_status()
-
     def get_inquiry_details(self, inquiry_id: str) -> dict:
         response = self._session.get(f"{self._base_url}/contact/my-requests/{inquiry_id}")
         response.raise_for_status()

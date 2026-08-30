@@ -1,4 +1,5 @@
 from functools import partial
+from typing import Optional
 
 from langgraph.checkpoint.mongodb import MongoDBSaver
 from langgraph.graph import END, StateGraph
@@ -20,13 +21,20 @@ from nodes import (
 from rag import ArticleRetriever
 
 
-def build_graph(config: Config, client: SafeAIClient):
+def build_graph(config: Config, client: SafeAIClient, mongo_client: Optional[MongoClient] = None):
     builder = StateGraph(GraphState)
 
+    # אם לא הועבר mongo_client קיים - נוצר כאן מופע חדש (זה מה שקורה ב-CLI,
+    # שם התהליך נסגר ממילא בסוף כל פקודה, כך שאין בעיה שהוא לא נסגר במפורש).
+    # api.py לעומת זאת רץ כתהליך ארוך-חיים ומטפל בהרבה בקשות - שם *חובה*
+    # להעביר mongo_client משותף אחד (ראה _get_mongo_client שם), אחרת כל
+    # קריאה ל-/run/list או /run/process הייתה פותחת connection pool חדש
+    # ל-Atlas בלי לסגור את הקודם, עד לדליפת חיבורים.
     # MongoClient is created directly (not via from_conn_string, a generator-based
     # @contextmanager) so it stays referenced as a plain variable and isn't closed
     # by the garbage collector while the graph is still using it.
-    mongo_client = MongoClient(config.mongodb_atlas_uri)
+    if mongo_client is None:
+        mongo_client = MongoClient(config.mongodb_atlas_uri)
     article_retriever = ArticleRetriever(
         mongo_client["inquiry_agent_knowledge"]["article_embeddings"], config
     )
