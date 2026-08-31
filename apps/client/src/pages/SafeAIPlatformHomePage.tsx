@@ -74,6 +74,11 @@ export default function SafeAIPlatformHomePage() {
   const [newsFailed, setNewsFailed] = useState(false);
   const [newsLoading, setNewsLoading] = useState(true);
 
+  // All three stat tiles reveal together once every source they depend on
+  // has settled — one still loading would otherwise leave the row popping
+  // in one tile at a time as each request happens to resolve.
+  const statsRowLoading = usageLoading || keysLoading;
+
   useEffect(() => {
     apiCall<UsageStats>(API_ENDPOINTS.usage.stats)
       .then(setUsage)
@@ -148,18 +153,18 @@ export default function SafeAIPlatformHomePage() {
           <StatTile
             label="בקשות (7 ימים אחרונים)"
             value={usage?.totalRequests ?? null}
-            loading={usageLoading}
+            loading={statsRowLoading}
             failed={usageFailed}
             trend={requestsTrend}
           />
           <StatTile
             label="טוקנים בשימוש"
             value={usage?.totalTokens ?? null}
-            loading={usageLoading}
+            loading={statsRowLoading}
             failed={usageFailed}
             trend={tokensTrend}
           />
-          <StatTile label="מפתחות API פעילים" value={activeKeysCount} loading={keysLoading} failed={keysFailed} />
+          <StatTile label="מפתחות API פעילים" value={activeKeysCount} loading={statsRowLoading} failed={keysFailed} />
         </div>
 
         <div className="dash-feeds">

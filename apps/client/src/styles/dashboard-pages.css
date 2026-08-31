@@ -209,6 +209,42 @@
   height: 28px;
 }
 
+/* Skeleton placeholders shown while a stat tile's data is still loading —
+   the page passes one combined loading flag to every tile in a row so they
+   reveal together instead of popping in one at a time. */
+.dash-stat-skeleton-value {
+  width: 60%;
+  height: 26px;
+  border-radius: 4px;
+  background: var(--lv2-line-soft);
+  margin-bottom: 8px;
+  animation: dash-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.dash-stat-skeleton-label {
+  width: 80%;
+  height: 13px;
+  border-radius: 4px;
+  background: var(--lv2-line-soft);
+  animation: dash-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes dash-skeleton-pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-stat-skeleton-value,
+  .dash-stat-skeleton-label {
+    animation: none;
+  }
+}
+
 /* Feed lists (recent forum posts / news) */
 .dash-feeds {
   display: grid;
