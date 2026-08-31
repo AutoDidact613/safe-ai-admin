@@ -101,15 +101,15 @@
 
 .search-input:focus {
   outline: none;
-  border-color: #10a37f;
-  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+  border-color: #1C7AA6;
+  box-shadow: 0 0 0 3px rgba(28, 122, 166, 0.1);
 }
 
 .search-button {
   padding: 14px 24px;
   border: none;
   border-radius: 8px;
-  background: #10a37f;
+  background: #1C7AA6;
   color: white;
   font-size: 20px;
   cursor: pointer;
@@ -117,7 +117,7 @@
 }
 
 .search-button:hover {
-  background: #0d8c6c;
+  background: #239AD1;
   transform: scale(1.05);
 }
 
@@ -143,9 +143,9 @@
 }
 
 .guide-card:hover {
-  border-color: #10a37f;
+  border-color: #1C7AA6;
   transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(16, 163, 127, 0.15);
+  box-shadow: 0 8px 16px rgba(28, 122, 166, 0.15);
 }
 
 .guide-card-header {
@@ -154,8 +154,8 @@
 
 .guide-category {
   display: inline-block;
-  background: #f0fdf4;
-  color: #15803d;
+  background: #DEEFF7;
+  color: #135471;
   padding: 6px 12px;
   border-radius: 6px;
   font-size: 12px;
@@ -186,7 +186,7 @@
 }
 
 .guide-link-text {
-  color: #10a37f;
+  color: #1C7AA6;
   font-weight: 600;
   font-size: 14px;
 }
@@ -212,7 +212,7 @@
 }
 
 .clear-search-button {
-  background: #10a37f;
+  background: #1C7AA6;
   color: white;
   border: none;
   padding: 12px 24px;
@@ -224,7 +224,7 @@
 }
 
 .clear-search-button:hover {
-  background: #0d8c6c;
+  background: #239AD1;
   transform: scale(1.05);
 }
 
@@ -441,8 +441,8 @@
 }
 
 .resource-link:hover {
-  border-color: #10a37f;
-  background: #f0fdf4;
+  border-color: #1C7AA6;
+  background: #DEEFF7;
   transform: translateX(-4px);
 }
 

@@ -56,15 +56,15 @@
 }
 
 .section-nav-btn:hover {
-  border-color: #10a37f;
-  box-shadow: 0 4px 12px rgba(16, 163, 127, 0.1);
+  border-color: #1C7AA6;
+  box-shadow: 0 4px 12px rgba(28, 122, 166, 0.1);
   transform: translateY(-2px);
 }
 
 .section-nav-btn.active {
-  background: linear-gradient(135deg, #10a37f 0%, #0d8f6f 100%);
-  border-color: #10a37f;
-  box-shadow: 0 8px 20px rgba(16, 163, 127, 0.2);
+  background: linear-gradient(135deg, #1C7AA6 0%, #135471 100%);
+  border-color: #1C7AA6;
+  box-shadow: 0 8px 20px rgba(28, 122, 166, 0.2);
 }
 
 .section-nav-btn.active .section-nav-title,
@@ -434,9 +434,9 @@
   margin-top: 20px;
   padding: 10px 24px;
   background: white;
-  border: 2px solid #10a37f;
+  border: 2px solid #1C7AA6;
   border-radius: 8px;
-  color: #10a37f;
+  color: #1C7AA6;
   text-decoration: none;
   font-size: 15px;
   font-weight: 600;
@@ -444,7 +444,7 @@
 }
 
 .hero-org-owner-link:hover {
-  background: #10a37f;
+  background: #1C7AA6;
   color: white;
   text-decoration: none;
 }

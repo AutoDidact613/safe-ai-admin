@@ -174,8 +174,8 @@ export default function AboutPage() {
                 x2="100%"
                 y2="100%"
               >
-                <stop offset="0%" stopColor="#10a37f" stopOpacity="1" />
-                <stop offset="100%" stopColor="#0d8f6f" stopOpacity="1" />  
+                <stop offset="0%" stopColor="#1C7AA6" stopOpacity="1" />
+                <stop offset="100%" stopColor="#135471" stopOpacity="1" />
               </linearGradient>
 
               <filter

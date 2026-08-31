@@ -26,13 +26,13 @@
 }
 
 .site-footer-link {
-  color: #10a37f;
+  color: #1C7AA6;
   text-decoration: underline;
   transition: color 0.2s;
 }
 
 .site-footer-link:hover {
-  color: #0d8f6f;
+  color: #239AD1;
 }
 
 @media (max-width: 480px) {
