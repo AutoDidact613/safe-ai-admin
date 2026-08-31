@@ -118,19 +118,6 @@ export default function LandingPageV2() {
     });
   };
 
-  // For products that already have real content behind them elsewhere in the
-  // app (SafeAI Platform → /safeai-ui, SafeAI Hub → courses/news/tender-board/
-  // guides/docs), but are intentionally not linked here yet because they're
-  // being restructured/unified first. Different from "coming soon", which
-  // means there's no code behind it at all yet.
-  const showUpdating = (name: string) => {
-    setModal({
-      icon: <ClockIcon />,
-      title: "בעדכון",
-      message: `${name} נמצא כרגע בשלבי עדכון ואיחוד. הקישור יתעדכן כשהעבודה תושלם.`,
-    });
-  };
-
   // Per team decision (SCRUM-227): choosing a login destination opens it in
   // a new browser tab, carrying a `next` param so LoginForm knows where to
   // send the user once they authenticate — keeps this landing page open in
@@ -140,7 +127,9 @@ export default function LandingPageV2() {
   };
 
   // Shared guard for routes that require login: navigate straight there if
-  // already authenticated, otherwise explain why and offer a way to log in.
+  // already authenticated, otherwise explain why and offer a way to log in —
+  // carrying the intended destination via `next` so login lands the user
+  // exactly where they were headed.
   const handleProtectedNav = (path: string, itemName: string) => {
     if (isAuthenticated) {
       navigate(path);
@@ -151,7 +140,7 @@ export default function LandingPageV2() {
       title: "נדרשת התחברות",
       message: `כדי להיכנס ל${itemName} יש להתחבר קודם למערכת.`,
       primaryLabel: "מעבר להתחברות",
-      onPrimaryAction: () => navigate("/login"),
+      onPrimaryAction: () => navigate(`/login?next=${path}`),
     });
   };
 
@@ -160,6 +149,11 @@ export default function LandingPageV2() {
   // The route itself isn't gated, but every API call behind it requires a
   // token — without one the page loads with no data. Same guard as forum/news.
   const handleTenderBoardClick = () => handleProtectedNav("/tender-board", "לוח הפרויקטים");
+  // Per team decision (SCRUM-227): Hub and Platform are the same single
+  // audience with no split, so both are wired to real navigation behind the
+  // same login guard as every other protected destination on this page.
+  const handlePlatformClick = () => handleProtectedNav("/safeai-platform", "SafeAI Platform");
+  const handleHubClick = () => handleProtectedNav("/safeai-hub", "SafeAI Hub");
 
   const handleHeroSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -181,16 +175,16 @@ export default function LandingPageV2() {
       icon: <ShieldIcon />,
       title: "SafeAI Platform",
       description: "איזור אישי, תיעוד, יצירת קשר וניהול ארגונים",
-      status: "updating",
-      onClick: () => showUpdating("SafeAI Platform"),
+      status: "available",
+      onClick: handlePlatformClick,
     },
     {
       key: "hub",
       icon: <BookIcon />,
       title: "SafeAI Hub",
       description: "קורסים, חדשות, לוח פרויקטים, פורום ומדריכים",
-      status: "updating",
-      onClick: () => showUpdating("SafeAI Hub"),
+      status: "available",
+      onClick: handleHubClick,
     },
     {
       key: "safechatbox",
@@ -225,8 +219,8 @@ export default function LandingPageV2() {
               <div className="lv2-dropdown lv2-dropdown-products">
                 <div className="lv2-dropdown-col">
                   <span className="lv2-dropdown-heading">מוצרים</span>
-                  <button onClick={() => { setProductsMenuOpen(false); showUpdating("SafeAI Platform"); }}>SafeAI Platform</button>
-                  <button onClick={() => { setProductsMenuOpen(false); showUpdating("SafeAI Hub"); }}>SafeAI Hub</button>
+                  <button onClick={() => { setProductsMenuOpen(false); handlePlatformClick(); }}>SafeAI Platform</button>
+                  <button onClick={() => { setProductsMenuOpen(false); handleHubClick(); }}>SafeAI Hub</button>
                   <button onClick={() => { setProductsMenuOpen(false); showComingSoon("SafeChatbox"); }}>SafeChatbox</button>
                 </div>
                 <div className="lv2-dropdown-col">
@@ -287,7 +281,7 @@ export default function LandingPageV2() {
           <button className="lv2-chip" onClick={() => openLoginDestination("/safeai-platform")}>כניסה לפלטפורמה</button>
           <button className="lv2-chip" onClick={handleForumClick}>פורום זהירות AI</button>
           <button className="lv2-chip" onClick={() => navigate("/register")}>הרשמה חדשה</button>
-          <button className="lv2-chip" onClick={() => showUpdating("SafeAI Hub")}>SafeAI Hub</button>
+          <button className="lv2-chip" onClick={handleHubClick}>SafeAI Hub</button>
         </div>
       </section>
 
@@ -344,8 +338,8 @@ export default function LandingPageV2() {
       <footer className="lv2-footer">
         <div className="lv2-footer-col">
           <span className="lv2-footer-heading">מוצרים</span>
-          <button onClick={() => showUpdating("SafeAI Platform")}>SafeAI Platform</button>
-          <button onClick={() => showUpdating("SafeAI Hub")}>SafeAI Hub</button>
+          <button onClick={handlePlatformClick}>SafeAI Platform</button>
+          <button onClick={handleHubClick}>SafeAI Hub</button>
           <button onClick={() => showComingSoon("SafeChatbox")}>SafeChatbox</button>
           <button onClick={handleForumClick}>פורום זהירות AI</button>
         </div>

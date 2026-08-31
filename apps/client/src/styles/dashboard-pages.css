@@ -27,6 +27,25 @@
   box-sizing: border-box;
 }
 
+.dash-sidebar-brand {
+  font-family: 'Heebo', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--lv2-ink);
+  text-decoration: none;
+  padding: 4px 12px 16px;
+  display: block;
+}
+
+.dash-sidebar-brand span {
+  color: var(--lv2-accent);
+}
+
+.dash-sidebar-divider {
+  border-top: 1px solid var(--lv2-line);
+  margin: 10px 4px;
+}
+
 .dash-sidebar-item {
   display: flex;
   align-items: center;

@@ -4,7 +4,7 @@ import "../styles/landing-page-v2.css";
 import "../styles/dashboard-pages.css";
 import { useAuth } from "../context/authStore";
 import { API_ENDPOINTS, apiCall } from "../config/api";
-import { ChatIcon, BookIcon, CompassIcon, ClipboardIcon, NewsIcon } from "../features/landing/icons";
+import { ChatIcon, BookIcon, CompassIcon, ClipboardIcon, NewsIcon, ShieldIcon } from "../features/landing/icons";
 import DashboardSidebar from "../features/dashboard/DashboardSidebar";
 import FeedList, { type FeedItem } from "../features/dashboard/FeedList";
 
@@ -88,7 +88,11 @@ export default function SafeAIHubHomePage() {
 
   return (
     <div className="landing-v2 dash-page" dir="rtl">
-      <DashboardSidebar homeLabel="SafeAI Hub" items={SIDEBAR_ITEMS} />
+      <DashboardSidebar
+        homeLabel="SafeAI Hub"
+        items={SIDEBAR_ITEMS}
+        crossLink={{ icon: <ShieldIcon size={18} />, label: "SafeAI Platform", path: "/safeai-platform" }}
+      />
 
       <div className="dash-main">
         <span className="dash-eyebrow">SafeAI Hub</span>
