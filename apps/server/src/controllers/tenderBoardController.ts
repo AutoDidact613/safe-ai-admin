@@ -94,6 +94,13 @@ async function withSignedApplicantDetails(req: Request, tender: any): Promise<an
  */
 export async function createTenderHandler(req: Request, res: Response) {
   try {
+    await TBAIService.assertTenderIsProgrammingRelated(req.body);
+  } catch (error: any) {
+    logger.warn("Tender rejected by domain guardrail", { error: error.message });
+    return res.status(error.statusCode ?? 400).json({ error: error.message });
+  }
+
+  try {
     const user = (req as any).user;
     // publisherUserCode is derived from the authenticated user, never trusted from the client body,
     // otherwise any caller could create a tender that impersonates another publisher.

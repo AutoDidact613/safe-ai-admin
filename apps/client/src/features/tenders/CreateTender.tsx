@@ -251,7 +251,8 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
       })
     } catch (error) {
       console.error('Failed to create tender', error)
-      setErrorMessage('לא ניתן לשמור את המכרז כעת. אנא נסה שוב מאוחר יותר.')
+      const serverMessage = error instanceof Error ? error.message : ''
+      setErrorMessage(serverMessage || 'לא ניתן לשמור את המכרז כעת. אנא נסה שוב מאוחר יותר.')
     }
   }
 
@@ -314,9 +315,6 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
               </button>
             </div>
           )}
-
-          {formMessage && <div className="success-message">{formMessage}</div>}
-          {errorMessage && <div className="error-message">{errorMessage}</div>}
 
           <div className="form-group" style={{ marginTop: '16px' }}>
             <label htmlFor="tenderName">שם המכרז</label>
@@ -507,6 +505,9 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
             </label>
           </div>
         </div>
+
+        {formMessage && <div className="success-message">{formMessage}</div>}
+        {errorMessage && <div className="error-message">{errorMessage}</div>}
 
         <div className="form-actions">
           <button type="submit" className="button-green submit-button">

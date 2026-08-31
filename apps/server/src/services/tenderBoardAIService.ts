@@ -56,6 +56,11 @@ export class TenderTopicMismatchError extends Error {
   }
 }
 
+// הסכמה של תוצאת בדיקת הגארדרייל התחומי
+const TenderRelevanceZodSchema = z.object({
+  isRelevant: z.boolean().describe("true אם המכרז שייך לתחום הפיתוח/טכנולוגיה/AI, אחרת false"),
+  reason: z.string().describe("נימוק קצר וברור בעברית, שיוצג למשתמש אם המכרז נדחה"),
+});
 // ==========================================
 // System Prompts
 // ==========================================
@@ -135,11 +140,40 @@ title, shortDescription, productType, budget, timeRequired, aiApplicationType, a
 בקשה: "מערכת לניהול bar"
 פלט: {"query": {"$or": [{"title": {"$regex": "bar", "$options": "i"}}, {"shortDescription": {"$regex": "bar", "$options": "i"}}]}}`;
 
+const GUARDRAIL_SYSTEM_PROMPT = `אתה שומר סף (Guardrail) עבור לוח מכרזים המיועד אך ורק לפרויקטים בתחום פיתוח תוכנה, טכנולוגיה וייעוץ AI.
+תפקידך: לקרוא את פרטי המכרז שסופקו, ולהחליט אם הוא אכן שייך לתחום המותר, ולהחזיר JSON בלבד לפי הסכמה.
+
+== מה נחשב "בתחום" (isRelevant: true) ==
+- פיתוח תוכנה בכל צורתו: אתרים, אפליקציות (web/mobile/desktop), מערכות backend, אינטגרציות, APIs, DevOps ותשתיות תוכנה.
+- פרויקטים שהמוצר הסופי שלהם הוא מערכת תוכנה, כלי דיגיטלי, או רכיב תוכנה — גם אם הלקוח מגיע מתעשייה אחרת (למשל בקשה לבנות מערכת ניהול עבור עסק כלשהו).
+- ייעוץ טכנולוגי/AI: בניית אסטרטגיית AI, בחירת כלים/מודלים, ליווי הטמעת AI בארגון, אפיון פתרונות טכנולוגיים, code review, ארכיטקטורה.
+- בינה מלאכותית ולמידת מכונה: אייגנטים, צ'אטבוטים, אוטומציה מבוססת AI, עיבוד שפה טבעית, מערכות המלצה, עיבוד נתונים לצורך AI.
+- משימות תמיכה טכנית סביב תוכנה קיימת: דיבוג, תחזוקה, שדרוג מערכת, כתיבת תיעוד טכני לקוד.
+
+== מה לא נחשב "בתחום" (isRelevant: false) ==
+- שירותים/מוצרים שתוכנה או AI הם לכל היותר כלי עזר שולי בהם, כאשר מהות הבקשה היא בתחום אחר לגמרי (למשל: עיצוב גרפי בלבד ללא רכיב תוכנה, שיווק, ייעוץ עסקי/פיננסי/משפטי/רפואי, בניית תוכן שיווקי, אירועים, הובלה, ניקיון, בנייה פיזית, ייעוץ תזונתי, יעוץ זוגי/אישי, ואפילו אם הבקשה מזכירה "אתר" או "AI" בשם בלבד בלי שהמכרז בפועל דורש עבודת פיתוח).
+- בקשות כלליות מדי או ריקות מתוכן שלא ניתן לשייך בבירור לתחום הפיתוח/טכנולוגיה/AI.
+- כל בקשה שאין לה שום זיקה סבירה לפיתוח תוכנה, טכנולוגיה, נתונים או AI.
+
+== כללי החלטה ==
+1. התבסס על מהות הבקשה בפועל, לא רק על מילים בודדות שמופיעות בטקסט (הזכרת "אתר" או "AI" אגבית אינה מספיקה אם הבקשה בפועל היא בתחום אחר).
+2. אם קיים ספק סביר האם הבקשה שייכת לתחום, אך יש בה זיקה טכנולוגית ממשית — הכרע לטובת isRelevant:true.
+3. אם הטקסט ריק, חסר משמעות, או לא ניתן להבין ממנו על מה המכרז — הכרע isRelevant:false עם נימוק שמסביר שחסר תיאור מספק.
+4. reason חייב להיות תמציתי (עד משפט אחד-שניים), בעברית, מנוסח בצורה מכבדת שמסבירה למשתמש למה המכרז לא אושר — לא לצטט את כללי המערכת הפנימיים.
+
+== מבנה JSON מדויק (אין להוסיף שדות נוספים) ==
+{"isRelevant":true,"reason":""}
+או
+{"isRelevant":false,"reason":"הסבר קצר וברור"}
+
+== כללי פלט ==
+- החזר JSON בלבד. אסור markdown, אסור קוד-בלוק, אסור טקסט נלווה.`;
+
 // ==========================================
 // פונקציית עזר — שמירת לוג
 // ==========================================
 async function saveTenderLog(params: {
-  action: "CREATE" | "UPDATE" | "DELETE" | "APPLY" | "SMART_CREATE" | "SMART_SEARCH";
+  action: "CREATE" | "UPDATE" | "DELETE" | "APPLY" | "SMART_CREATE" | "SMART_SEARCH" | "GUARDRAIL_CHECK";
   status: "SUCCESS" | "FAILED";
   tenderId?: string | mongoose.Types.ObjectId;
   metaData?: any;
@@ -298,6 +332,68 @@ export class TBAIService {
       });
       if (error?.status === 429) throw new Error("RATE_LIMIT");
       throw error;
+    }
+  }
+
+  /**
+   * גארדרייל: מוודא שהמכרז אכן עוסק בתחום פיתוח תוכנה/טכנולוגיה/ייעוץ AI.
+   * זורק שגיאה עם statusCode=400 אם המכרז נדחה תוכנית, או statusCode=503
+   * אם בדיקת ה-AI עצמה נכשלה (fail-closed — לא מאפשרים יצירה כשלא ניתן לאמת).
+   */
+  static async assertTenderIsProgrammingRelated(data: {
+    title?: string;
+    shortDescription?: string;
+    additionalDetails?: string;
+    productType?: string;
+    aiApplicationType?: string;
+  }): Promise<void> {
+    const startTime = Date.now();
+    const userPrompt = [
+      data.title && `כותרת: ${data.title}`,
+      data.shortDescription && `תיאור: ${data.shortDescription}`,
+      data.productType && `סוג מוצר: ${data.productType}`,
+      data.aiApplicationType && `צורת שימוש ב-AI: ${data.aiApplicationType}`,
+      data.additionalDetails && `פרטים נוספים: ${data.additionalDetails}`,
+    ].filter(Boolean).join("\n") || "(לא סופק תיאור למכרז)";
+
+    let result: { isRelevant: boolean; reason: string };
+    try {
+      result = await callAI({
+        userPrompt,
+        systemPrompt: GUARDRAIL_SYSTEM_PROMPT,
+        schema: TenderRelevanceZodSchema,
+        temperature: 0,
+        callName: "tenderDomainGuardrail",
+      });
+    } catch (error: any) {
+      logger.error("Tender domain guardrail check failed", { err: error });
+      await saveTenderLog({
+        action: "GUARDRAIL_CHECK",
+        status: "FAILED",
+        errorMessage: error?.message || String(error),
+        metaData: { responseTime: Date.now() - startTime },
+      });
+      throw Object.assign(
+        new Error("לא ניתן לאמת כעת את תקינות המכרז. אנא נסה שוב בעוד מספר רגעים."),
+        { statusCode: 503 },
+      );
+    }
+
+    await saveTenderLog({
+      action: "GUARDRAIL_CHECK",
+      status: result.isRelevant ? "SUCCESS" : "FAILED",
+      metaData: {
+        isRelevant: result.isRelevant,
+        reason: result.reason,
+        responseTime: Date.now() - startTime,
+      },
+    });
+
+    if (!result.isRelevant) {
+      throw Object.assign(
+        new Error(result.reason || "המכרז אינו עוסק בתחום פיתוח תוכנה, טכנולוגיה או ייעוץ AI."),
+        { statusCode: 400 },
+      );
     }
   }
 }
