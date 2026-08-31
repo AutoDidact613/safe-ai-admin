@@ -660,6 +660,20 @@
   opacity: 1;
 }
 
+.request-attachment-list {
+  margin: 12px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.request-attachment img,
+.request-attachment video {
+  max-width: 100%;
+  max-height: 340px;
+  border-radius: 8px;
+  border: 1px solid #edf6f4;
+}
+
 .replies-list { margin-top: 18px; display:flex; flex-direction:column; gap:12px; }
 .reply-bubble {
   max-width: 78%;
