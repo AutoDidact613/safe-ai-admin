@@ -21,7 +21,12 @@ export default function ChecklistStep({ step, label, description, done, path }: 
         {done ? <CheckIcon size={16} /> : step}
       </span>
       <span className="dash-getstarted-text">
-        <span className="dash-getstarted-title">{label}</span>
+        <span className="dash-getstarted-title">
+          {label}
+          {/* The checkmark and strikethrough are visual-only cues — a screen
+              reader needs the completion state spelled out. */}
+          <span className="lv2-sr-only">{done ? " — הושלם" : " — טרם הושלם"}</span>
+        </span>
         <span className="dash-getstarted-desc">{description}</span>
       </span>
     </button>
