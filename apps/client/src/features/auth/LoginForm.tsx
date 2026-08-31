@@ -32,6 +32,13 @@ export default function LoginForm() {
   const [searchParams] = useSearchParams();
   const { setUser } = useAuth();
 
+  // Where to send the user after they authenticate — carried in from the
+  // landing page's login-destination dropdown (SCRUM-227). Only a same-site
+  // relative path is honored, to rule out an open-redirect via this param.
+  const nextParam = searchParams.get("next");
+  const postLoginDestination =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/safeai-ui";
+
   // Handle Google OAuth callback
   useEffect(() => {
     const accessToken = searchParams.get("accessToken");
@@ -72,7 +79,7 @@ export default function LoginForm() {
               setLoggedInUser(data.user);
               setShowProfileModal(true);
             } else {
-              navigate("/safeai-ui");
+              navigate(postLoginDestination);
             }
           }
         })
@@ -114,8 +121,8 @@ export default function LoginForm() {
           setLoggedInUser(response.user);
           setShowProfileModal(true);
         } else {
-          // Navigate to dashboard
-          navigate("/safeai-ui");
+          // Navigate to the requested destination (or the default dashboard)
+          navigate(postLoginDestination);
         }
       }
     } catch (err: unknown) {
@@ -141,8 +148,8 @@ export default function LoginForm() {
   };
 
   const handleProfileSelected = () => {
-    // Navigate to dashboard after profile is selected
-    navigate("/safeai-ui");
+    // Navigate to the requested destination after profile is selected
+    navigate(postLoginDestination);
   };
 
   return (

@@ -131,6 +131,14 @@ export default function LandingPageV2() {
     });
   };
 
+  // Per team decision (SCRUM-227): choosing a login destination opens it in
+  // a new browser tab, carrying a `next` param so LoginForm knows where to
+  // send the user once they authenticate — keeps this landing page open in
+  // its own tab instead of navigating it away.
+  const openLoginDestination = (destination: "/safeai-platform" | "/safeai-hub") => {
+    window.open(`/login?next=${destination}`, "_blank", "noopener,noreferrer");
+  };
+
   // Shared guard for routes that require login: navigate straight there if
   // already authenticated, otherwise explain why and offer a way to log in.
   const handleProtectedNav = (path: string, itemName: string) => {
@@ -248,8 +256,8 @@ export default function LandingPageV2() {
             </button>
             {loginMenuOpen && (
               <div className="lv2-dropdown lv2-dropdown-login">
-                <button onClick={() => navigate("/login")}>כניסה לפלטפורמה</button>
-                <button onClick={() => navigate("/login")}>כניסה ל-Hub</button>
+                <button onClick={() => { setLoginMenuOpen(false); openLoginDestination("/safeai-platform"); }}>כניסה לפלטפורמה</button>
+                <button onClick={() => { setLoginMenuOpen(false); openLoginDestination("/safeai-hub"); }}>כניסה ל-Hub</button>
               </div>
             )}
           </div>
@@ -276,7 +284,7 @@ export default function LandingPageV2() {
         </form>
 
         <div className="lv2-hero-chips">
-          <button className="lv2-chip" onClick={() => navigate("/login")}>כניסה לפלטפורמה</button>
+          <button className="lv2-chip" onClick={() => openLoginDestination("/safeai-platform")}>כניסה לפלטפורמה</button>
           <button className="lv2-chip" onClick={handleForumClick}>פורום זהירות AI</button>
           <button className="lv2-chip" onClick={() => navigate("/register")}>הרשמה חדשה</button>
           <button className="lv2-chip" onClick={() => showUpdating("SafeAI Hub")}>SafeAI Hub</button>
