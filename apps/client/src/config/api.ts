@@ -51,6 +51,8 @@ export const API_ENDPOINTS = {
     limits: `${API_BASE_URL}/usage/limits`,
     costs: `${API_BASE_URL}/usage/costs`,
   },
+  // Public statistics endpoint (no auth — landing page counts)
+  publicStats: `${API_BASE_URL}/public-stats`,
   // Admin statistics endpoints
   adminStats: {
     stats: `${API_BASE_URL}/admin/stats/stats`,
@@ -70,6 +72,8 @@ export const API_ENDPOINTS = {
   allRequests: `${API_BASE_URL}/contact/all`,
   // AI News endpoints
   news: `${API_BASE_URL}/api/news`,
+  // Forum endpoints
+  posts: `${API_BASE_URL}/api/posts`,
   // Tender board endpoints
   tenders: {
     list: `${API_BASE_URL}/tender-board`,
