@@ -67,6 +67,8 @@ export const API_ENDPOINTS = {
   allRequests: `${API_BASE_URL}/contact/all`,
   // AI News endpoints
   news: `${API_BASE_URL}/api/news`,
+  // Forum endpoints
+  posts: `${API_BASE_URL}/api/posts`,
   // Tender board endpoints
   tenders: {
     list: `${API_BASE_URL}/tender-board`,

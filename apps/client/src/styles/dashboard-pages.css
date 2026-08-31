@@ -1,0 +1,251 @@
+/* Dashboard-style layout for the SafeAI Hub / SafeAI Platform sub-homepages
+   (SCRUM-228 / SCRUM-229), inspired by a reference API-platform dashboard:
+   a fixed sidebar plus a main column with a get-started checklist, quick
+   stat tiles, and a recent-activity feed. Reuses the --lv2-* tokens from
+   landing-page-v2.css. In DOM order the sidebar comes first, which under
+   dir="rtl" places it on the right, matching the rest of the Hebrew UI. */
+
+.dash-page {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 36px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px 60px;
+  align-items: start;
+}
+
+.dash-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: 24px;
+}
+
+.dash-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: right;
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lv2-ink-soft);
+  cursor: pointer;
+}
+
+.dash-sidebar-item:hover {
+  background: var(--lv2-line-soft);
+  color: var(--lv2-ink);
+}
+
+.dash-sidebar-item-active {
+  background: var(--lv2-accent-soft);
+  color: var(--lv2-accent);
+  cursor: default;
+}
+
+.dash-sidebar-item-active:hover {
+  background: var(--lv2-accent-soft);
+}
+
+.dash-main {
+  min-width: 0;
+}
+
+.dash-eyebrow {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 6px;
+  background: var(--lv2-accent-soft);
+  color: var(--lv2-accent);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+}
+
+.dash-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--lv2-ink);
+  margin: 0 0 6px 0;
+}
+
+.dash-subtitle {
+  font-size: 15px;
+  color: var(--lv2-muted);
+  margin: 0 0 28px 0;
+  line-height: 1.6;
+}
+
+.dash-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--lv2-muted);
+  margin: 0 0 12px 0;
+}
+
+/* Get-started checklist */
+.dash-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.dash-checklist-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--lv2-line);
+  background: var(--lv2-surface);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lv2-ink);
+  text-align: right;
+  cursor: pointer;
+  width: 100%;
+}
+
+.dash-checklist-step:hover {
+  border-color: var(--lv2-accent);
+}
+
+.dash-checklist-marker {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--lv2-line-soft);
+  color: var(--lv2-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dash-checklist-step-done .dash-checklist-marker {
+  background: var(--lv2-accent);
+  color: #ffffff;
+}
+
+.dash-checklist-step-done .dash-checklist-label {
+  color: var(--lv2-muted);
+  text-decoration: line-through;
+}
+
+/* Stat tiles */
+.dash-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+  margin-bottom: 36px;
+}
+
+.dash-stat-tile {
+  border: 1px solid var(--lv2-line);
+  background: var(--lv2-surface);
+  border-radius: 8px;
+  padding: 18px 20px;
+}
+
+.dash-stat-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--lv2-ink);
+  margin-bottom: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-stat-label {
+  font-size: 13px;
+  color: var(--lv2-muted);
+}
+
+/* Feed lists (recent forum posts / news) */
+.dash-feeds {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 28px;
+}
+
+.dash-feed-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--lv2-muted);
+  margin: 0 0 12px 0;
+}
+
+.dash-feed-status {
+  font-size: 14px;
+  color: var(--lv2-muted);
+  margin: 0;
+}
+
+.dash-feed-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dash-feed-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  text-align: right;
+  border: 1px solid var(--lv2-line);
+  background: var(--lv2-surface);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.dash-feed-item:hover {
+  border-color: var(--lv2-accent);
+}
+
+.dash-feed-item-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--lv2-ink);
+}
+
+.dash-feed-item-meta {
+  font-size: 12px;
+  color: var(--lv2-muted);
+}
+
+@media (max-width: 720px) {
+  .dash-page {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-sidebar {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--lv2-line);
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+  }
+}

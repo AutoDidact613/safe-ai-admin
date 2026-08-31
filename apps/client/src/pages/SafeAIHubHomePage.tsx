@@ -1,86 +1,96 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/landing-page-v2.css";
-import "../styles/sub-home-pages.css";
+import "../styles/dashboard-pages.css";
+import { useAuth } from "../context/authStore";
+import { API_ENDPOINTS, apiCall } from "../config/api";
 import { ChatIcon, BookIcon, CompassIcon, ClipboardIcon, NewsIcon } from "../features/landing/icons";
-import type { ReactNode } from "react";
+import DashboardSidebar from "../features/dashboard/DashboardSidebar";
+import FeedList, { type FeedItem } from "../features/dashboard/FeedList";
 
-interface HubLink {
-  key: string;
-  icon: ReactNode;
+interface ForumPost {
+  _id: string;
   title: string;
-  description: string;
-  path: string;
+  author: { name: string };
+  createdAt: string;
 }
 
-// Links per SCRUM-228's acceptance criteria: פורום, קורסים, מדריכים מומלצים, מכרזים, חדשות AI.
-const HUB_LINKS: HubLink[] = [
-  {
-    key: "forum",
-    icon: <ChatIcon />,
-    title: "פורום זהירות AI",
-    description: "שאלות, דיונים ושיתוף ידע עם קהילת המתכנתים.",
-    path: "/forum",
-  },
-  {
-    key: "courses",
-    icon: <BookIcon />,
-    title: "קורסים",
-    description: "קורסים מקצועיים להעמקת הידע בפיתוח בטוח עם AI.",
-    path: "/courses",
-  },
-  {
-    key: "guides",
-    icon: <CompassIcon />,
-    title: "מדריכים מומלצים",
-    description: "אוסף מדריכים נבחרים לעבודה יומיומית עם המערכת.",
-    path: "/recommended-guides",
-  },
-  {
-    key: "tenders",
-    icon: <ClipboardIcon />,
-    title: "לוח פרויקטים",
-    description: "מכרזים ופרויקטים פתוחים לשיתוף פעולה.",
-    path: "/tender-board",
-  },
-  {
-    key: "news",
-    icon: <NewsIcon />,
-    title: "חדשות AI",
-    description: "עדכונים שוטפים מעולם הבינה המלאכותית.",
-    path: "/ai-news",
-  },
+interface ForumPostsResponse {
+  posts: ForumPost[];
+}
+
+interface NewsItem {
+  _id: string;
+  title: string;
+  createdAt: string;
+}
+
+const SIDEBAR_ITEMS = [
+  { key: "forum", icon: <ChatIcon size={18} />, label: "פורום", path: "/forum" },
+  { key: "courses", icon: <BookIcon size={18} />, label: "קורסים", path: "/courses" },
+  { key: "guides", icon: <CompassIcon size={18} />, label: "מדריכים מומלצים", path: "/recommended-guides" },
+  { key: "tenders", icon: <ClipboardIcon size={18} />, label: "לוח פרויקטים", path: "/tender-board" },
+  { key: "news", icon: <NewsIcon size={18} />, label: "חדשות AI", path: "/ai-news" },
 ];
 
 export default function SafeAIHubHomePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [postItems, setPostItems] = useState<FeedItem[]>([]);
+  const [postsFailed, setPostsFailed] = useState(false);
+  const [postsLoading, setPostsLoading] = useState(true);
+
+  const [newsItems, setNewsItems] = useState<FeedItem[]>([]);
+  const [newsFailed, setNewsFailed] = useState(false);
+  const [newsLoading, setNewsLoading] = useState(true);
+
+  useEffect(() => {
+    const role = user?.role || "user";
+    apiCall<ForumPostsResponse>(`${API_ENDPOINTS.posts}?page=1&userRole=${role}`)
+      .then((data) =>
+        setPostItems(
+          (data.posts || []).slice(0, 3).map((post) => ({
+            id: post._id,
+            title: post.title,
+            meta: `${post.author?.name || "משתמש"} · ${new Date(post.createdAt).toLocaleDateString("he-IL")}`,
+            onClick: () => navigate(`/forum/post/${post._id}`),
+          })),
+        ),
+      )
+      .catch(() => setPostsFailed(true))
+      .finally(() => setPostsLoading(false));
+  }, [navigate, user?.role]);
+
+  useEffect(() => {
+    apiCall<NewsItem[]>(`${API_ENDPOINTS.news}?limit=3`)
+      .then((items) =>
+        setNewsItems(
+          items.map((item) => ({
+            id: item._id,
+            title: item.title,
+            meta: new Date(item.createdAt).toLocaleDateString("he-IL"),
+            onClick: () => navigate(`/ai-news/${item._id}`),
+          })),
+        ),
+      )
+      .catch(() => setNewsFailed(true))
+      .finally(() => setNewsLoading(false));
+  }, [navigate]);
 
   return (
-    <div className="landing-v2 subhome-page">
-      <header className="subhome-header">
-        <span className="subhome-eyebrow">SafeAI Hub</span>
-        <h1 className="subhome-title">דף הבית למתכנתים</h1>
-        <p className="subhome-desc">
-          כל המשאבים למתכנתים במקום אחד — פורום, קורסים, מדריכים, פרויקטים וחדשות.
-        </p>
-      </header>
+    <div className="landing-v2 dash-page" dir="rtl">
+      <DashboardSidebar homeLabel="SafeAI Hub" items={SIDEBAR_ITEMS} />
 
-      <div className="subhome-links">
-        {HUB_LINKS.map((link) => (
-          <button
-            key={link.key}
-            className="lv2-banner-card lv2-status-available"
-            onClick={() => navigate(link.path)}
-          >
-            <div className="lv2-banner-icon">{link.icon}</div>
-            <div className="lv2-banner-content">
-              <div className="lv2-banner-heading">
-                <h3 className="lv2-banner-title">{link.title}</h3>
-                <span className="lv2-available-tag">זמין</span>
-              </div>
-              <p className="lv2-banner-desc">{link.description}</p>
-            </div>
-          </button>
-        ))}
+      <div className="dash-main">
+        <span className="dash-eyebrow">SafeAI Hub</span>
+        <h1 className="dash-title">שלום{user?.name ? `, ${user.name}` : ""}</h1>
+        <p className="dash-subtitle">כל המשאבים למתכנתים במקום אחד — פורום, קורסים, מדריכים, פרויקטים וחדשות.</p>
+
+        <div className="dash-feeds">
+          <FeedList title="פוסטים אחרונים בפורום" items={postItems} loading={postsLoading} failed={postsFailed} emptyLabel="אין עדיין פוסטים בפורום." />
+          <FeedList title="חדשות AI אחרונות" items={newsItems} loading={newsLoading} failed={newsFailed} emptyLabel="אין עדכונים חדשים כרגע." />
+        </div>
       </div>
     </div>
   );
