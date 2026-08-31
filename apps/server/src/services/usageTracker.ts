@@ -5,8 +5,8 @@
  * Logs each request to the database and updates user's monthly spending.
  */
 
-import { UsageLog } from "../models";
-import { User } from "../models/user";
+import { getUserById, incrementUserMonthlySpend, resetUserMonthlyBudget } from "../repositories/userRepository";
+import { aggregateUsageStats, createUsageLog } from "../repositories/usageRepository";
 import logger from "../logger";
 
 interface LogUsageParams {
@@ -97,14 +97,11 @@ export async function logUsage(params: LogUsageParams): Promise<void> {
       logData.profileId = profileId;
     }
 
-    await UsageLog.create(logData);
+    await createUsageLog(logData);
 
     // Update user's monthly spending if not free and in MANAGED mode
     if (!isFree && mode === "MANAGED" && usageData.cost > 0) {
-      await User.updateOne(
-        { _id: userId },
-        { $inc: { "costLimits.currentMonthSpent": usageData.cost } }
-      );
+      await incrementUserMonthlySpend(userId, usageData.cost);
     }
 
     logger.info("Usage logged successfully", {
@@ -126,7 +123,7 @@ export async function logUsage(params: LogUsageParams): Promise<void> {
  */
 export async function checkAndResetMonthlyBudget(userId: string): Promise<void> {
   try {
-    const user = await User.findById(userId);
+    const user = await getUserById(userId);
     if (!user) return;
 
     const lastReset = new Date(user.costLimits?.lastResetDate || user.createdAt);
@@ -138,15 +135,7 @@ export async function checkAndResetMonthlyBudget(userId: string): Promise<void> 
       (now.getMonth() - lastReset.getMonth());
 
     if (monthsPassed >= 1) {
-      await User.updateOne(
-        { _id: userId },
-        {
-          $set: {
-            "costLimits.currentMonthSpent": 0,
-            "costLimits.lastResetDate": now,
-          },
-        }
-      );
+      await resetUserMonthlyBudget(userId, now);
 
       logger.info("Monthly budget reset", { userId });
     }
@@ -163,31 +152,7 @@ export async function getUserUsageStats(userId: string, days: number = 7) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const stats = await UsageLog.aggregate([
-      {
-        $match: {
-          userId: userId,
-          timestamp: { $gte: startDate },
-          success: true,
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalRequests: { $sum: 1 },
-          totalTokens: { $sum: "$totalTokens" },
-          totalCost: { $sum: "$cost" },
-          avgResponseTime: { $avg: "$responseTime" },
-        },
-      },
-    ]);
-
-    return stats[0] || {
-      totalRequests: 0,
-      totalTokens: 0,
-      totalCost: 0,
-      avgResponseTime: 0,
-    };
+    return await aggregateUsageStats(userId, startDate);
   } catch (error) {
     logger.error("Failed to get usage stats", { error, userId });
     return {
