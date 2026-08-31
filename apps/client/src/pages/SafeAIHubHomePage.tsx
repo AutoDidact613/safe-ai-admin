@@ -22,6 +22,7 @@ interface ForumPostsResponse {
 interface NewsItem {
   _id: string;
   title: string;
+  content: string;
   createdAt: string;
 }
 
@@ -32,6 +33,10 @@ const SIDEBAR_ITEMS = [
   { key: "tenders", icon: <ClipboardIcon size={18} />, label: "לוח פרויקטים", path: "/tender-board" },
   { key: "news", icon: <NewsIcon size={18} />, label: "חדשות AI", path: "/ai-news" },
 ];
+
+function truncate(text: string, maxLength: number): string {
+  return text.length <= maxLength ? text : `${text.slice(0, maxLength).trimEnd()}…`;
+}
 
 export default function SafeAIHubHomePage() {
   const navigate = useNavigate();
@@ -54,6 +59,7 @@ export default function SafeAIHubHomePage() {
             id: post._id,
             title: post.title,
             meta: `${post.author?.name || "משתמש"} · ${new Date(post.createdAt).toLocaleDateString("he-IL")}`,
+            icon: <ChatIcon size={18} />,
             onClick: () => navigate(`/forum/post/${post._id}`),
           })),
         ),
@@ -70,6 +76,8 @@ export default function SafeAIHubHomePage() {
             id: item._id,
             title: item.title,
             meta: new Date(item.createdAt).toLocaleDateString("he-IL"),
+            description: truncate(item.content, 60),
+            icon: <NewsIcon size={14} />,
             onClick: () => navigate(`/ai-news/${item._id}`),
           })),
         ),
@@ -87,9 +95,23 @@ export default function SafeAIHubHomePage() {
         <h1 className="dash-title">שלום{user?.name ? `, ${user.name}` : ""}</h1>
         <p className="dash-subtitle">כל המשאבים למתכנתים במקום אחד — פורום, קורסים, מדריכים, פרויקטים וחדשות.</p>
 
-        <div className="dash-feeds">
-          <FeedList title="פוסטים אחרונים בפורום" items={postItems} loading={postsLoading} failed={postsFailed} emptyLabel="אין עדיין פוסטים בפורום." />
-          <FeedList title="חדשות AI אחרונות" items={newsItems} loading={newsLoading} failed={newsFailed} emptyLabel="אין עדכונים חדשים כרגע." />
+        <div className="dash-feeds-lead">
+          <FeedList
+            title="פוסטים אחרונים בפורום"
+            items={postItems}
+            loading={postsLoading}
+            failed={postsFailed}
+            emptyLabel="אין עדיין פוסטים בפורום."
+            variant="cards"
+          />
+          <FeedList
+            title="עדכונים"
+            items={newsItems}
+            loading={newsLoading}
+            failed={newsFailed}
+            emptyLabel="אין עדכונים חדשים כרגע."
+            variant="updates"
+          />
         </div>
       </div>
     </div>

@@ -15,6 +15,12 @@ interface UsageStats {
   totalTokens: number;
 }
 
+interface DailyUsage {
+  _id: string;
+  requests: number;
+  tokens: number;
+}
+
 interface ProviderKey {
   _id: string;
   userId?: string;
@@ -24,6 +30,7 @@ interface ProviderKey {
 interface NewsItem {
   _id: string;
   title: string;
+  content: string;
   createdAt: string;
 }
 
@@ -34,6 +41,20 @@ const SIDEBAR_ITEMS = [
   { key: "contact", icon: <MailIcon size={18} />, label: "צור קשר", path: "/contact" },
 ];
 
+// GET /usage/daily only returns rows for days that actually had usage — days
+// with none are simply absent. Fill the gaps with 0 so the sparkline always
+// gets one point per one of the last 7 calendar days, in order.
+function buildLast7DaySeries(daily: DailyUsage[], key: "requests" | "tokens"): number[] {
+  const byDate = new Map(daily.map((entry) => [entry._id, entry[key]]));
+  const series: number[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    series.push(byDate.get(date.toISOString().slice(0, 10)) ?? 0);
+  }
+  return series;
+}
+
 export default function SafeAIPlatformHomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -41,6 +62,9 @@ export default function SafeAIPlatformHomePage() {
   const [usage, setUsage] = useState<UsageStats | null>(null);
   const [usageFailed, setUsageFailed] = useState(false);
   const [usageLoading, setUsageLoading] = useState(true);
+
+  const [requestsTrend, setRequestsTrend] = useState<number[] | undefined>(undefined);
+  const [tokensTrend, setTokensTrend] = useState<number[] | undefined>(undefined);
 
   const [activeKeysCount, setActiveKeysCount] = useState<number | null>(null);
   const [keysFailed, setKeysFailed] = useState(false);
@@ -55,6 +79,18 @@ export default function SafeAIPlatformHomePage() {
       .then(setUsage)
       .catch(() => setUsageFailed(true))
       .finally(() => setUsageLoading(false));
+  }, []);
+
+  useEffect(() => {
+    apiCall<DailyUsage[]>(API_ENDPOINTS.usage.daily)
+      .then((daily) => {
+        setRequestsTrend(buildLast7DaySeries(daily, "requests"));
+        setTokensTrend(buildLast7DaySeries(daily, "tokens"));
+      })
+      .catch(() => {
+        // Sparklines are a decorative addition — if the daily breakdown fails
+        // to load, the tiles just fall back to showing no trend line.
+      });
   }, []);
 
   useEffect(() => {
@@ -91,14 +127,38 @@ export default function SafeAIPlatformHomePage() {
         <p className="dash-subtitle">כל מה שצריך לניהול השימוש שלך ב-SafeAI API Platform במקום אחד.</p>
 
         <h2 className="dash-section-title">בואו נתחיל</h2>
-        <div className="dash-checklist">
-          <ChecklistStep step={1} label="צור מפתח API" done={!keysLoading && !!activeKeysCount} path="/api-key-display" />
-          <ChecklistStep step={2} label="בצע קריאה ראשונה" done={!usageLoading && !!usage?.totalRequests} path="/docs" />
+        <div className="dash-getstarted-card">
+          <ChecklistStep
+            step={1}
+            label="צור מפתח API"
+            description="נדרש כדי לבצע קריאות ל-API"
+            done={!keysLoading && !!activeKeysCount}
+            path="/api-key-display"
+          />
+          <ChecklistStep
+            step={2}
+            label="בצע קריאה ראשונה"
+            description="לפי המדריך בתיעוד"
+            done={!usageLoading && !!usage?.totalRequests}
+            path="/docs"
+          />
         </div>
 
         <div className="dash-stats-row">
-          <StatTile label="בקשות (7 ימים אחרונים)" value={usage?.totalRequests ?? null} loading={usageLoading} failed={usageFailed} />
-          <StatTile label="טוקנים בשימוש" value={usage?.totalTokens ?? null} loading={usageLoading} failed={usageFailed} />
+          <StatTile
+            label="בקשות (7 ימים אחרונים)"
+            value={usage?.totalRequests ?? null}
+            loading={usageLoading}
+            failed={usageFailed}
+            trend={requestsTrend}
+          />
+          <StatTile
+            label="טוקנים בשימוש"
+            value={usage?.totalTokens ?? null}
+            loading={usageLoading}
+            failed={usageFailed}
+            trend={tokensTrend}
+          />
           <StatTile label="מפתחות API פעילים" value={activeKeysCount} loading={keysLoading} failed={keysFailed} />
         </div>
 
