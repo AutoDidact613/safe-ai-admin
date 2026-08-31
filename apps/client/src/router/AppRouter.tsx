@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import LandingPage from "../pages/LandingPage";
 import LandingPageV2 from "../pages/LandingPageV2";
 import SafeAIUIPage from "../pages/SafeAIUIPage";
@@ -66,14 +66,27 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 const ROUTER_BASE = import.meta.env.VITE_BASE_PATH?.replace(/\/$/, "") || "";
 
+// The SafeAI Hub / SafeAI Platform dashboards (SCRUM-228/229) ship their own
+// complete sidebar navigation — showing the global header/banner above them
+// too just duplicates every link a second time. Hidden only on these two
+// routes; every other page keeps the global chrome unchanged.
+const ROUTES_WITHOUT_GLOBAL_CHROME = ["/safeai-hub", "/safeai-platform"];
+
+function GlobalChrome() {
+  const location = useLocation();
+  if (ROUTES_WITHOUT_GLOBAL_CHROME.includes(location.pathname)) return null;
+  return (
+    <>
+      <TopNavigation />
+      <BetaBanner />
+    </>
+  );
+}
+
 export default function AppRouter() {
   return (
     <BrowserRouter basename={ROUTER_BASE}>
-      {/* Global Top Navigation */}
-      <TopNavigation />
-
-      {/* Beta Banner */}
-      <BetaBanner />
+      <GlobalChrome />
 
       <Routes>
         {/* Public Routes */}
