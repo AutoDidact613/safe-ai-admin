@@ -1,9 +1,9 @@
 /* Landing Page V2 — טיוטת עיצוב, טרם מחוברת כדף בית רשמי */
 
 .landing-v2 {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 24px 60px;
+  padding: 0 32px 60px;
   position: relative;
 
   /* Color tokens — kept as the existing site green for now (per request);
