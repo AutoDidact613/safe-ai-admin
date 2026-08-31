@@ -34,6 +34,8 @@ import AiNewsDetailsPage from "../pages/AiNewsDetailsPage";
 import ErrorBoundary from "../components/ErrorBoundary";
 import ForumPage from '../features/forum/ForumPage';
 import { PostThreadPage } from '../features/forum/PostThreadPage';
+import SafeAIHubHomePage from "../pages/SafeAIHubHomePage";
+import SafeAIPlatformHomePage from "../pages/SafeAIPlatformHomePage";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -165,6 +167,26 @@ export default function AppRouter() {
           element={
             <ProtectedRoute>
               <ForumPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Sub-homepages (SCRUM-228 / SCRUM-229) — not yet linked from the
+            main navigation; the SafeAI Hub / SafeAI Platform banners on
+            /landing-preview stay "בעדכון" until that connection is made. */}
+        <Route
+          path="/safeai-hub"
+          element={
+            <ProtectedRoute>
+              <SafeAIHubHomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/safeai-platform"
+          element={
+            <ProtectedRoute>
+              <SafeAIPlatformHomePage />
             </ProtectedRoute>
           }
         />
