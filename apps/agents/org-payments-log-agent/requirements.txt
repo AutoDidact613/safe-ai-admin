@@ -1,0 +1,7 @@
+pymongo==4.17.0
+python-dotenv==1.2.2
+dnspython==2.8.0
+langgraph==1.2.9
+langsmith==0.11.2
+google-genai==2.20.0
+pytest==9.1.1
