@@ -138,3 +138,28 @@ export function CompassIcon({ size = 26, className }: IconProps) {
     </svg>
   );
 }
+
+export function HomeIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className}>
+      <path d="M4 11l8-7 8 7v8.5a1 1 0 01-1 1h-4.5v-6h-5v6H5a1 1 0 01-1-1V11z" />
+    </svg>
+  );
+}
+
+export function KeyIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base} className={className}>
+      <circle cx="8" cy="15" r="3.5" />
+      <path d="M10.5 12.5L18 5M15.5 7.5L18 5M17 9l2.5-2.5" />
+    </svg>
+  );
+}
+
+export function CheckIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" {...base} className={className}>
+      <path d="M3 8.5l3 3 7-7" />
+    </svg>
+  );
+}
