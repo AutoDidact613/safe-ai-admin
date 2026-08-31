@@ -5,16 +5,16 @@
 }
 
 .about-container {
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   padding: 40px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-md);
 }
 
 .about-container h1 {
   text-align: center;
-  color: #202123;
+  color: var(--text-primary);
   margin-bottom: 2rem;
   font-size: 36px;
   font-weight: 700;
@@ -23,7 +23,7 @@
 .about-section {
   margin-bottom: 2.5rem;
   padding-bottom: 2rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-default);
 }
 
 .about-section:last-of-type {
@@ -33,14 +33,13 @@
 }
 
 .about-section h2 {
-  color: #1C7AA6;
-  font-size: 24px;
+  color: var(--brand-secondary);  font-size: 24px;
   font-weight: 700;
   margin-bottom: 1rem;
 }
 
 .about-section h3 {
-  color: #374151;
+  color: var(--text-secondary);
   font-size: 20px;
   font-weight: 600;
   margin-top: 1.5rem;
@@ -49,7 +48,7 @@
 
 .about-section p {
   font-size: 16px;
-  color: #374151;
+  color: var(--text-secondary);
   line-height: 1.8;
   margin-bottom: 1rem;
   text-align: right;
@@ -64,7 +63,7 @@
 
 .about-section ul li {
   font-size: 16px;
-  color: #374151;
+  color: var(--text-secondary);
   line-height: 1.8;
   margin-bottom: 0.5rem;
   padding-right: 1.5rem;
@@ -75,15 +74,14 @@
 
 .about-section ul li::before {
   content: "•";
-  color: #1C7AA6;
-  font-weight: bold;
+  color: var(--brand-secondary);  font-weight: bold;
   position: absolute;
   right: 0;
 }
 
 .about-cta {
   background: linear-gradient(135deg, rgba(28, 122, 166, 0.08) 0%, rgba(19, 84, 113, 0.08) 100%);
-  border: 2px solid #1C7AA6;
+  border: 2px solid var(--brand-secondary);
   border-radius: 12px;
   padding: 32px;
   text-align: center;
@@ -91,14 +89,13 @@
 }
 
 .about-cta h2 {
-  color: #1C7AA6;
-  font-size: 28px;
+  color: var(--brand-secondary);  font-size: 28px;
   font-weight: 700;
   margin-bottom: 1rem;
 }
 
 .about-cta h3 {
-  color: #374151;
+  color: var(--text-secondary);
   font-size: 22px;
   font-weight: 600;
   margin-top: 2rem;
@@ -107,7 +104,7 @@
 
 .about-cta p {
   font-size: 16px;
-  color: #374151;
+  color: var(--text-secondary);
   line-height: 1.8;
   margin-bottom: 1.5rem;
   text-align: center;
@@ -126,26 +123,23 @@
 }
 
 .about-cta .btn-primary {
-  background: #1C7AA6;
-  color: white;
-  border: none;
+  background: var(--brand-secondary);
+  color: var(--text-inverse);  border: none;
 }
 
 .about-cta .btn-primary:hover {
-  background: #239AD1;
-  transform: translateY(-2px);
+  background: var(--brand-secondary-hover);  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(28, 122, 166, 0.3);
 }
 
 .about-cta .btn-secondary {
-  background: white;
-  color: #1C7AA6;
-  border: 2px solid #1C7AA6;
+  background: var(--bg-surface);
+  color: var(--brand-secondary);
+  border: 2px solid var(--brand-secondary);
 }
 
 .about-cta .btn-secondary:hover {
-  background: #DEEFF7;
-  transform: translateY(-2px);
+  background: var(--color-success-bg);  transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(28, 122, 166, 0.2);
 }
 

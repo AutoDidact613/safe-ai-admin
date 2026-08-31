@@ -53,7 +53,7 @@ export default function TenderOffers({ tender, onClose, onUpdateTender, highligh
       </header>
 
       {errorMessage && (
-        <div className="error-message" style={{ color: 'red', background: '#ffebee', padding: '8px 12px', borderRadius: '4px', marginBottom: '16px' }}>
+        <div className="error-message" style={{ color: 'var(--color-danger)', background: 'var(--color-danger-bg)', padding: '8px 12px', borderRadius: '4px', marginBottom: '16px' }}>
           {errorMessage}
         </div>
       )}
@@ -70,10 +70,10 @@ export default function TenderOffers({ tender, onClose, onUpdateTender, highligh
                 className="applicant-card"
                 style={{
                   padding: '12px',
-                  border: isHighlighted ? '2px solid #3498db' : '1px solid #e2e8f0',
+                  border: isHighlighted ? '2px solid var(--color-info)' : '1px solid var(--border-default)',
                   borderRadius: '6px',
                   marginBottom: '10px',
-                  backgroundColor: isHighlighted ? '#eaf4fc' : undefined,
+                  backgroundColor: isHighlighted ? 'var(--color-info-bg)' : undefined,
                 }}
               >
                 <h4>{applicant.name}</h4>
@@ -82,7 +82,7 @@ export default function TenderOffers({ tender, onClose, onUpdateTender, highligh
                 {applicant.proposal && <p><strong>הצעה:</strong> {applicant.proposal}</p>}
                 {applicant.contactMethod && <p><strong>דרכי קשר:</strong> {applicant.contactMethod}</p>}
                 {applicant.professionalProfile && (
-                  <div style={{ marginTop: '8px', padding: '8px', background: '#f8fafc', borderRadius: '4px' }}>
+                  <div style={{ marginTop: '8px', padding: '8px', background: 'var(--bg-elevated)', borderRadius: '4px' }}>
                     <p><strong>פרופיל מקצועי - {applicant.professionalProfile.name}</strong></p>
                     {applicant.professionalProfile.description && <p>{applicant.professionalProfile.description}</p>}
                     {applicant.professionalProfile.experience && (
@@ -110,7 +110,7 @@ export default function TenderOffers({ tender, onClose, onUpdateTender, highligh
             )
           })
         ) : (
-          <p style={{ color: '#666' }}>אין עדיין מועמדים שנרשמו למכרז זה.</p>
+          <p style={{ color: 'var(--text-muted)' }}>אין עדיין מועמדים שנרשמו למכרז זה.</p>
         )}
       </section>
     </article>

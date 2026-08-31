@@ -297,7 +297,7 @@ export default function AboutPage() {
                   font-family="'Segoe UI', Tahoma, sans-serif"
                   font-size="16"
                   font-weight="900"
-                  fill="#ffffff"
+                  fill="var(--text-inverse)"
                   text-anchor="middle"
                 >
                   https://safeai613.com/v1

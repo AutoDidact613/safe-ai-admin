@@ -5,17 +5,17 @@
 }
 
 .privacy-container {
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   padding: 40px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-md);
   direction: rtl;
 }
 
 .privacy-container h1 {
   text-align: center;
-  color: #202123;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
   font-size: 32px;
   font-weight: 700;
@@ -23,7 +23,7 @@
 
 .privacy-updated {
   text-align: center;
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 14px;
   margin-bottom: 2.5rem;
 }
@@ -31,7 +31,7 @@
 .privacy-section {
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-default);
 }
 
 .privacy-section:last-of-type {
@@ -41,14 +41,13 @@
 }
 
 .privacy-section h2 {
-  color: #1C7AA6;
-  font-size: 22px;
+  color: var(--brand-secondary);  font-size: 22px;
   font-weight: 700;
   margin-bottom: 1rem;
 }
 
 .privacy-section h3 {
-  color: #374151;
+  color: var(--text-secondary);
   font-size: 17px;
   font-weight: 600;
   margin-top: 1.25rem;
@@ -57,7 +56,7 @@
 
 .privacy-section p {
   font-size: 15px;
-  color: #374151;
+  color: var(--text-secondary);
   line-height: 1.8;
   margin-bottom: 1rem;
   text-align: right;
@@ -71,7 +70,7 @@
 
 .privacy-section ul li {
   font-size: 15px;
-  color: #374151;
+  color: var(--text-secondary);
   line-height: 1.8;
   margin-bottom: 0.5rem;
   padding-right: 1.5rem;
@@ -81,8 +80,7 @@
 
 .privacy-section ul li::before {
   content: "•";
-  color: #1C7AA6;
-  font-weight: bold;
+  color: var(--brand-secondary);  font-weight: bold;
   position: absolute;
   right: 0;
 }
@@ -96,20 +94,19 @@
 
 .privacy-section th,
 .privacy-section td {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-default);
   padding: 8px 12px;
   text-align: right;
 }
 
 .privacy-section th {
-  background: #DEEFF7;
-  color: #135471;
-  font-weight: 700;
+  background: var(--color-success-bg);
+  color: var(--color-success);  font-weight: 700;
 }
 
 .privacy-contact-box {
   background: linear-gradient(135deg, rgba(28, 122, 166, 0.08) 0%, rgba(19, 84, 113, 0.08) 100%);
-  border: 2px solid #1C7AA6;
+  border: 2px solid var(--brand-secondary);
   border-radius: 12px;
   padding: 24px;
   text-align: center;
@@ -121,8 +118,7 @@
 }
 
 .privacy-contact-box a {
-  color: #1C7AA6;
-  font-weight: 700;
+  color: var(--brand-secondary);  font-weight: 700;
   text-decoration: none;
 }
 

@@ -5,16 +5,16 @@
 }
 
 .contact-container {
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   padding: 40px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-md);
 }
 
 .contact-container h1 {
   text-align: center;
-  color: #202123;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
   font-size: 32px;
   font-weight: 700;
@@ -22,7 +22,7 @@
 
 .contact-subtitle {
   text-align: center;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-bottom: 32px;
   font-size: 16px;
 }
@@ -30,7 +30,7 @@
 /* Design Partner Banner */
 .design-partner-banner {
   background: linear-gradient(135deg, rgba(28, 122, 166, 0.08) 0%, rgba(19, 84, 113, 0.08) 100%);
-  border: 2px solid #1C7AA6;
+  border: 2px solid var(--brand-secondary);
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 32px;
@@ -47,14 +47,13 @@
 
 .design-partner-content h3 {
   font-size: 20px;
-  color: #1C7AA6;
-  margin: 0 0 12px 0;
+  color: var(--brand-secondary);  margin: 0 0 12px 0;
   font-weight: 700;
 }
 
 .design-partner-content p {
   font-size: 15px;
-  color: #374151;
+  color: var(--text-secondary);
   line-height: 1.7;
   margin: 0 0 12px 0;
 }
@@ -64,13 +63,12 @@
 }
 
 .design-partner-highlight {
-  background: white;
+  background: var(--bg-surface);
   padding: 12px 16px;
   border-radius: 8px;
-  border: 1px solid #1C7AA6;
+  border: 1px solid var(--brand-secondary);
   font-weight: 600;
-  color: #1C7AA6 !important;
-}
+  color: var(--brand-secondary) !important;}
 
 /* Guides Link Section */
 .guides-link-section {
@@ -81,16 +79,15 @@
 
 .guides-link-section p {
   font-size: 15px;
-  color: #374151;
+  color: var(--text-secondary);
   margin-bottom: 12px;
   font-weight: 600;
 }
 
 .guides-link-button {
   display: inline-block;
-  background: #1C7AA6;
-  color: white;
-  padding: 10px 20px;
+  background: var(--brand-secondary);
+  color: var(--text-inverse);  padding: 10px 20px;
   border-radius: 8px;
   text-decoration: none;
   font-weight: 600;
@@ -101,20 +98,18 @@
 }
 
 .guides-link-button:hover {
-  background: #239AD1;
-  transform: translateY(-2px);
+  background: var(--brand-secondary-hover);  transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(28, 122, 166, 0.3);
 }
 
 .guides-link-button.secondary {
-  background: white;
-  color: #1C7AA6;
-  border: 2px solid #1C7AA6;
+  background: var(--bg-surface);
+  color: var(--brand-secondary);
+  border: 2px solid var(--brand-secondary);
 }
 
 .guides-link-button.secondary:hover {
-  background: #DEEFF7;
-  transform: translateY(-2px);
+  background: var(--color-success-bg);  transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(28, 122, 166, 0.2);
 }
 
@@ -132,26 +127,26 @@
 
 .form-group label {
   font-weight: 600;
-  color: #202123;
+  color: var(--text-primary);
   font-size: 14px;
 }
 
 .form-group input,
 .form-group textarea {
   padding: 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   font-size: 14px;
   font-family: inherit;
   transition: all 0.2s ease;
-  background: white;
-  color: #202123;
+  background: var(--bg-surface);
+  color: var(--text-primary);
 }
 
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #1C7AA6;
+  border-color: var(--brand-secondary);
   box-shadow: 0 0 0 3px rgba(28, 122, 166, 0.1);
 }
 
@@ -168,15 +163,14 @@
 }
 
 .message.success {
-  background-color: #d1fae5;
-  color: #065f46;
-  border: 1px solid #1C7AA6;
-}
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--brand-secondary);}
 
 .message.error {
-  background-color: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #f87171;
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger-border);
 }
 
 .btn {
@@ -190,13 +184,12 @@
 }
 
 .btn-primary {
-  background: #1C7AA6;
-  color: white;
+  background: var(--brand-secondary);
+  color: var(--text-inverse);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #239AD1;
-  transform: translateY(-1px);
+  background: var(--brand-secondary-hover);  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(28, 122, 166, 0.3);
 }
 
@@ -310,7 +303,7 @@
 
 .login-required p {
   font-size: 16px;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-bottom: 1.5rem;
 }
 

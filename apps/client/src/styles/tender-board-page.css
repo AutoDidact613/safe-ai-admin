@@ -3,19 +3,14 @@
    ========================================================================== */
 
 :root {
-  --primary-color: #1C7AA6;        /* טיל כחול אחיד לכל המערכת */
-  --primary-hover: #239AD1;
-  --secondary-bg: #f8fafc;
-  --text-main: #111827;
-  --text-muted: #64748b;
-  --border-color: #e2e8f0;
-  --border-focused: #cbd5e1;
-  --radius-lg: 20px;
+  --primary-color: var(--brand-secondary);        /* ירוק מנטה אחיד לכל המערכת */
+  --primary-hover: var(--brand-secondary-hover);
+  --secondary-bg: var(--bg-elevated);
+  --text-main: var(--text-primary);
+  --border-color: var(--border-default);
+  --border-focused: var(--border-strong);  --radius-lg: 20px;
   --radius-md: 12px;
   --radius-sm: 8px;
-  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 18px 45px rgba(15, 23, 42, 0.06);
 }
 
 /* אתחול בסיסי והגדרות דף גלובליות */
@@ -45,7 +40,7 @@
 .tender-board-page p,
 .tender-board-page li,
 .tender-board-page span {
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 /* ========================================== */
@@ -74,30 +69,20 @@
   padding: 14px 20px;
   border-radius: 0;
   background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-muted);
-  font-weight: 500;
-  font-size: 14px;
-  cursor: pointer;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-weight: 600;  cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .dashboard-link:hover {
-  color: var(--text-main);
-  background: #f9fafb;
+  background: var(--color-info-bg);
 }
 
 .dashboard-link.active {
-  background: transparent;
-  color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
-  font-weight: 600;
-}
-
-.dashboard-link svg {
-  flex-shrink: 0;
-}
+  background: var(--primary-color);
+  color: var(--text-inverse);
+  border-color: var(--primary-color);}
 
 /* אזור ה-Hero הראשי */
 .dashboard-hero {
@@ -115,7 +100,7 @@
 .dashboard-hero h1 {
   font-size: clamp(2.2rem, 2.8vw, 3rem);
   font-weight: bold;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .dashboard-hero h1::after {
@@ -149,18 +134,16 @@
   gap: 12px;
   padding: 14px 28px;
   border-radius: var(--radius-md);
-  background: #DEEFF7;
-  border: 1px solid #A6C9D9;
-  color: #1C7AA6;
-  font-size: 1.05rem;
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+  color: var(--color-success);  font-size: 1.05rem;
   font-weight: 600;
   box-sizing: border-box;
 }
 
 .metric-card p, .manage-summary strong {
   margin: 0;
-  color: #1C7AA6;
-}
+  color: var(--color-success);}
 
 .metric-card strong {
   font-size: 2.2rem;
@@ -172,9 +155,8 @@
   margin-bottom: 32px;
   display: flex;
   justify-content: center;
-  background-color: #DEEFF7; /* רקע תכלת עדין התואם למונה המכרזים */
-  border: 2px solid #1C7AA6;  /* מסגרת כחולה נקייה תואמת מותג */
-  border-radius: var(--radius-md);
+  background-color: var(--color-success-bg); /* רקע ירקרק עדין התואם למונה המכרזים */
+  border: 2px solid var(--color-success);  /* מסגרת ירוקה נקייה כמו בתמונה השנייה */  border-radius: var(--radius-md);
   padding: 16px 24px;
   box-shadow: var(--shadow-sm);
 }
@@ -210,7 +192,7 @@
   border: 1px solid var(--border-color) !important;
   border-radius: var(--radius-sm) !important;
   font-size: 0.9rem;
-  background-color: #ffffff !important;
+  background-color: var(--bg-surface) !important;
   box-shadow: none !important;
 }
 
@@ -236,7 +218,7 @@
   margin-top: 4px;
   max-height: 200px;
   overflow-y: auto;
-  background: #ffffff;
+  background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
@@ -254,7 +236,7 @@
   width: 100%;
   padding: 12px 16px;
   font-size: 0.95rem;
-  color: #0f172a;
+  color: var(--text-primary);
   background: transparent;
   border: none;
   text-align: right;
@@ -262,7 +244,7 @@
 }
 
 .autocomplete-item:hover, .domains-option:hover {
-  background: #f1f5f9;
+  background: var(--gray-100);
 }
 
 /* ========================================== */
@@ -282,30 +264,30 @@
 }
 
 .tab-button {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--gray-100);
+  color: var(--text-muted);
   padding: 6px 14px;
   border-radius: var(--radius-sm);
 }
 
 .tab-button:hover {
-  background: #e2e8f0;
-  color: #334155;
+  background: var(--gray-200);
+  color: var(--text-secondary);
 }
 
 .secondary-button {
-  background: #ffffff;
-  color: #dc2626;
-  border: 1px solid #fca5a5;
+  background: var(--bg-surface);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger-border);
 }
 
 .secondary-button:hover {
-  background: #fef2f2;
+  background: var(--color-danger-bg);
 }
 
 .primary-button, .button-green, .submit-button, .details-button {
   background: var(--primary-color);
-  color: white;
+  color: var(--text-inverse);
 }
 
 .primary-button:hover, .button-green:hover, .submit-button:hover, .details-button:hover {
@@ -319,10 +301,10 @@
   width: 100%;
   box-sizing: border-box;
   padding: 12px 16px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
   background: var(--secondary-bg);
-  color: #0f172a;
+  color: var(--text-primary);
   font-size: 0.95rem;
   text-align: right;
   font-family: inherit;
@@ -333,7 +315,7 @@
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(28, 122, 166, 0.12);
-  background: #ffffff;
+  background: var(--bg-surface);
 }
 
 .textarea {
@@ -358,7 +340,7 @@
   padding: 24px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
-  background: #ffffff;
+  background: var(--bg-surface);
   box-shadow: var(--shadow-lg);
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -436,7 +418,7 @@
 
 .tender-card__summary {
   margin: 18px 0;
-  color: #475569;
+  color: var(--text-secondary);
   line-height: 1.75;
 }
 
@@ -474,10 +456,9 @@
   align-items: center;
   padding: 6px 14px;
   border-radius: 999px;
-  background: #DEEFF7;
-  color: #135471;
-  border: 1px solid #A6C9D9;
-  font-size: 0.85rem;
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success-border);  font-size: 0.85rem;
   font-weight: 600;
   gap: 6px;
 }
@@ -492,7 +473,7 @@
   padding: 32px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
-  background: #ffffff;
+  background: var(--bg-surface);
   box-shadow: var(--shadow-md);
 }
 
@@ -501,7 +482,7 @@
   flex-direction: column;
   gap: 16px;
   margin-bottom: 32px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-muted);
   padding-bottom: 24px;
 }
 
@@ -520,7 +501,7 @@
 .form-group label {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .tender-form .form-grid {
@@ -566,8 +547,8 @@
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border-color);
-  background: #ffffff;
-  color: #334155;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -576,14 +557,13 @@
 }
 
 .domain-chip:hover:not(:disabled) {
-  background: #f1f5f9;
+  background: var(--gray-100);
 }
 
 .domain-chip.selected {
-  background: #DEEFF7;
+  background: var(--color-success-bg);
   border-color: var(--primary-color);
-  color: #135471;
-  font-weight: 600;
+  color: var(--color-success);  font-weight: 600;
 }
 
 .domain-chip:disabled {
@@ -616,8 +596,8 @@
 }
 
 .remove-agent {
-  background: #ef4444;
-  color: white;
+  background: var(--color-danger);
+  color: var(--text-inverse);
   border: none;
   width: 38px;
   height: 38px;
@@ -631,7 +611,7 @@
 }
 
 .remove-agent:hover {
-  background: #dc2626;
+  background: var(--color-danger);
 }
 
 .tender-form .bottom-row {
@@ -674,7 +654,7 @@
   width: 44px;
   height: 24px;
   border-radius: 999px;
-  background: #cbd5e1;
+  background: var(--border-strong);
   transition: all 0.2s ease;
 }
 
@@ -686,7 +666,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--bg-surface);
   transition: transform 0.2s ease;
 }
 
@@ -708,7 +688,7 @@
 }
 
 .manage-header {
-  background: #ffffff;
+  background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 28px 32px;
@@ -723,7 +703,7 @@
 .manage-header h1 {
   font-size: 1.85rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
@@ -759,7 +739,7 @@
   gap: 18px;
   padding: 26px;
   border-radius: var(--radius-lg);
-  background: #ffffff;
+  background: var(--bg-surface);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-lg);
 }
@@ -768,7 +748,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-muted);
   padding-bottom: 14px;
   margin-bottom: 4px;
 }
@@ -776,7 +756,7 @@
 .detail-panel__header h2 {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .detail-field {
@@ -788,7 +768,7 @@
 .detail-field label {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .detail-row {
@@ -800,8 +780,8 @@
 /* רכיב בחירת תחומים ערוך בפאנל המכרזים שלי */
 .domains-select {
   position: relative;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
   padding: 8px;
   display: flex;
@@ -817,17 +797,15 @@
 }
 
 .domain-pill--editable {
-  background: #DEEFF7;
-  border: 1px solid #A6C9D9;
-  color: #135471;
-  padding: 4px 10px 4px 6px;
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+  color: var(--color-success);  padding: 4px 10px 4px 6px;
 }
 
 .domain-remove {
   background: transparent;
   border: none;
-  color: #1C7AA6;
-  margin-right: 4px;
+  color: var(--color-success);  margin-right: 4px;
   cursor: pointer;
   font-size: 1.1rem;
   display: inline-flex;
@@ -842,7 +820,7 @@
   margin-top: 6px;
   max-height: 180px;
   overflow-y: auto;
-  background: #ffffff;
+  background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
@@ -851,14 +829,14 @@
 
 .field-help {
   margin: 4px 0 0;
-  color: #ef4444;
+  color: var(--color-danger);
   font-size: 0.85rem;
 }
 
 /* קבוצות מועמדים רשומים */
 .applicants-section {
   margin-top: 10px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-muted);
   padding-top: 18px;
 }
 
@@ -879,7 +857,7 @@
 .applicant-card h4 {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
   margin-bottom: 6px;
 }
 
@@ -904,14 +882,14 @@
   margin-top: 10px;
   padding: 16px;
   border-radius: var(--radius-md);
-  background: #fff1f2;
-  border: 1px solid #fecdd3;
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
   text-align: center;
 }
 
 .close-confirmation p {
   margin: 0 0 12px 0;
-  color: #9f1239;
+  color: var(--color-danger);
   font-weight: 600;
 }
 
@@ -930,13 +908,13 @@
   text-align: center;
   padding: 48px 24px;
   border-radius: var(--radius-lg);
-  border: 2px dashed #cbd5e1;
+  border: 2px dashed var(--border-strong);
   background: var(--secondary-bg);
 }
 
 .manage-empty h2, .empty-state h2 {
   font-size: 1.2rem;
-  color: #475569;
+  color: var(--text-secondary);
   margin-bottom: 6px;
 }
 
@@ -946,16 +924,16 @@
 .success-banner, .success-message {
   padding: 12px 16px;
   border-radius: var(--radius-md);
-  background: #ecfdf5;
-  border: 1px solid #bbf7d0;
-  color: #166534;
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+  color: var(--color-success);
   font-weight: 600;
 }
 
 .success-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.5);
+  background: var(--bg-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -965,10 +943,10 @@
 
 .success-modal {
   width: min(520px, 100%);
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--bg-surface);
   border-radius: 20px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.18);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-lg);
   padding: 30px 28px;
   text-align: center;
 }
@@ -980,7 +958,7 @@
 
 .success-modal__text {
   margin: 0;
-  color: #0f172a;
+  color: var(--text-primary);
   font-weight: 700;
   font-size: 1.05rem;
   line-height: 1.6;
@@ -989,9 +967,9 @@
 .error-message {
   padding: 12px 16px;
   border-radius: var(--radius-md);
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
-  color: #991b1b;
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
   font-weight: 600;
 }
 
@@ -999,7 +977,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.4);
+  background: var(--bg-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1011,10 +989,10 @@
   width: min(640px, 100%);
   max-height: 90vh;
   overflow-y: auto;
-  background: #ffffff;
+  background: var(--bg-surface);
   border-radius: 16px;
   border: 1px solid var(--border-color);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg);
   padding: 32px;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -1044,7 +1022,7 @@
 .apply-form .form-label {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .apply-form .form-input,
@@ -1054,8 +1032,8 @@
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border-color);
-  background: #ffffff;
-  color: #1e293b;
+  background: var(--bg-surface);
+  color: var(--text-primary);
   font-size: 0.95rem;
   font-family: inherit;
   text-align: right;
@@ -1074,7 +1052,7 @@
 .apply-form .form-error {
   display: block;
   width: 100%;
-  color: #dc2626;
+  color: var(--color-danger);
   font-size: 0.8rem;
 }
 
@@ -1096,7 +1074,7 @@
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .apply-form .profile-attach-checkbox input[type='checkbox'] {

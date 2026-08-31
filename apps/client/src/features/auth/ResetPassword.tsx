@@ -118,13 +118,13 @@ export default function ResetPassword() {
             >
               ✅
             </div>
-            <h2 style={{ color: "#28a745", marginBottom: "15px" }}>
+            <h2 style={{ color: "var(--color-success)", marginBottom: "15px" }}>
               הסיסמה אופסה בהצלחה!
             </h2>
-            <p style={{ color: "#666", marginBottom: "20px" }}>
+            <p style={{ color: "var(--text-muted)", marginBottom: "20px" }}>
               כעת תוכל להתחבר עם הסיסמה החדשה
             </p>
-            <p style={{ color: "#999", fontSize: "14px" }}>
+            <p style={{ color: "var(--gray-400)", fontSize: "14px" }}>
               מעביר אותך לדף ההתחברות...
             </p>
           </div>
@@ -138,7 +138,7 @@ export default function ResetPassword() {
       <div className="auth-form-wrapper">
         <h2 className="auth-title">איפוס סיסמה</h2>
 
-        <p style={{ textAlign: "center", color: "#666", marginBottom: "25px" }}>
+        <p style={{ textAlign: "center", color: "var(--text-muted)", marginBottom: "25px" }}>
           הזן סיסמה חדשה לחשבון שלך
         </p>
 
@@ -159,7 +159,7 @@ export default function ResetPassword() {
               <div className="password-requirements">
                 <ul>
                   {passwordErrors.map((err, idx) => (
-                    <li key={idx} style={{ color: "#dc3545", fontSize: "12px" }}>
+                    <li key={idx} style={{ color: "var(--color-danger)", fontSize: "12px" }}>
                       {err}
                     </li>
                   ))}

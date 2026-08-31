@@ -16,10 +16,11 @@
   --news-radius: 10px;
 
   min-height: 100vh;
-  background: var(--news-bg);
-  color: var(--news-fg);
-  font-family: "Heebo", system-ui, Avenir, Helvetica, Arial, sans-serif;
-}
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--bg-elevated);
+  padding: 2rem;}
 
 .news-page * {
   box-sizing: border-box;
@@ -205,72 +206,12 @@
   font-size: 0.85rem;
 }
 
-.news-date {
-  font-weight: 500;
-  color: var(--news-fg-subtle);
-}
-
-.news-tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.75rem;
-}
-
-.news-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.6rem;
-  background: var(--news-bg-subtle);
-  color: var(--news-fg-muted);
-  border: 1px solid var(--news-border);
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-/* ===== Compact article list ===== */
-.news-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.news-list-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.25rem;
-  padding: 1.4rem 0;
-  border-bottom: 1px solid var(--news-border);
-  max-width: 100%;
-}
-
-.news-list-row:last-child {
-  border-bottom: none;
-}
-
-/* Lead (top) story - same column widths as every other row, distinguished
-   only by typography + a small accent-colored badge, so alignment stays
-   consistent across the whole list. */
-.news-list-row--lead .news-article-title {
-  font-size: 1.4rem;
-  -webkit-line-clamp: 3;
-}
-
-.news-list-row--lead .news-preview {
-  font-size: 0.95rem;
-  -webkit-line-clamp: 3;
-}
-
-.news-lead-badge {
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  background: var(--news-accent);
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 700;
+.btn-submit {
+  background: var(--link-color);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: 16px;
+  padding: 0.95rem 1.4rem;  font-weight: 700;
   margin-bottom: 0.5rem;
 }
 
@@ -402,21 +343,19 @@
 }
 
 .btn-reset {
-  background: #ffffff;
-  color: var(--news-fg-muted);
-  border: 1px solid var(--news-border);
-  border-radius: 999px;
-  padding: 0.7rem 1.2rem;
-  cursor: pointer;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  padding: 0.95rem 1.4rem;  cursor: pointer;
   transition: all 0.15s ease;
   font-weight: 600;
   font-size: 0.88rem;
 }
 
 .btn-reset:hover {
-  background: var(--news-bg-subtle);
-  border-color: #cbd5e1;
-}
+  background: var(--bg-elevated);
+  border-color: var(--gray-400);}
 
 .btn-submit {
   background: var(--news-accent);
@@ -430,44 +369,46 @@
   transition: all 0.15s ease;
 }
 
-.btn-submit:hover:not(:disabled) {
-  background: var(--news-accent-dark);
+.news-empty-message {
+  margin: 0;
+  color: var(--gray-600);
+  font-size: 1rem;
 }
 
-.btn-submit:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+/* News article card */
+.news-article-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--gray-200);
+  border-radius: 24px;
+  padding: 1.6rem;
+  box-shadow: var(--shadow-lg);
+  transition: all 0.3s ease;
 }
 
-.btn-cancel {
-  background: #ffffff;
-  color: var(--news-fg-muted);
-  border: 1px solid var(--news-border);
-  border-radius: 999px;
-  padding: 0.75rem 1.2rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-weight: 600;
+.news-article-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
 }
 
-.btn-cancel:hover {
-  background: var(--news-bg-subtle);
+.news-article-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.btn-confirm-delete {
-  background: var(--news-danger);
-  color: #ffffff;
-  border: none;
-  border-radius: 999px;
-  padding: 0.75rem 1.2rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
+.news-article-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
   font-weight: 700;
 }
 
-.btn-confirm-delete:hover:not(:disabled) {
-  background: #b91c1c;
-}
+.news-article-source {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;}
 
 .btn-confirm-delete:disabled {
   opacity: 0.6;
@@ -480,15 +421,13 @@
   justify-content: center;
 }
 
-.load-more-btn {
-  background: #ffffff;
-  color: var(--news-fg);
-  border: 1px solid var(--news-border);
-  border-radius: 999px;
-  padding: 0.75rem 1.75rem;
-  font-weight: 700;
-  font-size: 0.9rem;
-  cursor: pointer;
+/* Article action buttons */
+.btn-edit {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  padding: 0.75rem 1rem;  cursor: pointer;
   transition: all 0.15s ease;
 }
 
@@ -585,8 +524,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.5);
-  display: flex;
+  background: var(--bg-overlay);  display: flex;
   justify-content: center;
   align-items: center;
   padding: 1rem;
@@ -604,15 +542,13 @@
 }
 
 .modal-content {
-  background: #ffffff;
-  border-radius: 16px;
+  background: var(--bg-surface);
+  border-radius: 24px;
   padding: 2rem;
   width: 100%;
   max-width: 440px;
-  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.2);
-  animation: news-slide-up 0.2s ease;
-  font-family: "Heebo", system-ui, Avenir, Helvetica, Arial, sans-serif;
-}
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s ease;}
 
 .modal-content.news-form-modal {
   max-width: 560px;
@@ -633,14 +569,13 @@
 
 .modal-title {
   margin: 0;
-  color: var(--news-fg, #111827);
-  font-size: 1.25rem;
-  font-weight: 800;
-}
+  color: var(--text-primary);
+  font-size: 1.3rem;
+  font-weight: 700;}
 
 .modal-message {
   margin: 1rem 0 1.5rem;
-  color: #475569;
+  color: var(--gray-600);
   line-height: 1.6;
 }
 
@@ -740,74 +675,56 @@
   font-weight: 600;
 }
 
-.news-tag-chip-remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font-size: 0.95rem;
-  line-height: 1;
-  padding: 0;
+.news-preview {
+  margin: 1rem 0 0;
+  color: var(--gray-600);
+  line-height: 1.6;
 }
 
-.news-tag-chip-remove:hover {
-  background: color-mix(in srgb, var(--news-accent) 25%, white);
+.news-empty {
+  padding: 3rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 24px;
+  background: var(--bg-elevated);
+  text-align: center;
 }
 
-.news-tags-input {
-  flex: 1;
-  min-width: 100px;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 0.9rem;
-  font-family: inherit;
-  color: #111827;
-  padding: 0.25rem 0;
+.news-empty h3 {
+  margin: 0 0 0.75rem;
+  color: var(--text-primary);
 }
 
-.news-tag-suggestions {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 0.35rem);
-  right: 0;
-  left: 0;
-  margin: 0;
-  padding: 0.35rem;
-  list-style: none;
-  background: #ffffff;
-  border: 1px solid var(--news-border);
-  border-radius: 10px;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
-  max-height: 220px;
-  overflow-y: auto;
+.news-empty p {
+  margin: 0 0 1.25rem;
+  color: var(--text-muted);
 }
 
-.news-tag-suggestion-item {
-  display: block;
-  width: 100%;
-  padding: 0.5rem 0.6rem;
-  border: none;
-  background: transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.88rem;
-  font-family: inherit;
-  color: #111827;
+.news-empty .btn-add-news {
+  margin: 0 auto;
 }
 
-.news-tag-suggestion-item:hover {
-  background: var(--news-bg-subtle);
-}
-
-.news-tag-keyword-suggestions {
+.load-more-wrapper {
+  margin-top: 1.5rem;
   display: flex;
+  justify-content: center;
+}
+
+.load-more-btn {
+  background: var(--link-color);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: 16px;
+  padding: 0.95rem 1.5rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.load-more-btn:hover {
+  background: var(--link-color-hover);
+}
+
+.news-tags-row {  display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;

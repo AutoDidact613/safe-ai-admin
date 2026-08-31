@@ -1,10 +1,10 @@
 /* Site Footer */
 
 .site-footer {
-  background-color: #ffffff;
-  border-top: 1px solid #e5e7eb;
-  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
-  color: #374151;
+  background-color: var(--bg-surface);
+  border-top: 1px solid var(--border-default);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-secondary);
   padding: 20px 0;
   margin-top: 40px;
 }
@@ -22,18 +22,16 @@
 }
 
 .site-footer-copyright {
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 .site-footer-link {
-  color: #1C7AA6;
-  text-decoration: underline;
+  color: var(--brand-secondary);  text-decoration: underline;
   transition: color 0.2s;
 }
 
 .site-footer-link:hover {
-  color: #239AD1;
-}
+  color: var(--brand-secondary-hover);}
 
 @media (max-width: 480px) {
   .site-footer-container {

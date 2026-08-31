@@ -163,7 +163,7 @@ export default function ManageTenderDetails({
             id="tender-title"
             value={draftTender.title}
             onChange={(e) => handleFieldChange('title', e.target.value)}
-            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-strong)' }}
           />
         </div>
 
@@ -175,7 +175,7 @@ export default function ManageTenderDetails({
             rows={4}
             value={draftTender.shortDescription ?? ''}
             onChange={(e) => handleFieldChange('shortDescription', e.target.value)}
-            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-strong)' }}
           />
         </div>
 
@@ -183,9 +183,9 @@ export default function ManageTenderDetails({
         <div className="selection-cards-row" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
           
           {/* קוביה א': סוג המוצר */}
-          <div className="sidebar-card" style={{ flex: '1', minWidth: '280px', padding: '15px', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+          <div className="sidebar-card" style={{ flex: '1', minWidth: '280px', padding: '15px', border: '1px solid var(--border-default)', borderRadius: '8px' }}>
             <h3 style={{ margin: '0 0 4px 0' }}>סוג המוצר</h3>
-            <p className="helper-text" style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>בחירת סוג מוצר אחד</p>
+            <p className="helper-text" style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>בחירת סוג מוצר אחד</p>
             <div className="domain-list" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {productTypeOptions.map((type) => {
                 const selected = draftTender.productType === type
@@ -198,9 +198,9 @@ export default function ManageTenderDetails({
                       padding: '6px 12px',
                       borderRadius: '20px',
                       border: '1px solid',
-                      borderColor: selected ? '#0070f3' : '#ccc',
-                      backgroundColor: selected ? '#e6f4ff' : '#fff',
-                      color: selected ? '#0070f3' : '#333',
+                      borderColor: selected ? 'var(--link-color)' : 'var(--border-strong)',
+                      backgroundColor: selected ? 'var(--color-info-bg)' : 'var(--bg-surface)',
+                      color: selected ? 'var(--link-color)' : 'var(--text-secondary)',
                       cursor: 'pointer'
                     }}
                     onClick={() => handleFieldChange('productType', draftTender.productType === type ? '' : type)}
@@ -213,9 +213,9 @@ export default function ManageTenderDetails({
           </div>
 
           {/* קוביה ב': צורת שימוש ב-AI */}
-          <div className="sidebar-card" style={{ flex: '1', minWidth: '280px', padding: '15px', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+          <div className="sidebar-card" style={{ flex: '1', minWidth: '280px', padding: '15px', border: '1px solid var(--border-default)', borderRadius: '8px' }}>
             <h3 style={{ margin: '0 0 4px 0' }}>צורת שימוש ב-AI</h3>
-            <p className="helper-text" style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>בחירת צורת שימוש אחת</p>
+            <p className="helper-text" style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>בחירת צורת שימוש אחת</p>
             <div className="domain-list" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {aiApplicationOptions.map((appType) => {
                 const selected = draftTender.aiApplicationType === appType
@@ -228,9 +228,9 @@ export default function ManageTenderDetails({
                       padding: '6px 12px',
                       borderRadius: '20px',
                       border: '1px solid',
-                      borderColor: selected ? '#0070f3' : '#ccc',
-                      backgroundColor: selected ? '#e6f4ff' : '#fff',
-                      color: selected ? '#0070f3' : '#333',
+                      borderColor: selected ? 'var(--link-color)' : 'var(--border-strong)',
+                      backgroundColor: selected ? 'var(--color-info-bg)' : 'var(--bg-surface)',
+                      color: selected ? 'var(--link-color)' : 'var(--text-secondary)',
                       cursor: 'pointer'
                     }}
                     onClick={() => handleFieldChange('aiApplicationType', draftTender.aiApplicationType === appType ? '' : appType)}
@@ -245,7 +245,7 @@ export default function ManageTenderDetails({
 
         {/* שדות אג'נטים דינמיים - מוצגים רק במידת הצורך */}
         {showAgentsSection && (
-          <div className="form-section" style={{ padding: '15px', background: '#f8fafc', borderRadius: '8px' }}>
+          <div className="form-section" style={{ padding: '15px', background: 'var(--bg-elevated)', borderRadius: '8px' }}>
             <div className="section-title" style={{ fontWeight: 'bold', marginBottom: '12px' }}>הסבר על אג'נט</div>
             <div className="agent-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {agents.map((agentText, index) => (
@@ -259,7 +259,7 @@ export default function ManageTenderDetails({
                       value={agentText}
                       onChange={(e) => handleAgentChange(index, e.target.value)}
                       placeholder={`רשום תיאור לאג'נט ${index + 1}`}
-                      style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }}
+                      style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid var(--border-strong)' }}
                       rows={2}
                       maxLength={300}
                     />
@@ -267,7 +267,7 @@ export default function ManageTenderDetails({
                       <button
                         type="button"
                         className="remove-agent"
-                        style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer', fontSize: '18px' }}
+                        style={{ background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '18px' }}
                         onClick={() => removeAgent(index)}
                       >
                         ✕
@@ -294,7 +294,7 @@ export default function ManageTenderDetails({
                 id="tender-timeRequired-value"
                 value={draftTender.timeRequired?.value ?? 0}
                 onChange={(e) => handleFieldChange('timeRequired', { ...draftTender.timeRequired, value: Number(e.target.value) } as TenderTime)}
-                style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', width: '40%' }}
+                style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-strong)', width: '40%' }}
                 type="number"
                 min={0}
               />
@@ -302,7 +302,7 @@ export default function ManageTenderDetails({
                 id="tender-timeRequired-unit"
                 value={draftTender.timeRequired?.unit ?? 'ימים'}
                 onChange={(e) => handleFieldChange('timeRequired', { ...draftTender.timeRequired, unit: e.target.value } as TenderTime)}
-                style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', width: '60%' }}
+                style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-strong)', width: '60%' }}
               >
                 {timeUnits.map((u) => (
                   <option key={u} value={u}>{u}</option>
@@ -316,7 +316,7 @@ export default function ManageTenderDetails({
               id="tender-budget"
               value={draftTender.budget ?? 0}
               onChange={(e) => handleFieldChange('budget', Number(e.target.value))}
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-strong)' }}
               type="number"
               min={0}
             />
@@ -332,7 +332,7 @@ export default function ManageTenderDetails({
               rows={3}
               value={draftTender.additionalDetails ?? ''}
               onChange={(e) => handleFieldChange('additionalDetails', e.target.value)}
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-strong)' }}
             />
           </div>
           <div className="footer-side" style={{ flex: 1, marginTop: '30px' }}>
@@ -350,17 +350,17 @@ export default function ManageTenderDetails({
 
       {/* פעולות, שגיאות והודעות הצלחה */}
       <div className="detail-actions" style={{ marginTop: '40px', display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
-        {errorMessage && <div className="error-message" style={{ color: 'red', background: '#ffebee', padding: '8px 12px', borderRadius: '4px' }}>{errorMessage}</div>}
-        {successMessage && <div className="success-message" style={{ color: 'green', background: '#e8f5e9', padding: '8px 12px', borderRadius: '4px' }}>{successMessage}</div>}
+        {errorMessage && <div className="error-message" style={{ color: 'var(--color-danger)', background: 'var(--color-danger-bg)', padding: '8px 12px', borderRadius: '4px' }}>{errorMessage}</div>}
+        {successMessage && <div className="success-message" style={{ color: 'var(--color-success)', background: 'var(--color-success-bg)', padding: '8px 12px', borderRadius: '4px' }}>{successMessage}</div>}
         
         <button type="button" className="button-green submit-button" onClick={saveTender} disabled={isLoading} style={{ padding: '10px 20px', cursor: 'pointer' }}>
           {isLoading ? 'שומר...' : 'שמור עדכון'}
         </button>
 
         {showCloseConfirmation ? (
-          <div className="close-confirmation" style={{ display: 'flex', gap: '10px', alignItems: 'center', background: '#fff3cd', padding: '8px', borderRadius: '6px' }}>
+          <div className="close-confirmation" style={{ display: 'flex', gap: '10px', alignItems: 'center', background: 'var(--color-warning-bg)', padding: '8px', borderRadius: '6px' }}>
             <span>האם אתה בטוח שברצונך לסגור את המכרז?</span>
-            <button type="button" className="primary-button" onClick={closeTender} disabled={isLoading} style={{ background: 'red', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>
+            <button type="button" className="primary-button" onClick={closeTender} disabled={isLoading} style={{ background: 'var(--color-danger)', color: 'var(--text-inverse)', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>
               כן, סגור מכרז
             </button>
             <button type="button" className="secondary-button" onClick={() => setShowCloseConfirmation(false)} disabled={isLoading} style={{ padding: '6px 12px', cursor: 'pointer' }}>

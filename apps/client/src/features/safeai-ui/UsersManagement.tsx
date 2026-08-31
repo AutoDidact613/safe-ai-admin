@@ -292,7 +292,7 @@ export default function UsersManagement() {
             </div>
             <form onSubmit={handleEdit}>
               <div className="form-group"><label>אימייל (לא ניתן לשינוי)</label>
-                <input type="email" value={editingUser.email} disabled style={{ backgroundColor: "#f5f5f5", cursor: "not-allowed" }} />
+                <input type="email" value={editingUser.email} disabled style={{ backgroundColor: "var(--bg-elevated)", cursor: "not-allowed" }} />
               </div>
               <div className="form-group"><label>שם</label>
                 <input type="text" value={editFormData.name} onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })} placeholder="שם המשתמש" />
