@@ -97,6 +97,6 @@ jobs:
 
             cd apps/client
             npm ci
-            VITE_API_URL=/api VITE_BASE_PATH=/ npm run build
+            NODE_OPTIONS=--max-old-space-size=4096 VITE_API_URL=/api VITE_BASE_PATH=/ npm run build
             sudo rm -rf /var/www/safeai/*
             sudo cp -r dist/. /var/www/safeai/
