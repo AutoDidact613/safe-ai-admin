@@ -193,6 +193,7 @@ server {
    ```
    ה-`--transpile-only` נדרש כי `ts-node` (עם type-checking מלא) נכשל על שגיאת TS לא-קשורה ב-`seedDevData.ts` (`User.findOne({ email })`, TS2353) שלא מופיעה ב-`npm run build` הרגיל (`tsc`) שמשמש את ה-Dockerfile — ככל הנראה הבדל בהתנהגות type-checking בין השניים. הסקריפט עצמו בטוח להרצה חוזרת (idempotent, בודק לפי מפתח ייחודי).
 9. **403 מהסביבה של Claude עצמה, לא מהשרת.** בדיקת `curl` לדומיין ה-staging מתוך sandbox של Claude Code החזירה `403` עם `x-deny-reason: host_not_allowed` — זה ה-proxy של סביבת ה-agent (allowlist דומיינים), **לא** אינדיקציה לתקלה אמיתית באתר. תמיד לוודא זמינות אמיתית מדפדפן/מכונה רגילה, לא מתוך session של Claude.
+10. **`vite build` נגמר לו הזיכרון על ה-EC2 של staging** (`FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory`, קורס עם exit code 134). קרה אחרי מיזוג גדול שהגדיל משמעותית את באנדל ה-client (landing v2, dashboard pages, dark mode, וכו'). ה-`server`/`litellm` דרך Docker כן עלו בהצלחה באותה ריצה — רק שלב בניית ה-client על ה-host עצמו נכשל, ולכן ה-API עבד אבל הקבצים הסטטיים **לא התעדכנו** (המשיכו להגיש את הגרסה הישנה). **תיקון**: `NODE_OPTIONS=--max-old-space-size=4096` לפני `npm run build` בשלב ה-deploy (`cd-staging.yml`) — נותן ל-V8 heap ceiling גבוה יותר מברירת המחדל שהוא מחשב לפי זיכרון המכונה. אם זה יקרה שוב גם עם ה-heap המוגדל, יש לבדוק כמות RAM בפועל על ה-EC2 (`free -h`) — יתכן שצריך גם swap, או להעביר את בניית ה-client ל-CI (יותר זיכרון) ולהעתיק רק את ה-`dist/` המוכן ל-host דרך scp/rsync במקום לבנות שם.
 
 ## 11. מה עוד לא מכוסה
 
