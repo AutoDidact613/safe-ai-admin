@@ -68,7 +68,7 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
 
   return (
     <div style={{ 
-      backgroundColor: "#f8f9fa", 
+      backgroundColor: "var(--bg-elevated)",
       padding: "20px", 
       borderRadius: "8px",
       marginBottom: "30px"
@@ -108,7 +108,7 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
             placeholder="הזן טקסט כדי לבדוק אם הוא יעבור או ייחסם על ידי הפרופיל..."
             rows={4}
             required
-            style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid #ddd" }}
+            style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid var(--border-default)" }}
           />
         </div>
 
@@ -126,10 +126,10 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
         <div style={{
           marginTop: "20px",
           padding: "15px",
-          backgroundColor: "#f8d7da",
-          border: "1px solid #f5c6cb",
+          backgroundColor: "var(--color-danger-bg)",
+          border: "1px solid var(--color-danger-border)",
           borderRadius: "4px",
-          color: "#721c24"
+          color: "var(--color-danger)"
         }}>
           <strong>❌ שגיאה:</strong> {error}
         </div>
@@ -139,8 +139,8 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
         <div style={{
           marginTop: "20px",
           padding: "20px",
-          backgroundColor: result.allowed ? "#d4edda" : "#f8d7da",
-          border: `2px solid ${result.allowed ? "#28a745" : "#dc3545"}`,
+          backgroundColor: result.allowed ? "var(--color-success-bg)" : "var(--color-danger-bg)",
+          border: `2px solid ${result.allowed ? "var(--color-success)" : "var(--color-danger)"}`,
           borderRadius: "8px",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "15px" }}>
@@ -148,10 +148,10 @@ export default function ProfileTester({ profiles }: ProfileTesterProps) {
               {result.allowed ? "✅" : "🚫"}
             </span>
             <div>
-              <h4 style={{ margin: 0, color: result.allowed ? "#155724" : "#721c24" }}>
+              <h4 style={{ margin: 0, color: result.allowed ? "var(--color-success)" : "var(--color-danger)" }}>
                 {result.allowed ? "טקסט מאושר" : "טקסט חסום"}
               </h4>
-              <p style={{ margin: "5px 0 0 0", fontSize: "14px", color: result.allowed ? "#155724" : "#721c24" }}>
+              <p style={{ margin: "5px 0 0 0", fontSize: "14px", color: result.allowed ? "var(--color-success)" : "var(--color-danger)" }}>
                 פרופיל: <strong>{selectedProfile?.name}</strong>
               </p>
             </div>

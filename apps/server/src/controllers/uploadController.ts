@@ -1,18 +1,10 @@
 import { Request, Response } from "express";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
 import logger from "../logger";
 import { getOrganizationIdForLog } from "../utils/forumLogContext";
-
-// אתחול החיבור מול AWS עם הגדרת משתני הסביבה
-const s3 = new S3Client({
-  region: process.env.AWS_REGION || "",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
-  },
-});
+import { s3 } from "../utils/s3Client";
 
 // הגדרת המבנה הצפוי של גוף הבקשה (Interface)
 interface UploadRequestBody {
@@ -27,6 +19,11 @@ const UPLOAD_CONTEXTS: Record<string, { prefix: string; allowedTypes: string[]; 
   tenderResume: {
     prefix: "uploads/tenders",
     allowedTypes: ["application/pdf"],
+    maxSizeBytes: 5 * 1024 * 1024,
+  },
+  newsImage: {
+    prefix: "uploads/news",
+    allowedTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
     maxSizeBytes: 5 * 1024 * 1024,
   },
 };

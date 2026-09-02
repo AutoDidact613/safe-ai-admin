@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { apiCall, API_ENDPOINTS } from '../../config/api'
 import type { Tender } from './types'
 
@@ -6,10 +6,18 @@ interface TenderOffersProps {
   tender: Tender
   onClose: () => void
   onUpdateTender: (updatedTender: Tender) => void
+  highlightApplicantId?: string | null
 }
 
-export default function TenderOffers({ tender, onClose, onUpdateTender }: TenderOffersProps) {
+export default function TenderOffers({ tender, onClose, onUpdateTender, highlightApplicantId }: TenderOffersProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const highlightedRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (highlightApplicantId && highlightedRef.current) {
+      highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [highlightApplicantId])
 
   // כניסה למסך ההצעות מסמנת אותן כנצפו, כדי שהחיווי ב"המכרזים שלי" יתאפס.
   // מעדכנים את המצב המקומי מיד (ולא מתוך תגובת השרת), כדי לא להסתמך על הצורה
@@ -45,7 +53,7 @@ export default function TenderOffers({ tender, onClose, onUpdateTender }: Tender
       </header>
 
       {errorMessage && (
-        <div className="error-message" style={{ color: 'red', background: '#ffebee', padding: '8px 12px', borderRadius: '4px', marginBottom: '16px' }}>
+        <div className="error-message" style={{ color: 'var(--color-danger)', background: 'var(--color-danger-bg)', padding: '8px 12px', borderRadius: '4px', marginBottom: '16px' }}>
           {errorMessage}
         </div>
       )}
@@ -53,42 +61,56 @@ export default function TenderOffers({ tender, onClose, onUpdateTender }: Tender
       <section className="applicants-section">
         <h3>מועמדים ({tender.applicants?.length ?? 0})</h3>
         {tender.applicants && tender.applicants.length > 0 ? (
-          tender.applicants.map((applicant, index) => (
-            <article key={`${applicant.email}-${index}`} className="applicant-card" style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', marginBottom: '10px' }}>
-              <h4>{applicant.name}</h4>
-              <p><strong>אימייל:</strong> {applicant.email}</p>
-              <p><strong>פרטים:</strong> {applicant.details}</p>
-              {applicant.proposal && <p><strong>הצעה:</strong> {applicant.proposal}</p>}
-              {applicant.contactMethod && <p><strong>דרכי קשר:</strong> {applicant.contactMethod}</p>}
-              {applicant.professionalProfile && (
-                <div style={{ marginTop: '8px', padding: '8px', background: '#f8fafc', borderRadius: '4px' }}>
-                  <p><strong>פרופיל מקצועי - {applicant.professionalProfile.name}</strong></p>
-                  {applicant.professionalProfile.description && <p>{applicant.professionalProfile.description}</p>}
-                  {applicant.professionalProfile.experience && (
-                    <p><strong>ניסיון:</strong> {applicant.professionalProfile.experience}</p>
-                  )}
-                </div>
-              )}
-              {applicant.resumeFileKey && (
-                <p>
-                  <strong>קורות חיים:</strong>{' '}
-                  <a href={applicant.resumeFileKey} target="_blank" rel="noopener noreferrer">
-                    לפתיחת הקובץ
-                  </a>
-                </p>
-              )}
-              {applicant.portfolioLink && (
-                <p>
-                  <strong>תיק עבודות:</strong>{' '}
-                  <a href={applicant.portfolioLink} target="_blank" rel="noopener noreferrer">
-                    {applicant.portfolioLink}
-                  </a>
-                </p>
-              )}
-            </article>
-          ))
+          tender.applicants.map((applicant, index) => {
+            const isHighlighted = Boolean(highlightApplicantId) && applicant._id === highlightApplicantId
+            return (
+              <article
+                key={`${applicant.email}-${index}`}
+                ref={isHighlighted ? highlightedRef : undefined}
+                className="applicant-card"
+                style={{
+                  padding: '12px',
+                  border: isHighlighted ? '2px solid var(--color-info)' : '1px solid var(--border-default)',
+                  borderRadius: '6px',
+                  marginBottom: '10px',
+                  backgroundColor: isHighlighted ? 'var(--color-info-bg)' : undefined,
+                }}
+              >
+                <h4>{applicant.name}</h4>
+                <p><strong>אימייל:</strong> {applicant.email}</p>
+                <p><strong>פרטים:</strong> {applicant.details}</p>
+                {applicant.proposal && <p><strong>הצעה:</strong> {applicant.proposal}</p>}
+                {applicant.contactMethod && <p><strong>דרכי קשר:</strong> {applicant.contactMethod}</p>}
+                {applicant.professionalProfile && (
+                  <div style={{ marginTop: '8px', padding: '8px', background: 'var(--bg-elevated)', borderRadius: '4px' }}>
+                    <p><strong>פרופיל מקצועי - {applicant.professionalProfile.name}</strong></p>
+                    {applicant.professionalProfile.description && <p>{applicant.professionalProfile.description}</p>}
+                    {applicant.professionalProfile.experience && (
+                      <p><strong>ניסיון:</strong> {applicant.professionalProfile.experience}</p>
+                    )}
+                  </div>
+                )}
+                {applicant.resumeFileKey && (
+                  <p>
+                    <strong>קורות חיים:</strong>{' '}
+                    <a href={applicant.resumeFileKey} target="_blank" rel="noopener noreferrer">
+                      לפתיחת הקובץ
+                    </a>
+                  </p>
+                )}
+                {applicant.portfolioLink && (
+                  <p>
+                    <strong>תיק עבודות:</strong>{' '}
+                    <a href={applicant.portfolioLink} target="_blank" rel="noopener noreferrer">
+                      {applicant.portfolioLink}
+                    </a>
+                  </p>
+                )}
+              </article>
+            )
+          })
         ) : (
-          <p style={{ color: '#666' }}>אין עדיין מועמדים שנרשמו למכרז זה.</p>
+          <p style={{ color: 'var(--text-muted)' }}>אין עדיין מועמדים שנרשמו למכרז זה.</p>
         )}
       </section>
     </article>

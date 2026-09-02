@@ -35,7 +35,7 @@ const CompactItem: FC<CompactItemProps> = ({ inquiry, onDetails }) => (
       <div className="inquiry-subject">{inquiry.subject}</div>
       <div
         className="inquiry-status"
-        style={{ fontWeight: "bold", color: inquiry.status === "open" ? "green" : "red" }}
+        style={{ fontWeight: "bold", color: inquiry.status === "open" ? "var(--color-success)" : "var(--color-danger)" }}
       >
         {inquiry.status === "open" ? "פתוחה" : "סגורה"}
       </div>

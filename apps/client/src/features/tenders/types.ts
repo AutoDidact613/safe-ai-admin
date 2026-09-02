@@ -12,6 +12,7 @@ export interface AttachedProfileSummary {
 }
 
 export interface Applicant {
+  _id?: string
   name: string
   email: string
   details: string
@@ -22,6 +23,13 @@ export interface Applicant {
   professionalProfileId?: string
   professionalProfile?: AttachedProfileSummary
   isViewed?: boolean
+  userId?: string
+  appliedAt?: string
+}
+
+export interface ProposalRange {
+  min: number
+  max: number
 }
 
 export interface Tender {
@@ -38,6 +46,8 @@ export interface Tender {
   wantsEmails?: boolean
   additionalDetails?: string
   applicants?: Applicant[]
+  applicantsCount?: number
+  proposalRange?: ProposalRange | null
   domains?: string[]
 }
 
@@ -56,4 +66,6 @@ export interface RawTender {
   wantsEmails?: boolean
   additionalDetails?: string
   applicants?: Applicant[]
+  applicantsCount?: number
+  proposalRange?: ProposalRange | null
 }

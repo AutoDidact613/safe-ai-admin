@@ -60,7 +60,7 @@ export default function UsageChart({ usageStats, dailyUsage, modelUsage }: Props
           <div style={{ overflowX: "auto", marginTop: "16px" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ borderBottom: "2px solid #ddd" }}>
+                <tr style={{ borderBottom: "2px solid var(--border-default)" }}>
                   <th style={{ padding: "12px", textAlign: "right" }}>מודל</th>
                   <th style={{ padding: "12px", textAlign: "right" }}>ספק</th>
                   <th style={{ padding: "12px", textAlign: "center" }}>בקשות</th>
@@ -71,7 +71,7 @@ export default function UsageChart({ usageStats, dailyUsage, modelUsage }: Props
               </thead>
               <tbody>
                 {modelUsage.map((m, i) => (
-                  <tr key={i} style={{ borderBottom: "1px solid #eee" }}>
+                  <tr key={i} style={{ borderBottom: "1px solid var(--border-muted)" }}>
                     <td style={{ padding: "12px" }}>{m._id.model}</td>
                     <td style={{ padding: "12px" }}><span className="badge badge-secondary">{m._id.provider}</span></td>
                     <td style={{ padding: "12px", textAlign: "center" }}>{m.requests}</td>

@@ -11,6 +11,7 @@ import providerKeyRouter from "./routes/providerKeyRouter";
 import authRouter from "./routes/authRouter";
 import usageRouter from "./routes/usageRouter";
 import adminStatsRouter from "./routes/adminStatsRouter";
+import publicStatsRouter from "./routes/publicStatsRouter";
 import proxyKeyRouter from "./routes/proxyKeyRouter";
 import professionalProfileRouter from "./routes/professionalProfileRouter";
 import promptRouter from "./routes/promptRouter";
@@ -33,6 +34,7 @@ import tagRoutes from './routes/tagRoutes';
 import uploadRouter from "./routes/uploadRoutes";
 import cookieParser from 'cookie-parser';
 import { initializeAutoPostBot } from './services/autoPostService';
+import { initializeAttachmentCleanupJob } from './services/attachmentService';
 
 const PORT = process.env.PORT || 3001;
 
@@ -67,6 +69,7 @@ app.get("/health", (_req, res) => {
 
 // ===== Public Routes (No Authentication) =====
 app.use("/auth", authRouter);
+app.use("/public-stats", publicStatsRouter); // Landing page counts — no auth, counts only
 
 // ===== JWT Protected Routes (User Self-Management) =====
 // Import the handler for self-profile updates
@@ -117,6 +120,7 @@ async function start() {
       logger.info(`Server running on port ${PORT}`);
     });
     initializeAutoPostBot();
+    initializeAttachmentCleanupJob();
 
   } catch (err) {
     logger.error("Startup failed:", err);

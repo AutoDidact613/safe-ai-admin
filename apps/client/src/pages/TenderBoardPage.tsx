@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { apiCall, API_ENDPOINTS } from '../config/api'
 import Card from '../features/tenders/Card.tsx'
 import TenderDetails from '../features/tenders/TenderDetails.tsx'
 import ApplyForTender from './../features/tenders/ApplyForTender.tsx'
+import ViewMyApplication from '../features/tenders/ViewMyApplication.tsx'
 import CreateTender from '../features/tenders/CreateTender.tsx'
 import ManageMyTenders from '../features/tenders/ManageMyTenders.tsx'
 import type { Applicant, RawTender, Tender, TenderTime } from '../features/tenders/types'
@@ -53,6 +55,9 @@ export default function TenderBoardPage() {
   const [minBudget, setMinBudget] = useState<string>('')
   const [maxTimeDays, setMaxTimeDays] = useState<string>('')
 
+  // State עבור סינון "מכרזים שהגשתי להם הצעה"
+  const [showOnlyApplied, setShowOnlyApplied] = useState(false)
+
   // State עבור חיפוש חכם עם AI
   const [isSmartSearchOpen, setIsSmartSearchOpen] = useState(false)
   const [smartSearchQuery, setSmartSearchQuery] = useState('')
@@ -61,6 +66,7 @@ export default function TenderBoardPage() {
 
   const [selectedTender, setSelectedTender] = useState<Tender | null>(null)
   const [applyingTender, setApplyingTender] = useState<Tender | null>(null)
+  const [viewingApplication, setViewingApplication] = useState<Applicant | null>(null)
   const [successMessage, setSuccessMessage] = useState('')
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -68,6 +74,23 @@ export default function TenderBoardPage() {
   const [activeScreen, setActiveScreen] = useState<'dashboard' | 'create' | 'manage'>('dashboard')
   const [currentUserCode, setCurrentUserCode] = useState('tnd-98234')
   const [refreshKey, setRefreshKey] = useState(0)
+
+  // פתיחה ישירה של הצעה ספציפית מקישור שהגיע במייל (screen=manage&tenderId=&applicantId=)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [deepLinkTenderId, setDeepLinkTenderId] = useState<string | null>(null)
+  const [deepLinkApplicantId, setDeepLinkApplicantId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const screen = searchParams.get('screen')
+    const tenderId = searchParams.get('tenderId')
+    if (screen === 'manage' && tenderId) {
+      setActiveScreen('manage')
+      setDeepLinkTenderId(tenderId)
+      setDeepLinkApplicantId(searchParams.get('applicantId'))
+      setSearchParams({}, { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!successMessage) return undefined
@@ -95,6 +118,8 @@ export default function TenderBoardPage() {
     wantsEmails: tender.wantsEmails,
     additionalDetails: tender.additionalDetails,
     applicants: tender.applicants,
+    applicantsCount: tender.applicantsCount,
+    proposalRange: tender.proposalRange,
   })
 
   useEffect(() => {
@@ -211,9 +236,12 @@ export default function TenderBoardPage() {
         matchTime = tenderTime <= parsedMaxTime
       }
 
-      return matchProduct && matchAi && matchBudget && matchTime
+      // סינון לפי מכרזים שהמשתמש הגיש להם הצעה
+      const matchApplied = !showOnlyApplied || (t.applicants ?? []).some((a) => a.userId === currentUserCode)
+
+      return matchProduct && matchAi && matchBudget && matchTime && matchApplied
     })
-  }, [tenders, smartSearchResults, selectedProductType, selectedAiApplication, minBudget, maxTimeDays])
+  }, [tenders, smartSearchResults, selectedProductType, selectedAiApplication, minBudget, maxTimeDays, showOnlyApplied, currentUserCode])
 
   const handleUpdateTender = (updatedTender: Tender) => {
     setTenders((prevTenders) => prevTenders.map((tender) => (tender.id === updatedTender.id ? updatedTender : tender)))
@@ -257,7 +285,9 @@ export default function TenderBoardPage() {
     const applicantWithId = { ...applicant }
 
     try {
-      const updatedTender = await apiCall<{ tender?: { applicants?: Applicant[] } }>(
+      const updatedTender = await apiCall<{
+        tender?: Pick<Tender, 'applicants' | 'applicantsCount' | 'proposalRange'>
+      }>(
         API_ENDPOINTS.tenders.apply(applyingTender.id),
         {
           method: 'POST',
@@ -271,6 +301,8 @@ export default function TenderBoardPage() {
             ? {
               ...tender,
               applicants: updatedTender.tender?.applicants ?? [...(tender.applicants ?? []), applicantWithId],
+              applicantsCount: updatedTender.tender?.applicantsCount ?? (tender.applicantsCount ?? tender.applicants?.length ?? 0) + 1,
+              proposalRange: updatedTender.tender?.proposalRange ?? tender.proposalRange,
             }
             : tender,
         )
@@ -298,6 +330,8 @@ export default function TenderBoardPage() {
           tenders={tenders}
           onUpdateTender={handleUpdateTender}
           onDeleteTender={handleDeleteTender}
+          initialOffersTenderId={deepLinkTenderId}
+          initialHighlightApplicantId={deepLinkApplicantId}
         />
       )
     }
@@ -331,8 +365,19 @@ export default function TenderBoardPage() {
               style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontWeight: 'bold', cursor: 'pointer' }}
             >
               <span>✨</span>
-              <span>חיפוש חכם</span>
+              {isSmartSearchOpen ? <span>סגור חיפוש חכם</span> : <span>חיפוש חכם</span>}
             </button>
+
+            {!isSmartSearchOpen && (
+              <button
+                type="button"
+                className={`applied-filter-toggle${showOnlyApplied ? ' active' : ''}`}
+                onClick={() => setShowOnlyApplied((v) => !v)}
+                aria-pressed={showOnlyApplied}
+              >
+                {showOnlyApplied ? 'ניקוי החיפוש' : 'מכרזים שהגשתי להם הצעה'}
+              </button>
+            )}
 
             {isSmartSearchOpen && (
               <div style={{ display: 'flex', gap: '10px', width: '100%', justifyContent: 'center' }}>
@@ -342,9 +387,9 @@ export default function TenderBoardPage() {
                   onChange={(e) => setSmartSearchQuery(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSmartSearch() }}
                   placeholder='הקלד חיפוש חופשי'
-                  style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', flex: 1, maxWidth: '400px' }}
+                  style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-strong)', flex: 1, maxWidth: '400px' }}
                 />
-                <button type="button" className="tab-button" onClick={handleSmartSearch} style={{ backgroundColor: '#f1f5f9' }}>
+                <button type="button" className="tab-button" onClick={handleSmartSearch} style={{ backgroundColor: 'var(--gray-100)' }}>
                   חפש
                 </button>
                 {smartSearchResults !== null && (
@@ -354,11 +399,22 @@ export default function TenderBoardPage() {
                 )}
               </div>
             )}
+
+            {isSmartSearchOpen && (
+              <button
+                type="button"
+                className={`applied-filter-toggle${showOnlyApplied ? ' active' : ''}`}
+                onClick={() => setShowOnlyApplied((v) => !v)}
+                aria-pressed={showOnlyApplied}
+              >
+                {showOnlyApplied ? 'ניקוי החיפוש' : 'מכרזים שהגשתי להם הצעה'}
+              </button>
+            )}
           </div>
 
           {isSmartSearching && (
             <div style={{ display: 'flex', justifyContent: 'center', margin: '12px 0' }}>
-              <AiThinkingLoader color="#16a34a" />
+              <AiThinkingLoader color="#1C7AA6" />
             </div>
           )}
           {errorMessage && (
@@ -470,7 +526,7 @@ export default function TenderBoardPage() {
                   }
                 }}
                 placeholder="לדוגמה: 5000"
-                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', width: '140px' }}
+                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-strong)', width: '140px' }}
               />
             </div>
 
@@ -482,7 +538,7 @@ export default function TenderBoardPage() {
                 value={maxTimeDays}
                 onChange={(e) => setMaxTimeDays(e.target.value)}
                 placeholder="לדוגמה: 30"
-                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', width: '140px' }}
+                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-strong)', width: '140px' }}
               />
             </div>
 
@@ -508,7 +564,8 @@ export default function TenderBoardPage() {
                 budget={tender.budget}
                 productType={tender.productType}
                 aiApplicationType={tender.aiApplicationType}
-                applicantsCount={tender.applicants?.length ?? 0}
+                applicantsCount={tender.applicantsCount ?? tender.applicants?.length ?? 0}
+                appliedAt={tender.applicants?.find((a) => a.userId === currentUserCode)?.appliedAt}
                 onView={() => setSelectedTender(tender)}
               />
             ))
@@ -522,8 +579,18 @@ export default function TenderBoardPage() {
 
         {applyingTender ? (
           <ApplyForTender tender={applyingTender} onSubmit={handleTenderApply} onCancel={() => setApplyingTender(null)} />
+        ) : viewingApplication && selectedTender ? (
+          <ViewMyApplication tender={selectedTender} applicant={viewingApplication} onClose={() => setViewingApplication(null)} />
         ) : (
-          selectedTender && <TenderDetails tender={selectedTender} onClose={() => setSelectedTender(null)} onApply={startApply} />
+          selectedTender && (
+            <TenderDetails
+              tender={selectedTender}
+              onClose={() => setSelectedTender(null)}
+              onApply={startApply}
+              currentUserId={currentUserCode}
+              onViewMyApplication={(applicant) => setViewingApplication(applicant)}
+            />
+          )
         )}
 
         {showSuccessOverlay && successMessage && (
@@ -547,6 +614,15 @@ export default function TenderBoardPage() {
             className={`dashboard-link ${activeScreen === 'dashboard' ? 'active' : ''}`}
             onClick={() => setActiveScreen('dashboard')}
           >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h12v2H2v-2z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
             לוח מכרזים
           </button>
           <button
@@ -554,6 +630,14 @@ export default function TenderBoardPage() {
             className={`dashboard-link ${activeScreen === 'create' ? 'active' : ''}`}
             onClick={() => setActiveScreen('create')}
           >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M8 3v10M3 8h10"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
             פרסום פרוייקט
           </button>
           <button
@@ -561,6 +645,16 @@ export default function TenderBoardPage() {
             className={`dashboard-link ${activeScreen === 'manage' ? 'active' : ''}`}
             onClick={() => setActiveScreen('manage')}
           >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
             צפיה במכרזים שלי
           </button>
 
