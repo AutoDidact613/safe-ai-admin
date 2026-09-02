@@ -278,7 +278,7 @@ export default function ManageTenderDetails({
               ))}
             </div>
             {draftTender.aiApplicationType === 'מולטי אייגנט' && (
-              <button type="button" className="button-green" style={{ marginTop: '12px', padding: '6px 12px', cursor: 'pointer' }} onClick={addAgent}>
+              <button type="button" className="button-primary" style={{ marginTop: '12px', padding: '6px 12px', cursor: 'pointer' }} onClick={addAgent}>
                 הוספת אג'נט +
               </button>
             )}
@@ -353,7 +353,7 @@ export default function ManageTenderDetails({
         {errorMessage && <div className="error-message" style={{ color: 'red', background: '#ffebee', padding: '8px 12px', borderRadius: '4px' }}>{errorMessage}</div>}
         {successMessage && <div className="success-message" style={{ color: 'green', background: '#e8f5e9', padding: '8px 12px', borderRadius: '4px' }}>{successMessage}</div>}
         
-        <button type="button" className="button-green submit-button" onClick={saveTender} disabled={isLoading} style={{ padding: '10px 20px', cursor: 'pointer' }}>
+        <button type="button" className="button-primary submit-button" onClick={saveTender} disabled={isLoading} style={{ padding: '10px 20px', cursor: 'pointer' }}>
           {isLoading ? 'שומר...' : 'שמור עדכון'}
         </button>
 
