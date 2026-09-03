@@ -1,0 +1,48 @@
+{
+  "name": "Forum Version Manager Agent",
+  "version": "1.0.1",
+  "description": "An autonomous agent specialized in automated version release workflows, code verification, MongoDB error log auditing, multi-model consensus, and release report generation for the community forum.",
+  "creator_name": "Developer",
+  "contact_information": "developer@example.com",
+  "release_date": "2026-09-03",
+  "repository_url": "https://github.com/SafeAI-Clean/forum-version-manager-agent",
+  "download_url": "https://github.com/SafeAI-Clean/forum-version-manager-agent/releases/download/v1.0.1/agent.exe",
+  "target_audience": "DevOps Engineers, QA Automation, Software Engineers",
+  "professional_fields": [
+    "Software Engineering",
+    "Release Management",
+    "Quality Assurance"
+  ],
+  "tasks_capable_of_performing": [
+    "Automated Code Testing & Typechecking",
+    "MongoDB Tracing and Error Auditing",
+    "Multi-Model Consensus Evaluation",
+    "Human-in-the-Loop Release Approval Workflow",
+    "Automated HTML Release Report Generation"
+  ],
+  "examples_of_suitable_questions": [
+    "הכן גרסה 1.0.1 לרכיב הפורום",
+    "בדוק מוכנות שחרור של גרסת פורום אחרונה",
+    "הפק דוח שחרור עבור גרסה חדשה"
+  ],
+  "technical_specifications": {
+    "framework": "LangGraph",
+    "llm_provider": "Google / Multi-Model",
+    "supported_models": [
+      "gemini-1.5-flash",
+      "gpt-4o-mini",
+      "claude-3-5-sonnet-20241022"
+    ],
+    "features_enabled": {
+      "rag": false,
+      "web_search": false,
+      "code_execution": true,
+      "mcp_support": false
+    },
+    "required_permissions": [
+      "local_file_read",
+      "local_file_write",
+      "sandbox_code_execution"
+    ]
+  }
+}

@@ -103,3 +103,13 @@ docs/production/*
 
 # Custom project files
 project_tree.txt
+
+# Python artifacts
+*.pyo
+*.pyd
+*$py.class
+.pytest_cache/
+
+# PyInstaller artifacts
+*.spec
+*.exe
