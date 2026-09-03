@@ -1,0 +1,4 @@
+fixture_name,num_logs,duration_sec,llm_calls,total_input_tokens,total_output_tokens,total_tokens,total_cost_usd,evaluation_status,run_timestamp_utc
+healthy_logs,2,16.91,3,1644,838,2482,0.01249,passed,2026-08-25T15:35:41.503578+00:00
+errors_and_slow_ops,3,20.04,3,2864,1404,4268,0.021201,failed,2026-08-25T15:36:01.544843+00:00
+business_context_heavy,2,14.86,3,2250,1213,3463,0.017754,failed,2026-08-25T15:36:16.404469+00:00
