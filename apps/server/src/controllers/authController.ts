@@ -12,6 +12,7 @@ import {
   refreshTokenSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  changePasswordSchema,
   verifyEmailSchema,
 } from "../utils/validation";
 import logger from "../logger";
@@ -199,6 +200,30 @@ export async function resetPasswordHandler(req: Request, res: Response) {
     res.status(400).json({
       success: false,
       error: error.message || "איפוס הסיסמה נכשל",
+    });
+  }
+}
+
+/**
+ * Change password (used to clear a forced mustChangePassword flag)
+ * POST /api/auth/change-password
+ */
+export async function changePasswordHandler(req: Request, res: Response) {
+  try {
+    const user = (req as any).user; // From authenticateToken middleware
+    const data = validateRequest(changePasswordSchema, req.body);
+    await authService.changePassword(user.userId, data.currentPassword, data.newPassword);
+
+    res.json({
+      success: true,
+      message: "הסיסמה עודכנה בהצלחה",
+    });
+  } catch (error: any) {
+    logger.error("Change password error:", { error: error.message, stack: error.stack });
+    const statusCode = error.statusCode || 400;
+    res.status(statusCode).json({
+      success: false,
+      error: error.message || "עדכון הסיסמה נכשל",
     });
   }
 }

@@ -76,6 +76,10 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    mustChangePassword: {
+      type: Boolean,
+      default: false,
+    },
 
     // --- Forum permissions ---
     // Opt-in: forbidden by default, an admin must explicitly grant it per user.

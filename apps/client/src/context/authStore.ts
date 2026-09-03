@@ -9,6 +9,7 @@ export interface AuthUser {
   mode?: "BYOK" | "MANAGED";
   canCreatePosts?: boolean;
   canComment?: boolean;
+  mustChangePassword?: boolean;
 }
 
 export interface AuthContextValue {

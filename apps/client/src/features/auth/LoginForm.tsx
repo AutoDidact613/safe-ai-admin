@@ -17,6 +17,7 @@ interface User {
   role: string;
   mode: "BYOK" | "MANAGED";
   profileId?: string;
+  mustChangePassword?: boolean;
 }
 
 export default function LoginForm() {
@@ -115,8 +116,10 @@ export default function LoginForm() {
         // Start activity tracking for token management
         startActivityTracking();
 
-        // Check if user has a profile
-        if (!response.user.profileId) {
+        if (response.user.mustChangePassword) {
+          // Temporary password (e.g. issued when added to an organization) must be replaced first
+          navigate("/change-password");
+        } else if (!response.user.profileId) {
           // Show profile selection modal
           setLoggedInUser(response.user);
           setShowProfileModal(true);

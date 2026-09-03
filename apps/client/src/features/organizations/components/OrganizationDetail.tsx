@@ -94,6 +94,7 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "משתמשים חדשים");
     XLSX.writeFile(workbook, `משתמשי-${org?.name || "ארגון"}.xlsx`);
+    setCreatedMembers([]);
   };
 
   useEffect(() => {
@@ -195,6 +196,10 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
       {createdMembers.length > 0 && (
         <div className="org-pending-card">
           <p>נוספו {createdMembers.length} משתמשים חדשים בסשן הזה. פרטי ההתחברות שיש למסור להם:</p>
+          <p className="orgs-admin-subtitle">
+            ⚠️ הסיסמאות המוצגות כאן חד-פעמיות בלבד — כל משתמש חדש יידרש להחליף אותה בכניסה הראשונה.
+            מומלץ למסור אותן למשתמשים ולמחוק את קובץ האקסל מיד לאחר מכן.
+          </p>
           <table className="orgs-table">
             <thead>
               <tr>
@@ -215,6 +220,9 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
           </table>
           <button type="button" className="orgs-btn orgs-btn-activate" onClick={handleDownloadExcel}>
             הורדת קובץ אקסל
+          </button>
+          <button type="button" className="orgs-btn" onClick={() => setCreatedMembers([])}>
+            סגירה ומחיקת הרשימה מהמסך
           </button>
         </div>
       )}
