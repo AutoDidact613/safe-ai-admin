@@ -12,12 +12,14 @@ interface PendingOrganizationsTableProps {
   organizations: Organization[];
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
+  busyId: string | null;
 }
 
-export const PendingOrganizationsTable: React.FC<PendingOrganizationsTableProps> = ({ 
-  organizations, 
-  onApprove, 
-  onReject 
+export const PendingOrganizationsTable: React.FC<PendingOrganizationsTableProps> = ({
+  organizations,
+  onApprove,
+  onReject,
+  busyId,
 }) => {
   if (organizations.length === 0) {
     return <div className="pending-orgs-empty">כעת אין ארגונים ממתינים לאישור</div>;
@@ -44,19 +46,21 @@ export const PendingOrganizationsTable: React.FC<PendingOrganizationsTableProps>
               </span>
             </td>
             <td>
-              <button 
-                className="btn-approve" 
+              <button
+                className="btn-approve"
                 onClick={() => onApprove(org._id)}
+                disabled={busyId === org._id}
                 style={{ marginLeft: '8px', cursor: 'pointer' }}
               >
-                אישור
+                {busyId === org._id ? "מעבד..." : "אישור"}
               </button>
-              <button 
-                className="btn-reject" 
+              <button
+                className="btn-reject"
                 onClick={() => onReject(org._id)}
+                disabled={busyId === org._id}
                 style={{ cursor: 'pointer' }}
               >
-                דחייה
+                {busyId === org._id ? "מעבד..." : "דחייה"}
               </button>
             </td>
           </tr>
