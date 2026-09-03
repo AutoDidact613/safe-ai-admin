@@ -38,8 +38,8 @@ const TasksList: React.FC = () => {
             <button 
                 onClick={() => navigate("/add-task")} 
                 style={{ 
-                    backgroundColor: "#4CAF50", 
-                    color: "white", 
+                    backgroundColor: "var(--color-success)",
+                    color: "var(--text-inverse)",
                     padding: "10px 20px", 
                     marginBottom: "20px",
                     cursor: "pointer",
@@ -66,7 +66,7 @@ const TasksList: React.FC = () => {
             {/* הצגת המשימות */}
             <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
                 {filteredList.map((task) => (
-                    <div key={task.id} style={{ border: "1px solid black", padding: "15px", borderRadius: "8px" }}>
+                    <div key={task.id} style={{ border: "1px solid var(--gray-950)", padding: "15px", borderRadius: "8px" }}>
                         <h3>{task.title}</h3>
                         <p>{task.desc}</p>
                         <p><strong>Date:</strong> {task.date}</p>

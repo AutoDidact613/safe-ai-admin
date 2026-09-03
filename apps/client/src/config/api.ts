@@ -60,9 +60,14 @@ export const API_ENDPOINTS = {
     users: `${API_BASE_URL}/admin/stats/users`,
     models: `${API_BASE_URL}/admin/stats/models`,
   },
+  // Direct-to-S3 upload endpoint (generic, used for post/comment attachments and screen captures)
+  upload: {
+    getUrl: `${API_BASE_URL}/api/upload/get-url`,
+  },
   // Contact form endpoint
   contact: `${API_BASE_URL}/contact`,
   contactTypes: `${API_BASE_URL}/contact-types`,
+  contactAttachments: `${API_BASE_URL}/contact/attachments`,
   myRequests: `${API_BASE_URL}/contact/my-requests`,
   allRequests: `${API_BASE_URL}/contact/all`,
   // AI News endpoints
@@ -83,6 +88,15 @@ export const API_ENDPOINTS = {
     delete: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
     apply: (id: string) => `${API_BASE_URL}/tender-board/${id}/apply`,
   },
+  // Professional profile endpoints (tender board)
+  professionalProfile: {
+    me: `${API_BASE_URL}/professional-profile/me`,
+    create: `${API_BASE_URL}/professional-profile`,
+    update: `${API_BASE_URL}/professional-profile`,
+    addResume: `${API_BASE_URL}/professional-profile/resume`,
+    removeResume: (fileKey: string) =>
+      `${API_BASE_URL}/professional-profile/resume/${encodeURIComponent(fileKey)}`,
+  },
   // Articles / Docs endpoints
   articles: {
     list: `${API_BASE_URL}/articles`,
@@ -90,6 +104,51 @@ export const API_ENDPOINTS = {
     bySlug: (slug: string) => `${API_BASE_URL}/articles/${slug}`,
   },
 } as const;
+
+type RefreshedTokens = { accessToken: string; refreshToken: string };
+
+// Actually calls the refresh endpoint once. Returns null on any failure
+// (network error, non-2xx response, or a malformed body) instead of
+// throwing - the caller decides what a failed refresh means.
+async function performTokenRefresh(refreshToken: string): Promise<RefreshedTokens | null> {
+  try {
+    const res = await fetch(API_ENDPOINTS.auth.refresh, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.success && data.accessToken && data.refreshToken) {
+      return { accessToken: data.accessToken, refreshToken: data.refreshToken };
+    }
+    return null;
+  } catch (err) {
+    console.error("Token refresh failed:", err);
+    return null;
+  }
+}
+
+// Shared by every concurrent caller so only one real refresh request is ever
+// in flight at a time. The server rotates refresh tokens - the old one stops
+// working the instant the first refresh succeeds - so if several requests
+// each independently 401 around the same moment (e.g. a page mounting
+// several components that all fetch data at once) and each tried its own
+// refresh, only the first would succeed; every other one would present the
+// now-already-rotated old refresh token, get rejected, and wipe out the
+// valid tokens the first call just stored - logging the user out despite a
+// perfectly good session having existed a moment earlier. Sharing this
+// promise means every 401 waits for and reuses the one real attempt.
+let inFlightRefresh: Promise<RefreshedTokens | null> | null = null;
+
+function refreshTokensOnce(refreshToken: string): Promise<RefreshedTokens | null> {
+  if (!inFlightRefresh) {
+    inFlightRefresh = performTokenRefresh(refreshToken).finally(() => {
+      inFlightRefresh = null;
+    });
+  }
+  return inFlightRefresh;
+}
 
 // Helper function for API calls
 export async function apiCall<T>(
@@ -130,30 +189,18 @@ export async function apiCall<T>(
     const refreshToken = localStorage.getItem("refreshToken");
 
     if (refreshToken) {
-      try {
-        // Try to refresh the token
-        const refreshResponse = await fetch(API_ENDPOINTS.auth.refresh, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ refreshToken }),
-        });
+      // Concurrent 401s (e.g. several components fetching on mount) share
+      // this single in-flight refresh instead of each racing their own -
+      // see refreshTokensOnce for why that race silently logs users out.
+      const refreshed = await refreshTokensOnce(refreshToken);
 
-        if (refreshResponse.ok) {
-          const refreshData = await refreshResponse.json();
+      if (refreshed) {
+        localStorage.setItem("accessToken", refreshed.accessToken);
+        localStorage.setItem("refreshToken", refreshed.refreshToken);
 
-          if (refreshData.success && refreshData.accessToken) {
-            // Update tokens
-            localStorage.setItem('accessToken', refreshData.accessToken);
-            localStorage.setItem('refreshToken', refreshData.refreshToken);
-
-            // Retry the original request with new token
-            response = await makeRequest(refreshData.accessToken);
-          }
-        }
-      } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError);
+        // Retry the original request with new token
+        response = await makeRequest(refreshed.accessToken);
+      } else {
         // Clear tokens and let the error handling below take care of it
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");

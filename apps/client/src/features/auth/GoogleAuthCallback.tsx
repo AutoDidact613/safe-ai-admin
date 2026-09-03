@@ -52,7 +52,7 @@ export default function GoogleAuthCallback() {
         <div style={{ textAlign: "center", padding: "40px" }}>
           <div className="spinner" style={{ margin: "0 auto 20px" }}></div>
           <h2>מתחבר עם Google...</h2>
-          <p style={{ color: "#666" }}>אנא המתן</p>
+          <p style={{ color: "var(--text-muted)" }}>אנא המתן</p>
         </div>
       </div>
     </div>

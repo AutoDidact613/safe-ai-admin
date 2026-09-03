@@ -177,9 +177,9 @@ export default function LoginForm() {
             alignItems: "center",
             justifyContent: "center",
             gap: "10px",
-            backgroundColor: "#fff",
-            color: "#333",
-            border: "1px solid #ddd",
+            backgroundColor: "var(--bg-surface)",
+            color: "var(--text-secondary)",
+            border: "1px solid var(--border-default)",
             padding: "12px",
             fontSize: "16px",
             fontWeight: "500",
@@ -212,9 +212,9 @@ export default function LoginForm() {
           margin: "20px 0",
           gap: "10px"
         }}>
-          <div style={{ flex: 1, height: "1px", backgroundColor: "#ddd" }}></div>
-          <span style={{ color: "#666", fontSize: "14px" }}>או</span>
-          <div style={{ flex: 1, height: "1px", backgroundColor: "#ddd" }}></div>
+          <div style={{ flex: 1, height: "1px", backgroundColor: "var(--border-default)" }}></div>
+          <span style={{ color: "var(--text-muted)", fontSize: "14px" }}>או</span>
+          <div style={{ flex: 1, height: "1px", backgroundColor: "var(--border-default)" }}></div>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>

@@ -8,7 +8,12 @@ import { z } from "zod";
  * Registration validation schema
  */
 export const registerSchema = z.object({
-  email: z.string().email("כתובת אימייל לא תקינה"),
+  email: z
+    .string()
+    .email("כתובת אימייל לא תקינה")
+    .refine((email) => !email.includes("+"), {
+      message: 'לא ניתן להשתמש בתו "+" בכתובת המייל',
+    }),
   password: z
     .string()
     .min(8, "הסיסמה חייבת להכיל לפחות 8 תווים")

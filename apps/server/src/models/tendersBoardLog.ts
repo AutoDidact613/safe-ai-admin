@@ -8,7 +8,7 @@
 import mongoose from "mongoose";
 
 export interface TenderLogDoc extends mongoose.Document {
-  action: "CREATE" | "UPDATE" | "DELETE" | "APPLY" | "SMART_CREATE" | "SMART_SEARCH";
+  action: "CREATE" | "UPDATE" | "DELETE" | "APPLY" | "SMART_CREATE" | "SMART_SEARCH" | "GUARDRAIL_CHECK";
   tenderId?: mongoose.Types.ObjectId;
   userId?: mongoose.Types.ObjectId; // במידה ויש משתמש מחובר שמבצע את הפעולה
   status: "SUCCESS" | "FAILED";
@@ -33,7 +33,7 @@ const TenderLogSchema = new mongoose.Schema(
     action: {
       type: String,
       required: true,
-      enum: ["CREATE", "UPDATE", "DELETE", "APPLY", "SMART_CREATE", "SMART_SEARCH"],
+      enum: ["CREATE", "UPDATE", "DELETE", "APPLY", "SMART_CREATE", "SMART_SEARCH", "GUARDRAIL_CHECK"],
       index: true,
     },
     tenderId: {

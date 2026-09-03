@@ -5,6 +5,7 @@ import "../../styles/safeai-ui.css";
 
 interface RequestData {
     title?: unknown; requestType?: unknown; description?: unknown; createdAt?: unknown; replies?: unknown[]; status?: unknown;
+    attachments?: { url?: unknown; type?: unknown }[];
 }
 
 
@@ -78,6 +79,22 @@ export default function RequestDetails() {
                 <p><strong>סוג:</strong> {String(request.requestType || "")}</p>
                 <p><strong>תוכן:</strong> {String(request.description || "")}</p>
                 <p><strong>תאריך שליחה:</strong> {request.createdAt ? new Date(request.createdAt as string | number | Date).toLocaleDateString("he-IL") : ""}</p>
+                {(request.attachments || []).length > 0 && (
+                    <div className="request-attachment-list">
+                        {(request.attachments || []).map((att, index) => {
+                            if (typeof att.url !== "string" || !att.url) return null;
+                            return (
+                                <div key={index} className="request-attachment">
+                                    {att.type === "video" ? (
+                                        <video src={att.url} controls />
+                                    ) : (
+                                        <img src={att.url} alt="צירוף לפנייה" />
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
                 {String(request.status) === "closed" ? (
                     <button className="close-btn close-btn-disabled" disabled title="לא ניתן לסגור פנייה שכבר נסגרה">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

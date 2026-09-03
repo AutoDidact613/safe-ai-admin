@@ -1,26 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AddPostModal } from './AddPostModal';
-import { API_BASE_URL } from '../../config/api';
-
-interface Post {
-  _id: string;
-  title: string;
-  content: string;
-  category: string;
-  attachments: string[];
-  viewsCount: number;
-  commentCount: number;
-  rating: number;
-  author: { name: string };
-  createdAt: string;
-  tags: { _id: string; name: string }[];
-  lastComment: { authorName: string; content: string } | null;
-  isBlocked?: boolean;
-  isLocked?: boolean;
-  ratingCount: number;
-  averageRating: number;
-}
+import { fetchPosts as fetchPostsFromApi, fetchSimilarPosts, moderatePost as moderatePostApi } from './api';
+import type { Post } from './types';
+import '../../styles/forum.css';
 
 export const ForumPage: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -45,15 +28,7 @@ export const ForumPage: React.FC = () => {
     setLoading(true);
     const userRole = currentUser?.role || 'user';
 
-    const baseUrl = search.trim()
-      ? `${API_BASE_URL}/api/posts/search?query=${search}`
-      : `${API_BASE_URL}/api/posts?page=${page}`;
-    
-    const url = baseUrl.includes('?') 
-      ? `${baseUrl}&userRole=${userRole}${!search.trim() ? '' : `&page=${page}`}` 
-      : `${baseUrl}?userRole=${userRole}&page=${page}`;
-
-    fetch(url)
+    fetchPostsFromApi(search, page, userRole)
       .then((res) => {
         if (!res.ok) throw new Error('שרת הפורום החזיר שגיאה');
         return res.json();
@@ -107,7 +82,7 @@ export const ForumPage: React.FC = () => {
     }
 
     if (queryParam) {
-      fetch(`${API_BASE_URL}/api/posts/search-similar?${queryParam}`)
+      fetchSimilarPosts(queryParam)
         .then((res) => res.json())
         .then((data) => {
           if (Array.isArray(data)) {
@@ -169,14 +144,7 @@ export const ForumPage: React.FC = () => {
     if (!currentUser?._id) return alert('משתמש לא מחובר');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/posts/${postId}/moderation`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: currentUser._id,
-          actionType: actionType
-        })
-      });
+      const response = await moderatePostApi(postId, currentUser._id, actionType);
 
       if (response.ok) {
         fetchPosts(searchQuery, currentPage);
@@ -252,36 +220,36 @@ export const ForumPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '20px', direction: 'rtl', maxWidth: '1100px', margin: '0 auto', fontFamily: 'Assistant, sans-serif' }}>
-      
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', gap: '20px' }}>
-        <button 
+    <div className="forum-page">
+
+      <div className="forum-toolbar">
+        <button
           onClick={() => setIsModalOpen(true)}
-          style={{ backgroundColor: '#10b981', color: 'white', padding: '10px 25px', border: 'none', borderRadius: '6px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' }}
+          className="forum-add-btn"
         >
           הוסף פוסט חדש
         </button>
 
-        <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
-          <input 
+        <div className="forum-search-wrap">
+          <input
             type="text"
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             placeholder="חפשו פוסטים, תגיות או נושאים..."
-            style={{ width: '100%', padding: '10px 35px 10px 15px', borderRadius: '6px', border: '2px solid #d1fae5', fontSize: '15px', outline: 'none' }}
+            className="forum-search-input"
           />
-          <i className="fa-solid fa-magnifying-glass" style={{ position: 'absolute', top: '50%', right: '12px', transform: 'translateY(-50%)', color: '#10b981', fontSize: '16px' }}></i>
+          <i className="fa-solid fa-magnifying-glass forum-search-icon"></i>
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '3px solid #10b981', paddingBottom: '10px', marginBottom: '25px' }}>
-        <h2 style={{ color: '#064e3b', margin: 0, fontWeight: 'bold', fontSize: '20px' }}>
+      <div className="forum-header-row">
+        <h2 className="forum-header-title">
           {searchQuery ? `תוצאות חיפוש עבור: "${searchQuery}"` : 'פוסטים בפורום'}
         </h2>
         {searchQuery && (
           <button
             onClick={handleClearFilter}
-            style={{ backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}
+            className="forum-clear-filter-btn"
           >
             <i className="fa-solid fa-arrow-rotate-left"></i>
             חזור לרשימה המלאה
@@ -290,84 +258,82 @@ export const ForumPage: React.FC = () => {
       </div>
 
       {loading ? (
-        <div style={{ padding: '50px', color: '#10b981', fontWeight: 'bold', textAlign: 'center' }}>מחפש פוסטים...</div>
+        <div className="forum-loading">מחפש פוסטים...</div>
       ) : !Array.isArray(posts) || posts.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed #cbd5e1', borderRadius: '12px', backgroundColor: '#f8fafc', color: '#64748b' }}>
-          <i className="fa-solid fa-folder-open" style={{ fontSize: '50px', color: '#cbd5e1', marginBottom: '15px' }}></i>
-          <h3 style={{ margin: '0 0 10px 0', color: '#475569' }}>לא נמצאו פוסטים מתאימים</h3>
-          <button onClick={handleClearFilter} style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '8px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+        <div className="forum-empty-state">
+          <i className="fa-solid fa-folder-open forum-empty-icon"></i>
+          <h3 className="forum-empty-title">לא נמצאו פוסטים מתאימים</h3>
+          <button onClick={handleClearFilter} className="forum-show-all-btn">
             הצג את כל הפוסטים
           </button>
         </div>
       ) : (
         <>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div className="forum-list">
             {posts.map((post) => {
               const lineCount = post.content.split('\n').length;
               const isLongPost = post.content.length > 140 || lineCount > 6;
               const isExpanded = expandedPosts.includes(post._id);
 
               return (
-                <div 
-                  key={post._id} 
-                  onClick={() => navigate(`/forum/post/${post._id}`)} 
-                  style={{ display: 'flex', border: post.isBlocked ? '1px dashed #ef4444' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: post.isBlocked ? '#fef2f2' : '#fff', cursor: 'pointer', overflow: 'hidden', transition: '0.1s', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+                <div
+                  key={post._id}
+                  onClick={() => navigate(`/forum/post/${post._id}`)}
+                  className={`forum-card ${post.isBlocked ? 'forum-card-blocked' : ''}`}
                 >
-                  <div style={{ width: '130px', minWidth: '130px', backgroundColor: post.isBlocked ? '#fee2e2' : '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '15px', borderLeft: '1px solid #e2e8f0', justifyContent: 'flex-start' }}>
+                  <div className={`forum-card-avatar-col ${post.isBlocked ? 'forum-card-avatar-col-blocked' : ''}`}>
                     {post.ratingCount > 0 && (
-                      <div style={{ backgroundColor: '#10b981', color: 'white', padding: '3px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', marginBottom: '10px' }}>
+                      <div className="forum-card-rating-badge">
                         דירוג: {post.averageRating} ★
                       </div>
                     )}
-                    <div style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
+                    <div className="forum-avatar-circle">
                       {post.author?.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
-                    <span style={{ fontWeight: 'bold', color: '#064e3b', fontSize: '13px', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{post.author?.name}</span>
+                    <span className="forum-author-name">{post.author?.name}</span>
                   </div>
 
-                  <div style={{ flex: 1, minWidth: 0, padding: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div className="forum-card-body">
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '400' }}>
+                      <div className="forum-card-meta-row">
+                        <span className="forum-card-date">
                           {formatForumDate(post.createdAt)}
                         </span>
-                        <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '400', whiteSpace: 'nowrap' }}>
+                        <span className="forum-card-stats">
                            צפיות: {post.viewsCount || 0} | תגובות: {post.commentCount || 0}
                         </span>
                       </div>
 
-                      <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '8px', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <span style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold' }}>{post.category}</span>
-                        {post.isBlocked && <span style={{ backgroundColor: '#ef4444', color: 'white', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold' }}>🛑 חסום</span>}
-                        {post.isLocked && <span style={{ backgroundColor: '#f59e0b', color: 'white', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold' }}>🔒 נעול</span>}
+                      <div className="forum-tags-row">
+                        <span className="forum-category-badge">{post.category}</span>
+                        {post.isBlocked && <span className="forum-blocked-badge">🛑 חסום</span>}
+                        {post.isLocked && <span className="forum-locked-badge">🔒 נעול</span>}
 
-                        <h3 style={{ margin: 0, fontSize: '21px', color: '#0f172a', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.title}</h3>
+                        <h3 className="forum-card-title">{post.title}</h3>
                         {post.tags && Array.isArray(post.tags) && post.tags.map((tag: string | { _id: string; name: string }) => {
                           const isTagObject = typeof tag === 'object' && tag !== null;
                           const tagName = isTagObject ? tag.name : tag;
                           const tagKey = isTagObject ? tag._id : tagName;
                           return (
-                            <span key={tagKey} onClick={(e) => { e.stopPropagation(); setSearchQuery(tagName); setCurrentPage(1); }} style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '1px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '500', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                            <span key={tagKey} onClick={(e) => { e.stopPropagation(); setSearchQuery(tagName); setCurrentPage(1); }} className="forum-tag-chip">
                              {tagName}
                             </span>
                           );
                         })}
                       </div>
 
-                      <div style={{ marginBottom: '10px' }}>
-                        <p style={{ color: '#4b5563', lineHeight: '1.5', fontSize: '14px', margin: 0, whiteSpace: 'pre-line' }}>
-                          {isLongPost && !isExpanded 
+                      <div className="forum-card-content-wrap">
+                        <p className="forum-card-excerpt">
+                          {isLongPost && !isExpanded
                             ? post.content.split('\n').length > 6
                               ? post.content.split('\n').slice(0, 6).join('\n')
                               : `${post.content.substring(0, 140)}`
                             : post.content}
                         </p>
                         {isLongPost && (
-                          <span 
+                          <span
                             onClick={(e) => toggleExpandPost(e, post._id)}
-                            style={{ color: '#10b981', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'inline-block', marginTop: '4px', userSelect: 'none' }}
-                            onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                            onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                            className="forum-read-more"
                           >
                             {isExpanded ? 'הצג פחות ^' : 'הצג עוד...'}
                           </span>
@@ -376,9 +342,9 @@ export const ForumPage: React.FC = () => {
                     </div>
 
                     {post.lastComment && (
-                      <div onClick={(e) => { e.stopPropagation(); navigate(`/forum/post/${post._id}?scroll=bottom`); }} style={{ backgroundColor: '#f1f5f9', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', color: '#334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRight: '3px solid #94a3b8', marginTop: '5px', gap: '15px' }}>
-                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-                          <strong style={{ color: '#064e3b' }}>{post.lastComment.authorName}: </strong>
+                      <div onClick={(e) => { e.stopPropagation(); navigate(`/forum/post/${post._id}?scroll=bottom`); }} className="forum-last-comment">
+                        <div className="forum-last-comment-text">
+                          <strong className="forum-last-comment-author">{post.lastComment.authorName}: </strong>
                           {(() => {
                             const stripHtml = (html: string) => {
                               if (!html) return '';
@@ -387,34 +353,34 @@ export const ForumPage: React.FC = () => {
                             return stripHtml(post.lastComment.content).substring(0, 90);
                           })()}
                         </div>
-                        <span style={{ color: '#16a34a', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', textDecoration: 'none' }}>
+                        <span className="forum-last-comment-link">
                           לתגובה האחרונה ←
                         </span>
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '8px', marginTop: '8px' }}>
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                    <div className="forum-card-footer">
+                      <div className="forum-card-actions">
                         {isAdmin && (
                           <>
-                            <button 
+                            <button
                               onClick={(e) => handleModeratePost(e, post._id, post.isBlocked ? 'unblock' : 'block')}
-                              style={{ backgroundColor: post.isBlocked ? '#10b981' : '#ef4444', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+                              className={`forum-block-btn ${post.isBlocked ? 'forum-block-btn-active' : ''}`}
                             >
                               {post.isBlocked ? '🔓 ביטל חסימה' : '🛑 חסום פוסט'}
                             </button>
-                            <button 
+                            <button
                               onClick={(e) => handleModeratePost(e, post._id, post.isLocked ? 'unlock' : 'lock')}
-                              style={{ backgroundColor: '#f59e0b', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+                              className="forum-lock-btn"
                             >
                               {post.isLocked ? '🔓 שחרר נעילה' : '🔒 נעל לתגובות'}
                             </button>
                           </>
                         )}
                       </div>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); navigate(`/forum/post/${post._id}`); }} 
-                        style={{ backgroundColor: '#fff', color: '#064e3b', border: '1px solid #cbd5e1', padding: '3px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); navigate(`/forum/post/${post._id}`); }}
+                        className="forum-comments-btn"
                       >
                         לכל התגובות
                       </button>
@@ -427,11 +393,11 @@ export const ForumPage: React.FC = () => {
           </div>
 
           {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '35px', gap: '6px', userSelect: 'none' }}>
+            <div className="forum-pagination">
               <button
                 disabled={currentPage === 1}
                 onClick={() => handlePageChange(currentPage - 1)}
-                style={{ backgroundColor: currentPage === 1 ? '#f1f5f9' : '#fff', color: currentPage === 1 ? '#94a3b8' : '#10b981', border: '1px solid #cbd5e1', padding: '8px 14px', borderRadius: '6px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px' }}
+                className="forum-page-nav-btn"
               >
                 הקודם ←
               </button>
@@ -440,7 +406,7 @@ export const ForumPage: React.FC = () => {
                 <button
                   key={pageNumber}
                   onClick={() => handlePageChange(pageNumber)}
-                  style={{ backgroundColor: currentPage === pageNumber ? '#10b981' : '#fff', color: currentPage === pageNumber ? 'white' : '#334155', border: '1px solid #cbd5e1', width: '38px', height: '38px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', transition: '0.15s' }}
+                  className={`forum-page-num-btn ${currentPage === pageNumber ? 'forum-page-num-btn-active' : ''}`}
                 >
                   {pageNumber}
                 </button>
@@ -449,7 +415,7 @@ export const ForumPage: React.FC = () => {
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => handlePageChange(currentPage + 1)}
-                style={{ backgroundColor: currentPage === totalPages ? '#f1f5f9' : '#fff', color: currentPage === totalPages ? '#94a3b8' : '#10b981', border: '1px solid #cbd5e1', padding: '8px 14px', borderRadius: '6px', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px' }}
+                className="forum-page-nav-btn"
               >
                 → הבא
               </button>
@@ -458,27 +424,25 @@ export const ForumPage: React.FC = () => {
 
           {/* רכיב המלצות אישיות מבוסס AI עם מניעת כפילויות מלאה */}
           {recommendedPosts.length > 0 && (
-            <div style={{ marginTop: '45px', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <h3 style={{ color: '#064e3b', margin: '0 0 15px 0', fontSize: '15px', fontWeight: 'bold' }}>
-                <i className="fa-solid fa-wand-magic-sparkles" style={{ marginLeft: '8px', color: '#f59e0b' }}></i>
+            <div className="forum-recommendations">
+              <h3 className="forum-recommendations-title">
+                <i className="fa-solid fa-wand-magic-sparkles forum-recommendations-icon"></i>
                אולי יעניין אותך גם...
               </h3>
-              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+              <div className="forum-recommendations-list">
                 {recommendedPosts.map((p) => (
-                  <div 
+                  <div
                     key={p._id}
                     onClick={() => {
                       navigate(`/forum/post/${p._id}`);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    style={{ flex: '1', minWidth: '260px', backgroundColor: '#fff', padding: '12px 15px', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer', transition: '0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
-                    onMouseEnter={(e) => e.currentTarget.style.borderColor = '#10b981'}
-                    onMouseLeave={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+                    className="forum-recommendation-card"
                   >
-                    <span style={{ color: '#1e293b', fontSize: '14px', fontWeight: '500', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span className="forum-recommendation-title">
                       {p.title}
                     </span>
-                    <span style={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold', display: 'inline-block', marginTop: '5px' }}>קרא עוד ←</span>
+                    <span className="forum-recommendation-link">קרא עוד ←</span>
                   </div>
                 ))}
               </div>

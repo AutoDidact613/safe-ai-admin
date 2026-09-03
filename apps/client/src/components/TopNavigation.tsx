@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import "../styles/top-navigation.css";
 import { useAuth } from "../context/authStore";
+import ThemeToggle from "./ThemeToggle";
 
 export default function TopNavigation() {
   const location = useLocation();
@@ -45,8 +46,44 @@ export default function TopNavigation() {
       <div className="top-nav-container">
         {/* Logo and Brand */}
         <div className="top-nav-brand">
-          <Link to="/" className="brand-link">
-            <img src="/logo.svg" alt="SafeAI 613" className="brand-logo" />
+          <Link to="/" className="brand-link" aria-label="SafeAI 613">
+            <svg
+              className="brand-logo"
+              viewBox="0 0 400 120"
+              xmlns="http://www.w3.org/2000/svg"
+              role="img"
+              aria-hidden="true"
+              style={{ direction: "ltr" }}
+            >
+              <defs>
+                <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#10a37f" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#0d8f6f" stopOpacity={1} />
+                </linearGradient>
+              </defs>
+              <text
+                x="20"
+                y="80"
+                fontFamily="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                fontSize="52"
+                fontWeight="bold"
+                fill="var(--text-primary)"
+                style={{ direction: "ltr" }}
+              >
+                SafeAI
+              </text>
+              <text
+                x="182"
+                y="80"
+                fontFamily="'Brush Script MT', 'Comic Sans MS', cursive"
+                fontSize="52"
+                fontStyle="italic"
+                fill="url(#brandGradient)"
+                style={{ direction: "ltr" }}
+              >
+                613
+              </text>
+            </svg>
           </Link>
         </div>
 
@@ -183,9 +220,9 @@ export default function TopNavigation() {
               <Link to="/tender-board" className="top-nav-link">
                 לוח פרוייקטים
               </Link>
-              <Link to="/download-agents" className="top-nav-link">
+              {/* <Link to="/download-agents" className="top-nav-link">
                 הורדת אג'נטים כDesktop
-              </Link>
+              </Link> */}
 
               {/* User Menu */}
               <div className="user-menu-container" ref={menuRef}>
@@ -269,6 +306,7 @@ export default function TopNavigation() {
               </div>
             </>
           )}
+          <ThemeToggle />
         </div>
       </div>
     </nav>
