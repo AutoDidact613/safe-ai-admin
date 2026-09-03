@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import * as XLSX from "xlsx";
-import { createOrganizationMember, getMyOrganization } from "../features/organizations/api/organizationApi";
+import {
+  createOrganizationMember,
+  getMyOrganization,
+  getOrganizationUsers,
+  topUpOrganizationWallet,
+  updateOrganizationDetails,
+} from "../features/organizations/api/organizationApi";
 import "../styles/organization-wallet.css";
 
 interface User {
@@ -63,13 +68,6 @@ export default function OrganizationUsersPage() {
       setError("");
       setNoOrganization(false);
 
-      const token = localStorage.getItem("accessToken");
-
-      if (!token) {
-        setError("לא נמצא טוקן גישה. אנא התחברי מחדש.");
-        return;
-      }
-
       const { organization: myOrg } = await getMyOrganization();
 
       if (!myOrg) {
@@ -79,38 +77,11 @@ export default function OrganizationUsersPage() {
 
       setOrganization(myOrg as unknown as Organization);
 
-      const usersResponse = await axios.get(
-        `${import.meta.env.VITE_API_URL}/organizations/${myOrg._id}/users`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      setUsers(usersResponse.data);
+      const usersData = await getOrganizationUsers(myOrg._id);
+      setUsers(usersData as unknown as User[]);
     } catch (err: unknown) {
       console.error("Error fetching organization users:", err);
-
-      let serverError = "Failed to fetch organization users";
-
-      if (axios.isAxiosError(err)) {
-        if (err.response?.data) {
-          serverError =
-            typeof err.response.data === "string"
-              ? err.response.data
-              : err.response.data.error ||
-              err.response.data.message ||
-              JSON.stringify(err.response.data);
-        } else if (err.message) {
-          serverError = err.message;
-        }
-
-        const failedUrl = err.config?.url ? ` (נתיב: ${err.config.url})` : "";
-        setError(`${serverError}${failedUrl}`);
-      } else if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError(serverError);
-      }
+      setError(err instanceof Error ? err.message : "Failed to fetch organization users");
     } finally {
       setLoading(false);
     }
@@ -124,37 +95,18 @@ export default function OrganizationUsersPage() {
     try {
       setIsSubmitting(true);
 
-      const token = localStorage.getItem("accessToken");
-
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/organizations/${organization._id}/top-up`,
-        { amount: Number(topUpAmount) },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const { organization: updatedOrg } = await topUpOrganizationWallet(
+        organization._id,
+        Number(topUpAmount)
       );
 
-      alert(
-        `הארנק נטען בהצלחה! יתרה חדשה: $${response.data.organization.walletBalance}`
-      );
+      alert(`הארנק נטען בהצלחה! יתרה חדשה: $${updatedOrg.walletBalance}`);
 
-      setOrganization(response.data.organization);
+      setOrganization(updatedOrg as unknown as Organization);
       setTopUpAmount("");
     } catch (err: unknown) {
       console.error("Error topping up wallet:", err);
-
-      if (axios.isAxiosError(err)) {
-        const errorMsg =
-          err.response?.data?.error ||
-          err.response?.data?.message ||
-          "נכשל הטעינה לארנק";
-
-        alert(errorMsg);
-      } else if (err instanceof Error) {
-        alert(err.message);
-      } else {
-        alert("נכשל הטעינה לארנק");
-      }
+      alert(err instanceof Error ? err.message : "נכשל הטעינה לארנק");
     } finally {
       setIsSubmitting(false);
     }
@@ -175,33 +127,16 @@ export default function OrganizationUsersPage() {
     try {
       setIsSavingOrg(true);
 
-      const token = localStorage.getItem("accessToken");
+      const { organization: updatedOrg } = await updateOrganizationDetails(organization._id, {
+        name: editName,
+        description: editDescription,
+      });
 
-      const response = await axios.put(
-        `${import.meta.env.VITE_API_URL}/organizations/${organization._id}`,
-        { name: editName, description: editDescription },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      setOrganization(response.data.organization);
+      setOrganization(updatedOrg as unknown as Organization);
       setIsEditingOrg(false);
     } catch (err: unknown) {
       console.error("Error updating organization:", err);
-
-      if (axios.isAxiosError(err)) {
-        const errorMsg =
-          err.response?.data?.error ||
-          err.response?.data?.message ||
-          "נכשל עדכון פרטי הארגון";
-
-        alert(errorMsg);
-      } else if (err instanceof Error) {
-        alert(err.message);
-      } else {
-        alert("נכשל עדכון פרטי הארגון");
-      }
+      alert(err instanceof Error ? err.message : "נכשל עדכון פרטי הארגון");
     } finally {
       setIsSavingOrg(false);
     }
@@ -209,12 +144,8 @@ export default function OrganizationUsersPage() {
 
   const reloadUsers = async () => {
     if (!organization) return;
-    const token = localStorage.getItem("accessToken");
-    const usersResponse = await axios.get(
-      `${import.meta.env.VITE_API_URL}/organizations/${organization._id}/users`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    setUsers(usersResponse.data);
+    const usersData = await getOrganizationUsers(organization._id);
+    setUsers(usersData as unknown as User[]);
   };
 
   const handleAddMember = async (e: React.FormEvent) => {
