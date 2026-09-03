@@ -45,6 +45,7 @@ const OrganizationSchema = new mongoose.Schema(
 // Index for faster lookups (name's unique index is already created by
 // `unique: true` on the field above - no need to declare it again here)
 OrganizationSchema.index({ ownerId: 1 });
+OrganizationSchema.index({ status: 1 });
 
 OrganizationSchema.set("toJSON", {
   transform: (_doc, ret) => {
