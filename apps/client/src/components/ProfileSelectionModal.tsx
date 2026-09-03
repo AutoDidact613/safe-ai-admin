@@ -88,7 +88,7 @@ export default function ProfileSelectionModal({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        backgroundColor: "var(--bg-overlay)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -102,14 +102,14 @@ export default function ProfileSelectionModal({
     >
       <div
         style={{
-          backgroundColor: "white",
+          backgroundColor: "var(--bg-surface)",
           borderRadius: "8px",
           padding: "32px",
           maxWidth: "500px",
           width: "90%",
           maxHeight: "80vh",
           overflowY: "auto",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+          boxShadow: "var(--shadow-md)",
         }}
       >
         <h2 style={{ marginBottom: "16px", fontSize: "24px", fontWeight: "bold" }}>
@@ -157,8 +157,8 @@ export default function ProfileSelectionModal({
                   padding: "12px",
                   fontSize: "16px",
                   borderRadius: "5px",
-                  border: "1px solid #ddd",
-                  backgroundColor: "#f8f9fa",
+                  border: "1px solid var(--border-default)",
+                  backgroundColor: "var(--bg-elevated)",
                 }}
               >
                 <option value="">-- בחר פרופיל --</option>
@@ -174,7 +174,7 @@ export default function ProfileSelectionModal({
               <div
                 style={{
                   padding: "16px",
-                  backgroundColor: "#f0f9ff",
+                  backgroundColor: "var(--color-info-bg)",
                   borderRadius: "6px",
                   marginBottom: "24px",
                 }}
@@ -224,7 +224,7 @@ export default function ProfileSelectionModal({
               style={{
                 marginTop: "16px",
                 fontSize: "14px",
-                color: "#666",
+                color: "var(--text-muted)",
                 textAlign: "center",
               }}
             >

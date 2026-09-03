@@ -11,7 +11,9 @@ import providerKeyRouter from "./routes/providerKeyRouter";
 import authRouter from "./routes/authRouter";
 import usageRouter from "./routes/usageRouter";
 import adminStatsRouter from "./routes/adminStatsRouter";
+import publicStatsRouter from "./routes/publicStatsRouter";
 import proxyKeyRouter from "./routes/proxyKeyRouter";
+import professionalProfileRouter from "./routes/professionalProfileRouter";
 import promptRouter from "./routes/promptRouter";
 import organizationRouter from "./routes/organizationRouter";
 import contactRouter from "./routes/contactRouter";
@@ -32,6 +34,7 @@ import tagRoutes from './routes/tagRoutes';
 import uploadRouter from "./routes/uploadRoutes";
 import cookieParser from 'cookie-parser';
 import { initializeAutoPostBot } from './services/autoPostService';
+import { initializeAttachmentCleanupJob } from './services/attachmentService';
 
 const PORT = process.env.PORT || 3001;
 
@@ -66,6 +69,7 @@ app.get("/health", (_req, res) => {
 
 // ===== Public Routes (No Authentication) =====
 app.use("/auth", authRouter);
+app.use("/public-stats", publicStatsRouter); // Landing page counts — no auth, counts only
 
 // ===== JWT Protected Routes (User Self-Management) =====
 // Import the handler for self-profile updates
@@ -79,6 +83,7 @@ app.use("/users", authenticateToken, requireAdmin, userRouter);
 app.use("/profiles", authenticateToken, profileRouter);
 app.use("/provider-keys", authenticateToken, providerKeyRouter);
 app.use("/proxy-key", proxyKeyRouter); // User's own proxy key management
+app.use("/professional-profile", professionalProfileRouter); // User's own professional profile (tender board)
 app.use("/admin/stats", adminStatsRouter); // Admin stats already has auth middleware
 app.use("/prompts", authenticateToken, promptRouter); // Prompt management (admin routes protected in router)
 app.use("/organizations", organizationRouter); // Organization management (auth middleware in router)
@@ -115,6 +120,7 @@ async function start() {
       logger.info(`Server running on port ${PORT}`);
     });
     initializeAutoPostBot();
+    initializeAttachmentCleanupJob();
 
   } catch (err) {
     logger.error("Startup failed:", err);

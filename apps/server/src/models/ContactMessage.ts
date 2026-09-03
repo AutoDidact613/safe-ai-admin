@@ -8,6 +8,12 @@ export interface IContactMessage extends Document {
   createdAt: Date;
   status: 'open' | 'closed';
   replies: IReply[];
+  attachments?: IAttachment[];
+}
+
+export interface IAttachment {
+  url: string;
+  type: 'image' | 'video';
 }
 
 export interface IReply {
@@ -24,6 +30,11 @@ const contactMessageSchema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now },
   status: { type: String, enum: ['open', 'closed'], default: 'open' },
+  attachments: [{
+    _id: false,
+    url: { type: String, required: true },
+    type: { type: String, enum: ['image', 'video'], required: true }
+  }],
   replies: [{
     senderId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     text: { type: String, required: true },

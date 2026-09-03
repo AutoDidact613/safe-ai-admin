@@ -6,6 +6,8 @@ const newsRouter = Router();
 
 // ===== Public (everyone can read) =====
 newsRouter.get("/", newsController.getAllNews);
+// Must be registered before "/:id" - otherwise Express matches "tags" as an id
+newsRouter.get("/tags", newsController.getAllTags);
 newsRouter.get("/:id", newsController.getNewsById);
 
 // ===== Admin only =====

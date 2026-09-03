@@ -8,31 +8,18 @@ import { Highlight } from '@tiptap/extension-highlight';
 import { FontFamily } from '@tiptap/extension-font-family';
 import { TextAlign } from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
-import { API_BASE_URL } from '../../config/api';
-
-interface Comment {
-  _id: string;
-  content: string;
-  author: { name: string };
-  createdAt: string;
-  attachments?: string[];
-}
-
-interface Post {
-  _id: string;
-  title: string;
-  content: string;
-  category: string;
-  tags: { _id: string; name: string }[];
-  attachments: string[];
-  viewsCount: number;
-  author: { _id: string; name: string };
-  createdAt: string;
-  isLocked?: boolean;
-  ratingCount: number;
-  averageRating: number;
-  ratedBy: string[];
-}
+import {
+  fetchPostById,
+  fetchSimilarPosts,
+  incrementPostView,
+  deleteComment,
+  getUploadUrl,
+  uploadFileToS3,
+  createComment,
+  ratePost,
+} from './api';
+import type { Post, Comment } from './types';
+import '../../styles/forum.css';
 
 export const PostThreadPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -54,6 +41,7 @@ export const PostThreadPage: React.FC = () => {
   const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
   const currentUserInitial = currentUser?.name?.charAt(0).toUpperCase() || 'U';
   const isAdmin = currentUser?.role === 'admin';
+  const isCommentBlocked = !isAdmin && currentUser?.canComment === false;
 
   const editor = useEditor({
     extensions: [
@@ -73,7 +61,7 @@ export const PostThreadPage: React.FC = () => {
 
   const loadPostAndComments = () => {
     if (!id) return;
-    fetch(`${API_BASE_URL}/api/posts/${id}`)
+    fetchPostById(id)
       .then((res) => res.json())
       .then((data) => {
         setPost(data.post);
@@ -90,7 +78,7 @@ export const PostThreadPage: React.FC = () => {
           localStorage.setItem('viewed_titles', JSON.stringify(updatedHistory));
 
           // שימוש בפרמטר postId המהיר ב-100% מול ה-Backend
-          fetch(`${API_BASE_URL}/api/posts/search-similar?postId=${data.post._id}`)
+          fetchSimilarPosts(`postId=${data.post._id}`)
             .then((res) => res.json())
             .then((similarData) => {
               if (Array.isArray(similarData)) {
@@ -141,11 +129,7 @@ export const PostThreadPage: React.FC = () => {
     const user = userStr ? JSON.parse(userStr) : null;
 
     if (user) {
-      fetch(`${API_BASE_URL}/api/posts/${id}/view`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user._id })
-      })
+      incrementPostView(id, user._id)
         .then((res) => res.json())
         .then((viewData) => {
           if (viewData && viewData.viewsCount !== undefined) {
@@ -160,11 +144,7 @@ export const PostThreadPage: React.FC = () => {
     if (!window.confirm('האם את בטוחה שברצונך למחוק תגובה זו לצמיתות?')) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/posts/comment/${commentId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser?._id })
-      });
+      const response = await deleteComment(commentId, currentUser?._id);
 
       if (response.ok) {
         setComments((prev) => prev.filter((comment) => comment._id !== commentId));
@@ -190,23 +170,12 @@ export const PostThreadPage: React.FC = () => {
 
     if (selectedFile) {
       try {
-        const urlResponse = await fetch(`${API_BASE_URL}/api/upload/get-url`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fileName: selectedFile.name,
-            fileType: selectedFile.type,
-          }),
-        });
+        const urlResponse = await getUploadUrl(selectedFile.name, selectedFile.type);
 
         if (!urlResponse.ok) throw new Error('נכשלה קבלת קישור מאובטח לתגובה');
         const { uploadUrl, fileUrl } = await urlResponse.json();
 
-        const awsResponse = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': selectedFile.type },
-          body: selectedFile,
-        });
+        const awsResponse = await uploadFileToS3(uploadUrl, selectedFile);
 
         if (!awsResponse.ok) throw new Error('העלאת קובץ התגובה ל-S3 נכשלה');
         finalFileUrl = fileUrl;
@@ -227,16 +196,12 @@ export const PostThreadPage: React.FC = () => {
     };
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/posts/${id}/comment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(commentPayload)
-      });
+      const response = await createComment(id, commentPayload);
 
       if (response.ok) {
         const savedComment = await response.json();
         setComments((prevComments) => [...prevComments, savedComment]);
-        editor.commands.clearContent(); 
+        editor.commands.clearContent();
         setSelectedFile(null);
         navigate('/forum');
       } else {
@@ -255,15 +220,7 @@ export const PostThreadPage: React.FC = () => {
     setUserRating(selectedRating);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/posts/${post._id}/rate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          userId: currentUser?._id,
-          rating: selectedRating
-        })
-      });
+      const response = await ratePost(post._id, currentUser?._id, selectedRating);
 
       if (response.ok) {
         const data = await response.json();
@@ -376,60 +333,56 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
           key={index}
           onClick={() => window.open(fileUrl, '_blank')}
           title="לחצי להגדלת התמונה"
-          style={{ width: '75px', height: '75px', borderRadius: '8px', border: '1px solid #10b981', overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', transition: 'transform 0.15s ease' }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          className="forum-attachment-image"
         >
-          <img src={fileUrl} alt="תצוגה מקדימה" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <img src={fileUrl} alt="תצוגה מקדימה" className="forum-attachment-image-img" />
         </div>
       );
     }
 
     let iconClass = 'fa-solid fa-file';
-    let iconColor = '#64748b';
+    let iconColor = 'var(--text-muted)';
 
     if (fileExtension === 'pdf') {
       iconClass = 'fa-solid fa-file-pdf';
-      iconColor = '#ef4444';
+      iconColor = 'var(--color-danger)';
     } else if (['doc', 'docx'].includes(fileExtension)) {
       iconClass = 'fa-solid fa-file-word';
-      iconColor = '#3b82f6';
+      iconColor = 'var(--link-color)';
     } else if (['xls', 'xlsx'].includes(fileExtension)) {
       iconClass = 'fa-solid fa-file-excel';
-      iconColor = '#10b981';
+      iconColor = 'var(--brand-secondary)';
     } else if (['zip', 'rar', '7z'].includes(fileExtension)) {
       iconClass = 'fa-solid fa-file-zipper';
-      iconColor = '#f59e0b';
+      iconColor = 'var(--color-warning)';
     } else if (['ts', 'tsx', 'js', 'jsx', 'html', 'css', 'json'].includes(fileExtension)) {
       iconClass = 'fa-solid fa-file-code';
       iconColor = '#8b5cf6';
     }
 
     return (
-      <div 
+      <div
         key={index}
-        style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px 14px', width: '320px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}
+        className="forum-attachment-file"
       >
-        <i className={iconClass} style={{ fontSize: '24px', color: iconColor }}></i>
-        
-        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
-          <span 
-            style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+        <i className={`${iconClass} forum-attachment-icon`} style={{ color: iconColor }}></i>
+
+        <div className="forum-attachment-info">
+          <span
+            className="forum-attachment-filename"
             title={fileName}
           >
             {fileName}
           </span>
-          <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase' }}>קובץ {fileExtension}</span>
+          <span className="forum-attachment-filetype">קובץ {fileExtension}</span>
         </div>
 
-        <a 
+        <a
           href={fileUrl}
           target="_blank"
           rel="noreferrer"
           download={fileName}
-          style={{ textDecoration: 'none', backgroundColor: '#fff', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '5px 10px', color: '#475569', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', transition: '0.15s' }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+          className="forum-attachment-download"
         >
           <i className="fa-solid fa-download"></i>
           הורדה
@@ -438,66 +391,66 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
     );
   };
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: '#10b981', fontWeight: 'bold', direction: 'rtl' }}>טוען שרשור...</div>;
+  if (loading) return <div className="forum-thread-loading">טוען שרשור...</div>;
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '50px', color: '#10b981', fontWeight: 'bold', direction: 'rtl' }}>טוען שרשור...</div>;
-  if (!post) return <div style={{ textAlign: 'center', padding: '50px', direction: 'rtl' }}>הפוסט לא נמצא.</div>;
+  if (loading) return <div className="forum-thread-loading">טוען שרשור...</div>;
+  if (!post) return <div className="forum-thread-not-found">הפוסט לא נמצא.</div>;
 
   return (
-    <div style={{ padding: '20px', direction: 'rtl', maxWidth: '1100px', margin: '0 auto', fontFamily: 'Assistant, sans-serif' }}>
-      
-      <button 
-        onClick={() => navigate('/forum')} 
-        style={{ marginBottom: '15px', cursor: 'pointer', background: 'none', border: 'none', color: '#10b981', fontWeight: 'bold', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '5px' }}
+    <div className="forum-thread-page">
+
+      <button
+        onClick={() => navigate('/forum')}
+        className="forum-back-btn"
       >
         ← חזרה לפורום
       </button>
 
-      <div style={{ display: 'flex', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#fff', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '15px' }}>
-        <div style={{ width: '140px', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '15px', borderLeft: '1px solid #e2e8f0' }}>
-          <div style={{ width: '50px', height: '50px', borderRadius: '50%', backgroundColor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 'bold', marginBottom: '5px' }}>
+      <div className="forum-post-card">
+        <div className="forum-post-avatar-col">
+          <div className="forum-post-avatar-circle">
             {post.author?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
-          <span style={{ fontWeight: 'bold', color: '#064e3b', fontSize: '14px', textAlign: 'center' }}>
+          <span className="forum-post-author-name">
             {post.author?.name || 'משתמש מערכת'}
           </span>
         </div>
 
-        <div style={{ flex: 1, padding: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div className="forum-post-body">
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '400' }}>
+            <div className="forum-post-meta-row">
+              <span className="forum-post-meta-text">
                 {formatForumDate(post.createdAt)}
               </span>
-              <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '400' }}>
+              <span className="forum-post-meta-text">
                 👁 צפיות: {post.viewsCount}
               </span>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginBottom: '10px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', gap: '10px' }}>
-              <span style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold' }}>
+            <div className="forum-post-badges-row">
+              <span className="forum-post-category-badge">
                 {post.category}
               </span>
               {post.isLocked && (
-                <span style={{ backgroundColor: '#f59e0b', color: 'white', padding: '1px 8px', borderRadius: '3px', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="forum-post-locked-badge">
                   🔒 נעול
                 </span>
               )}
-              <h1 style={{ margin: 0, fontSize: '19px', color: '#064e3b', fontWeight: 'bold' }}>{post.title}</h1>
+              <h1 className="forum-post-title">{post.title}</h1>
             </div>
 
-            <p style={{ color: '#374151', lineHeight: '1.5', fontSize: '15px', whiteSpace: 'pre-line', margin: '5px 0' }}>
+            <p className="forum-post-content">
               {post.content}
             </p>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+          <div className="forum-post-footer-row">
             {post.tags && post.tags.length > 0 && (
-              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+              <div className="forum-post-tags-list">
                 {post.tags.map((tag: string | { name: string }, idx) => {
                   const tagName = typeof tag === 'object' && tag !== null ? tag.name : tag;
                   return (
-                    <span key={idx} style={{ backgroundColor: '#f0fdf4', color: '#16a34a', padding: '1px 6px', borderRadius: '4px', fontSize: '11px', border: '1px solid #bbf7d0', fontWeight: 'bold' }}>
+                    <span key={idx} className="forum-post-tag-chip">
                       #{tagName}
                     </span>
                   );
@@ -506,7 +459,7 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
             )}
 
            {post.attachments && post.attachments.length > 0 && (
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <div className="forum-post-attachments-list">
                 {post.attachments.map((file, index) => renderFileAttachment(file, index))}
               </div>
             )}
@@ -514,9 +467,9 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '24px', padding: '12px 0', borderTop: '1px solid #eee', marginBottom: '20px' }}>
-        <span style={{ fontSize: '14px', color: '#4b5563', fontWeight: '500' }}>דירוג הפוסט:</span>
-        <div style={{ display: 'flex', gap: '4px' }}>
+      <div className="forum-rating-row">
+        <span className="forum-rating-label">דירוג הפוסט:</span>
+        <div className="forum-stars-row">
           {[1, 2, 3, 4, 5].map((star) => {
             const isFilled = star <= (hoverRating || userRating);
             return (
@@ -525,51 +478,39 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
                 onClick={() => handleStarClick(star)}
                 onMouseEnter={() => setHoverRating(star)}
                 onMouseLeave={() => setHoverRating(0)}
-                style={{
-                  fontSize: '26px',
-                  cursor: 'pointer',
-                  color: isFilled ? '#ffbc00' : '#e5e7eb',
-                  transition: 'color 0.1s ease-in-out',
-                  userSelect: 'none'
-                }}
+                className={`forum-star ${isFilled ? 'forum-star-filled' : ''}`}
               >
                 ★
               </span>
             );
           })}
         </div>
-        <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+        <span className="forum-rating-summary">
           ({post.averageRating || 0}/5 מתוך {post.ratingCount || 0} מדרגים)
         </span>
       </div>
 
       {comments.length > 0 && (
-        <div style={{ border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', overflow: 'hidden', marginBottom: '20px' }}>
+        <div className="forum-comments-list">
           {comments.map((comment, index) => {
             const commenterInitial = comment.author?.name?.charAt(0).toUpperCase() || 'U';
             return (
-              <div 
-                key={comment._id} 
-                style={{ 
-                  display: 'flex',
-                  padding: '16px 15px', 
-                  borderBottom: index === comments.length - 1 ? 'none' : '1px solid #e2e8f0', 
-                  backgroundColor: index % 2 === 0 ? '#fff' : '#f8fafc',
-                  position: 'relative'
-                }}
+              <div
+                key={comment._id}
+                className={`forum-comment-item ${index === comments.length - 1 ? 'forum-comment-item-last' : ''} ${index % 2 !== 0 ? 'forum-comment-item-odd' : ''}`}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px', marginLeft: '15px' }}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '50%', backgroundColor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', boxShadow: '0 2px 5px rgba(16,185,129,0.1)' }}>
+                <div className="forum-comment-avatar-col">
+                  <div className="forum-comment-avatar-circle">
                     {commenterInitial}
                   </div>
-                  <small style={{ color: '#064e3b', fontSize: '11px', marginTop: '4px', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', fontWeight: 'bold' }}>
+                  <small className="forum-comment-author-name">
                     {comment.author?.name || 'משתמש'}
                   </small>
                 </div>
 
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-                    <div style={{ color: '#9ca3af', fontSize: '11px', fontWeight: '400' }}>
+                <div className="forum-comment-body">
+                  <div className="forum-comment-header-row">
+                    <div className="forum-comment-date">
                       {formatForumDate(comment.createdAt)}
                     </div>
 
@@ -577,23 +518,21 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
                       <button
                         onClick={() => handleDeleteComment(comment._id)}
                         title="מחק תגובה זו כעל מנהל"
-                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px', padding: '2px 6px', borderRadius: '4px', transition: '0.2s', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        className="forum-comment-delete-btn"
                       >
                         <i className="fa-solid fa-trash-can"></i>
                         מחק
                       </button>
                     )}
                   </div>
-                  
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: comment.content }} 
-                    style={{ margin: '4px 0 0 0', color: '#374151', fontSize: '14px', lineHeight: '1.5' }} 
+
+                  <div
+                    dangerouslySetInnerHTML={{ __html: comment.content }}
+                    className="forum-comment-content"
                   />
 
                 {comment.attachments && comment.attachments.length > 0 && (
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '12px' }}>
+                    <div className="forum-comment-attachments-list">
                       {comment.attachments.map((file, idx) => renderFileAttachment(file, idx))}
                     </div>
                   )}
@@ -607,43 +546,43 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
       <div ref={bottomRef} />
 
       {post.isLocked ? (
-        <div style={{ border: '2px dashed #f59e0b', borderRadius: '6px', padding: '20px', backgroundColor: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', color: '#b45309', fontWeight: 'bold', fontSize: '15px', textAlign: 'center', marginBottom: '25px' }}>
-          <i className="fa-solid fa-lock" style={{ fontSize: '20px' }}></i>
+        <div className="forum-locked-notice">
+          <i className="fa-solid fa-lock forum-locked-icon"></i>
           <span>שרשור זה ננעל לתגובות חדשות על ידי מנהל המערכת.</span>
         </div>
       ) : (
-        <div style={{ border: '1px solid #10b981', borderRadius: '4px', padding: '15px', backgroundColor: '#f0fdf4', display: 'flex', gap: '15px', alignItems: 'flex-start', marginBottom: '25px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px' }}>
-            <div style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold', boxShadow: '0 2px 5px rgba(16,185,129,0.2)' }}>
+        <div className="forum-comment-form-wrap">
+          <div className="forum-comment-form-avatar-col">
+            <div className="forum-comment-form-avatar-circle">
               {currentUserInitial}
             </div>
-            <small style={{ color: '#064e3b', fontWeight: 'bold', marginTop: '3px', fontSize: '11px', textAlign: 'center' }}>
+            <small className="forum-comment-form-username">
               {currentUser?.name || 'את/ה'}
             </small>
           </div>
 
-          <form 
-            onSubmit={handleCommentSubmit} 
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0px', border: '1px solid #d1fae5', borderRadius: '6px', overflow: 'hidden', backgroundColor: '#fff' }}
+          <form
+            onSubmit={handleCommentSubmit}
+            className="forum-comment-form"
           >
             {editor && (
-              <div style={{ display: 'flex', gap: '6px', padding: '6px 10px', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div className="forum-editor-toolbar">
                 <select 
                   onChange={(e) => editor.chain().focus().setFontFamily(e.target.value).run()}
-                  style={{ border: '1px solid #e5e7eb', borderRadius: '4px', padding: '2px 4px', fontSize: '12px', color: '#374151', outline: 'none' }}
+                  className="forum-editor-select"
                 >
                   <option value="Arial">Sans Serif (Arial)</option>
                   <option value="Courier New">Fixed Width</option>
                   <option value="Times New Roman">Serif</option>
                 </select>
 
-                <select 
+                <select
                   onChange={(e) => {
                     const val = e.target.value;
                     if (val === 'p') editor.chain().focus().setParagraph().run();
                     else editor.chain().focus().toggleHeading({ level: Number(val) as 1 | 2 | 3 | 4 | 5 | 6 }).run();
                   }}
-                  style={{ border: '1px solid #e5e7eb', borderRadius: '4px', padding: '2px 4px', fontSize: '12px', color: '#374151', outline: 'none' }}
+                  className="forum-editor-select"
                 >
                   <option value="p">טקסט רגיל</option>
                   <option value="3">כותרת קטנה</option>
@@ -651,35 +590,35 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
                   <option value="1">כותרת גדולה</option>
                 </select>
 
-                <div style={{ width: '1px', height: '16px', backgroundColor: '#e5e7eb', margin: '0 2px' }} />
+                <div className="forum-editor-divider" />
 
                 <button
                   type="button"
                   onClick={() => editor.chain().focus().toggleBold().run()}
-                  style={{ background: editor.isActive('bold') ? '#e5e7eb' : 'none', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', color: '#374151' }}
+                  className={`forum-editor-btn forum-editor-btn-text forum-editor-btn-bold ${editor.isActive('bold') ? 'forum-editor-btn-active' : ''}`}
                 >
                   B
                 </button>
                 <button
                   type="button"
                   onClick={() => editor.chain().focus().toggleItalic().run()}
-                  style={{ background: editor.isActive('italic') ? '#e5e7eb' : 'none', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontStyle: 'italic', color: '#374151' }}
+                  className={`forum-editor-btn forum-editor-btn-text forum-editor-btn-italic ${editor.isActive('italic') ? 'forum-editor-btn-active' : ''}`}
                 >
                   I
                 </button>
                 <button
                   type="button"
                   onClick={() => editor.chain().focus().toggleStrike().run()}
-                  style={{ background: editor.isActive('strike') ? '#e5e7eb' : 'none', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', textDecoration: 'line-through', color: '#374151' }}
+                  className={`forum-editor-btn forum-editor-btn-text forum-editor-btn-strike ${editor.isActive('strike') ? 'forum-editor-btn-active' : ''}`}
                 >
                   S
                 </button>
 
-                <div style={{ width: '1px', height: '16px', backgroundColor: '#e5e7eb', margin: '0 2px' }} />
+                <div className="forum-editor-divider" />
 
-                <select 
+                <select
                   onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
-                  style={{ border: '1px solid #e5e7eb', borderRadius: '4px', padding: '2px 4px', fontSize: '12px', outline: 'none' }}
+                  className="forum-editor-select-plain"
                 >
                   <option value="#374151">✒️ שחור</option>
                   <option value="#10b981">ירוק</option>
@@ -687,12 +626,12 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
                   <option value="#ef4444">אדום</option>
                 </select>
 
-                <select 
+                <select
                   onChange={(e) => {
                     if (e.target.value === 'none') editor.chain().focus().unsetHighlight().run();
                     else editor.chain().focus().toggleHighlight({ color: e.target.value }).run();
                   }}
-                  style={{ border: '1px solid #e5e7eb', borderRadius: '4px', padding: '2px 4px', fontSize: '12px', outline: 'none' }}
+                  className="forum-editor-select-plain"
                 >
                   <option value="none">⚪ ללא רקע</option>
                   <option value="#fef08a">צהוב</option>
@@ -700,43 +639,43 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
                   <option value="#bfdbfe">כחול בהיר</option>
                 </select>
 
-                <div style={{ width: '1px', height: '16px', backgroundColor: '#e5e7eb', margin: '0 2px' }} />
+                <div className="forum-editor-divider" />
 
                 <button
                   type="button"
                   onClick={() => editor.chain().focus().setTextAlign('right').run()}
-                  style={{ background: editor.isActive({ textAlign: 'right' }) ? '#e5e7eb' : 'none', border: 'none', padding: '4px 6px', borderRadius: '4px', cursor: 'pointer' }}
+                  className={`forum-editor-btn forum-editor-btn-align ${editor.isActive({ textAlign: 'right' }) ? 'forum-editor-btn-active' : ''}`}
                 >
                   ➡️
                 </button>
                 <button
                   type="button"
                   onClick={() => editor.chain().focus().setTextAlign('center').run()}
-                  style={{ background: editor.isActive({ textAlign: 'center' }) ? '#e5e7eb' : 'none', border: 'none', padding: '4px 6px', borderRadius: '4px', cursor: 'pointer' }}
+                  className={`forum-editor-btn forum-editor-btn-align ${editor.isActive({ textAlign: 'center' }) ? 'forum-editor-btn-active' : ''}`}
                 >
                   ↔️
                 </button>
                 <button
                   type="button"
                   onClick={() => editor.chain().focus().setTextAlign('left').run()}
-                  style={{ background: editor.isActive({ textAlign: 'left' }) ? '#e5e7eb' : 'none', border: 'none', padding: '4px 6px', borderRadius: '4px', cursor: 'pointer' }}
+                  className={`forum-editor-btn forum-editor-btn-align ${editor.isActive({ textAlign: 'left' }) ? 'forum-editor-btn-active' : ''}`}
                 >
                   ⬅️
                 </button>
 
-                <div style={{ width: '1px', height: '16px', backgroundColor: '#e5e7eb', margin: '0 2px' }} />
+                <div className="forum-editor-divider" />
 
                 <button
                   type="button"
                   onClick={() => editor.chain().focus().toggleBulletList().run()}
-                  style={{ background: editor.isActive('bulletList') ? '#e5e7eb' : 'none', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', color: '#374151' }}
+                  className={`forum-editor-btn forum-editor-btn-text ${editor.isActive('bulletList') ? 'forum-editor-btn-active' : ''}`}
                 >
                   • רשימה
                 </button>
                 <button
                   type="button"
                   onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                  style={{ background: editor.isActive('orderedList') ? '#e5e7eb' : 'none', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', color: '#374151' }}
+                  className={`forum-editor-btn forum-editor-btn-text ${editor.isActive('orderedList') ? 'forum-editor-btn-active' : ''}`}
                 >
                   1. רשימה
                 </button>
@@ -744,16 +683,16 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
             )}
 
             {selectedFile && (
-              <div style={{ padding: '6px 12px', backgroundColor: '#f0fdf4', borderBottom: '1px solid #d1fae5', display: 'flex', alignItems: 'center', justifyItems: 'flex-start', gap: '8px', color: '#15803d', fontSize: '13px', fontWeight: '500' }}>
-                <i className="fa-solid fa-circle-check" style={{ fontSize: '14px' }}></i>
+              <div className="forum-selected-file-banner">
+                <i className="fa-solid fa-circle-check forum-selected-file-icon"></i>
                 <span>הקובץ המצורף <strong>{selectedFile.name}</strong> הועלה ומוכן לשמירה!</span>
-                <button type="button" onClick={() => setSelectedFile(null)} style={{ background: 'none', border: 'none', color: '#b91c1c', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', marginRight: 'auto' }}>הסר קובץ</button>
+                <button type="button" onClick={() => setSelectedFile(null)} className="forum-remove-file-btn">הסר קובץ</button>
               </div>
             )}
 
-            <div 
-              onClick={() => editor?.commands.focus()} 
-              style={{ padding: '12px', minHeight: '160px', direction: 'rtl', textAlign: 'right', backgroundColor: '#fff', cursor: 'text' }}
+            <div
+              onClick={() => editor?.commands.focus()}
+              className="forum-editor-content-wrap"
             >
               <style>{`
                 .ProseMirror { outline: none !important; min-height: 140px; white-space: pre-wrap !important; }
@@ -761,7 +700,7 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
                 .ProseMirror p.is-editor-empty::before {
                   content: attr(data-placeholder);
                   float: right;
-                  color: #9ca3af;
+                  color: var(--text-muted);
                   font-weight: 300;
                   font-size: 14px;
                   pointer-events: none;
@@ -771,13 +710,18 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
               <EditorContent editor={editor} />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', backgroundColor: '#fafafa', borderTop: '1px solid #f3f4f6' }}>
-              <button type="submit" disabled={commentLoading} style={{ backgroundColor: '#10b981', color: 'white', padding: '6px 20px', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>
+            <div className="forum-comment-form-footer">
+              <button
+                type="submit"
+                disabled={commentLoading || isCommentBlocked}
+                title={isCommentBlocked ? 'אין לך הרשאה להגיב לפוסטים' : undefined}
+                className="forum-comment-submit-btn"
+              >
                 {commentLoading ? 'שומר...' : 'שמור תגובה'}
               </button>
-              
-              <input type="file" ref={commentFileInputRef} style={{ display: 'none' }} onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
-              <button type="button" onClick={() => commentFileInputRef.current?.click()} style={{ background: 'none', border: 'none', color: '#059669', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+
+              <input type="file" ref={commentFileInputRef} className="forum-file-input-hidden" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
+              <button type="button" onClick={() => commentFileInputRef.current?.click()} className="forum-attach-comment-btn">
                 <i className="fa-solid fa-paperclip"></i> צרף קובץ לתגובה
               </button>
             </div>
@@ -786,25 +730,23 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
       )}
 
       {similarPosts.length > 0 && (
-        <div style={{ marginTop: '40px', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-          <h3 style={{ color: '#064e3b', margin: '0 0 15px 0', fontSize: '16px', fontWeight: 'bold' }}>
-            <i className="fa-solid fa-circle-nodes" style={{ marginLeft: '8px', color: '#10b981' }}></i>
+        <div className="forum-thread-recommendations">
+          <h3 className="forum-thread-recommendations-title">
+            <i className="fa-solid fa-circle-nodes forum-thread-recommendations-icon"></i>
             פוסטים נוספים שיכולים לעניין אותך:
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px' }}>
+          <div className="forum-thread-recommendations-grid">
             {similarPosts.map((p) => (
-              <div 
+              <div
                 key={p._id}
                 onClick={() => {
                   navigate(`/forum/post/${p._id}`);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '6px', border: '1px solid #cbd5e1', cursor: 'pointer', transition: '0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = '#10b981'}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+                className="forum-thread-recommendation-card"
               >
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#1e293b', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</h4>
-                <span style={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold' }}>המשך לשרשור המלא ←</span>
+                <h4 className="forum-thread-recommendation-title">{p.title}</h4>
+                <span className="forum-thread-recommendation-link">המשך לשרשור המלא ←</span>
               </div>
             ))}
           </div>

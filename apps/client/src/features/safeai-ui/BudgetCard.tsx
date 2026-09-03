@@ -6,9 +6,9 @@ interface Props {
 
 function ProgressBar({ used, limit }: { used: number; limit: number }) {
   const pct = limit > 0 ? (used / limit) * 100 : 0;
-  const color = pct > 90 ? "#f44336" : pct > 70 ? "#ff9800" : "#4caf50";
+  const color = pct > 90 ? "var(--color-danger)" : pct > 70 ? "var(--color-warning)" : "var(--color-success)";
   return (
-    <div style={{ width: "100%", height: "20px", backgroundColor: "#e0e0e0", borderRadius: "10px", overflow: "hidden" }}>
+    <div style={{ width: "100%", height: "20px", backgroundColor: "var(--gray-200)", borderRadius: "10px", overflow: "hidden" }}>
       <div style={{ width: `${pct}%`, height: "100%", backgroundColor: color, transition: "width 0.3s ease" }} />
     </div>
   );
@@ -45,7 +45,7 @@ export default function BudgetCard({ limitsStatus }: Props) {
               <span>${budget.currentSpent.toFixed(4)} / ${budget.monthlyLimit.toFixed(2)}</span>
             </div>
             <ProgressBar used={budget.currentSpent} limit={budget.monthlyLimit} />
-            <p style={{ marginTop: "8px", fontSize: "14px", color: "#666" }}>
+            <p style={{ marginTop: "8px", fontSize: "14px", color: "var(--text-muted)" }}>
               נותרו: ${budget.remaining.toFixed(4)} ({(100 - budget.percentUsed).toFixed(1)}%)
             </p>
           </div>

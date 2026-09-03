@@ -1,10 +1,12 @@
 import { useMemo } from 'react'
-import type { Tender } from './types'
+import type { Applicant, Tender } from './types'
 
 interface Props {
   tender: Tender
   onClose: () => void
   onApply: (id: string) => void
+  currentUserId?: string
+  onViewMyApplication: (applicant: Applicant) => void
 }
 
 const singularUnit = (unit: string): string => {
@@ -34,8 +36,28 @@ const formatBudget = (budget?: number): string => {
   return budget === undefined || budget === null ? '—' : budget.toString()
 }
 
-export default function TenderDetails({ tender, onClose, onApply }: Props) {
+const formatAppliedAt = (appliedAt?: string): string => {
+  if (!appliedAt) return '—'
+  const date = new Date(appliedAt)
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleDateString('he-IL')
+}
+
+export default function TenderDetails({ tender, onClose, onApply, currentUserId, onViewMyApplication }: Props) {
+  const myApplication = useMemo(
+    () => tender.applicants?.find((a) => currentUserId && a.userId === currentUserId),
+    [tender, currentUserId],
+  )
+
+  // מעדיף את tender.proposalRange/applicantsCount שמחושבים בשרת מהמערך המלא -
+  // ה-applicants שמגיע ללקוח עשוי להיות מסונן לרשומה של המשתמש הנוכחי בלבד.
   const proposalRange = useMemo(() => {
+    if (tender.proposalRange !== undefined) {
+      const range = tender.proposalRange
+      if (!range) return null
+      return range.min === range.max ? String(range.min) : `${range.min} - ${range.max}`
+    }
+
     if (!tender || !tender.applicants || tender.applicants.length === 0) return null
     const nums = tender.applicants
       .map((a) => {
@@ -48,6 +70,8 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
     const max = Math.max(...nums)
     return min === max ? String(min) : `${min} - ${max}`
   }, [tender])
+
+  const applicantsCount = tender.applicantsCount ?? tender.applicants?.length ?? 0
 
   return (
     <div role="dialog" aria-modal="true" className="modal-overlay" onClick={onClose} style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
@@ -69,7 +93,7 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
           {tender.shortDescription && (
             <div style={{ background: 'var(--secondary-bg)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
               <strong>הסבר על הפרויקט:</strong>
-              <p style={{ margin: '8px 0 0', color: '#475569', lineHeight: '1.6' }}>{tender.shortDescription}</p>
+              <p style={{ margin: '8px 0 0', color: 'var(--text-secondary)', lineHeight: '1.6' }}>{tender.shortDescription}</p>
             </div>
           )}
 
@@ -85,7 +109,7 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
             </div>
             <div style={{ border: '1px solid var(--border-color)', padding: '12px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
               <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>רשומים לפרויקט</span>
-              <strong>{tender.applicants?.length ?? 0} מועמדים</strong>
+              <strong>{applicantsCount} מועמדים</strong>
             </div>
             <div style={{ border: '1px solid var(--border-color)', padding: '12px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
               <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>טווח הצעות</span>
@@ -95,11 +119,11 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
 
           {/* תגיות סיווג מוצר ו-AI */}
           {(tender.productType || tender.aiApplicationType) && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', borderTop: '1px solid var(--border-muted)', paddingTop: '14px' }}>
               {tender.productType && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>סוג מוצר:</span>
-                  <span className="domain-pill" style={{ backgroundColor: '#f1f5f9', color: '#334155', borderColor: '#cbd5e1' }}>{tender.productType}</span>
+                  <span className="domain-pill" style={{ backgroundColor: 'var(--gray-100)', color: 'var(--text-secondary)', borderColor: 'var(--border-strong)' }}>{tender.productType}</span>
                 </div>
               )}
               {tender.aiApplicationType && (
@@ -113,7 +137,7 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
 
           {/* סעיף אג'נטים נדרשים */}
           {tender.agentsRequired && tender.agentsRequired.length > 0 && (
-            <div className="agents-required" style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
+            <div className="agents-required" style={{ borderTop: '1px solid var(--border-muted)', paddingTop: '14px' }}>
               <strong style={{ display: 'block', marginBottom: '8px' }}>האג'נטים הנדרשים:</strong>
               <div className="agents-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {tender.agentsRequired.map((a) => (
@@ -125,24 +149,42 @@ export default function TenderDetails({ tender, onClose, onApply }: Props) {
 
           {/* פרטים נוספים חופשיים */}
           {tender.additionalDetails && (
-            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
+            <div style={{ borderTop: '1px solid var(--border-muted)', paddingTop: '14px' }}>
               <strong>פרטים נוספים:</strong>
-              <p style={{ marginTop: '8px', color: '#475569', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{tender.additionalDetails}</p>
+              <p style={{ marginTop: '8px', color: 'var(--text-secondary)', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{tender.additionalDetails}</p>
             </div>
           )}
 
           {/* כפתורי פעולה תחתונה */}
-          <div className="modal-actions mt-18" style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '10px' }}>
-            <button
-              type="button"
-              className="primary-button"
-              onClick={(e) => {
-                e.stopPropagation()
-                onApply(tender.id)
-              }}
-            >
-              הרשמה למכרז
-            </button>
+          <div className="modal-actions mt-18" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '10px' }}>
+            {myApplication ? (
+              <>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                  הגשת הצעה בתאריך {formatAppliedAt(myApplication.appliedAt)}
+                </span>
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onViewMyApplication(myApplication)
+                  }}
+                >
+                  לצפייה בהצעה שהגשתי
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="primary-button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onApply(tender.id)
+                }}
+              >
+                הרשמה למכרז
+              </button>
+            )}
           </div>
         </section>
       </div>

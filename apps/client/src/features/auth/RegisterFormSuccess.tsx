@@ -25,10 +25,10 @@ export default function RegisterFormSuccess() {
             padding: "30px",
             borderRadius: "10px",
             marginBottom: "20px",
-            color: "white",
+            color: "var(--text-inverse)",
           }}
         >
-          <h2 style={{ fontSize: "24px", marginBottom: "15px", color: "white" }}>
+          <h2 style={{ fontSize: "24px", marginBottom: "15px", color: "var(--text-inverse)" }}>
             📧 אימות אימייל נדרש
           </h2>
           <p style={{ fontSize: "16px", lineHeight: "1.6", marginBottom: "15px" }}>
@@ -46,19 +46,19 @@ export default function RegisterFormSuccess() {
           <div
             className="alert alert-warning"
             style={{
-              background: "#fff3cd",
-              border: "2px solid #ffc107",
+              background: "var(--color-warning-bg)",
+              border: "2px solid var(--color-warning-border)",
               borderRadius: "8px",
               padding: "20px",
               marginBottom: "25px",
             }}
           >
             <h3
-              style={{ color: "#856404", marginBottom: "10px", fontSize: "18px" }}
+              style={{ color: "var(--color-warning)", marginBottom: "10px", fontSize: "18px" }}
             >
               ⚠️ מפתח API - שמור אותו עכשיו!
             </h3>
-            <p style={{ color: "#856404", marginBottom: "15px", fontSize: "14px" }}>
+            <p style={{ color: "var(--color-warning)", marginBottom: "15px", fontSize: "14px" }}>
               זהו המפתח היחיד שלך לגישה ל-API. לא תוכל לראות אותו שוב!
             </p>
             <button
@@ -73,14 +73,14 @@ export default function RegisterFormSuccess() {
               <div style={{ marginTop: "15px" }}>
                 <div
                   style={{
-                    background: "white",
+                    background: "var(--bg-surface)",
                     padding: "20px",
                     borderRadius: "8px",
                     fontFamily: "monospace",
                     fontSize: "14px",
                     wordBreak: "break-all",
-                    border: "2px solid #ffc107",
-                    boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                    border: "2px solid var(--color-warning-border)",
+                    boxShadow: "var(--shadow-md)",
                   }}
                 >
                   {proxyApiKey}
@@ -119,7 +119,7 @@ export default function RegisterFormSuccess() {
             textAlign: "center",
             marginTop: "20px",
             fontSize: "12px",
-            color: "#999",
+            color: "var(--gray-400)",
           }}
         >
           לא קיבלת אימייל? בדוק את תיקיית הספאם או צור קשר עם התמיכה

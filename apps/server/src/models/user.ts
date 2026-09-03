@@ -76,7 +76,18 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    
+
+    // --- Forum permissions ---
+    // Opt-in: forbidden by default, an admin must explicitly grant it per user.
+    canCreatePosts: {
+      type: Boolean,
+      default: false,
+    },
+    canComment: {
+      type: Boolean,
+      default: true,
+    },
+
     // --- Rate Limits ---
     rateLimits: {
       requestsPerMinute: { type: Number, default: 60 },

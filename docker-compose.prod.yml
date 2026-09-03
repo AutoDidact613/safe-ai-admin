@@ -9,7 +9,7 @@
 # client as static files and reverse-proxying to the `server` container on
 # 127.0.0.1:3001 — see docs/DEPLOYMENT.md.
 #
-# server/agent images are built in CI and pushed to a registry (see
+# The server image is built in CI and pushed to a registry (see
 # .github/workflows/cd-*.yml); this file only pulls and runs them — no
 # `build:` here, so deploys stay fast and reproducible.
 #
@@ -91,16 +91,3 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-
-  agent:
-    image: ${IMAGE_REGISTRY}/agent:${IMAGE_TAG:-latest}
-    restart: unless-stopped
-    logging: *default-logging
-    mem_limit: 512m
-    depends_on:
-      litellm:
-        condition: service_healthy
-    env_file:
-      - .env
-    environment:
-      LITELLM_PROXY_URL: http://litellm:4000

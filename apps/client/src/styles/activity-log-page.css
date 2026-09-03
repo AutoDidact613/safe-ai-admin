@@ -12,7 +12,7 @@
 .activity-header {
   text-align: center;
   margin-bottom: 3rem;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .activity-header h1 {
@@ -23,7 +23,7 @@
 
 .activity-subtitle {
   font-size: 1.2rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .stats-overview {
@@ -34,19 +34,19 @@
 }
 
 .stat-card {
-  background: white;
+  background: var(--bg-surface);
   border-radius: 12px;
   padding: 1.5rem;
   display: flex;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .stat-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
 }
 
 .stat-icon {
@@ -67,38 +67,38 @@
 
 .stat-info h3 {
   font-size: 2rem;
-  color: #333;
+  color: var(--text-primary);
   margin: 0;
   margin-bottom: 0.25rem;
 }
 
 .stat-info p {
-  color: #666;
+  color: var(--text-muted);
   margin: 0;
   font-size: 0.9rem;
 }
 
 .activity-content {
-  background: white;
+  background: var(--bg-surface);
   border-radius: 16px;
   padding: 2rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg);
 }
 
 .activity-list-header {
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 2px solid var(--border-default);
 }
 
 .activity-list-header h2 {
-  color: #333;
+  color: var(--text-primary);
   font-size: 1.8rem;
   margin-bottom: 0.5rem;
 }
 
 .note {
-  color: #999;
+  color: var(--text-muted);
   font-size: 0.9rem;
   font-style: italic;
 }
@@ -114,14 +114,14 @@
   align-items: flex-start;
   gap: 1rem;
   padding: 1.5rem;
-  background: #f8f9fa;
+  background: var(--bg-elevated);
   border-radius: 12px;
   transition: all 0.3s ease;
   border-right: 4px solid transparent;
 }
 
 .activity-card:hover {
-  background: #e9ecef;
+  background: var(--gray-200);
   transform: translateX(-5px);
   border-right-color: #667eea;
 }
@@ -146,19 +146,19 @@
 }
 
 .activity-details h3 {
-  color: #333;
+  color: var(--text-primary);
   font-size: 1.1rem;
   margin: 0 0 0.5rem 0;
 }
 
 .activity-details p {
-  color: #666;
+  color: var(--text-muted);
   margin: 0 0 0.5rem 0;
   font-size: 0.95rem;
 }
 
 .activity-timestamp {
-  color: #999;
+  color: var(--text-muted);
   font-size: 0.85rem;
   font-style: italic;
 }

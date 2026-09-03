@@ -456,6 +456,8 @@ export default function OrganizationUsersPage() {
                     borderRadius: "4px",
                     // Darkened from the original #4CAF50/#2196F3 - white text on
                     // those failed WCAG AA contrast (~2.7:1 / ~3.1:1); these pass (~5:1+).
+                    // Kept as fixed hex rather than --color-success/--color-info: those
+                    // theme variables are ~3.3:1/~4.1:1 in light mode, below AA.
                     backgroundColor: user.role === "org_owner" ? "#2e7d32" : "#1565c0",
                     color: "white",
                     fontSize: "12px"

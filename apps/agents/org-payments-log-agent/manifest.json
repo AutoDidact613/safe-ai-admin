@@ -1,0 +1,49 @@
+{
+  "name": "SafeAI Org & Payments Log Agent",
+  "version": "1.0.0",
+  "description": "An autonomous, read-only agent that fetches organization and wallet activity from the applicationlogs collection, detects anomalous wallet top-up patterns, and generates a natural-language activity report for administrators.",
+  "entry_point": "agent/cli.py",
+  "framework": "langgraph",
+  "interfaces": ["cli"],
+  "requires_human_approval": false,
+  "environment_variables": [
+    "MONGO_URI",
+    "GEMINI_API_KEY",
+    "LLM_MODEL",
+    "LANGCHAIN_API_KEY",
+    "LANGCHAIN_PROJECT",
+    "LANGCHAIN_TRACING_V2"
+  ],
+  "creator_name": "SafeAI613",
+  "contact_information": "REPLACE_WITH_CONTACT_EMAIL",
+  "release_date": "2026-08-30",
+  "repository_url": "https://github.com/SafeAI613/SafeAI-613/tree/develop/apps/agents/org-payments-log-agent",
+  "download_url": "REPLACE_WITH_DOWNLOAD_URL",
+  "target_audience": "System Administrators, Product Managers",
+  "professional_fields": ["Product Management", "Platform Operations", "FinTech Monitoring"],
+  "tasks_capable_of_performing": [
+    "Fetching and filtering organization/payment activity logs",
+    "Classifying log events by type (approval, rejection, topup, status change)",
+    "Detecting anomalous wallet top-up patterns (3+ within 24 hours)",
+    "Generating a natural-language activity report"
+  ],
+  "examples_of_suitable_questions": [
+    "Are there any suspicious wallet top-up patterns this month?",
+    "Summarize organization approval/rejection activity for the last week.",
+    "Which organizations had unusual wallet activity recently?"
+  ],
+  "technical_specifications": {
+    "framework": "LangGraph",
+    "llm_provider": "Google Gemini",
+    "supported_models": ["gemini-flash-latest"],
+    "features_enabled": {
+      "rag": false,
+      "web_search": false,
+      "code_execution": false,
+      "mcp_support": false
+    },
+    "required_permissions": ["database_read"]
+  },
+  "author": "SafeAI613",
+  "license": "UNLICENSED"
+}

@@ -12,7 +12,7 @@ export default function NewApiKeyModal({ apiKey, onClose }: Props) {
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
         <div style={{ padding: "20px" }}>
-          <div style={{ backgroundColor: "#fff3cd", border: "1px solid #ffc107", borderRadius: "4px", padding: "15px", marginBottom: "20px" }}>
+          <div style={{ backgroundColor: "var(--color-warning-bg)", border: "1px solid var(--color-warning-border)", borderRadius: "4px", padding: "15px", marginBottom: "20px" }}>
             <strong>⚠️ אזהרה חשובה:</strong>
             <p style={{ margin: "10px 0 0 0" }}>זוהי ההזדמנות היחידה שלך לשמור את המפתח הזה. לא תוכל לראות אותו שוב!</p>
           </div>
@@ -22,7 +22,7 @@ export default function NewApiKeyModal({ apiKey, onClose }: Props) {
               value={apiKey}
               readOnly
               rows={3}
-              style={{ width: "100%", fontFamily: "monospace", fontSize: "14px", backgroundColor: "#f8f9fa", padding: "10px" }}
+              style={{ width: "100%", fontFamily: "monospace", fontSize: "14px", backgroundColor: "var(--bg-elevated)", padding: "10px" }}
               onClick={(e) => (e.target as HTMLTextAreaElement).select()}
             />
           </div>
