@@ -142,12 +142,12 @@ export default function AuthForm() {
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
                   required
-                  style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid #ddd" }}
+                  style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid var(--border-default)" }}
                 >
                   <option value="user">👤 משתמש רגיל</option>
                   <option value="admin">👑 מנהל</option>
                 </select>
-                <small style={{ display: "block", marginTop: "5px", color: "#666" }}>
+                <small style={{ display: "block", marginTop: "5px", color: "var(--text-muted)" }}>
                   {formData.role === "admin" 
                     ? "מנהל יכול לנהל משתמשים, פרופילים ומפתחות"
                     : "משתמש רגיל יכול להשתמש במערכת ולנהל מפתחות API"}
@@ -162,12 +162,12 @@ export default function AuthForm() {
                   value={formData.mode}
                   onChange={(e) => setFormData({ ...formData, mode: e.target.value as "BYOK" | "MANAGED" })}
                   required
-                  style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid #ddd" }}
+                  style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid var(--border-default)" }}
                 >
                   <option value="BYOK">🔑 BYOK - הבא מפתח משלך</option>
                   <option value="MANAGED">🏢 MANAGED - שימוש במפתחות המערכת</option>
                 </select>
-                <small style={{ display: "block", marginTop: "5px", color: "#666" }}>
+                <small style={{ display: "block", marginTop: "5px", color: "var(--text-muted)" }}>
                   {formData.mode === "BYOK"
                     ? "תוכל להוסיף מפתחות API משלך לספקים שונים"
                     : "המערכת תנהל את המפתחות עבורך"}

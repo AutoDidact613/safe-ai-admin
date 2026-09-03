@@ -5,10 +5,16 @@
  */
 
 import { Request, Response } from "express";
-import { UsageLog } from "../models";
-import { User } from "../models/user";
+import { getUserById, updateUser } from "../repositories/userRepository";
+import {
+  aggregateUsageStats,
+  countFailedRequests,
+  countRequests,
+  getDailyUsage as getDailyUsageStats,
+  getUsageByModel as getUsageByModelStats,
+  getCostBreakdownByProvider,
+} from "../repositories/usageRepository";
 import logger from "../logger";
-import mongoose from "mongoose";
 
 /**
  * Get overall usage statistics for the authenticated user
@@ -22,41 +28,8 @@ export async function getUsageStats(req: Request, res: Response) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const stats = await UsageLog.aggregate([
-      {
-        $match: {
-          userId: new mongoose.Types.ObjectId(userId),
-          timestamp: { $gte: startDate },
-          success: true,
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalRequests: { $sum: 1 },
-          successfulRequests: { $sum: 1 },
-          totalTokens: { $sum: "$totalTokens" },
-          totalCost: { $sum: "$cost" },
-          avgResponseTime: { $avg: "$responseTime" },
-          avgTokensPerRequest: { $avg: "$totalTokens" },
-        },
-      },
-    ]);
-
-    const failedRequests = await UsageLog.countDocuments({
-      userId: new mongoose.Types.ObjectId(userId),
-      timestamp: { $gte: startDate },
-      success: false,
-    });
-
-    const result = stats[0] || {
-      totalRequests: 0,
-      successfulRequests: 0,
-      totalTokens: 0,
-      totalCost: 0,
-      avgResponseTime: 0,
-      avgTokensPerRequest: 0,
-    };
+    const result = await aggregateUsageStats(userId, startDate);
+    const failedRequests = await countFailedRequests(userId, startDate);
 
     res.json({
       ...result,
@@ -84,29 +57,7 @@ export async function getDailyUsage(req: Request, res: Response) {
     startDate.setDate(startDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
 
-    const dailyStats = await UsageLog.aggregate([
-      {
-        $match: {
-          userId: new mongoose.Types.ObjectId(userId),
-          timestamp: { $gte: startDate },
-          success: true,
-        },
-      },
-      {
-        $group: {
-          _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$timestamp" },
-          },
-          requests: { $sum: 1 },
-          tokens: { $sum: "$totalTokens" },
-          cost: { $sum: "$cost" },
-          avgResponseTime: { $avg: "$responseTime" },
-        },
-      },
-      {
-        $sort: { _id: 1 },
-      },
-    ]);
+    const dailyStats = await getDailyUsageStats(userId, startDate);
 
     res.json(dailyStats);
   } catch (error) {
@@ -127,31 +78,7 @@ export async function getUsageByModel(req: Request, res: Response) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const modelStats = await UsageLog.aggregate([
-      {
-        $match: {
-          userId: new mongoose.Types.ObjectId(userId),
-          timestamp: { $gte: startDate },
-          success: true,
-        },
-      },
-      {
-        $group: {
-          _id: {
-            model: "$modelName",
-            provider: "$provider",
-          },
-          requests: { $sum: 1 },
-          tokens: { $sum: "$totalTokens" },
-          cost: { $sum: "$cost" },
-          avgTokensPerRequest: { $avg: "$totalTokens" },
-          isFree: { $first: "$isFree" },
-        },
-      },
-      {
-        $sort: { requests: -1 },
-      },
-    ]);
+    const modelStats = await getUsageByModelStats(userId, startDate);
 
     res.json(modelStats);
   } catch (error) {
@@ -169,7 +96,7 @@ export async function getLimitsStatus(req: Request, res: Response) {
     const userId = user.userId; // JWT payload has userId, not _id
 
     // Fetch full user from database
-    const fullUser = await User.findById(userId);
+    const fullUser = await getUserById(userId);
     if (!fullUser) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -185,14 +112,8 @@ export async function getLimitsStatus(req: Request, res: Response) {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const [requestsLastMinute, requestsLastDay] = await Promise.all([
-      UsageLog.countDocuments({
-        userId: new mongoose.Types.ObjectId(userId),
-        timestamp: { $gte: oneMinuteAgo },
-      }),
-      UsageLog.countDocuments({
-        userId: new mongoose.Types.ObjectId(userId),
-        timestamp: { $gte: oneDayAgo },
-      }),
+      countRequests(userId, oneMinuteAgo),
+      countRequests(userId, oneDayAgo),
     ]);
 
     const response: any = {
@@ -243,7 +164,7 @@ export async function getCostBreakdown(req: Request, res: Response) {
     const userId = user.userId; // JWT payload has userId, not _id
 
     // Fetch full user from database
-    const fullUser = await User.findById(userId);
+    const fullUser = await getUserById(userId);
     if (!fullUser) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -256,29 +177,7 @@ export async function getCostBreakdown(req: Request, res: Response) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const costStats = await UsageLog.aggregate([
-      {
-        $match: {
-          userId: new mongoose.Types.ObjectId(userId),
-          timestamp: { $gte: startDate },
-          success: true,
-        },
-      },
-      {
-        $group: {
-          _id: {
-            provider: "$provider",
-            isFree: "$isFree",
-          },
-          totalCost: { $sum: "$cost" },
-          requests: { $sum: 1 },
-          tokens: { $sum: "$totalTokens" },
-        },
-      },
-      {
-        $sort: { totalCost: -1 },
-      },
-    ]);
+    const costStats = await getCostBreakdownByProvider(userId, startDate);
 
     const totalCost = costStats.reduce((sum, item) => sum + item.totalCost, 0);
     const freeCost = costStats
@@ -332,11 +231,7 @@ export async function updateUserLimits(req: Request, res: Response) {
       }
     }
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $set: updateData },
-      { new: true }
-    );
+    const user = await updateUser(userId as string, { $set: updateData });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });

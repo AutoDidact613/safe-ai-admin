@@ -32,6 +32,13 @@ export default function LoginForm() {
   const [searchParams] = useSearchParams();
   const { setUser } = useAuth();
 
+  // Where to send the user after they authenticate — carried in from the
+  // landing page's login-destination dropdown (SCRUM-227). Only a same-site
+  // relative path is honored, to rule out an open-redirect via this param.
+  const nextParam = searchParams.get("next");
+  const postLoginDestination =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/safeai-ui";
+
   // Handle Google OAuth callback
   useEffect(() => {
     const accessToken = searchParams.get("accessToken");
@@ -72,7 +79,7 @@ export default function LoginForm() {
               setLoggedInUser(data.user);
               setShowProfileModal(true);
             } else {
-              navigate("/safeai-ui");
+              navigate(postLoginDestination);
             }
           }
         })
@@ -114,8 +121,8 @@ export default function LoginForm() {
           setLoggedInUser(response.user);
           setShowProfileModal(true);
         } else {
-          // Navigate to dashboard
-          navigate("/safeai-ui");
+          // Navigate to the requested destination (or the default dashboard)
+          navigate(postLoginDestination);
         }
       }
     } catch (err: unknown) {
@@ -141,8 +148,8 @@ export default function LoginForm() {
   };
 
   const handleProfileSelected = () => {
-    // Navigate to dashboard after profile is selected
-    navigate("/safeai-ui");
+    // Navigate to the requested destination after profile is selected
+    navigate(postLoginDestination);
   };
 
   return (
@@ -170,9 +177,9 @@ export default function LoginForm() {
             alignItems: "center",
             justifyContent: "center",
             gap: "10px",
-            backgroundColor: "#fff",
-            color: "#333",
-            border: "1px solid #ddd",
+            backgroundColor: "var(--bg-surface)",
+            color: "var(--text-secondary)",
+            border: "1px solid var(--border-default)",
             padding: "12px",
             fontSize: "16px",
             fontWeight: "500",
@@ -205,9 +212,9 @@ export default function LoginForm() {
           margin: "20px 0",
           gap: "10px"
         }}>
-          <div style={{ flex: 1, height: "1px", backgroundColor: "#ddd" }}></div>
-          <span style={{ color: "#666", fontSize: "14px" }}>או</span>
-          <div style={{ flex: 1, height: "1px", backgroundColor: "#ddd" }}></div>
+          <div style={{ flex: 1, height: "1px", backgroundColor: "var(--border-default)" }}></div>
+          <span style={{ color: "var(--text-muted)", fontSize: "14px" }}>או</span>
+          <div style={{ flex: 1, height: "1px", backgroundColor: "var(--border-default)" }}></div>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>

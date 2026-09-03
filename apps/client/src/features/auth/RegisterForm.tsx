@@ -42,6 +42,7 @@ export default function RegisterForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [agreedToPrivacyPolicy, setAgreedToPrivacyPolicy] = useState(false);
   const navigate = useNavigate();
 
@@ -63,6 +64,13 @@ export default function RegisterForm() {
     // };
     // fetchOrganizations();
   }, []);
+
+  const validateEmail = (email: string): string | null => {
+    if (email.includes("+")) {
+      return 'לא ניתן להשתמש בתו "+" בכתובת המייל';
+    }
+    return null;
+  };
 
   const validatePassword = (password: string): string[] => {
     const errors: string[] = [];
@@ -86,6 +94,15 @@ export default function RegisterForm() {
     setLoading(true);
     setError(null);
     setPasswordErrors([]);
+    setEmailError(null);
+
+    // Validate email
+    const emailValidationError = validateEmail(formData.email);
+    if (emailValidationError) {
+      setEmailError(emailValidationError);
+      setLoading(false);
+      return;
+    }
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
@@ -160,6 +177,10 @@ export default function RegisterForm() {
     if (name === "password" && passwordErrors.length > 0) {
       setPasswordErrors([]);
     }
+
+    if (name === "email") {
+      setEmailError(validateEmail(value));
+    }
   };
 
   return (
@@ -193,6 +214,9 @@ export default function RegisterForm() {
               placeholder="your@email.com"
               autoComplete="email"
             />
+            {emailError && (
+              <span style={{ color: "#dc3545", fontSize: "12px" }}>{emailError}</span>
+            )}
           </div>
 
           <div className="form-group">
@@ -211,7 +235,7 @@ export default function RegisterForm() {
               <div className="password-requirements">
                 <ul>
                   {passwordErrors.map((err, idx) => (
-                    <li key={idx} style={{ color: "#dc3545", fontSize: "12px" }}>
+                    <li key={idx} style={{ color: "var(--color-danger)", fontSize: "12px" }}>
                       {err}
                     </li>
                   ))}
@@ -251,7 +275,7 @@ export default function RegisterForm() {
                 </option>
               ))}
             </select>
-            <small style={{ display: "block", marginTop: "5px", color: "#666" }}>
+            <small style={{ display: "block", marginTop: "5px", color: "var(--text-muted)" }}>
               בחר את הארגון שאליו אתה משתייך
             </small>
           </div>
@@ -268,7 +292,7 @@ export default function RegisterForm() {
               <option value="BYOK">🔑 BYOK - הבא מפתח משלך</option>
               <option value="MANAGED">🏢 MANAGED - שימוש במפתחות המערכת</option>
             </select>
-            <small style={{ display: "block", marginTop: "5px", color: "#666" }}>
+            <small style={{ display: "block", marginTop: "5px", color: "var(--text-muted)" }}>
               {formData.mode === "BYOK"
                 ? "תוכל להוסיף מפתחות API משלך לספקים שונים"
                 : "המערכת תנהל את המפתחות עבורך"}
@@ -282,7 +306,7 @@ export default function RegisterForm() {
           )}
 
           <div className="form-group">
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#666", whiteSpace: "nowrap" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
               <input
                 type="checkbox"
                 checked={agreedToPrivacyPolicy}
@@ -294,10 +318,10 @@ export default function RegisterForm() {
                   padding: 0,
                   margin: 0,
                   flexShrink: 0,
-                  border: "1px solid #d1d5db",
+                  border: "1px solid var(--border-default)",
                   borderRadius: "3px",
-                  background: "#ffffff",
-                  accentColor: "#10a37f",
+                  background: "var(--bg-surface)",
+                  accentColor: "var(--brand-secondary)",
                 }}
               />
               <span>

@@ -1,6 +1,6 @@
 name: CD - Staging
 
-# Deploys on every push to `develop`. Builds & publishes server/agent images,
+# Deploys on every push to `develop`. Builds & publishes the server image,
 # then deploys over SSH — a fast, pragmatic choice for the staging box today.
 # Production uses AWS OIDC + SSM instead (no SSH, no long-lived keys) — see
 # cd-production.yml. Staging is a lower-stakes target, so SSH with a
@@ -68,15 +68,6 @@ jobs:
             ${{ env.IMAGE_BASE }}/server:${{ steps.tag.outputs.value }}
             ${{ env.IMAGE_BASE }}/server:staging
 
-      - name: Build & push agent
-        uses: docker/build-push-action@v6
-        with:
-          context: ./apps/agent
-          push: true
-          tags: |
-            ${{ env.IMAGE_BASE }}/agent:${{ steps.tag.outputs.value }}
-            ${{ env.IMAGE_BASE }}/agent:staging
-
   deploy:
     name: Deploy to staging
     needs: build-and-push
@@ -106,6 +97,6 @@ jobs:
 
             cd apps/client
             npm ci
-            VITE_API_URL=/api VITE_BASE_PATH=/ npm run build
+            NODE_OPTIONS=--max-old-space-size=4096 VITE_API_URL=/api VITE_BASE_PATH=/ npm run build
             sudo rm -rf /var/www/safeai/*
             sudo cp -r dist/. /var/www/safeai/

@@ -850,6 +850,7 @@ export async function sendApplicantRegisteredEmail(params: {
   adminEmail: string;
   tenderTitle: string;
   tenderId: string;
+  applicantId?: string | undefined;
   applicant: {
     name: string;
     email: string;
@@ -858,7 +859,7 @@ export async function sendApplicantRegisteredEmail(params: {
     contactMethod?: string | undefined;
   };
 }): Promise<void> {
-  const { adminEmail, tenderTitle, tenderId, applicant } = params;
+  const { adminEmail, tenderTitle, tenderId, applicantId, applicant } = params;
 
   const safeTenderTitle = escapeHtml(tenderTitle);
   const safeName = escapeHtml(applicant.name);
@@ -870,6 +871,11 @@ export async function sendApplicantRegisteredEmail(params: {
   const safeContactMethod = applicant.contactMethod
     ? escapeHtml(applicant.contactMethod)
     : undefined;
+
+  // קישור לצפייה ישירה בהצעה שהוגשה, במסך "המכרזים שלי" של בעל המכרז.
+  const proposalUrl = applicantId
+    ? `${FRONTEND_URL}/tender-board?screen=manage&tenderId=${encodeURIComponent(tenderId)}&applicantId=${encodeURIComponent(applicantId)}`
+    : `${FRONTEND_URL}/tender-board?screen=manage&tenderId=${encodeURIComponent(tenderId)}`;
 
   const mailOptions = {
     from: EMAIL_FROM,
@@ -912,11 +918,18 @@ export async function sendApplicantRegisteredEmail(params: {
           </tr>` : ""}
         </table>
 
+        <p style="text-align: center; margin: 24px 0;">
+          <a href="${proposalUrl}" style="display: inline-block; padding: 12px 28px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            צפייה בהצעה
+          </a>
+        </p>
+
         <p style="color: #7f8c8d; font-size: 12px; margin-top: 24px;">
           נשלח אוטומטית ב־${new Date().toLocaleString("he-IL")}
         </p>
       </div>
     `,
+    text: `משתתף חדש נרשם למכרז: ${tenderTitle}\n\nשם: ${applicant.name}\nאימייל: ${applicant.email}\nפרטים: ${applicant.details}\n${applicant.proposal ? `הצעה: ${applicant.proposal}\n` : ""}${applicant.contactMethod ? `אמצעי קשר: ${applicant.contactMethod}\n` : ""}\nלצפייה בהצעה: ${proposalUrl}\n\n© 2026 SafeAI`,
   };
 
   try {

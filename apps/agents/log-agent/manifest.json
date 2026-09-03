@@ -1,0 +1,14 @@
+{
+  "name": "safeai-log-agent",
+  "version": "0.1.0",
+  "description": "Connects to MongoDB (applicationlogs collection), fetches contact-form submission log records, and prints a summary of request counts by type.",
+  "entry_point": "run_agent.py",
+  "framework": "langgraph",
+  "interfaces": ["cli"],
+  "requires_human_approval": false,
+  "environment_variables": [
+    "MONGO_URI"
+  ],
+  "author": "SafeAI613",
+  "license": "UNLICENSED"
+}

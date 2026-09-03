@@ -1,14 +1,13 @@
 /* Beta Banner Styles */
 
 .beta-banner {
-  background: linear-gradient(135deg, #10a37f 0%, #0d8f6f 100%);
-  color: white;
-  padding: 10px 0;
+  background: linear-gradient(135deg, var(--brand-secondary) 0%, var(--brand-secondary-hover) 100%);
+  color: var(--text-inverse);  padding: 10px 0;
   text-align: center;
   position: sticky;
   top: 60px;
   z-index: 999;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .beta-banner-container {
@@ -24,7 +23,7 @@
 
 .beta-badge {
   background: rgba(255, 255, 255, 0.25);
-  color: white;
+  color: var(--text-inverse);
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 12px;
@@ -37,11 +36,11 @@
   margin: 0;
   font-size: 14px;
   font-weight: 500;
-  color: white;
+  color: var(--text-inverse);
 }
 
 .beta-link {
-  color: white;
+  color: var(--text-inverse);
   text-decoration: underline;
   font-weight: 600;
   transition: opacity 0.2s;

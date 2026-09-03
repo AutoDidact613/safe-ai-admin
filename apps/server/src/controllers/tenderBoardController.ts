@@ -11,9 +11,12 @@ import {
   getProductTypeList,
   getAIApplicationTypeList,
   // createSmartTender,  // נעקוף את פונקציית המעבר הבעייתית
-  smartSearchTenders,     
+  smartSearchTenders,
+  filterApplicantsForRequester,
 } from "../services/tenderBoardService";
-import { TBAIService } from "../services/tenderBoardAIService";
+import { TBAIService, TenderTopicMismatchError } from "../services/tenderBoardAIService";
+import { generatePresignedDownloadUrl } from "../services/s3Service";
+import { getProfileById } from "../services/professionalProfileService";
 import logger from "../logger";
 
 /**
@@ -46,9 +49,57 @@ function isOwnerOrAdmin(req: Request, tender: any): boolean {
 }
 
 /**
+ * מחליף את resumeFileKey בקישור הורדה חתום ומצרף תקציר פרופיל מקצועי (אם צורף),
+ * עבור בעל המכרז/אדמין בלבד; למשתמשים אחרים השדות מוסרים מהתגובה כדי לא לחשוף
+ * קובץ/פרופיל פרטי של מועמד.
+ */
+async function withSignedApplicantDetails(req: Request, tender: any): Promise<any> {
+  if (!tender?.applicants?.length) return tender;
+
+  const authorized = isOwnerOrAdmin(req, tender);
+  const plain = typeof tender.toObject === "function" ? tender.toObject() : tender;
+
+  plain.applicants = await Promise.all(
+    plain.applicants.map(async (applicant: any) => {
+      if (!authorized) {
+        const { resumeFileKey, professionalProfileId, ...rest } = applicant;
+        return rest;
+      }
+
+      const signedApplicant = applicant.resumeFileKey
+        ? { ...applicant, resumeFileKey: await generatePresignedDownloadUrl(applicant.resumeFileKey) }
+        : applicant;
+
+      if (!applicant.professionalProfileId) return signedApplicant;
+
+      const profile = await getProfileById(applicant.professionalProfileId.toString());
+      if (!profile) return signedApplicant;
+
+      return {
+        ...signedApplicant,
+        professionalProfile: {
+          name: profile.name,
+          description: profile.description,
+          experience: profile.experience,
+        },
+      };
+    })
+  );
+
+  return plain;
+}
+
+/**
  * CREATE Tender
  */
 export async function createTenderHandler(req: Request, res: Response) {
+  try {
+    await TBAIService.assertTenderIsProgrammingRelated(req.body);
+  } catch (error: any) {
+    logger.warn("Tender rejected by domain guardrail", { error: error.message });
+    return res.status(error.statusCode ?? 400).json({ error: error.message });
+  }
+
   try {
     const user = (req as any).user;
     // publisherUserCode is derived from the authenticated user, never trusted from the client body,
@@ -66,8 +117,15 @@ export async function createTenderHandler(req: Request, res: Response) {
  */
 export async function listTendersHandler(req: Request, res: Response) {
   try {
+    const user = (req as any).user;
     const tenders = await listTenders();
-    res.json(tenders);
+    const filtered = tenders.map((tender: any) =>
+      filterApplicantsForRequester(tender, user?.userId, user?.role)
+    );
+    const withSignedResumes = await Promise.all(
+      filtered.map((tender: any) => withSignedApplicantDetails(req, tender))
+    );
+    res.json(withSignedResumes);
   } catch (error) {
     logger.error("List tenders failed", { error });
     res.status(500).json({ error: "Failed to fetch tenders" });
@@ -79,13 +137,15 @@ export async function listTendersHandler(req: Request, res: Response) {
  */
 export async function getTenderHandler(req: Request<{ id: string }>, res: Response) {
   try {
+    const user = (req as any).user;
     const tender = await getTenderById(req.params.id);
 
     if (!tender) {
       return res.status(404).json({ error: "Tender not found" });
     }
 
-    res.json(tender);
+    const filtered = filterApplicantsForRequester(tender, user?.userId, user?.role);
+    res.json(await withSignedApplicantDetails(req, filtered));
   } catch (error) {
     logger.error("Get tender failed", { error });
     res.status(500).json({ error: "Failed to fetch tender" });
@@ -154,19 +214,32 @@ export async function applyToTenderHandler(req: Request, res: Response) {
       });
     }
 
+    const user = (req as any).user;
     const applicant = {
       name: req.body.name,
       email: req.body.email,
       details: req.body.details,
       proposal: req.body.proposal,
       contactMethod: req.body.contactMethod,
+      userId: user?.userId,
+      resumeFileKey: req.body.resumeFileKey,
+      portfolioLink: req.body.portfolioLink,
+      professionalProfileId: req.body.professionalProfileId,
     };
+
+    if (applicant.professionalProfileId) {
+      const user = (req as any).user;
+      const profile = await getProfileById(applicant.professionalProfileId);
+      if (!profile || profile.userId?.toString() !== user?.userId) {
+        return res.status(403).json({ error: "Invalid professional profile" });
+      }
+    }
 
     const result = await applyToTender(tenderId, applicant);
 
     res.status(200).json({
       success: true,
-      tender: result,
+      tender: filterApplicantsForRequester(result, user?.userId, user?.role),
     });
   } catch (error: any) {
     logger.error("Apply to tender failed", { 
@@ -249,10 +322,17 @@ export async function createSmartTenderHandler(req: Request, res: Response) {
     }
 
     const parsedAiData = await TBAIService.generateTenderData(text);
-    
+
     // החזרת האובייקט המפורסר מה-AI ללא יצירת המכרז בבסיס הנתונים
     res.status(201).json({ success: true, tender: parsedAiData });
   } catch (error: any) {
+    if (error instanceof TenderTopicMismatchError) {
+      return res.status(400).json({
+        error: "TENDER_TOPIC_MISMATCH",
+        code: "TENDER_TOPIC_MISMATCH",
+        message: error.message,
+      });
+    }
     logger.error("Smart create tender failed", { error: error.message });
     res.status(500).json({ error: error.message || "Failed to generate tender using AI" });
   }
@@ -271,9 +351,13 @@ export async function smartSearchTendersHandler(req: Request, res: Response) {
     }
 
     // קריאה לפונקציית השירות שתמיר את הטקסט לשאילתת מונגו ותשלוף מה-DB
+    const user = (req as any).user;
     const tenders = await smartSearchTenders(searchText);
+    const filtered = tenders.map((tender: any) =>
+      filterApplicantsForRequester(tender, user?.userId, user?.role)
+    );
 
-    res.json(tenders);
+    res.json(filtered);
   } catch (error: any) {
     logger.error("Smart search tenders failed", { error: error.message });
 

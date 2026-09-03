@@ -5,13 +5,31 @@ export interface TenderTime {
   unit: TenderTimeUnit
 }
 
+export interface AttachedProfileSummary {
+  name: string
+  description?: string
+  experience?: string
+}
+
 export interface Applicant {
+  _id?: string
   name: string
   email: string
   details: string
   proposal?: number
   contactMethod?: string
+  resumeFileKey?: string
+  portfolioLink?: string
+  professionalProfileId?: string
+  professionalProfile?: AttachedProfileSummary
   isViewed?: boolean
+  userId?: string
+  appliedAt?: string
+}
+
+export interface ProposalRange {
+  min: number
+  max: number
 }
 
 export interface Tender {
@@ -28,6 +46,8 @@ export interface Tender {
   wantsEmails?: boolean
   additionalDetails?: string
   applicants?: Applicant[]
+  applicantsCount?: number
+  proposalRange?: ProposalRange | null
   domains?: string[]
 }
 
@@ -46,4 +66,6 @@ export interface RawTender {
   wantsEmails?: boolean
   additionalDetails?: string
   applicants?: Applicant[]
+  applicantsCount?: number
+  proposalRange?: ProposalRange | null
 }

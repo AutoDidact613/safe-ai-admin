@@ -2,7 +2,7 @@
   "name": "safeai-613",
   "version": "1.0.0",
   "private": true,
-  "description": "Monorepo containing: apps/client (React+Vite+TS), apps/server (Node+Express+TS), apps/agent (Python FastAPI). Each app is an independent npm project (no npm workspaces) - workspace-driven dependency hoisting was found to alter apps/server's resolved dependency tree enough to break its TypeScript build, so each app installs and builds in full isolation instead, matching how the Dockerfiles already build them.",
+  "description": "Monorepo containing: apps/client (React+Vite+TS), apps/server (Node+Express+TS), apps/agents (Python agent modules, each with its own manifest.json). Each app is an independent npm project (no npm workspaces) - workspace-driven dependency hoisting was found to alter apps/server's resolved dependency tree enough to break its TypeScript build, so each app installs and builds in full isolation instead, matching how the Dockerfiles already build them.",
   "scripts": {
     "dev:client": "npm --prefix apps/client run dev",
     "dev:server": "npm --prefix apps/server run dev",

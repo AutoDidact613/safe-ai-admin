@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import LandingPage from "../pages/LandingPage";
+import LandingPageV2 from "../pages/LandingPageV2";
 import SafeAIUIPage from "../pages/SafeAIUIPage";
 import NotFound from "../pages/NotFound";
 import OrganizationUsersPage from "../pages/OrganizationUsersPage";
@@ -34,6 +35,8 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import ForumPage from '../features/forum/ForumPage';
 import { PostThreadPage } from '../features/forum/PostThreadPage';
 import PaymeResultPage from '../features/organizations/PaymeResultPage';
+import SafeAIHubHomePage from "../pages/SafeAIHubHomePage";
+import SafeAIPlatformHomePage from "../pages/SafeAIPlatformHomePage";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -64,18 +67,33 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 const ROUTER_BASE = import.meta.env.VITE_BASE_PATH?.replace(/\/$/, "") || "";
 
+// The SafeAI Hub / SafeAI Platform dashboards (SCRUM-228/229) ship their own
+// complete sidebar navigation — showing the global header/banner above them
+// too just duplicates every link a second time. Hidden only on these two
+// routes; every other page keeps the global chrome unchanged.
+const ROUTES_WITHOUT_GLOBAL_CHROME = ["/safeai-hub", "/safeai-platform"];
+
+function GlobalChrome() {
+  const location = useLocation();
+  if (ROUTES_WITHOUT_GLOBAL_CHROME.includes(location.pathname)) return null;
+  return (
+    <>
+      <TopNavigation />
+      <BetaBanner />
+    </>
+  );
+}
+
 export default function AppRouter() {
   return (
     <BrowserRouter basename={ROUTER_BASE}>
-      {/* Global Top Navigation */}
-      <TopNavigation />
-
-      {/* Beta Banner */}
-      <BetaBanner />
+      <GlobalChrome />
 
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
+        {/* טיוטת דף בית חדש (SCRUM-227) — לתצוגה מקדימה בלבד, טרם מוחלף בנתיב הראשי */}
+        <Route path="/landing-preview" element={<LandingPageV2 />} />
         <Route path="/become-org-owner" element={<PublicOrgOwnerSignup />} />
 
         <Route
@@ -163,6 +181,26 @@ export default function AppRouter() {
           element={
             <ProtectedRoute>
               <ForumPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Sub-homepages (SCRUM-228 / SCRUM-229) — not yet linked from the
+            main navigation; the SafeAI Hub / SafeAI Platform banners on
+            /landing-preview stay "בעדכון" until that connection is made. */}
+        <Route
+          path="/safeai-hub"
+          element={
+            <ProtectedRoute>
+              <SafeAIHubHomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/safeai-platform"
+          element={
+            <ProtectedRoute>
+              <SafeAIPlatformHomePage />
             </ProtectedRoute>
           }
         />

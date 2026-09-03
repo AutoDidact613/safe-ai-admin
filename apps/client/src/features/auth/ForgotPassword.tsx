@@ -44,7 +44,7 @@ export default function ForgotPassword() {
 
         {!success ? (
           <>
-            <p style={{ textAlign: "center", color: "#666", marginBottom: "25px" }}>
+            <p style={{ textAlign: "center", color: "var(--text-muted)", marginBottom: "25px" }}>
               הזן את כתובת האימייל שלך ונשלח לך קישור לאיפוס הסיסמה
             </p>
 
@@ -100,10 +100,10 @@ export default function ForgotPassword() {
             >
               ✉️
             </div>
-            <h3 style={{ color: "#28a745", marginBottom: "15px" }}>
+            <h3 style={{ color: "var(--color-success)", marginBottom: "15px" }}>
               הבקשה נשלחה בהצלחה!
             </h3>
-            <p style={{ color: "#666", marginBottom: "20px" }}>
+            <p style={{ color: "var(--text-muted)", marginBottom: "20px" }}>
               אם האימייל קיים במערכת, נשלח אליו קישור לאיפוס סיסמה.
               <br />
               אנא בדוק את תיבת הדואר שלך (כולל תיקיית הספאם).

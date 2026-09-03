@@ -138,6 +138,45 @@ export async function getTenderById(id: string) {
   }
 }
 
+/**
+ * מסננת את מערך ה-applicants של מכרז לפי זהות המבקש: בעל המכרז/אדמין רואים את
+ * כל הרשימה (נדרש עבור מסך "הצעות"), כל משתמש אחר רואה לכל היותר את ה-applicant
+ * שהוא עצמו הגיש - כדי לא לחשוף בתגובת ה-API פרטים אישיים ותאריכי הגשה של מציעים אחרים.
+ */
+export function filterApplicantsForRequester(
+  tender: any,
+  requesterUserId?: string,
+  requesterRole?: string
+) {
+  if (!tender) return tender;
+
+  const allApplicants = tender.applicants || [];
+
+  // מספר המציעים וטווח ההצעות הם נתונים מצרפיים וציבוריים (מוצגים היום לכל
+  // משתמש בכרטיס/בפרטי המכרז) - מחושבים כאן מהמערך המלא כדי שלא "יתכווצו"
+  // כשמסננים את רשימת ה-applicants הגולמית למי שאינו הבעלים/אדמין.
+  const applicantsCount = allApplicants.length;
+  const proposals = allApplicants
+    .map((a: any) => a.proposal)
+    .filter((n: any) => typeof n === "number" && Number.isFinite(n));
+  const proposalRange = proposals.length
+    ? { min: Math.min(...proposals), max: Math.max(...proposals) }
+    : null;
+
+  const isOwnerOrAdmin =
+    requesterRole === "admin" ||
+    (!!requesterUserId && tender.publisherUserCode === requesterUserId);
+  if (isOwnerOrAdmin) {
+    return { ...tender, applicantsCount, proposalRange };
+  }
+
+  const applicants = allApplicants.filter(
+    (a: any) => requesterUserId && a.userId === requesterUserId
+  );
+
+  return { ...tender, applicants, applicantsCount, proposalRange };
+}
+
 export async function updateTender(id: string, data: any) {
   try {
     const result = await repo.updateTender(id, data);
@@ -283,6 +322,18 @@ export async function deleteTender(id: string) {
  * Validates that applicant details are provided and prevents duplicate applications
  * לאחר רישום מוצלח - שולח מייל למנהל המכרז עם פרטי המועמד
  */
+const PORTFOLIO_LINK_REGEX = /^https?:\/\/.+/i;
+
+// מקבל key גולמי או URL מלא ל-S3 ומחזיר את ה-path (ה-key) בלבד, לצורך ולידציית תיקיית היעד
+function extractS3Key(fileKeyOrUrl: string): string {
+  if (!fileKeyOrUrl.startsWith("http")) return fileKeyOrUrl;
+  try {
+    return new URL(fileKeyOrUrl).pathname.replace(/^\//, "");
+  } catch {
+    return fileKeyOrUrl;
+  }
+}
+
 export async function applyToTender(
   tenderId: string,
   applicant: {
@@ -291,6 +342,10 @@ export async function applyToTender(
     details: string;
     proposal?: number;
     contactMethod?: string;
+    userId?: string;
+    resumeFileKey?: string;
+    portfolioLink?: string;
+    professionalProfileId?: string;
   }
 ) {
   logger.info("Processing application to tender", { tenderId, applicantEmail: applicant?.email });
@@ -307,6 +362,14 @@ export async function applyToTender(
     logger.warn("Validation failed: Applicant details are required", { tenderId, applicantEmail: applicant.email });
     throw new Error("Applicant details are required");
   }
+  if (applicant.resumeFileKey && !extractS3Key(applicant.resumeFileKey.trim()).startsWith("uploads/tenders/")) {
+    logger.warn("Validation failed: Invalid resume file key", { tenderId, applicantEmail: applicant.email });
+    throw new Error("Invalid resume file");
+  }
+  if (applicant.portfolioLink && !PORTFOLIO_LINK_REGEX.test(applicant.portfolioLink.trim())) {
+    logger.warn("Validation failed: Invalid portfolio link", { tenderId, applicantEmail: applicant.email });
+    throw new Error("Invalid portfolio link");
+  }
 
   const tender = await repo.getTenderById(tenderId);
   if (!tender) {
@@ -316,15 +379,19 @@ export async function applyToTender(
 
   const normalizedName = applicant.name.trim();
   const normalizedEmail = applicant.email.trim().toLowerCase();
+  const normalizedUserId = applicant.userId?.trim() || undefined;
 
-  const alreadyApplied = tender.applicants?.some(
-    (a: any) =>
-      a.name?.trim() === normalizedName &&
-      a.email?.trim().toLowerCase() === normalizedEmail
+  // הבדיקה העיקרית מתבססת על userId (זהות אמיתית ומהימנה מתוך ה-JWT); השוואת
+  // name+email נשמרת כ-fallback עבור רשומות ישנות שנוצרו לפני הוספת userId.
+  const alreadyApplied = tender.applicants?.some((a: any) =>
+    normalizedUserId
+      ? a.userId === normalizedUserId
+      : a.name?.trim() === normalizedName &&
+        a.email?.trim().toLowerCase() === normalizedEmail
   );
 
   if (alreadyApplied) {
-    logger.warn("Duplicate application attempt", { tenderId, applicantEmail: normalizedEmail });
+    logger.warn("Duplicate application attempt", { tenderId, applicantEmail: normalizedEmail, userId: normalizedUserId });
     throw new Error("Applicant already exists");
   }
 
@@ -334,6 +401,11 @@ export async function applyToTender(
     details: applicant.details.trim(),
     proposal: applicant.proposal,
     contactMethod: applicant.contactMethod?.trim() || undefined,
+    userId: normalizedUserId,
+    appliedAt: new Date(),
+    resumeFileKey: applicant.resumeFileKey?.trim() || undefined,
+    portfolioLink: applicant.portfolioLink?.trim() || undefined,
+    professionalProfileId: applicant.professionalProfileId || undefined,
   };
 
   const updatedApplicants = [
@@ -356,10 +428,15 @@ export async function applyToTender(
     if (tender.publisherUserCode && tender.wantsEmails) {
       const adminEmail = await getPublisherEmail(tender.publisherUserCode);
       if (adminEmail) {
+        // המועמד שנרשם כרגע הוא תמיד האחרון במערך המעודכן שחזר מה-DB,
+        // כך שה-_id שלו ניתן לשימוש כדי לקשר ישירות להצעה במייל.
+        const newApplicantId = result?.applicants?.[result.applicants.length - 1]?._id?.toString();
+
         await sendApplicantRegisteredEmail({
           adminEmail,
           tenderTitle: tender.title,
           tenderId,
+          applicantId: newApplicantId,
           applicant: {
             ...normalizedApplicant,
             proposal: normalizedApplicant.proposal?.toString(),
