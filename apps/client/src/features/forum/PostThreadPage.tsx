@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -216,7 +216,7 @@ export const PostThreadPage: React.FC = () => {
   };
 
   const handleStarClick = async (selectedRating: number) => {
-    if (!post) return;
+    if (!post || !currentUser) return;
     setUserRating(selectedRating);
 
     try {
@@ -466,7 +466,7 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
           </div>
         </div>
       </div>
-
+      {currentUser && (     
       <div className="forum-rating-row">
         <span className="forum-rating-label">דירוג הפוסט:</span>
         <div className="forum-stars-row">
@@ -489,6 +489,7 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
           ({post.averageRating || 0}/5 מתוך {post.ratingCount || 0} מדרגים)
         </span>
       </div>
+      )}
 
       {comments.length > 0 && (
         <div className="forum-comments-list">
@@ -550,6 +551,10 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
           <i className="fa-solid fa-lock forum-locked-icon"></i>
           <span>שרשור זה ננעל לתגובות חדשות על ידי מנהל המערכת.</span>
         </div>
+      ) : !currentUser ? (
+       <div className="forum-unauthorized-notice">
+        <span>יש <Link to="/login" className=".forum-login-link">להתחבר</Link> כדי להגיב כאן</span>
+      </div>
       ) : (
         <div className="forum-comment-form-wrap">
           <div className="forum-comment-form-avatar-col">
@@ -714,12 +719,12 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
               <button
                 type="submit"
                 disabled={commentLoading || isCommentBlocked}
-                title={isCommentBlocked ? 'אין לך הרשאה להגיב לפוסטים' : undefined}
+                title={isCommentBlocked ? "אין לך הרשאה להגיב לפוסטים" : undefined}
                 className="forum-comment-submit-btn"
               >
-                {commentLoading ? 'שומר...' : 'שמור תגובה'}
+                {commentLoading ? "שומר..." : "שמור תגובה"}
               </button>
-
+              
               <input type="file" ref={commentFileInputRef} className="forum-file-input-hidden" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
               <button type="button" onClick={() => commentFileInputRef.current?.click()} className="forum-attach-comment-btn">
                 <i className="fa-solid fa-paperclip"></i> צרף קובץ לתגובה

@@ -178,9 +178,7 @@ export default function AppRouter() {
         <Route
           path="/forum"
           element={
-            <ProtectedRoute>
               <ForumPage />
-            </ProtectedRoute>
           }
         />
 
@@ -261,7 +259,7 @@ export default function AppRouter() {
         <Route path="/activity-log" element={<ActivityLogPage />} />
         <Route path="/tender-board" element={<TenderBoardPage />} />
         <Route path="/download-agents" element={<DownloadAgentsPage />} />
-        <Route path="/forum/post/:id" element={<ProtectedRoute><PostThreadPage /></ProtectedRoute>} />
+        <Route path="/forum/post/:id" element={<PostThreadPage />} />
 
         {/* Catch all - 404 */}
         <Route path="*" element={<NotFound />} />
