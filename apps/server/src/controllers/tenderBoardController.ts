@@ -20,7 +20,7 @@ import {
 import { TBAIService } from "../services/tenderBoardAIService";
 import { generatePresignedDownloadUrl } from "../services/s3Service";
 import { getProfileById } from "../services/professionalProfileService";
-import { triggerTenderSpecAgent } from "../services/tenderSpecAgentRunner";
+import { triggerTenderSpecAgent, cancelTenderSpecAgent } from "../services/tenderSpecAgentRunner";
 import logger from "../logger";
 
 /**
@@ -361,6 +361,36 @@ export async function requestTenderSpecificationHandler(req: Request<{ id: strin
   } catch (error: any) {
     logger.error("Request tender specification failed", { error: error.message, tenderId: req.params.id });
     res.status(500).json({ error: error.message || "Failed to request tender specification" });
+  }
+}
+
+/**
+ * POST /tender-board/:id/cancel-specification-request
+ * בעל המכרז/אדמין בלבד - מבטלת ריצת agent פעילה ומסמנת status=failed עם הודעה
+ * שהמשתמש ביטל (SCRUM-293 follow-up).
+ */
+export async function cancelTenderSpecificationHandler(req: Request<{ id: string }>, res: Response) {
+  try {
+    const existing = await getTenderById(req.params.id);
+
+    if (!existing) {
+      return res.status(404).json({ error: "Tender not found" });
+    }
+
+    if (!isOwnerOrAdmin(req, existing)) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const cancelled = cancelTenderSpecAgent(req.params.id);
+
+    if (!cancelled) {
+      return res.status(409).json({ error: "No specification generation is currently running for this tender" });
+    }
+
+    res.json({ success: true });
+  } catch (error: any) {
+    logger.error("Cancel tender specification failed", { error: error.message, tenderId: req.params.id });
+    res.status(500).json({ error: error.message || "Failed to cancel specification generation" });
   }
 }
 

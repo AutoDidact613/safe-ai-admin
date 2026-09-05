@@ -3,7 +3,7 @@ import express from "express";
 import router from "../../routes/tenderBoardRouter"; // נתיב הראוטר שלך
 import * as service from "../tenderBoardService";
 import { AIService } from "../tenderBoardAIService";
-import { triggerTenderSpecAgent } from "../tenderSpecAgentRunner";
+import { triggerTenderSpecAgent, cancelTenderSpecAgent } from "../tenderSpecAgentRunner";
 
 // 1. הגדרת מוקים (Mocks) לכל השירותים והשכבות החיצוניות כדי למנוע קריאות אמיתיות ל-DB או ל-AI
 jest.mock("../tenderBoardService");
@@ -35,28 +35,33 @@ jest.mock("../aiService", () => ({
 }));
 jest.mock("../tenderSpecAgentRunner", () => ({
   triggerTenderSpecAgent: jest.fn(),
+  cancelTenderSpecAgent: jest.fn(),
 }));
 // 2. עקיפת ה-Middleware של האוונטיקציה לצורך בדיקות יחידה מבודדות.
 // כדי לבדוק את בדיקות ההרשאה/בעלות (isOwnerOrAdmin) על update/close/delete,
 // מאפשרים לכל בקשה להעביר את זהות המשתמש המדומה בכותרת x-test-user (JSON),
 // בלי לשבור טסטים קיימים שלא מגדירים את הכותרת הזו כלל (req.user יישאר undefined).
-jest.mock("../../middleware/auth", () => ({
-  authenticateToken: (req: any, res: any, next: any) => {
+jest.mock("../../middleware/auth", () => {
+  const authenticateToken = (req: any, res: any, next: any) => {
     const testUser = req.headers["x-test-user"];
     if (testUser) req.user = JSON.parse(testUser);
     next();
-  },
-  // מוקאפ תואם למימוש האמיתי (apps/server/src/middleware/auth.ts) - נדרש כי
-  // הראוטר האמיתי מטיל אותו על agent-context/specification (SCRUM-287).
-  // בדיקת 401 על טוקן חסר/שגוי נבדקת ע"י authenticateToken האמיתי במקום אחר
-  // באפליקציה, לא דרך ה-harness הזה שעוקף את בדיקת ה-JWT עצמה.
-  requireAdmin: (req: any, res: any, next: any) => {
+  };
+  const requireAdmin = (req: any, res: any, next: any) => {
     if (!req.user || req.user.role !== "admin") {
       return res.status(403).json({ error: "Admin access required" });
     }
     next();
-  },
-}));
+  };
+  // מוקאפ תואם למימוש האמיתי (apps/server/src/middleware/auth.ts) - נדרש כי
+  // הראוטר האמיתי מטיל אותו על agent-context/specification (SCRUM-287/293).
+  // בדיקת ה-AGENT_SERVICE_TOKEN הסטטי לא נבדקת דרך ה-harness הזה (עוקף JWT/secret
+  // check לגמרי) - היא מכוסה בבדיקות אינטגרציה נפרדות מול המימוש האמיתי.
+  const requireAdminOrServiceToken = (req: any, res: any, next: any) => {
+    authenticateToken(req, res, () => requireAdmin(req, res, next));
+  };
+  return { authenticateToken, requireAdmin, requireAdminOrServiceToken };
+});
 
 // אתחול אפליקציית Express פיקטיבית לצורך הבדיקה
 const app = express();
@@ -429,6 +434,64 @@ describe("Tender Board Feature Tests", () => {
 
       expect(res.status).toBe(404);
       expect(triggerTenderSpecAgent).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("POST /tender-board/:id/cancel-specification-request (ownership)", () => {
+    it("allows the publisher to cancel a running generation", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+      (cancelTenderSpecAgent as jest.Mock).mockReturnValue(true);
+
+      const res = await request(app)
+        .post("/tender-board/123/cancel-specification-request")
+        .set("x-test-user", OWNER_USER);
+
+      expect(res.status).toBe(200);
+      expect(cancelTenderSpecAgent).toHaveBeenCalledWith("123");
+    });
+
+    it("allows an admin to cancel someone else's running generation", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+      (cancelTenderSpecAgent as jest.Mock).mockReturnValue(true);
+
+      const res = await request(app)
+        .post("/tender-board/123/cancel-specification-request")
+        .set("x-test-user", ADMIN_USER);
+
+      expect(res.status).toBe(200);
+    });
+
+    it("returns 409 when nothing is currently running for this tender", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+      (cancelTenderSpecAgent as jest.Mock).mockReturnValue(false);
+
+      const res = await request(app)
+        .post("/tender-board/123/cancel-specification-request")
+        .set("x-test-user", OWNER_USER);
+
+      expect(res.status).toBe(409);
+    });
+
+    it("denies a non-owner, non-admin user with 403 and does not cancel anything", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+
+      const res = await request(app)
+        .post("/tender-board/123/cancel-specification-request")
+        .set("x-test-user", OTHER_USER);
+
+      expect(res.status).toBe(403);
+      expect(cancelTenderSpecAgent).not.toHaveBeenCalled();
+    });
+
+    it("returns 404 when the tender does not exist", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(null);
+
+      const res = await request(app)
+        .post("/tender-board/999/cancel-specification-request")
+        .set("x-test-user", OWNER_USER);
+
+      expect(res.status).toBe(404);
+      expect(cancelTenderSpecAgent).not.toHaveBeenCalled();
     });
   });
 
