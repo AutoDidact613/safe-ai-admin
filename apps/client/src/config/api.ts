@@ -80,6 +80,7 @@ export const API_ENDPOINTS = {
     delete: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
     apply: (id: string) => `${API_BASE_URL}/tender-board/${id}/apply`,
     generateSpecification: (id: string) => `${API_BASE_URL}/tender-board/${id}/generate-specification-request`,
+    cancelSpecification: (id: string) => `${API_BASE_URL}/tender-board/${id}/cancel-specification-request`,
     publishSpecification: (id: string) => `${API_BASE_URL}/tender-board/${id}/specification/publish`,
   },
   // Upload endpoints

@@ -68,6 +68,11 @@ export default function TenderBoardPage() {
   const [activeScreen, setActiveScreen] = useState<'dashboard' | 'create' | 'manage'>('dashboard')
   const [currentUserCode, setCurrentUserCode] = useState('tnd-98234')
   const [refreshKey, setRefreshKey] = useState(0)
+  // ManageMyTenders שומר בפנים את המכרז שנבחר לצפייה/עריכה - לחיצה על "צפיה במכרזים שלי"
+  // בזמן שכבר נמצאים במסך הזה (activeScreen כבר 'manage') לא הייתה משנה את activeScreen,
+  // ולכן לא גרמה ל-re-render שמאפס את הבחירה הפנימית ההיא. שינוי ה-key מכריח mount מחדש
+  // של ManageMyTenders בכל לחיצה על הכפתור, כך שהוא תמיד חוזר למסך רשימת המכרזים.
+  const [manageViewResetKey, setManageViewResetKey] = useState(0)
 
   useEffect(() => {
     if (!successMessage) return undefined
@@ -295,6 +300,7 @@ export default function TenderBoardPage() {
     if (activeScreen === 'manage') {
       return (
         <ManageMyTenders
+          key={manageViewResetKey}
           currentUserCode={currentUserCode}
           tenders={tenders}
           onUpdateTender={handleUpdateTender}
@@ -560,7 +566,10 @@ export default function TenderBoardPage() {
           <button
             type="button"
             className={`dashboard-link ${activeScreen === 'manage' ? 'active' : ''}`}
-            onClick={() => setActiveScreen('manage')}
+            onClick={() => {
+              setActiveScreen('manage')
+              setManageViewResetKey((k) => k + 1)
+            }}
           >
             צפיה במכרזים שלי
           </button>

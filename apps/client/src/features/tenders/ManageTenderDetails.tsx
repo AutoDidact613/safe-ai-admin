@@ -25,6 +25,7 @@ export default function ManageTenderDetails({
   // מצב אפיון אוטומטי + המלצת פיתוח (SCRUM-291/293)
   const [specification, setSpecification] = useState<TenderSpecification | undefined>(tender.specification)
   const [isRequestingSpecification, setIsRequestingSpecification] = useState(false)
+  const [isCancellingSpecification, setIsCancellingSpecification] = useState(false)
   const [specificationError, setSpecificationError] = useState<string | null>(null)
   const pollIntervalRef = useRef<number | null>(null)
 
@@ -83,6 +84,21 @@ export default function ManageTenderDetails({
       setSpecificationError(error instanceof Error ? error.message : 'שגיאה בבקשת הפקת אפיון')
     } finally {
       setIsRequestingSpecification(false)
+    }
+  }
+
+  const handleCancelSpecification = async () => {
+    if (!draftTender.id) return
+    setSpecificationError(null)
+    setIsCancellingSpecification(true)
+    try {
+      await apiCall(API_ENDPOINTS.tenders.cancelSpecification(draftTender.id), { method: 'POST' })
+      // הסטטוס יתעדכן ל-'failed' (עם הודעה שהמשתמש ביטל) דרך ה-polling הקיים,
+      // שכבר רץ מאז שהופעלה ההפקה - אין צורך לעדכן סטייט ידנית כאן.
+    } catch (error) {
+      setSpecificationError(error instanceof Error ? error.message : 'שגיאה בביטול הפקת האפיון')
+    } finally {
+      setIsCancellingSpecification(false)
     }
   }
 
@@ -289,7 +305,23 @@ export default function ManageTenderDetails({
         )}
 
         {isSpecificationBusy && (
-          <p style={{ marginTop: '12px', color: '#666' }}>ה-agent מפיק את האפיון, זה עשוי לקחת מספר דקות...</p>
+          <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <p style={{ margin: 0, color: '#666' }}>ה-agent מפיק את האפיון, זה עשוי לקחת מספר דקות...</p>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={handleCancelSpecification}
+              disabled={isCancellingSpecification}
+              style={{
+                padding: '6px 16px',
+                borderRadius: '16px',
+                cursor: isCancellingSpecification ? 'default' : 'pointer',
+                opacity: isCancellingSpecification ? 0.6 : 1,
+              }}
+            >
+              {isCancellingSpecification ? 'מבטל...' : 'ביטול'}
+            </button>
+          </div>
         )}
 
         {specification?.status === 'failed' && (
