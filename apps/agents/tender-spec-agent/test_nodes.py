@@ -1,6 +1,9 @@
 from unittest.mock import MagicMock, patch
 
-from nodes import research_node, save_node, spec_document_node
+import pytest
+from google.genai import errors as genai_errors
+
+from nodes import _generate_tech_stack_content, research_node, save_node, spec_document_node, tech_stack_node
 
 
 def _base_state():
@@ -90,3 +93,81 @@ def test_research_node_survives_a_failed_search(mock_get):
         {"title": "foo article", "url": "https://dev.to/foo", "description": "baz"}
     ]
     assert state["research_failed"] is True
+
+
+def _server_error(code=503, status="UNAVAILABLE"):
+    return genai_errors.ServerError(code, {"error": {"message": "high demand", "status": status, "code": code}})
+
+
+def _client_error(code, status):
+    return genai_errors.ClientError(code, {"error": {"message": "bad request", "status": status, "code": code}})
+
+
+def _gemini_response(payload: str):
+    response = MagicMock()
+    response.text = payload
+    return response
+
+
+@pytest.fixture(autouse=True)
+def _no_retry_sleep():
+    # ה-retry על tech_stack_node משתמש ב-exponential backoff אמיתי (2-20 שניות) -
+    # מבטלים את השינה בפועל כדי שהטסטים שממצים ניסיונות לא ייקחו עשרות שניות.
+    original_sleep = _generate_tech_stack_content.retry.sleep
+    _generate_tech_stack_content.retry.sleep = lambda _: None
+    yield
+    _generate_tech_stack_content.retry.sleep = original_sleep
+
+
+@patch("nodes.genai.Client")
+def test_tech_stack_node_retries_a_transient_server_error_then_succeeds(mock_client_cls):
+    mock_client = mock_client_cls.return_value
+    mock_client.models.generate_content.side_effect = [
+        _server_error(),
+        _gemini_response('{"recommendation": "Next.js", "reasoning": "foo"}'),
+    ]
+    agent_config = MagicMock(gemini_api_key="key", llm_model="gemini-flash-latest")
+
+    state = tech_stack_node(_base_state(), agent_config)
+
+    assert state["tech_stack"]["recommendation"] == "Next.js"
+    assert mock_client.models.generate_content.call_count == 2
+
+
+@patch("nodes.genai.Client")
+def test_tech_stack_node_retries_a_429_rate_limit(mock_client_cls):
+    mock_client = mock_client_cls.return_value
+    mock_client.models.generate_content.side_effect = [
+        _client_error(429, "RESOURCE_EXHAUSTED"),
+        _gemini_response('{"recommendation": "Next.js", "reasoning": "foo"}'),
+    ]
+    agent_config = MagicMock(gemini_api_key="key", llm_model="gemini-flash-latest")
+
+    state = tech_stack_node(_base_state(), agent_config)
+
+    assert state["tech_stack"]["recommendation"] == "Next.js"
+    assert mock_client.models.generate_content.call_count == 2
+
+
+@patch("nodes.genai.Client")
+def test_tech_stack_node_does_not_retry_a_non_transient_error(mock_client_cls):
+    mock_client = mock_client_cls.return_value
+    mock_client.models.generate_content.side_effect = _client_error(400, "INVALID_ARGUMENT")
+    agent_config = MagicMock(gemini_api_key="key", llm_model="gemini-flash-latest")
+
+    with pytest.raises(genai_errors.ClientError):
+        tech_stack_node(_base_state(), agent_config)
+
+    assert mock_client.models.generate_content.call_count == 1
+
+
+@patch("nodes.genai.Client")
+def test_tech_stack_node_reraises_after_exhausting_retries(mock_client_cls):
+    mock_client = mock_client_cls.return_value
+    mock_client.models.generate_content.side_effect = _server_error()
+    agent_config = MagicMock(gemini_api_key="key", llm_model="gemini-flash-latest")
+
+    with pytest.raises(genai_errors.ServerError):
+        tech_stack_node(_base_state(), agent_config)
+
+    assert mock_client.models.generate_content.call_count == 4

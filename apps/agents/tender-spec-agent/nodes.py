@@ -2,6 +2,8 @@ import json
 
 import requests
 from google import genai
+from google.genai import errors as genai_errors
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from api_client import SafeAIClient
 from config import Config
@@ -36,6 +38,36 @@ def fetch_node(state: GraphState, client: SafeAIClient) -> GraphState:
     return state
 
 
+def _is_retryable_gemini_error(error: BaseException) -> bool:
+    """Gemini occasionally returns a transient 503 ("high demand, try again later")
+    or 429 (rate limit) - both worth a short retry, unlike a genuine 4xx like a bad
+    API key or an invalid request, which will never succeed no matter how many times
+    it's retried. google-genai raises ServerError for 5xx and ClientError for 4xx
+    (see google.genai.errors.APIError.raise_error), so 429 needs an explicit code
+    check since it's bucketed under ClientError, not ServerError."""
+    return isinstance(error, genai_errors.ServerError) or (
+        isinstance(error, genai_errors.ClientError) and getattr(error, "code", None) == 429
+    )
+
+
+def _log_gemini_retry(retry_state) -> None:
+    print(
+        f"אזהרה: קריאה ל-Gemini נכשלה (ניסיון {retry_state.attempt_number}), "
+        f"מנסה שוב: {retry_state.outcome.exception()}"
+    )
+
+
+@retry(
+    retry=retry_if_exception(_is_retryable_gemini_error),
+    stop=stop_after_attempt(4),
+    wait=wait_exponential(multiplier=1, min=2, max=20),
+    before_sleep=_log_gemini_retry,
+    reraise=True,
+)
+def _generate_tech_stack_content(llm_client, model: str, prompt: str):
+    return llm_client.models.generate_content(model=model, contents=prompt)
+
+
 def tech_stack_node(state: GraphState, agent_config: Config) -> GraphState:
     tender = state["tender"]
     print("מפיק המלצה טכנולוגית...")
@@ -49,7 +81,7 @@ def tech_stack_node(state: GraphState, agent_config: Config) -> GraphState:
     )
 
     llm_client = genai.Client(api_key=agent_config.gemini_api_key)
-    response = llm_client.models.generate_content(model=agent_config.llm_model, contents=prompt)
+    response = _generate_tech_stack_content(llm_client, agent_config.llm_model, prompt)
     raw = response.text.strip()
     if raw.startswith("```"):
         raw = raw.strip("`")

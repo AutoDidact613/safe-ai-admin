@@ -3,4 +3,5 @@ langchain-core>=1.4
 google-genai>=1.0
 requests>=2.31
 python-dotenv>=1.0
+tenacity>=9.0
 pytest>=8.0
