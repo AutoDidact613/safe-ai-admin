@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "An autonomous LangGraph agent that fetches application logs from MongoDB, analyzes performance bottlenecks and errors (including nested business/context metadata), validates its own findings, and produces a Markdown analysis report.",
   "creator_name": "Margalit",
-  "contact_information": "n0527117168@gmail.com",
+  "contact_information": "developer@example.com",
   "release_date": "2026-08-25",
   "repository_url": "https://github.com/SafeAI613/agent-for-forum-logs-margalit",
   "download_url": "TBD - agent.exe not built yet (PyInstaller packaging pending)",
