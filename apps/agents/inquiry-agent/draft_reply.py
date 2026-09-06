@@ -9,8 +9,21 @@ _PROMPT_TEMPLATE = """Write a helpful, professional reply to the following user 
 inquiry (category: {category}). Do not reveal information about other users, and do not
 promise anything the support team cannot guarantee.
 
+Only address what the customer actually wrote. Do not add unsolicited instructions,
+explanations, or tips about unrelated topics (for example, do not explain how to reset a
+password just because it might be generally useful) unless the inquiry itself is about that
+topic. If the inquiry is a simple thank-you or a short comment, a short, matching reply is
+enough - it does not need padding.
+
 Title: {title}
 Description: {description}
+{articles_section}"""
+
+_ARTICLES_SECTION_TEMPLATE = """
+Ground your reply in the following help articles when they are relevant. Do not state
+anything beyond what they and the inquiry itself support.
+
+{articles}
 """
 
 
@@ -23,10 +36,21 @@ def _call_gemini(prompt: str, config: Config) -> str:
     return response.text
 
 
-def generate_draft(inquiry: Inquiry, category: str, config: Config) -> str:
+def _format_articles_section(articles: list) -> str:
+    if not articles:
+        return ""
+
+    articles_text = "\n\n".join(
+        f"Title: {article['title']}\n{article['content']}" for article in articles
+    )
+    return _ARTICLES_SECTION_TEMPLATE.format(articles=articles_text)
+
+
+def generate_draft(inquiry: Inquiry, category: str, articles: list, config: Config) -> str:
     prompt = _PROMPT_TEMPLATE.format(
         category=category,
         title=inquiry["title"],
         description=inquiry["description"],
+        articles_section=_format_articles_section(articles),
     )
     return _call_gemini(prompt, config)

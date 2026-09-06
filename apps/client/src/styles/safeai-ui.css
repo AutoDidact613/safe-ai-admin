@@ -748,3 +748,153 @@
   justify-content: center;
 }
 
+/* Inquiry agent flow (SCRUM-262): inquiry selection, draft review/edit, approve+send */
+.agent-trigger-section {
+  padding: 16px 0;
+  border-bottom: 1px solid #eef2f6;
+  margin-bottom: 16px;
+}
+
+.agent-trigger-message {
+  margin-top: 8px;
+  color: #334155;
+}
+
+.agent-inquiry-selection {
+  margin-top: 16px;
+}
+
+.agent-inquiry-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 12px;
+  border: 1px solid #eef2f6;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.agent-inquiry-checklist li {
+  padding: 10px 14px;
+  text-align: right;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.agent-inquiry-checklist li:last-child {
+  border-bottom: none;
+}
+
+.agent-inquiry-checklist li:hover {
+  background: #fafcfe;
+}
+
+.agent-inquiry-checklist label {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.agent-inquiry-checklist input[type="checkbox"] {
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.urgency-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.urgency-urgent {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.urgency-normal {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.urgency-low {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.agent-drafts-review {
+  margin-top: 20px;
+}
+
+.agent-draft-card {
+  border: 1px solid #eef2f6;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 14px;
+  background: #fcfdfe;
+}
+
+.agent-draft-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.guardrails-badge {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.guardrails-passed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.guardrails-failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.guardrails-reasons {
+  color: #991b1b;
+  font-size: 0.9rem;
+  margin: 0 0 8px;
+}
+
+.agent-draft-textarea {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #e3efec;
+  padding: 10px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.agent-draft-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.agent-draft-approve-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.agent-draft-hint {
+  color: #92400e;
+  font-size: 0.85rem;
+}
+

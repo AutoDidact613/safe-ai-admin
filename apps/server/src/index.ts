@@ -17,6 +17,7 @@ import professionalProfileRouter from "./routes/professionalProfileRouter";
 import promptRouter from "./routes/promptRouter";
 import organizationRouter from "./routes/organizationRouter";
 import contactRouter from "./routes/contactRouter";
+import inquiryAgentRouter from "./routes/inquiryAgentRouter";
 import tenderBoardRouter from "./routes/tenderBoardRouter";
 import contactTypeRoutes from "./routes/contactTypeRoutes"; // הייבוא של הקובץ שיצרת
 
@@ -90,6 +91,7 @@ app.use("/organizations", organizationRouter); // Organization management (auth 
 app.use("/contact", contactRouter); // Contact form (requires authentication)
 app.use("/contact-types", contactTypeRoutes); // Contact form types
 app.use("/articles", articlesRouter);
+app.use("/inquiry-agent", authenticateToken, requireAdmin, inquiryAgentRouter); // Admin-triggered inquiry-agent runs
 
 
 // ===== Public routes for filter evaluation =====

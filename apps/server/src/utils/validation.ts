@@ -82,6 +82,31 @@ export const updateUserSchema = z.object({
 });
 
 /**
+ * Inquiry-agent process validation schema (gate 1 -> gate 3: draft + guardrails)
+ */
+export const inquiryAgentProcessSchema = z.object({
+  threadId: z.string().min(1, "threadId הוא שדה חובה"),
+  ids: z.array(z.string().min(1)).min(1, "יש לבחור לפחות פנייה אחת"),
+});
+
+/**
+ * Inquiry-agent edit validation schema (gate 3: overwrite a drafted reply)
+ */
+export const inquiryAgentEditSchema = z.object({
+  threadId: z.string().min(1, "threadId הוא שדה חובה"),
+  inquiryId: z.string().min(1, "inquiryId הוא שדה חובה"),
+  text: z.string().min(1, "הטיוטה לא יכולה להיות ריקה"),
+});
+
+/**
+ * Inquiry-agent approve validation schema (gate 3 -> end: send approved replies)
+ */
+export const inquiryAgentApproveSchema = z.object({
+  threadId: z.string().min(1, "threadId הוא שדה חובה"),
+  ids: z.array(z.string().min(1)).min(1, "יש לבחור לפחות פנייה אחת לאישור"),
+});
+
+/**
  * Helper function to validate request body
  */
 export function validateRequest<T>(schema: z.ZodSchema<T>, data: unknown): T {
