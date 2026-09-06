@@ -250,7 +250,7 @@
 /* ========================================== */
 /* כפתורים ופקדים גלובליים (Buttons & UI) */
 /* ========================================== */
-.tab-button, .primary-button, .secondary-button, .button-green, .details-button, .submit-button {
+.tab-button, .primary-button, .secondary-button, .button-primary, .details-button, .submit-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -285,12 +285,12 @@
   background: var(--color-danger-bg);
 }
 
-.primary-button, .button-green, .submit-button, .details-button {
+.primary-button, .button-primary, .submit-button, .details-button {
   background: var(--primary-color);
   color: var(--text-inverse);
 }
 
-.primary-button:hover, .button-green:hover, .submit-button:hover, .details-button:hover {
+.primary-button:hover, .button-primary:hover, .submit-button:hover, .details-button:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
   box-shadow: 0 12px 24px rgba(28, 122, 166, 0.24);
@@ -1140,7 +1140,7 @@
   .dashboard-hero, .tender-form, .detail-panel, .manage-header {
     padding: 20px;
   }
-  .tab-button, .primary-button, .secondary-button, .button-green, .submit-button {
+  .tab-button, .primary-button, .secondary-button, .button-primary, .submit-button {
     width: 100%;
   }
 }

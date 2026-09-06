@@ -303,7 +303,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
               />
               <button
                 type="button"
-                className="button-green"
+                className="button-primary"
                 onClick={handleSmartCreateSubmit}
                 disabled={isSmartLoading}
                 style={{ marginTop: '12px' }}
@@ -426,7 +426,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
                 ))}
               </div>
               {formData.aiApplicationType === 'מולטי אייגנט' && (
-                <button type="button" className="button-green" onClick={addAgent}>
+                <button type="button" className="button-primary" onClick={addAgent}>
                   הוספת אג'נט +
                 </button>
               )}
@@ -510,7 +510,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
         {errorMessage && <div className="error-message">{errorMessage}</div>}
 
         <div className="form-actions">
-          <button type="submit" className="button-green submit-button">
+          <button type="submit" className="button-primary submit-button">
             שמור ושולח
           </button>
         </div>
