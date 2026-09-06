@@ -1,0 +1,406 @@
+/* Dashboard-style layout for the SafeAI Hub / SafeAI Platform sub-homepages
+   (SCRUM-228 / SCRUM-229), inspired by a reference API-platform dashboard:
+   a fixed sidebar plus a main column with a get-started checklist, quick
+   stat tiles, and a recent-activity feed. Reuses the --lv2-* tokens from
+   landing-page-v2.css. In DOM order the sidebar comes first, which under
+   dir="rtl" places it on the right, matching the rest of the Hebrew UI. */
+
+.dash-page {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  align-items: start;
+}
+
+.dash-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: 0;
+  padding: 28px 20px;
+  border-left: 1px solid var(--lv2-line);
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.dash-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: right;
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lv2-ink-soft);
+  cursor: pointer;
+}
+
+.dash-sidebar-item:hover {
+  background: var(--lv2-line-soft);
+  color: var(--lv2-ink);
+}
+
+.dash-sidebar-item-active {
+  background: var(--lv2-accent-soft);
+  color: var(--lv2-accent);
+  cursor: default;
+}
+
+.dash-sidebar-item-active:hover {
+  background: var(--lv2-accent-soft);
+}
+
+.dash-main {
+  min-width: 0;
+  padding: 32px 40px 60px;
+}
+
+.dash-eyebrow {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 6px;
+  background: var(--lv2-accent-soft);
+  color: var(--lv2-accent);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+}
+
+.dash-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--lv2-ink);
+  margin: 0 0 6px 0;
+}
+
+.dash-subtitle {
+  font-size: 15px;
+  color: var(--lv2-muted);
+  margin: 0 0 28px 0;
+  line-height: 1.6;
+}
+
+.dash-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--lv2-muted);
+  margin: 0 0 12px 0;
+}
+
+/* Get-started card — a highlighted tinted card holding all steps, each with
+   a larger marker and a one-line description (closer to the reference
+   dashboard's Get Started module than a plain list of rows). */
+.dash-getstarted-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--lv2-line);
+  background: linear-gradient(135deg, var(--lv2-accent-soft), transparent 65%);
+  border-radius: 10px;
+  padding: 8px;
+  margin-bottom: 32px;
+}
+
+.dash-getstarted-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: right;
+  padding: 12px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.dash-getstarted-step:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.dash-getstarted-marker {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--lv2-surface);
+  border: 2px solid var(--lv2-line);
+  color: var(--lv2-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.dash-getstarted-step-done .dash-getstarted-marker {
+  background: var(--lv2-accent);
+  border-color: var(--lv2-accent);
+  color: #ffffff;
+}
+
+.dash-getstarted-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dash-getstarted-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--lv2-ink);
+}
+
+.dash-getstarted-step-done .dash-getstarted-title {
+  color: var(--lv2-muted);
+  text-decoration: line-through;
+}
+
+.dash-getstarted-desc {
+  font-size: 13px;
+  color: var(--lv2-muted);
+}
+
+/* Stat tiles */
+.dash-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+  margin-bottom: 36px;
+}
+
+.dash-stat-tile {
+  border: 1px solid var(--lv2-line);
+  background: var(--lv2-surface);
+  border-radius: 8px;
+  padding: 18px 20px;
+}
+
+.dash-stat-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--lv2-ink);
+  margin-bottom: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-stat-label {
+  font-size: 13px;
+  color: var(--lv2-muted);
+}
+
+.dash-sparkline {
+  display: block;
+  margin-top: 10px;
+  width: 100%;
+  height: 28px;
+}
+
+/* Feed lists (recent forum posts / news) */
+.dash-feeds {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 28px;
+}
+
+.dash-feed-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--lv2-muted);
+  margin: 0 0 12px 0;
+}
+
+.dash-feed-status {
+  font-size: 14px;
+  color: var(--lv2-muted);
+  margin: 0;
+}
+
+.dash-feed-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dash-feed-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  text-align: right;
+  border: 1px solid var(--lv2-line);
+  background: var(--lv2-surface);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.dash-feed-item:hover {
+  border-color: var(--lv2-accent);
+}
+
+.dash-feed-item-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--lv2-ink);
+}
+
+.dash-feed-item-meta {
+  font-size: 12px;
+  color: var(--lv2-muted);
+}
+
+/* "Recommended models" style cards (wide column) + "Updates" style compact
+   list (narrow column), matching the reference dashboard's proportions
+   instead of two equal boxed-item columns. */
+.dash-feeds-lead {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.dash-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.dash-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--lv2-line);
+  background: var(--lv2-surface);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: right;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.dash-card:hover {
+  border-color: var(--lv2-accent);
+}
+
+.dash-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--lv2-accent-soft);
+  color: var(--lv2-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dash-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--lv2-ink);
+  line-height: 1.4;
+}
+
+.dash-card-meta {
+  font-size: 12px;
+  color: var(--lv2-muted);
+}
+
+.dash-updates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dash-update-item {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  text-align: right;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.dash-update-icon {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--lv2-accent-soft);
+  color: var(--lv2-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dash-update-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dash-update-date {
+  font-size: 11px;
+  color: var(--lv2-muted);
+}
+
+.dash-update-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--lv2-ink);
+  line-height: 1.4;
+}
+
+.dash-update-desc {
+  font-size: 12px;
+  color: var(--lv2-muted);
+  line-height: 1.4;
+}
+
+@media (max-width: 800px) {
+  .dash-feeds-lead {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .dash-page {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-sidebar {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-height: auto;
+    border-left: none;
+    border-bottom: 1px solid var(--lv2-line);
+    padding: 16px 20px;
+  }
+
+  .dash-main {
+    padding: 24px 20px 48px;
+  }
+}

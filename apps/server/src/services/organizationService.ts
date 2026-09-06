@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import * as repo from "../repositories/organizationRepository";
 import * as userRepo from "../repositories/userRepository";
-import { UsageLog } from "../models";
+import { aggregateUsageStats } from "../repositories/usageRepository";
 import { register } from "./authService";
 import { sendOrgApprovalRequestEmail, sendOrgApprovedEmail, sendOrgStatusEmail, sendInviteEmail } from "../utils/email";
 import logger from "../logger";
@@ -462,21 +462,13 @@ export async function setOrganizationActive(orgId: string, isActive: boolean) {
 
 export async function getOrganizationUsageSummary(orgId: string) {
   const users = await getOrganizationUsers(orgId);
-  const userIds = users.map((u: any) => u._id);
+  const userIds = users.map((u: any) => u._id.toString());
 
-  const stats = await UsageLog.aggregate([
-    { $match: { userId: { $in: userIds }, success: true } },
-    {
-      $group: {
-        _id: null,
-        totalRequests: { $sum: 1 },
-        totalTokens: { $sum: "$totalTokens" },
-        totalCost: { $sum: "$cost" },
-      },
-    },
-  ]);
+  if (userIds.length === 0) {
+    return { userCount: 0, totalRequests: 0, totalTokens: 0, totalCost: 0 };
+  }
 
-  const summary = stats[0] || { totalRequests: 0, totalTokens: 0, totalCost: 0 };
+  const summary = await aggregateUsageStats(userIds);
   return {
     userCount: users.length,
     totalRequests: summary.totalRequests,

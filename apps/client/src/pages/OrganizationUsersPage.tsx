@@ -454,8 +454,8 @@ export default function OrganizationUsersPage() {
                   <span style={{
                     padding: "4px 8px",
                     borderRadius: "4px",
-                    backgroundColor: user.role === "org_owner" ? "#4CAF50" : "#2196F3",
-                    color: "white",
+                    backgroundColor: user.role === "org_owner" ? "var(--color-success)" : "var(--color-info)",
+                    color: "var(--text-inverse)",
                     fontSize: "12px"
                   }}>
                     {user.role === "org_owner" ? "בעל ארגון" : user.role === "admin" ? "מנהל מערכת" : "משתמש"}
@@ -463,14 +463,14 @@ export default function OrganizationUsersPage() {
                 </td>
                 <td className="status-cell">
                   <span className="status-pill" style={{
-                    backgroundColor: user.isActive ? "#4CAF50" : "#f44336"
+                    backgroundColor: user.isActive ? "var(--color-success)" : "var(--color-danger)"
                   }}>
                     {user.isActive ? "פעיל" : "לא פעיל"}
                   </span>
                 </td>
                 <td className="status-cell">
                   <span className="status-pill" style={{
-                    backgroundColor: user.lastLogin ? "#4CAF50" : "#f44336"
+                    backgroundColor: user.lastLogin ? "var(--color-success)" : "var(--color-danger)"
                   }}>
                     {user.lastLogin ? "הצטרף" : "ממתין להתחברות ראשונה"}
                   </span>

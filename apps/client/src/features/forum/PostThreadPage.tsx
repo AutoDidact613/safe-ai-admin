@@ -341,20 +341,20 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
     }
 
     let iconClass = 'fa-solid fa-file';
-    let iconColor = '#64748b';
+    let iconColor = 'var(--text-muted)';
 
     if (fileExtension === 'pdf') {
       iconClass = 'fa-solid fa-file-pdf';
-      iconColor = '#ef4444';
+      iconColor = 'var(--color-danger)';
     } else if (['doc', 'docx'].includes(fileExtension)) {
       iconClass = 'fa-solid fa-file-word';
-      iconColor = '#3b82f6';
+      iconColor = 'var(--link-color)';
     } else if (['xls', 'xlsx'].includes(fileExtension)) {
       iconClass = 'fa-solid fa-file-excel';
-      iconColor = '#10b981';
+      iconColor = 'var(--brand-secondary)';
     } else if (['zip', 'rar', '7z'].includes(fileExtension)) {
       iconClass = 'fa-solid fa-file-zipper';
-      iconColor = '#f59e0b';
+      iconColor = 'var(--color-warning)';
     } else if (['ts', 'tsx', 'js', 'jsx', 'html', 'css', 'json'].includes(fileExtension)) {
       iconClass = 'fa-solid fa-file-code';
       iconColor = '#8b5cf6';
@@ -700,7 +700,7 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
                 .ProseMirror p.is-editor-empty::before {
                   content: attr(data-placeholder);
                   float: right;
-                  color: #9ca3af;
+                  color: var(--text-muted);
                   font-weight: 300;
                   font-size: 14px;
                   pointer-events: none;

@@ -1,8 +1,19 @@
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import logger from "../logger";
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+
+// מחלצת את ה-S3 key מתוך URL מלא (או מחזירה כמו שהוא אם זה כבר key גולמי) -
+// שימוש משותף לכל פעולה שצריכה לפנות לאובייקט ב-S3 לפי ה-URL שנשמר ב-DB.
+function extractKey(fileUrlOrKey: string): string {
+  let key = fileUrlOrKey;
+  if (fileUrlOrKey.startsWith('http')) {
+    const urlObj = new URL(fileUrlOrKey);
+    key = urlObj.pathname.substring(1); // מוריד את הסלאש הראשון
+  }
+  return decodeURIComponent(key); // הגנה למקרה שיש רווחים או עברית בשם הקובץ
+}
 
 /**
  * מייצר קישור הורדה זמני (חתום) לקובץ יחיד ב-S3.
@@ -15,16 +26,9 @@ export async function generatePresignedDownloadUrl(fileKey: string): Promise<str
     // אם הקישור כבר מכיל חתימה בתוקף, אין צורך לחתום עליו שוב
     if (fileKey.startsWith('http') && fileKey.includes('X-Amz-Signature')) return fileKey;
 
-    // חילוץ שם הקובץ האמיתי מתוך ה-URL המלא של S3
-    let key = fileKey;
-    if (fileKey.startsWith('http')) {
-      const urlObj = new URL(fileKey);
-      key = urlObj.pathname.substring(1); // מוריד את הסלאש הראשון
-    }
-
     const command = new GetObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME,
-      Key: decodeURIComponent(key), // הגנה למקרה שיש רווחים או עברית בשם הקובץ
+      Key: extractKey(fileKey),
     });
 
     // יצירת הקישור הזמני ל-15 דקות
@@ -52,4 +56,16 @@ export async function generatePresignedDownloadUrl(fileKey: string): Promise<str
 export async function signAttachments(attachments: string[]): Promise<string[]> {
   if (!attachments || attachments.length === 0) return [];
   return Promise.all(attachments.map(fileKey => generatePresignedDownloadUrl(fileKey)));
+}
+
+/**
+ * מוחקת קובץ יחיד מ-S3 לפי ה-URL (או key גולמי) שנשמר ב-DB.
+ */
+export async function deleteObject(fileUrl: string): Promise<void> {
+  await s3Client.send(
+    new DeleteObjectCommand({
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: extractKey(fileUrl),
+    }),
+  );
 }

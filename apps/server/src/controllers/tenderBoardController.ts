@@ -16,8 +16,9 @@ import {
   requestTenderSpecification,
   saveTenderSpecification,
   setTenderSpecificationPublished,
+  filterApplicantsForRequester,
 } from "../services/tenderBoardService";
-import { TBAIService } from "../services/tenderBoardAIService";
+import { TBAIService, TenderTopicMismatchError } from "../services/tenderBoardAIService";
 import { generatePresignedDownloadUrl } from "../services/s3Service";
 import { getProfileById } from "../services/professionalProfileService";
 import { triggerTenderSpecAgent, cancelTenderSpecAgent } from "../services/tenderSpecAgentRunner";
@@ -121,9 +122,13 @@ export async function createTenderHandler(req: Request, res: Response) {
  */
 export async function listTendersHandler(req: Request, res: Response) {
   try {
+    const user = (req as any).user;
     const tenders = await listTenders();
+    const filtered = tenders.map((tender: any) =>
+      filterApplicantsForRequester(tender, user?.userId, user?.role)
+    );
     const withSignedResumes = await Promise.all(
-      tenders.map((tender: any) => withSignedApplicantDetails(req, tender))
+      filtered.map((tender: any) => withSignedApplicantDetails(req, tender))
     );
     res.json(withSignedResumes);
   } catch (error) {
@@ -137,13 +142,15 @@ export async function listTendersHandler(req: Request, res: Response) {
  */
 export async function getTenderHandler(req: Request<{ id: string }>, res: Response) {
   try {
+    const user = (req as any).user;
     const tender = await getTenderById(req.params.id);
 
     if (!tender) {
       return res.status(404).json({ error: "Tender not found" });
     }
 
-    res.json(await withSignedApplicantDetails(req, tender));
+    const filtered = filterApplicantsForRequester(tender, user?.userId, user?.role);
+    res.json(await withSignedApplicantDetails(req, filtered));
   } catch (error) {
     logger.error("Get tender failed", { error });
     res.status(500).json({ error: "Failed to fetch tender" });
@@ -212,12 +219,14 @@ export async function applyToTenderHandler(req: Request, res: Response) {
       });
     }
 
+    const user = (req as any).user;
     const applicant = {
       name: req.body.name,
       email: req.body.email,
       details: req.body.details,
       proposal: req.body.proposal,
       contactMethod: req.body.contactMethod,
+      userId: user?.userId,
       resumeFileKey: req.body.resumeFileKey,
       portfolioLink: req.body.portfolioLink,
       professionalProfileId: req.body.professionalProfileId,
@@ -235,7 +244,7 @@ export async function applyToTenderHandler(req: Request, res: Response) {
 
     res.status(200).json({
       success: true,
-      tender: result,
+      tender: filterApplicantsForRequester(result, user?.userId, user?.role),
     });
   } catch (error: any) {
     logger.error("Apply to tender failed", { 
@@ -439,10 +448,17 @@ export async function createSmartTenderHandler(req: Request, res: Response) {
     }
 
     const parsedAiData = await TBAIService.generateTenderData(text);
-    
+
     // החזרת האובייקט המפורסר מה-AI ללא יצירת המכרז בבסיס הנתונים
     res.status(201).json({ success: true, tender: parsedAiData });
   } catch (error: any) {
+    if (error instanceof TenderTopicMismatchError) {
+      return res.status(400).json({
+        error: "TENDER_TOPIC_MISMATCH",
+        code: "TENDER_TOPIC_MISMATCH",
+        message: error.message,
+      });
+    }
     logger.error("Smart create tender failed", { error: error.message });
     res.status(500).json({ error: error.message || "Failed to generate tender using AI" });
   }
@@ -461,9 +477,13 @@ export async function smartSearchTendersHandler(req: Request, res: Response) {
     }
 
     // קריאה לפונקציית השירות שתמיר את הטקסט לשאילתת מונגו ותשלוף מה-DB
+    const user = (req as any).user;
     const tenders = await smartSearchTenders(searchText);
+    const filtered = tenders.map((tender: any) =>
+      filterApplicantsForRequester(tender, user?.userId, user?.role)
+    );
 
-    res.json(tenders);
+    res.json(filtered);
   } catch (error: any) {
     logger.error("Smart search tenders failed", { error: error.message });
 

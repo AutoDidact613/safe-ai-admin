@@ -73,7 +73,9 @@ const TenderSchema = new Schema(
             resumeFileKey: { type: String, required: false },
             portfolioLink: { type: String, required: false },
             professionalProfileId: { type: Schema.Types.ObjectId, ref: "ProfessionalProfile", required: false },
-            isViewed: { type: Boolean, default: false }
+            isViewed: { type: Boolean, default: false },
+            userId: { type: String },
+            appliedAt: { type: Date, default: Date.now },
             },
         ],
         default: [],

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { submitContactForm } from "../controllers/contactController";
+import { submitContactForm, registerAttachment } from "../controllers/contactController";
 import {
   getMyRequests,
   getRequestById,
@@ -17,6 +17,10 @@ router.get("/my-requests", authenticateToken, getMyRequests);
 
 // POST /contact - Submit contact form (requires authentication)
 router.post("/", authenticateToken, submitContactForm);
+
+// POST /contact/attachments - Register a screenshot/recording just uploaded
+// to S3 as "pending", before it's necessarily attached to a submitted request
+router.post("/attachments", authenticateToken, registerAttachment);
 
 router.get("/all", authenticateToken, requireAdmin, getAllRequests);
 

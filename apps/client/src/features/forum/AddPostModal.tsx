@@ -414,18 +414,18 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
               styles={{
                 control: (base) => ({
                   ...base,
-                  borderColor: '#d1fae5',
+                  borderColor: 'var(--color-success-border)',
                   borderWidth: '2px',
                   borderRadius: '6px',
                   minHeight: '40px',
                   height: 'auto',
                   textAlign: 'right',
                   boxShadow: 'none',
-                  backgroundColor: '#fff',
+                  backgroundColor: 'var(--bg-surface)',
                   paddingLeft: '8px',
                   paddingRight: '8px',
                   boxSizing: 'border-box',
-                  '&:hover': { borderColor: '#10b981' }
+                  '&:hover': { borderColor: 'var(--brand-secondary)' }
                 }),
                 valueContainer: (base) => ({
                   ...base,
@@ -440,19 +440,19 @@ const handleAiAssist = async (mode: 'refine' | 'titles' | 'tags') => {
                 menu: (base) => ({
                   ...base,
                   zIndex: 1050,
-                  border: '1px solid #10b981',
-                  boxShadow: '0 -4px 12px rgba(0,0,0,0.1)'
+                  border: '1px solid var(--brand-secondary)',
+                  boxShadow: 'var(--shadow-md)'
                 }),
                 multiValue: (base) => ({
                   ...base,
-                  backgroundColor: '#ecfdf5',
+                  backgroundColor: 'var(--color-success-bg)',
                   borderRadius: '4px',
-                  border: '1px solid #a7f3d0',
+                  border: '1px solid var(--color-success-border)',
                   margin: '2px'
                 }),
                 multiValueLabel: (base) => ({
                   ...base,
-                  color: '#065f46',
+                  color: 'var(--color-success)',
                   fontWeight: 'bold',
                   fontSize: '13px'
                 }),

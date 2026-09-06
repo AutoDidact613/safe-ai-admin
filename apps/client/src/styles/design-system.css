@@ -4,16 +4,60 @@
 :root {
   --bg-page: #f9fafb;
   --bg-surface: #ffffff;
+  --bg-elevated: #f8fafc;
+  --bg-overlay: rgba(15, 23, 42, 0.5);
 
   --border-default: #e5e7eb;
   --border-muted: #f1f5f9;
+  --border-strong: #cbd5e1;
 
   --text-primary: #0f172a;
   --text-secondary: #334155;
   --text-muted: #64748b;
+  --text-inverse: #ffffff;
 
   --brand-primary: #f76402; /* כחול רגוע */
   --brand-primary-hover: #a05805;
+
+  --brand-secondary: #1C7AA6;
+  --brand-secondary-hover: #239AD1;
+
+  --link-color: #2563eb;
+  --link-color-hover: #1e40af;
+
+  /* Neutral scale — flipped under [data-theme="dark"] so any component
+     built from these stays legible without per-component dark rules. */
+  --gray-50: #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1e293b;
+  --gray-900: #0f172a;
+  --gray-950: #020617;
+
+  --color-success: #16a34a;
+  --color-success-bg: #f0fdf4;
+  --color-success-border: #bbf7d0;
+
+  --color-danger: #dc2626;
+  --color-danger-bg: #fef2f2;
+  --color-danger-border: #fecaca;
+
+  --color-warning: #b45309;
+  --color-warning-bg: #fef3c7;
+  --color-warning-border: #fde68a;
+
+  --color-info: #0284c7;
+  --color-info-bg: #f0f9ff;
+  --color-info-border: #bae6fd;
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.1);
+  --shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.18);
 
   --radius-sm: 0px;
   --radius-md: 0px;
@@ -62,7 +106,7 @@ p {
 
 .btn-primary {
   background: var(--brand-primary);
-  color: white;
+  color: var(--text-inverse);
 }
 
 .btn-primary:hover {
@@ -71,22 +115,22 @@ p {
 
 .btn-secondary {
   border: 1px solid var(--border-default);
-  background: white;
+  background: var(--bg-surface);
   color: var(--text-primary);
 }
 
 .btn-secondary:hover {
-  background: #f8fafc;
+  background: var(--bg-elevated);
 }
 
 .btn-danger {
-  border: 1px solid #fecaca;
-  color: #b91c1c;
-  background: #fff;
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  background: var(--bg-surface);
 }
 
 .btn-danger:hover {
-  background: #fef2f2;
+  background: var(--color-danger-bg);
 }
 
 /* =========================
@@ -144,7 +188,7 @@ textarea:focus {
 }
 
 .table tr:hover td {
-  background: #f8fafc;
+  background: var(--bg-elevated);
 }
 
 /* =========================
@@ -195,16 +239,61 @@ textarea:focus {
 [data-theme="dark"] {
   --bg-page: #0b0f14;
   --bg-surface: #111827;
+  --bg-elevated: #1e293b;
+  --bg-overlay: rgba(0, 0, 0, 0.65);
 
   --border-default: #1f2937;
   --border-muted: #1e293b;
+  --border-strong: #334155;
 
   --text-primary: #e5e7eb;
   --text-secondary: #cbd5f5;
   --text-muted: #94a3b8;
+  --text-inverse: #0f172a;
 
   --brand-primary: #38bdf8;
   --brand-primary-hover: #0ea5e9;
+
+  --brand-secondary: #4FC3E8;
+  --brand-secondary-hover: #2BA8D6;
+
+  --link-color: #60a5fa;
+  --link-color-hover: #93c5fd;
+
+  /* Neutral scale flipped: --gray-50 (lightest in light mode) becomes the
+     darkest surface, --gray-950 becomes the lightest — so components that
+     reference these tokens invert automatically. */
+  --gray-50: #020617;
+  --gray-100: #0f172a;
+  --gray-200: #1e293b;
+  --gray-300: #334155;
+  --gray-400: #475569;
+  --gray-500: #64748b;
+  --gray-600: #94a3b8;
+  --gray-700: #cbd5e1;
+  --gray-800: #e2e8f0;
+  --gray-900: #f1f5f9;
+  --gray-950: #f8fafc;
+
+  --color-success: #4ade80;
+  --color-success-bg: #052e1c;
+  --color-success-border: #166534;
+
+  --color-danger: #f87171;
+  --color-danger-bg: #3f1212;
+  --color-danger-border: #991b1b;
+
+  --color-warning: #fbbf24;
+  --color-warning-bg: #3f2d07;
+  --color-warning-border: #92660c;
+
+  --color-info: #38bdf8;
+  --color-info-bg: #082f3f;
+  --color-info-border: #0369a1;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
 }
 
 /* התאמות כלליות */
@@ -223,8 +312,8 @@ textarea:focus {
 }
 
 [data-theme="dark"] .nav-link.active {
-  background: #1f2937;
-  color: white;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
 }
 
 [data-theme="dark"] .card {
@@ -235,7 +324,7 @@ textarea:focus {
 [data-theme="dark"] input,
 [data-theme="dark"] select,
 [data-theme="dark"] textarea {
-  background: #020617;
+  background: var(--gray-50);
   color: var(--text-primary);
   border-color: var(--border-default);
 }

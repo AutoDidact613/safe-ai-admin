@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Card from './Card'
 import ManageTenderDetails from './ManageTenderDetails.tsx'
 import TenderOffers from './TenderOffers.tsx'
@@ -10,9 +10,19 @@ interface Props {
   tenders: Tender[]
   onUpdateTender: (updatedTender: Tender) => void
   onDeleteTender: (deletedTenderId: string) => void
+  // פתיחה ישירה של מסך ההצעות למכרז מסוים (מקישור במייל), עם הדגשה אופציונלית של הצעה ספציפית
+  initialOffersTenderId?: string | null
+  initialHighlightApplicantId?: string | null
 }
 
-export default function ManageMyTenders({ currentUserCode, tenders, onUpdateTender, onDeleteTender }: Props) {
+export default function ManageMyTenders({
+  currentUserCode,
+  tenders,
+  onUpdateTender,
+  onDeleteTender,
+  initialOffersTenderId,
+  initialHighlightApplicantId,
+}: Props) {
   // סינון מכרזים השייכים למשתמש ושהם פעילים (isActive אינו false)
   const publishedTenders = useMemo(
     () => tenders.filter((tender) => tender.publisherUserCode === currentUserCode && tender.isActive !== false),
@@ -21,6 +31,16 @@ export default function ManageMyTenders({ currentUserCode, tenders, onUpdateTend
 
   const [selectedTenderId, setSelectedTenderId] = useState<string | null>(null)
   const [selectedOffersTenderId, setSelectedOffersTenderId] = useState<string | null>(null)
+  const [highlightApplicantId, setHighlightApplicantId] = useState<string | null>(initialHighlightApplicantId ?? null)
+
+  useEffect(() => {
+    if (!initialOffersTenderId) return
+    if (!publishedTenders.some((tender) => tender.id === initialOffersTenderId)) return
+
+    setSelectedOffersTenderId(initialOffersTenderId)
+    setHighlightApplicantId(initialHighlightApplicantId ?? null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialOffersTenderId, publishedTenders])
 
   const selectedTender = useMemo(
     () => publishedTenders.find((tender) => tender.id === selectedTenderId) ?? null,
@@ -60,8 +80,12 @@ export default function ManageMyTenders({ currentUserCode, tenders, onUpdateTend
     return (
       <TenderOffers
         tender={selectedOffersTender}
-        onClose={() => setSelectedOffersTenderId(null)}
+        onClose={() => {
+          setSelectedOffersTenderId(null)
+          setHighlightApplicantId(null)
+        }}
         onUpdateTender={onUpdateTender}
+        highlightApplicantId={highlightApplicantId}
       />
     )
   }
@@ -85,19 +109,19 @@ export default function ManageMyTenders({ currentUserCode, tenders, onUpdateTend
             marginTop: '16px',
             padding: '14px 18px',
             borderRadius: '10px',
-            backgroundColor: '#fff7ed',
-            border: '1px solid #fdba74',
+            backgroundColor: 'var(--color-warning-bg)',
+            border: '1px solid var(--color-warning-border)',
             display: 'flex',
             flexDirection: 'column',
             gap: '8px',
           }}
         >
-          <strong style={{ color: '#c2410c', fontSize: '15px' }}>
+          <strong style={{ color: 'var(--color-warning)', fontSize: '15px' }}>
             יש לך {totalNewOffers} הצעות חדשות
           </strong>
           <ul style={{ margin: 0, paddingInlineStart: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {tendersWithNewOffers.map((tender) => (
-              <li key={tender.id} style={{ color: '#7c2d12', fontSize: '14px' }}>
+              <li key={tender.id} style={{ color: 'var(--color-warning)', fontSize: '14px' }}>
                 יש {getNewOffersCount(tender)} הצעות חדשות למכרז: <strong>{tender.title}</strong>
               </li>
             ))}
