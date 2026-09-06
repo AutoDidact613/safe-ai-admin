@@ -1,0 +1,637 @@
+/* Landing Page V2 — טיוטת עיצוב, טרם מחוברת כדף בית רשמי */
+
+.landing-v2 {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 32px 60px;
+  position: relative;
+
+  /* Color tokens — kept as the existing site green for now (per request);
+     revisit once a final brand color is chosen for the whole site. */
+  --lv2-ink: #16232a;
+  --lv2-ink-soft: #3d4d54;
+  --lv2-muted: #6b7a80;
+  --lv2-line: #dcdcd5;
+  --lv2-line-soft: #eceae3;
+  --lv2-surface: #ffffff;
+  --lv2-canvas: #f6f5f1;
+  --lv2-accent: #10a37f;
+  --lv2-accent-hover: #0d8f6f;
+  --lv2-accent-soft: rgba(16, 163, 127, 0.08);
+  --lv2-gold: #10a37f;
+  --lv2-gold-hover: #0d8f6f;
+  --lv2-gold-soft: rgba(16, 163, 127, 0.1);
+  --lv2-dark-panel: #16232a;
+  --lv2-dark-panel-2: #1e2f37;
+}
+
+.lv2-preview-tag {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--lv2-gold-hover);
+  background: var(--lv2-gold-soft);
+  border: 1px dashed var(--lv2-gold);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin: 16px auto 0;
+  max-width: 320px;
+}
+
+/* Preview header (self-contained — does not replace the real TopNavigation) */
+.lv2-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 18px 4px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--lv2-line);
+}
+
+.lv2-logo {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--lv2-ink);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+
+.lv2-logo span {
+  color: var(--lv2-accent);
+}
+
+.lv2-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  justify-content: center;
+}
+
+.lv2-header-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lv2-ink-soft);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.lv2-header-link:hover {
+  background: var(--lv2-line-soft);
+  color: var(--lv2-ink);
+}
+
+.lv2-caret {
+  transition: transform 0.15s ease;
+}
+
+.lv2-caret.open {
+  transform: rotate(180deg);
+}
+
+.lv2-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lv2-btn-sm {
+  padding: 9px 18px;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lv2-menu {
+  position: relative;
+}
+
+.lv2-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background: var(--lv2-surface);
+  border: 1px solid var(--lv2-line);
+  border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(22, 35, 42, 0.14);
+  padding: 14px;
+  z-index: 60;
+  animation: lv2-dropdown-in 0.15s ease-out;
+}
+
+@keyframes lv2-dropdown-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.lv2-dropdown button,
+.lv2-dropdown a {
+  display: block;
+  width: 100%;
+  text-align: right;
+  background: none;
+  border: none;
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lv2-ink);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.lv2-dropdown button:hover,
+.lv2-dropdown a:hover {
+  background: var(--lv2-line-soft);
+  color: var(--lv2-accent);
+}
+
+.lv2-dropdown-login {
+  min-width: 190px;
+}
+
+.lv2-dropdown-products {
+  display: flex;
+  gap: 28px;
+  min-width: 340px;
+}
+
+.lv2-dropdown-heading {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--lv2-muted);
+  padding: 4px 12px 6px;
+  text-transform: uppercase;
+}
+
+/* Hero */
+.lv2-hero {
+  text-align: center;
+  padding: 56px 16px 40px;
+  background: var(--lv2-canvas);
+  border-radius: 12px;
+  margin-bottom: 48px;
+}
+
+.lv2-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 6px;
+  background: var(--lv2-accent-soft);
+  color: var(--lv2-accent);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 18px;
+}
+
+.lv2-title {
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--lv2-ink);
+  margin: 0 0 32px 0;
+  line-height: 1.25;
+}
+
+/* Deliberately the one softly-rounded element on the page, per direction. */
+.lv2-hero-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 620px;
+  margin: 0 auto;
+  background: var(--lv2-surface);
+  border: 1px solid var(--lv2-line);
+  border-radius: 999px;
+  padding: 8px 8px 8px 22px;
+  box-shadow: 0 10px 30px rgba(22, 35, 42, 0.08);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* The input itself suppresses the browser's default ring (it's borderless
+   by design) — show focus on the pill container instead so keyboard users
+   still get a visible indicator. */
+.lv2-hero-search:focus-within {
+  border-color: var(--lv2-accent);
+  box-shadow: 0 0 0 3px var(--lv2-accent-soft), 0 10px 30px rgba(22, 35, 42, 0.08);
+}
+
+.lv2-hero-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--lv2-ink);
+  padding: 10px 4px;
+  text-align: right;
+}
+
+.lv2-hero-search-input::placeholder {
+  color: var(--lv2-muted);
+  transition: opacity 0.2s;
+}
+
+.lv2-hero-search-submit {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: var(--lv2-accent);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.lv2-hero-search-submit:hover {
+  background: var(--lv2-accent-hover);
+}
+
+.lv2-hero-chips {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.lv2-chip {
+  border: 1px solid var(--lv2-line);
+  background: var(--lv2-surface);
+  color: var(--lv2-ink-soft);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.lv2-chip:hover {
+  border-color: var(--lv2-accent);
+  color: var(--lv2-accent);
+}
+
+.lv2-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 14px 26px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.lv2-btn-primary {
+  background: var(--lv2-gold);
+  color: #ffffff;
+}
+
+.lv2-btn-primary:hover {
+  background: var(--lv2-gold-hover);
+}
+
+.lv2-btn-ghost {
+  background: transparent;
+  color: var(--lv2-ink-soft);
+  border: 1px solid var(--lv2-line);
+}
+
+.lv2-btn-ghost:hover {
+  border-color: var(--lv2-ink-soft);
+  color: var(--lv2-ink);
+}
+
+/* Banners grid */
+.lv2-banners {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 56px;
+}
+
+.lv2-banner-card {
+  position: relative;
+  text-align: right;
+  background: var(--lv2-surface);
+  border: 1px solid var(--lv2-line);
+  border-radius: 8px;
+  padding: 20px 24px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  font-family: inherit;
+}
+
+.lv2-banner-card:hover {
+  border-color: var(--lv2-accent);
+  box-shadow: 0 8px 22px rgba(22, 35, 42, 0.1);
+}
+
+.lv2-banner-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--lv2-accent-soft);
+  color: var(--lv2-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lv2-banner-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lv2-banner-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lv2-banner-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--lv2-ink);
+  margin: 0;
+}
+
+.lv2-banner-desc {
+  font-size: 14px;
+  color: var(--lv2-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Fixed amber, independent of the brand accent color — a "not built yet"
+   status should read the same regardless of what the site's accent is. */
+.lv2-soon-tag {
+  flex-shrink: 0;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+
+/* Neutral — for something that already exists but isn't linked here yet
+   (as opposed to "soon", which means not built at all). */
+.lv2-updating-tag {
+  flex-shrink: 0;
+  background: var(--lv2-line-soft);
+  color: var(--lv2-muted);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+
+.lv2-available-tag {
+  flex-shrink: 0;
+  background: var(--lv2-accent-soft);
+  color: var(--lv2-accent);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+
+.lv2-status-available:hover {
+  border-color: var(--lv2-accent);
+}
+
+/* The one card that's actually live end-to-end today — visually set apart
+   from "updating"/"soon" so it reads as the thing worth trying right now. */
+.lv2-banner-featured {
+  border: 2px solid var(--lv2-accent);
+  background: var(--lv2-accent-soft);
+}
+
+.lv2-banner-featured .lv2-banner-icon {
+  background: var(--lv2-accent);
+  color: #ffffff;
+  transition: transform 0.25s ease;
+}
+
+.lv2-banner-featured:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(16, 163, 127, 0.22);
+}
+
+.lv2-banner-featured:hover .lv2-banner-icon {
+  transform: scale(1.1) rotate(-4deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lv2-banner-featured,
+  .lv2-banner-featured .lv2-banner-icon {
+    transition: none;
+  }
+  .lv2-banner-featured:hover {
+    transform: none;
+  }
+  .lv2-banner-featured:hover .lv2-banner-icon {
+    transform: none;
+  }
+}
+
+/* Stats banner */
+.lv2-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  background: var(--lv2-dark-panel);
+  border-radius: 10px;
+  padding: 36px 24px;
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.lv2-stat-value {
+  font-size: 30px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lv2-stat-label {
+  font-size: 14px;
+  color: #9aa7ab;
+}
+
+/* Preview footer (rich, self-contained — the real Footer.tsx still renders below it) */
+.lv2-footer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 32px;
+  border-top: 1px solid var(--lv2-line);
+  padding-top: 36px;
+}
+
+.lv2-footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lv2-footer-heading {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--lv2-muted);
+  margin-bottom: 4px;
+}
+
+.lv2-footer-col button,
+.lv2-footer-col a {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: right;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--lv2-ink-soft);
+  text-decoration: none;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.lv2-footer-col button:hover,
+.lv2-footer-col a:hover {
+  color: var(--lv2-accent);
+  text-decoration: underline;
+}
+
+/* Floating chat button */
+.lv2-chat-fab {
+  position: fixed;
+  bottom: 28px;
+  left: 28px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: none;
+  background: var(--lv2-accent);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(22, 35, 42, 0.3);
+  z-index: 900;
+  transition: background 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lv2-chat-fab:hover {
+  background: var(--lv2-accent-hover);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .lv2-header-nav {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .lv2-hero {
+    padding: 40px 16px 32px;
+  }
+
+  .lv2-title {
+    font-size: 28px;
+  }
+
+  .lv2-hero-search {
+    flex-wrap: wrap;
+    border-radius: 16px;
+  }
+
+  .lv2-banner-card {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: right;
+  }
+
+  .lv2-banner-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .landing-v2 {
+    padding: 0 16px 60px;
+  }
+
+  .lv2-dropdown-products {
+    flex-direction: column;
+    gap: 12px;
+    min-width: 220px;
+  }
+}
+
+/* Dark mode */
+[data-theme="dark"] .landing-v2 {
+  --lv2-ink: #eef1ef;
+  --lv2-ink-soft: #c3cdd0;
+  --lv2-muted: #8b979b;
+  --lv2-line: #2a3338;
+  --lv2-line-soft: #23292c;
+  --lv2-surface: #1a2226;
+  --lv2-canvas: #14191c;
+  --lv2-accent: #2fd6a7;
+  --lv2-accent-hover: #24b088;
+  --lv2-accent-soft: rgba(47, 214, 167, 0.14);
+  --lv2-gold: #2fd6a7;
+  --lv2-gold-hover: #24b088;
+  --lv2-gold-soft: rgba(47, 214, 167, 0.14);
+  --lv2-dark-panel: #0e1416;
+}
+
+/* Visually hidden but still readable by screen readers. */
+.lv2-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

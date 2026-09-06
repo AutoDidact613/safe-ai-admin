@@ -1,0 +1,93 @@
+# Runs on the AWS EC2 instance (both staging and production hosts).
+# Mongo and (the LiteLLM metadata) Postgres are NOT run here — they are managed
+# services (MongoDB Atlas / a hosted Postgres such as Neon) reached via
+# MONGO_URI / DATABASE_URL. This avoids self-hosting stateful databases on a
+# single EC2 box (no backup story, no HA) — see docs/DEPLOYMENT.md.
+#
+# The client is NOT part of this stack — there is no dockerized nginx. Each
+# host already runs its own system-level nginx (outside Docker) serving the
+# client as static files and reverse-proxying to the `server` container on
+# 127.0.0.1:3001 — see docs/DEPLOYMENT.md.
+#
+# The server image is built in CI and pushed to a registry (see
+# .github/workflows/cd-*.yml); this file only pulls and runs them — no
+# `build:` here, so deploys stay fast and reproducible.
+#
+# Usage on the host:
+#   cp .env.example .env   (fill in real values, chmod 600 .env)
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 1g
+    volumes:
+      - ./infra/litellm/litellm_config.yaml:/app/config.yaml:ro
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    healthcheck:
+      # `wget` doesn't exist in this image (confirmed via `docker exec ... which
+      # wget` -> not found) — the healthcheck was failing forever regardless of
+      # timing, which is why bumping start_period kept "almost" working. python3
+      # is what's actually on PATH here.
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4000/health/liveliness', timeout=5)"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      # Real logs show Prisma migrate + app startup completing in ~100-190s
+      # against Neon; this leaves real margin without the excess left over
+      # from chasing the wrong root cause.
+      start_period: 180s
+
+  server:
+    image: ${IMAGE_REGISTRY}/server:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 512m
+    # Docker's embedded DNS resolver (127.0.0.11) failed to resolve the
+    # mongodb+srv:// SRV record against MongoDB Atlas ("querySrv ECONNREFUSED"),
+    # a known issue with SRV lookups through Docker's default DNS forwarding.
+    # Listing 127.0.0.11 FIRST keeps resolving other containers by name on
+    # this compose network (e.g. "litellm", needed for the in-app LiteLLM
+    # key-generation call on registration — omitting it broke that with a
+    # 5s timeout instead). Public DNS is the fallback for the SRV lookup.
+    dns:
+      - 127.0.0.11
+      - 8.8.8.8
+      - 8.8.4.4
+    depends_on:
+      litellm:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      LITELLM_PROXY_URL: http://litellm:4000
+      MONGO_URI: ${MONGO_URI}
+    ports:
+      # Published to loopback so the host's own nginx (outside Docker, not
+      # part of this compose file) can reach it as http://localhost:3001 —
+      # there is no dockerized nginx/reverse-proxy in this stack; the client
+      # is built and served as static files directly by the host nginx.
+      - "127.0.0.1:3001:3001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', r => process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

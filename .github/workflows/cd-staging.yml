@@ -1,0 +1,102 @@
+name: CD - Staging
+
+# Deploys on every push to `develop`. Builds & publishes the server image,
+# then deploys over SSH — a fast, pragmatic choice for the staging box today.
+# Production uses AWS OIDC + SSM instead (no SSH, no long-lived keys) — see
+# cd-production.yml. Staging is a lower-stakes target, so SSH with a
+# dedicated deploy key is an acceptable trade for speed; revisit if we want
+# parity with production's approach later.
+#
+# The client is NOT built into a Docker image — the staging host's own
+# nginx (outside Docker) serves it as static files from /var/www/safeai,
+# matching how it already runs today. The deploy step builds the client
+# directly on the host (Node is already installed there) and copies the
+# output into place.
+
+on:
+  push:
+    branches: [develop]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "claude-knowledge/**"
+      - ".claude/**"
+      - ".gitignore"
+  workflow_dispatch: {}
+
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  # Hardcoded lowercase: Docker tags reject uppercase, but github.repository
+  # resolves to "SafeAI613/SafeAI-613" (mixed case) — using it directly here
+  # is what broke the first real run of this workflow.
+  IMAGE_BASE: ghcr.io/safeai613/safeai-613
+
+jobs:
+  build-and-push:
+    name: Build & push images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.tag.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: tag
+        run: echo "value=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push server
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/server
+          push: true
+          tags: |
+            ${{ env.IMAGE_BASE }}/server:${{ steps.tag.outputs.value }}
+            ${{ env.IMAGE_BASE }}/server:staging
+
+  deploy:
+    name: Deploy to staging
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_SSH_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          envs: IMAGE_REGISTRY,IMAGE_TAG
+          script: |
+            set -e
+            export IMAGE_REGISTRY=${{ env.IMAGE_BASE }}
+            export IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }}
+
+            cd ~/SafeAI-613
+            git fetch origin develop
+            git checkout develop
+            git reset --hard origin/develop
+
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d
+            docker image prune -f
+
+            cd apps/client
+            npm ci
+            NODE_OPTIONS=--max-old-space-size=4096 VITE_API_URL=/api VITE_BASE_PATH=/ npm run build
+            sudo rm -rf /var/www/safeai/*
+            sudo cp -r dist/. /var/www/safeai/

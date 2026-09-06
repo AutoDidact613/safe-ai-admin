@@ -328,43 +328,34 @@
 
 ## 5. פריסה (Deployment)
 
+> המבנה, הדוקר, ותהליכי ה-CI/CD המלאים מתועדים כעת ב-[docs/DEPLOYMENT.md](./DEPLOYMENT.md). הסעיף הזה נשאר כתקציר בלבד.
+
 ### 5.1 סביבת פיתוח (Development)
 ```bash
-# התקנה
-cd client && npm install
-cd ../server && npm install
-
-# הרצה
-# Terminal 1 - Client
-cd client && npm run dev  # http://localhost:5173
-
-# Terminal 2 - Server
-cd server && npm run dev  # http://localhost:3001
-
-# Terminal 3 - Docker Services
-cd server && docker-compose up
+cp .env.example .env
+cp apps/server/.env.example apps/server/.env
+docker compose up --build
+# client: http://localhost:8080 | server: http://localhost:3001 | litellm: http://localhost:4000
 ```
 
 ### 5.2 סביבת ייצור (Production)
 ```yaml
-# deploy-compose.yaml
+# docker-compose.prod.yml
 services:
-  - MongoDB (port 27017)
-  - PostgreSQL (port 5432)
-  - LiteLLM Proxy (port 4000)
-  - SafeAI Server (port 3001)
-  - Nginx (ports 80, 443)
-  - Client (served by Nginx)
+  - LiteLLM Proxy (port 4000, פנימי)
+  - SafeAI Server (port 3001, פנימי)
+  - Nginx (ports 80/443, השער היחיד שנחשף החוצה, מגיש גם את ה-client)
+  # MongoDB (Atlas) ו-Postgres (מנוהל, למשל Neon) הם שירותים חיצוניים —
+  # לא רצים כקונטיינר על ה-EC2.
 ```
 
-**תהליך פריסה:**
-1. Build client: `npm run build`
-2. Build server: `npm run build`
-3. העלאת images ל-Docker Registry
-4. Pull ב-production server
-5. `docker-compose -f deploy-compose.yaml up -d`
-6. הגדרת SSL certificates (Let's Encrypt)
-7. הגדרת DNS
+**תהליך פריסה (מבוצע אוטומטית ע"י `cd-staging.yml`/`cd-production.yml`, בשלב זה עדיין מדומה — ראו docs/DEPLOYMENT.md):**
+1. CI בונה ובודק client/server
+2. בניית ודחיפת Docker images ל-GHCR
+3. Pull ב-production server
+4. `docker compose -f docker-compose.prod.yml up -d`
+5. הגדרת SSL certificates (Let's Encrypt) — עדיין לא מוגדר
+6. הגדרת DNS
 
 ### 5.3 משתני סביבה
 
@@ -382,7 +373,7 @@ MONGO_URI=mongodb://mongodb:27017/safeai
 JWT_SECRET=xxx
 JWT_REFRESH_SECRET=xxx
 LITELLM_PROXY_URL=http://litellm:4000
-LITELLM_MASTER_KEY=sk-safe-ai-master-123
+LITELLM_MASTER_KEY=xxx
 OPENAI_API_KEY=sk-xxx
 GOOGLE_CLIENT_ID=xxx
 GOOGLE_CLIENT_SECRET=xxx

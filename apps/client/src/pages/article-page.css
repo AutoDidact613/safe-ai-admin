@@ -1,0 +1,162 @@
+.article-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 5rem;
+}
+
+.article-page-loading,
+.article-page-error {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-muted);
+}
+
+.article-back-link {
+  display: inline-block;
+  color: var(--link-color);
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+.article-back-link:hover {
+  text-decoration: underline;
+}
+
+.article-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border-default);
+}
+
+.article-category {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--link-color);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.article-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.article-description {
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.article-meta {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--gray-400);
+}
+
+/* Markdown content styles */
+.article-content {
+  line-height: 1.8;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+.article-content h1,
+.article-content h2,
+.article-content h3,
+.article-content h4 {
+  font-weight: 700;
+  margin: 1.8rem 0 0.8rem;
+  color: var(--text-primary);
+}
+
+.article-content h1 { font-size: 1.7rem; }
+.article-content h2 { font-size: 1.35rem; border-bottom: 1px solid var(--border-default); padding-bottom: 0.4rem; }
+.article-content h3 { font-size: 1.15rem; }
+
+.article-content p { margin-bottom: 1rem; }
+
+.article-content ul,
+.article-content ol {
+  padding-right: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.article-content li { margin-bottom: 0.3rem; }
+
+.article-content code {
+  background: var(--gray-100);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: monospace;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+.article-content pre {
+  /* Fixed dark code block, same convention as other code samples in the app */
+  background: #1f2937;
+  color: #f9fafb;
+  padding: 1.2rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  direction: ltr;
+  text-align: left;
+}
+
+.article-content pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: 0.9rem;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+.article-content blockquote {
+  border-right: 4px solid var(--link-color);
+  padding-right: 1rem;
+  margin: 1rem 0;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.article-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.article-content th,
+.article-content td {
+  border: 1px solid var(--border-default);
+  padding: 0.6rem 0.8rem;
+  text-align: right;
+}
+
+.article-content th {
+  background: var(--bg-page);
+  font-weight: 600;
+}
+
+.article-content a {
+  color: var(--link-color);
+  text-decoration: underline;
+}
+
+.article-content img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.article-content hr {
+  border: none;
+  border-top: 1px solid var(--border-default);
+  margin: 2rem 0;
+}

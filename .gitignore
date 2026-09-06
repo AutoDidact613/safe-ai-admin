@@ -52,14 +52,14 @@ coverage/
 # =========================
 # Vite
 # =========================
-client/.vite/
+apps/client/.vite/
 
 # =========================
 # Server runtime artifacts
 # =========================
-server/uploads/
-server/tmp/
-server/data/
+apps/server/uploads/
+apps/server/tmp/
+apps/server/data/
 
 # =========================
 # Optional: lockfiles policy
@@ -80,28 +80,26 @@ server/data/
 # package-lock.json
 # pnpm-lock.yaml
 
-```
 # =========================
-# TypeScript build artifacts in src
-# =========================
-**/*.js
-**/*.d.ts
-**/*.js.map
-**/*.d.ts.map
-!*.config.js
-!ecosystem.config.js
-# =========================
-# TypeScript build artifacts in src
+# TypeScript build artifacts committed next to src
 # =========================
 src/**/*.js
 src/**/*.d.ts
 src/**/*.js.map
 src/**/*.d.ts.map
+!*.config.js
+!infra/legacy/ecosystem.config.js
 
+# =========================
+# Python (apps/agents/*)
+# =========================
+__pycache__/
+*.pyc
+.venv/
+apps/agents/*/.pytest_cache/
+apps/agents/*/.ruff_cache/
 
 docs/production/*
-
-server/litellm_config.yaml
 
 # Custom project files
 project_tree.txt

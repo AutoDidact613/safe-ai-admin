@@ -1,0 +1,98 @@
+import mongoose from "mongoose";
+import { Tender } from "../models/tender";
+import { User } from "../models/user";
+
+export async function createTender(data: any) {
+  return Tender.create(data);
+}
+
+// tenderBoardRepository.ts
+export async function getUserByCode(publisherUserCode: string) {
+  if (!mongoose.Types.ObjectId.isValid(publisherUserCode)) return null;
+  return await User.findById(publisherUserCode).lean();
+}
+/**
+ * GET Tenders
+ * מעודכן לקבלת אובייקט סינון אופציונלי עבור החיפוש החכם של ה-AI
+ */
+export async function getTenders(filter: any = {}) {
+  return Tender.find(filter).lean();
+}
+
+export async function getTenderById(id: string) {
+  // If id looks like a Mongo ObjectId, use findById for efficiency.
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    return Tender.findById(id).lean();
+  }
+
+  // Fallback: allow finding by a string `id` field (e.g. external IDs like "tnd-98234").
+  return Tender.findOne({ id }).lean();
+}
+
+export async function updateTender(id: string, data: any) {
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    return Tender.findByIdAndUpdate(id, data, {
+      new: true,
+      runValidators: true,
+    }).lean();
+  }
+
+  return Tender.findOneAndUpdate({ id }, data, { new: true, runValidators: true }).lean();
+}
+
+export async function updateTenderApplicants(id: string, applicants: any[]) {
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    return Tender.findByIdAndUpdate(
+      id,
+      { applicants },
+      { new: true, runValidators: true }
+    ).lean();
+  }
+
+  return Tender.findOneAndUpdate(
+    { id },
+    { applicants },
+    { new: true, runValidators: true }
+  ).lean();
+}
+
+export async function markApplicantsViewed(id: string) {
+  const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { id };
+
+  return Tender.findOneAndUpdate(
+    query,
+    { $set: { "applicants.$[].isViewed": true } },
+    { new: true, runValidators: true }
+  ).lean();
+}
+
+/**
+ * Overwrites the `specification` subdocument only, without touching any other
+ * tender field - the agent's write-back must not be able to clobber the
+ * publisher's own tender data (title, budget, applicants, etc.).
+ */
+export async function updateTenderSpecification(id: string, specification: Record<string, any>) {
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    return Tender.findByIdAndUpdate(
+      id,
+      { $set: { specification } },
+      { new: true, runValidators: true }
+    ).lean();
+  }
+
+  return Tender.findOneAndUpdate(
+    { id },
+    { $set: { specification } },
+    { new: true, runValidators: true }
+  ).lean();
+}
+
+export async function deleteTender(id: string) {
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    return Tender.findByIdAndDelete(id).lean();
+  }
+
+  return Tender.findOneAndDelete({ id }).lean();
+}
+
+export default getTenders

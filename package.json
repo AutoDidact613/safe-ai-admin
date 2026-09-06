@@ -1,41 +1,22 @@
 {
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.1077.0",
-    "@aws-sdk/s3-request-presigner": "^3.1077.0",
-    "dotenv": "^17.4.2",
-    "file-saver": "^2.0.5",
-    "langsmith": "^0.7.15",
-    "openai": "^6.45.0",
-    "recharts": "^3.8.0",
-    "resend": "^6.16.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^6.0.3",
-    "uuid": "^14.0.1",
-    "xlsx": "^0.18.5"
-  },
-  "name": "safe-ai-admin",
+  "name": "safeai-613",
   "version": "1.0.0",
-  "description": "Monorepo containing:\r - **client/**: React + Vite + TypeScript\r - **server/**: Node.js + Express + TypeScript",
-  "main": "ecosystem.config.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "private": true,
+  "description": "Monorepo containing: apps/client (React+Vite+TS), apps/server (Node+Express+TS), apps/agents (Python agent modules, each with its own manifest.json). Each app is an independent npm project (no npm workspaces) - workspace-driven dependency hoisting was found to alter apps/server's resolved dependency tree enough to break its TypeScript build, so each app installs and builds in full isolation instead, matching how the Dockerfiles already build them.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev:client": "npm --prefix apps/client run dev",
+    "dev:server": "npm --prefix apps/server run dev",
+    "build:client": "npm --prefix apps/client run build",
+    "build:server": "npm --prefix apps/server run build",
+    "lint:client": "npm --prefix apps/client run lint",
+    "lint:server": "npm --prefix apps/server run lint",
+    "typecheck:client": "npm --prefix apps/client run typecheck",
+    "typecheck:server": "npm --prefix apps/server run typecheck",
+    "test:server": "npm --prefix apps/server test"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SafeAI613/SafeAI-613.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/SafeAI613/SafeAI-613/issues"
-  },
-  "homepage": "https://github.com/SafeAI613/SafeAI-613#readme",
-  "devDependencies": {
-    "@types/express": "^5.0.6"
-  }
+  "license": "ISC"
 }
