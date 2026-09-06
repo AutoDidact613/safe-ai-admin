@@ -98,6 +98,9 @@ export default function TopNavigation() {
               <Link to="/courses" className="top-nav-link">
                 קורסים
               </Link>
+              <Link to="/forum" className="top-nav-link">
+                פורום
+              </Link>
 
               {/* Developers Dropdown */}
               <div className="dev-menu-container" ref={devMenuRef}>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AddPostModal } from './AddPostModal';
 import { fetchPosts as fetchPostsFromApi, fetchSimilarPosts, moderatePost as moderatePostApi } from './api';
 import type { Post } from './types';
@@ -223,13 +223,26 @@ export const ForumPage: React.FC = () => {
     <div className="forum-page">
 
       <div className="forum-toolbar">
+        <div className="forum-add-btn-wrapper">
         <button
-          onClick={() => setIsModalOpen(true)}
-          className="forum-add-btn"
+          onClick={() => {
+            if (currentUser) {
+              setIsModalOpen(true);
+            }
+          }}
+          disabled={!currentUser}
+          title={!currentUser ? "יש להתחבר כדי להוסיף פוסט" : ""}
+          className={`forum-add-btn ${!currentUser ? "forum-add-btn-disabled" : ""}`}
         >
           הוסף פוסט חדש
         </button>
-
+        {!currentUser && (
+        <span className="forum-login-hint">
+        יש <Link to="/login">להתחבר</Link> כדי להוסיף פוסט חדש
+        </span>
+        )}
+        </div>
+        
         <div className="forum-search-wrap">
           <input
             type="text"

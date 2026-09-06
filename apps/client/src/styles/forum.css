@@ -1501,3 +1501,41 @@
   color: var(--brand-secondary);  font-size: 12px;
   font-weight: bold;
 }
+
+.forum-add-btn-disabled,
+.forum-add-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(40%);
+  box-shadow: none;
+}
+
+.forum-login-hint {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 4px;
+  display: block;
+}
+
+.forum-login-hint a {
+  color:  #6b7280;
+  text-decoration: underline;
+}
+
+.forum-comment-submit-btn-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(40%);
+  box-shadow: none;
+}
+
+.forum-login-link,
+.forum-login-link:visited {
+  color:#6b7280;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.forum-login-link:hover {
+  opacity: 0.85;
+}
