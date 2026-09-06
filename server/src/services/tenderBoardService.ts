@@ -3,7 +3,7 @@ import * as repo from "../repositories/tenderBoardRepository";
 import logger from "../logger";
 import { TBAIService } from "./tenderBoardAIService";
 import { getEmbedding } from "./embeddingService";
-// import { TenderLog } from "../models/tendersBoardLog";
+import { TenderLog } from "../models/tendersBoardLog";
 import {
   sendApplicantRegisteredEmail,
   sendTenderClosedEmail,
@@ -61,16 +61,16 @@ async function saveTenderLog(params: {
       ? new mongoose.Types.ObjectId(params.userId)
       : undefined;
 
-    // await TenderLog.create({
-    //   action: params.action,
-    //   status: params.status,
-    //   tenderId: validTenderId,
-    //   userId: validUserId,
-    //   metaData: params.metaData,
-    //   errorMessage: params.errorMessage,
-    //   timestamp: new Date(),
-    //   expiresAt
-    // } as any);
+    await TenderLog.create({
+      action: params.action,
+      status: params.status,
+      tenderId: validTenderId,
+      userId: validUserId,
+      metaData: params.metaData,
+      errorMessage: params.errorMessage,
+      timestamp: new Date(),
+      expiresAt,
+    } as any);
   } catch (err) {
     const error = err as Error;
     logger.error("Failed to write Tender DB Log", {
