@@ -31,10 +31,10 @@ const TenderZodSchema = z.object({
   additionalDetails: z.string(),
 });
 
-// ✅ הסכמה מצפה ל-{ query: {...} }
-const SearchQueryZodSchema = z.object({
-  query: z.record(z.string(), z.any())
-    .describe("אובייקט שאילתת MongoDB תקני"),
+// ה-AI מקבל רשימת מכרזים מועמדים (id + שדות תיאוריים) וטקסט חיפוש, ומחזיר
+// אך ורק את ה-IDים הרלוונטיים - לא בונה שאילתת Mongo בעצמו.
+const SearchResultIdsZodSchema = z.object({
+  ids: z.array(z.string()).describe("מערך של IDים של המכרזים הרלוונטיים לבקשת החיפוש, מסודר מהמתאים ביותר"),
 });
 
 // סכמת הגארדרייל הנושאי — בודקת אם הטקסט שהוזן אכן מתאר בקשה ליצירת מכרז
@@ -110,35 +110,19 @@ const TENDER_SYSTEM_PROMPT = `אתה מנתח מכרזים. תפקידך: לקב
 == דוגמה לפלט תקין ==
 {"title":"foo","shortDescription":"bar baz","timeRequired":{"value":30,"unit":"ימים"},"budget":50000,"productType":"אפליקציה","aiApplicationType":"צאטבוט","agentsRequired":["foo agent"],"wantsEmails":false,"additionalDetails":""}`;
 
-const SEARCH_SYSTEM_PROMPT = `אתה מנוע חיפוש MongoDB. תפקידך: לקבל בקשת חיפוש בשפה חופשית ולהחזיר JSON בלבד — שאילתת filter תקנית עבור Mongoose.
+const SEARCH_BY_ID_SYSTEM_PROMPT = `אתה מנוע חיפוש מכרזים. תפקידך: לקבל רשימת מכרזים (כל מכרז עם id ושדות תיאוריים) ובקשת חיפוש בשפה חופשית, ולהחזיר JSON בלבד עם מערך של IDים של המכרזים הרלוונטיים ביותר לבקשה.
 
 == כללי פלט ==
 - החזר JSON בלבד. אסור להוסיף הסבר, כותרת, markdown, קוד-בלוק או כל טקסט אחר.
-- חובה לעטוף את השאילתה תחת המפתח "query" — תמיד, ללא יוצא מן הכלל.
-- מבנה הפלט: {"query": { ...שאילתת MongoDB... }}
+- מבנה הפלט: {"ids": ["<id1>", "<id2>", ...]}
+- החזר אך ורק IDים שמופיעים ברשימה שקיבלת — אסור להמציא ID.
+- אל תחזיר את פרטי המכרז עצמו, רק את ה-ID שלו.
+- אם אין מכרזים מתאימים — החזר: {"ids": []}
+- סדר את ה-IDים לפי רמת ההתאמה לבקשה, מהמתאים ביותר למתאים פחות.
 
-== השדות הזמינים לחיפוש ==
-title, shortDescription, productType, budget, timeRequired, aiApplicationType, additionalDetails
-
-== חוקי בניית השאילתה ==
-1. חיפוש טקסט חופשי — השתמש ב-$regex עם $options:"i". חלץ מילות מפתח בלבד, אל תשים את הבקשה המלאה.
-2. חיפוש במספר שדות במקביל — השתמש ב-$or.
-3. התאמה לשדות enum — השתמש בערך העברי המדויק בלבד, ללא $regex, ללא שינוי תו אחד:
-   aiApplicationType: "התממשקות פשוטה" | "צאטבוט" | "אייגנט" | "מולטי אייגנט"
-   productType: "אפליקציה" | "אתר" | "תוכנת desktop" | "הטמעה של פיצר במערכת קיימת" | "ייעוץ" | "הקמת תשתית לאייגנט" | "אחר"
-4. אם הבקשה מתאימה לערך enum — השתמש בהתאמה מדויקת בלבד, לא ב-$regex.
-5. אם אין מספיק מידע לבניית שאילתה — החזר: {"query": {}}
-
-== דוגמאות ==
-
+== דוגמה ==
 בקשה: "אני רוצה צאטבוטים"
-פלט: {"query": {"aiApplicationType": "צאטבוט"}}
-
-בקשה: "אייגנטים לניהול foo"
-פלט: {"query": {"aiApplicationType": "אייגנט", "$or": [{"title": {"$regex": "foo", "$options": "i"}}, {"shortDescription": {"$regex": "foo", "$options": "i"}}]}}
-
-בקשה: "מערכת לניהול bar"
-פלט: {"query": {"$or": [{"title": {"$regex": "bar", "$options": "i"}}, {"shortDescription": {"$regex": "bar", "$options": "i"}}]}}`;
+פלט: {"ids": ["foo123", "bar456"]}`;
 
 const GUARDRAIL_SYSTEM_PROMPT = `אתה שומר סף (Guardrail) עבור לוח מכרזים המיועד אך ורק לפרויקטים בתחום פיתוח תוכנה, טכנולוגיה וייעוץ AI.
 תפקידך: לקרוא את פרטי המכרז שסופקו, ולהחליט אם הוא אכן שייך לתחום המותר, ולהחזיר JSON בלבד לפי הסכמה.
@@ -279,29 +263,37 @@ export class TBAIService {
     }
   }
 
-  static async generateSearchQuery(userSearchText: string): Promise<Record<string, any>> {
+  /**
+   * מקבלת רשימת מכרזים מועמדים (id + שדות תיאוריים בלבד) ואת טקסט החיפוש של
+   * הלקוח, ומחזירה אך ורק מערך של IDים של המכרזים הרלוונטיים — לא בונה שאילתת
+   * Mongo ולא משתמשת ב-embeddings. הקריאה שולחת ל-AI רק את ה-id והשדות
+   * התיאוריים (לא את המסמך המלא), כדי לחסוך בטוקנים.
+   */
+  static async generateSearchResultIds(
+    userSearchText: string,
+    tenders: Array<{ id: string; [key: string]: any }>
+  ): Promise<string[]> {
     const startTime = Date.now();
     try {
-      logger.info("Starting AI search query generation", { searchText: userSearchText });
+      logger.info("Starting AI search-by-id generation", {
+        searchText: userSearchText,
+        candidateCount: tenders.length,
+      });
 
-      // ← קריאה ל-callAI הגנרי
       const raw = await callAI({
-        userPrompt: `בקשת החיפוש: "${userSearchText}"`,
-        systemPrompt: SEARCH_SYSTEM_PROMPT,
-        schema: z.record(z.string(), z.any()), // מקבלים any object — נעשה normalize בעצמנו
+        userPrompt: `בקשת החיפוש: "${userSearchText}"\n\nרשימת המכרזים:\n${JSON.stringify(tenders)}`,
+        systemPrompt: SEARCH_BY_ID_SYSTEM_PROMPT,
+        schema: SearchResultIdsZodSchema,
         temperature: 0.1,
       });
 
-      // ✅ תיקון 2: fallback — אם Gemini לא עטף ב-query, עוטפים בעצמנו
-      const normalized = (raw as any).query !== undefined
-        ? (raw as any)
-        : { query: raw };
+      const validIds = new Set(tenders.map((t) => t.id));
+      const ids = raw.ids.filter((id) => validIds.has(id));
 
-      const parsedData = SearchQueryZodSchema.parse(normalized);
-      const query = parsedData?.query && Object.keys(parsedData.query).length > 0 ? parsedData.query : {};
-
-      logger.info("AI search query generation completed", {
-        query: JSON.stringify(query),
+      logger.info("AI search-by-id generation completed", {
+        searchText: userSearchText,
+        matchedCount: ids.length,
+        responseTime: Date.now() - startTime,
       });
 
       await saveTenderLog({
@@ -309,18 +301,16 @@ export class TBAIService {
         status: "SUCCESS",
         metaData: {
           searchText: userSearchText,
-          query,
+          candidateCount: tenders.length,
+          matchedCount: ids.length,
           responseTime: Date.now() - startTime,
         },
       });
 
-      // Returns the raw (not-yet-sanitized) filter object — the caller
-      // (tenderBoardService.smartSearchTenders) is responsible for sanitizing
-      // it against an allowlist before executing it against the database.
-      return query;
+      return ids;
 
     } catch (error: any) {
-      logger.error("Error in AIService.generateSearchQuery", {
+      logger.error("Error in AIService.generateSearchResultIds", {
         error,
         searchText: userSearchText,
       });
