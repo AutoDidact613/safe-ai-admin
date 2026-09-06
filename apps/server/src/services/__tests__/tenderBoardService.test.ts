@@ -302,11 +302,11 @@ describe("Tender Board Feature Tests", () => {
   });
 
   describe("GET /tender-board/smart-search", () => {
-    it("should perform smart search using AI mongo query translation", async () => {
-      const mockMongoQuery = { productType: "אפליקציה" };
+    it("should perform smart search using AI candidate-id filtering", async () => {
+      const mockMatchedIds = ["1"];
       const mockTendersResult = [{ _id: "1", title: "מכרז אפליקציה בצפון" }];
 
-      AIService.generateSearchQuery = jest.fn().mockResolvedValue(mockMongoQuery);
+      AIService.generateSearchResultIds = jest.fn().mockResolvedValue(mockMatchedIds);
       (service.smartSearchTenders as jest.Mock).mockResolvedValue(mockTendersResult);
 
       const res = await request(app)
