@@ -113,7 +113,3 @@ project_tree.txt
 # PyInstaller artifacts
 *.spec
 *.exe
-
-# Agent generated outputs (forum-version-manager-agent)
-apps/agents/forum-version-manager-agent/evals/results/
-apps/agents/forum-version-manager-agent/reports/
