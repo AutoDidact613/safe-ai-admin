@@ -1,10 +1,9 @@
-import json
-
 from google import genai
 from langsmith import traceable
 
 from config import Config
 from graph_state import Classification
+from json_utils import parse_json_response
 from usage_tracker import add_tokens
 
 
@@ -32,7 +31,7 @@ def _call_gemini(prompt: str, config: Config) -> str:
 
 def classify_inquiry(text: str, config: Config) -> Classification:
     raw = _call_gemini(_PROMPT_TEMPLATE.format(text=text), config)
-    data = json.loads(raw)
+    data = parse_json_response(raw)
 
     category = data.get("category")
     urgency = data.get("urgency")

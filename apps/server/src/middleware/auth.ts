@@ -5,8 +5,25 @@
 
 import { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
+import crypto from "crypto";
 import { verifyAccessToken } from "../utils/jwt";
 import { User } from "../models/user";
+
+// Shared secret for server-to-server calls (e.g. the inquiry-agent calling
+// back into this API) that must not expire like a 15-minute user access
+// token does. Optional: only compared against when set, so environments
+// that don't run the agent are unaffected.
+const AGENT_SERVICE_TOKEN = process.env.AGENT_SERVICE_TOKEN;
+
+function isAgentServiceToken(token: string): boolean {
+  if (!AGENT_SERVICE_TOKEN) return false;
+
+  const provided = Buffer.from(token);
+  const expected = Buffer.from(AGENT_SERVICE_TOKEN);
+  if (provided.length !== expected.length) return false;
+
+  return crypto.timingSafeEqual(provided, expected);
+}
 
 /**
  * Middleware to authenticate JWT token
@@ -29,12 +46,31 @@ export function authenticateToken(
     return res.status(401).json({ error: "Access token required" });
   }
 
+  if (isAgentServiceToken(token)) {
+    (req as any).user = {
+      // Must be a syntactically valid ObjectId - addReplyToRequest does
+      // `new mongoose.Types.ObjectId(senderId)` unconditionally (regardless
+      // of role), so a human-readable string like "inquiry-agent" throws
+      // and crashes the request with a 500. This doesn't reference a real
+      // User document, but nothing currently populates reply.senderId.
+      userId: "000000000000000000000000",
+      email: "inquiry-agent@service.local",
+      role: "admin",
+    };
+    return next();
+  }
+
   try {
     const decoded = verifyAccessToken(token);
     (req as any).user = decoded; // { userId, email, role }
     next();
   } catch (error) {
-    return res.status(403).json({ error: "Invalid or expired token" });
+    // 401, not 403: an expired/invalid token is an authentication failure,
+    // not an authorization one - and apiCall's silent-refresh-and-retry
+    // logic (client/src/config/api.ts) only triggers on 401. Returning 403
+    // here meant every access-token expiry surfaced as a hard error instead
+    // of the intended silent refresh.
+    return res.status(401).json({ error: "Invalid or expired token" });
   }
 }
 

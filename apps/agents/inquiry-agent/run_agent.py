@@ -6,6 +6,7 @@ import requests
 from google.genai import errors as genai_errors
 
 import usage_tracker
+from agent_ops import GraphStateError, edit_draft, resume_with_approval, resume_with_selection
 from api_client import SafeAIClient
 from config import ConfigError
 from config import load_config
@@ -58,15 +59,13 @@ def cmd_process(args: argparse.Namespace) -> None:
             if not args.ids:
                 raise SystemExit("--ids is required to select inquiries at this stage")
             selected_ids = args.ids.split(",")
-            graph.update_state(thread_config, {"selected_ids": selected_ids})
-            state = graph.invoke(None, thread_config)
+            drafts = resume_with_selection(graph, thread_config, selected_ids)
 
             print(f"thread-id: {args.thread_id}")
-            for inquiry_id, draft in state.get("drafts", {}).items():
-                result = state.get("guardrail_results", {}).get(inquiry_id, {})
-                print(f"--- {inquiry_id} (guardrails passed: {result.get('passed')}) ---")
-                if result.get("reasons"):
-                    print(f"reasons: {result['reasons']}")
+            for inquiry_id, draft in drafts.items():
+                print(f"--- {inquiry_id} (guardrails passed: {draft['guardrails_passed']}) ---")
+                if draft["guardrails_reasons"]:
+                    print(f"reasons: {draft['guardrails_reasons']}")
                 print(draft["text"])
 
             print(f"\nטוקנים בריצה זו: {usage_tracker.get_total_tokens(args.thread_id)}")
@@ -74,8 +73,7 @@ def cmd_process(args: argparse.Namespace) -> None:
         elif "send_node" in next_nodes:
             if args.edit:
                 inquiry_id = args.edit
-                drafts = snapshot.values.get("drafts", {})
-                current_draft = drafts.get(inquiry_id, {})
+                current_draft = snapshot.values.get("drafts", {}).get(inquiry_id, {})
 
                 print(f"טיוטה נוכחית עבור {inquiry_id}:")
                 print(current_draft.get("text", ""))
@@ -88,22 +86,28 @@ def cmd_process(args: argparse.Namespace) -> None:
                         break
                     lines.append(line)
 
-                drafts[inquiry_id] = {"inquiry_id": inquiry_id, "text": "\n".join(lines)}
-                graph.update_state(thread_config, {"drafts": drafts})
+                edit_draft(graph, thread_config, inquiry_id, "\n".join(lines))
                 print("הטיוטה עודכנה")
                 return
 
             if not args.approve:
                 raise SystemExit("--approve is required to send replies at this stage")
             approved_ids = args.approve.split(",")
-            graph.update_state(thread_config, {"approved_ids": approved_ids})
-            graph.invoke(None, thread_config)
+            resume_with_approval(graph, thread_config, approved_ids)
             print(f"Sent replies for: {', '.join(approved_ids)}")
 
             print(f"\nטוקנים בריצה זו: {usage_tracker.get_total_tokens(args.thread_id)}")
 
         else:
+            # Known gap (tracked separately, not fixed here): if a run crashes inside
+            # guardrails_node or evaluator_node (e.g. a transient LLM error), next_nodes
+            # is ("guardrails_node",) / ("evaluator_node",) - neither branch above matches,
+            # so it lands here as "no pending step" even though the run is actually stuck
+            # mid-graph. Resuming in that case requires calling graph.invoke(None, thread_config)
+            # directly rather than through this CLI.
             raise SystemExit("This run has no pending step (already completed or not started)")
+    except GraphStateError as e:
+        sys.exit(str(e))
     except ConfigError as e:
         sys.exit(f"שגיאת הגדרות: {e}")
     except requests.exceptions.RequestException as e:

@@ -1,0 +1,137 @@
+[
+  {
+    "inquiry": {
+      "id": "1",
+      "title": "Can't reset password",
+      "description": "I requested a password reset email three times but never received anything, even after checking spam."
+    },
+    "category": "bug",
+    "articles": [
+      {
+        "title": "Troubleshooting missing password reset emails",
+        "content": "If a password reset email does not arrive within 10 minutes, check your spam or junk folder first. Add our sending domain to your contacts list to prevent future emails from being filtered. If the email still does not arrive after that, the account's email address may be entered incorrectly, or the account may not exist in our system."
+      }
+    ]
+  },
+  {
+    "inquiry": {
+      "id": "2",
+      "title": "Export button does nothing",
+      "description": "Clicking the export button on the reports page does not download anything, no error message shows either."
+    },
+    "category": "bug",
+    "articles": [
+      {
+        "title": "Exporting reports",
+        "content": "To export a report, open the report and click the Export button in the top right corner. The download begins automatically and the file appears in your browser's default downloads folder. If nothing happens after clicking Export, your browser's pop-up or download blocker may be preventing the file from saving."
+      }
+    ]
+  },
+  {
+    "inquiry": {
+      "id": "3",
+      "title": "How to enable dark mode",
+      "description": "I heard there's a dark mode option somewhere but I can't find it in the settings menu."
+    },
+    "category": "feature",
+    "articles": [
+      {
+        "title": "Enabling dark mode",
+        "content": "Dark mode can be turned on from the Appearance section of your account settings. Select Dark from the theme dropdown and the interface updates immediately without needing to reload the page."
+      }
+    ]
+  },
+  {
+    "inquiry": {
+      "id": "4",
+      "title": "Bulk export for compliance",
+      "description": "We need to export every record in bulk before Friday for an internal compliance review."
+    },
+    "category": "feature",
+    "articles": [
+      {
+        "title": "Bulk export limits",
+        "content": "Bulk export is available on paid plans and can process up to 50,000 records per export job. Jobs run in the background and you'll receive an email with a download link once the export finishes, which usually takes a few minutes."
+      }
+    ]
+  },
+  {
+    "inquiry": {
+      "id": "5",
+      "title": "Notification emails too frequent",
+      "description": "We're getting a notification email for every single small update, several times a day."
+    },
+    "category": "feedback",
+    "articles": [
+      {
+        "title": "Managing notification frequency",
+        "content": "Notification frequency can be adjusted from the Notifications tab in account settings. Choose between Instant, Daily digest, or Weekly digest to reduce how often emails are sent."
+      }
+    ]
+  },
+  {
+    "inquiry": {
+      "id": "6",
+      "title": "Two factor authentication request",
+      "description": "Does the product support two factor authentication for logging in?"
+    },
+    "category": "feature",
+    "articles": [
+      {
+        "title": "Two-factor authentication support",
+        "content": "Two-factor authentication is not yet available. It is on the product roadmap and we will announce it through the changelog once it ships."
+      }
+    ]
+  },
+  {
+    "inquiry": {
+      "id": "7",
+      "title": "Search filters not respected",
+      "description": "When I filter by closed status, open items still appear in the results list."
+    },
+    "category": "bug",
+    "articles": [
+      {
+        "title": "Using search filters",
+        "content": "Search filters apply only within the current view and are cleared when you navigate away from the page. Re-apply filters after switching pages, or use a saved filter view to keep them active across navigation."
+      }
+    ]
+  },
+  {
+    "inquiry": {
+      "id": "8",
+      "title": "Refund for accidental charge",
+      "description": "I was charged twice for the same subscription this month by mistake."
+    },
+    "category": "bug",
+    "articles": [
+      {
+        "title": "Duplicate charge refunds",
+        "content": "Duplicate subscription charges are refunded automatically within 5 business days once detected. If it has been longer than 5 business days, contact billing support with the transaction ID so it can be refunded manually."
+      }
+    ]
+  },
+  {
+    "inquiry": {
+      "id": "9",
+      "title": "Slow page load on dashboard",
+      "description": "The dashboard takes over 30 seconds to load every time I open it."
+    },
+    "category": "bug",
+    "articles": [
+      {
+        "title": "Improving dashboard load time",
+        "content": "Dashboard load time increases with the number of widgets displayed. Removing unused widgets or reducing the selected date range can significantly speed up loading."
+      }
+    ]
+  },
+  {
+    "inquiry": {
+      "id": "10",
+      "title": "Keyboard shortcuts idea",
+      "description": "It would help a lot to have keyboard shortcuts for navigating between pages."
+    },
+    "category": "feature",
+    "articles": []
+  }
+]
