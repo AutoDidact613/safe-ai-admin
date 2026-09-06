@@ -531,6 +531,115 @@ function sanitizeSearchFilter(filter: unknown): Record<string, any> {
   return sanitized;
 }
 
+/**
+ * ========================================================
+ * אפיון אוטומטי + המלצת פיתוח (SCRUM-287/291/293) - agent-facing
+ * ========================================================
+ */
+
+const ALLOWED_SPECIFICATION_STATUSES = ["pending", "generating", "ready", "failed"];
+
+/**
+ * שדות המכרז שנחשפים ל-agent החיצוני (tender-spec-agent) - לא כל המסמך,
+ * כדי לא לחשוף applicants/publisherUserCode לשירות מחוץ למונוריפו הלוגי.
+ */
+export async function getTenderAgentContext(id: string) {
+  const tender = await repo.getTenderById(id);
+  if (!tender) return null;
+
+  return {
+    id: tender._id,
+    title: tender.title,
+    shortDescription: tender.shortDescription,
+    productType: tender.productType,
+    aiApplicationType: tender.aiApplicationType,
+    agentsRequired: tender.agentsRequired,
+    timeRequired: tender.timeRequired,
+    budget: tender.budget,
+    additionalDetails: tender.additionalDetails,
+  };
+}
+
+/**
+ * מסמן שהתבקשה הפקת אפיון (status=pending) - קריאה זו בלבד לא מריצה את ה-agent;
+ * ההפעלה בפועל (SCRUM-293) קוראת לזה ואז מפעילה את ה-runner בנפרד.
+ */
+export async function requestTenderSpecification(id: string) {
+  const tender = await repo.getTenderById(id);
+  if (!tender) {
+    throw new Error("Tender not found");
+  }
+
+  const result = await repo.updateTenderSpecification(id, {
+    ...(tender as any).specification,
+    status: "pending",
+    errorMessage: undefined,
+  });
+
+  logger.info("Tender specification requested", { tenderId: id });
+  return result;
+}
+
+/**
+ * כתיבת תוצאת ה-agent בחזרה (status=ready) או סימון כשל (status=failed).
+ * isPublished נשמר במפורש כ-false בכל ריצה חדשה - פרסום הוא בחירה נפרדת
+ * ומודעת של בעל המכרז (SCRUM-291), לא ברירת מחדל אוטומטית.
+ */
+export async function saveTenderSpecification(
+  id: string,
+  data: {
+    status: string;
+    techStackRecommendation?: string;
+    openSourceReferences?: Array<{ title: string; url: string; description?: string }>;
+    readingSources?: Array<{ title: string; url: string; description?: string }>;
+    document?: string;
+    errorMessage?: string;
+  }
+) {
+  if (!ALLOWED_SPECIFICATION_STATUSES.includes(data.status)) {
+    throw new Error("Invalid specification status");
+  }
+
+  const tender = await repo.getTenderById(id);
+  if (!tender) {
+    throw new Error("Tender not found");
+  }
+
+  const specification = {
+    status: data.status,
+    techStackRecommendation: data.techStackRecommendation,
+    openSourceReferences: (data.openSourceReferences || []).slice(0, 5),
+    readingSources: (data.readingSources || []).slice(0, 5),
+    document: data.document,
+    errorMessage: data.errorMessage,
+    generatedAt: new Date(),
+    isPublished: false,
+  };
+
+  const result = await repo.updateTenderSpecification(id, specification);
+  logger.info("Tender specification saved", { tenderId: id, status: data.status });
+  return result;
+}
+
+/**
+ * שינוי הרשאת הצפייה הציבורית באפיון - הבחירה שביקש המשתמש: לפרסם
+ * את האפיון יחד עם המכרז (גלוי למועמדים) או להשאיר אותו פרטי לבעל המכרז בלבד.
+ */
+export async function setTenderSpecificationPublished(id: string, isPublished: boolean) {
+  const tender = await repo.getTenderById(id);
+  if (!tender || !(tender as any).specification) {
+    throw new Error("Tender specification not found");
+  }
+
+  const result = await repo.updateTenderSpecification(id, {
+    ...(tender as any).specification,
+    isPublished,
+  });
+
+  logger.info("Tender specification publish state changed", { tenderId: id, isPublished });
+  return result;
+}
+
 export async function smartSearchTenders(searchText: string) {
   try {
     logger.info("Received search text for smart search", { searchText });

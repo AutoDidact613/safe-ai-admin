@@ -32,6 +32,25 @@ export interface ProposalRange {
   max: number
 }
 
+export interface TenderReference {
+  title: string
+  url: string
+  description?: string
+}
+
+export type TenderSpecificationStatus = 'pending' | 'generating' | 'ready' | 'failed'
+
+export interface TenderSpecification {
+  status: TenderSpecificationStatus
+  techStackRecommendation?: string
+  openSourceReferences?: TenderReference[]
+  readingSources?: TenderReference[]
+  document?: string
+  errorMessage?: string
+  generatedAt?: string
+  isPublished?: boolean
+}
+
 export interface Tender {
   id: string
   title: string
@@ -49,6 +68,7 @@ export interface Tender {
   applicantsCount?: number
   proposalRange?: ProposalRange | null
   domains?: string[]
+  specification?: TenderSpecification
 }
 
 export interface RawTender {
@@ -68,4 +88,5 @@ export interface RawTender {
   applicants?: Applicant[]
   applicantsCount?: number
   proposalRange?: ProposalRange | null
+  specification?: TenderSpecification
 }

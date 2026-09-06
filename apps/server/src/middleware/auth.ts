@@ -6,6 +6,7 @@
 import { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import { verifyAccessToken } from "../utils/jwt";
+import { constantTimeEqual } from "../utils/crypto";
 import { User } from "../models/user";
 
 /**
@@ -54,6 +55,37 @@ export function requireAdmin(
   }
 
   next();
+}
+
+/**
+ * Middleware for agent-facing routes (e.g. tender-spec-agent's
+ * GET /tender-board/:id/agent-context and POST /tender-board/:id/specification):
+ * accepts EITHER a static, non-expiring shared secret (AGENT_SERVICE_TOKEN) meant for
+ * trusted agent subprocesses, OR a normal admin JWT (falls back to authenticateToken +
+ * requireAdmin) for manual debugging via curl/Postman with a human admin session.
+ *
+ * The static-secret path exists because a real user access token always expires in
+ * ACCESS_TOKEN_EXPIRY (15m, see utils/jwt.ts) - fine for a browser session that
+ * refreshes itself, but unworkable for a subprocess with no one to log back in every
+ * 15 minutes. AGENT_SERVICE_TOKEN is independently rotatable (unlike baking a
+ * never-expiring role:"admin" JWT, which could only be revoked by rotating JWT_SECRET
+ * and invalidating every real user's session at once).
+ */
+export function requireAdminOrServiceToken(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice("Bearer ".length).trim() : undefined;
+  const serviceToken = process.env.AGENT_SERVICE_TOKEN;
+
+  if (token && serviceToken && constantTimeEqual(token, serviceToken)) {
+    (req as any).user = { userId: "agent-service", email: "agent-service", role: "admin" };
+    return next();
+  }
+
+  authenticateToken(req, res, () => requireAdmin(req, res, next));
 }
 
 /**

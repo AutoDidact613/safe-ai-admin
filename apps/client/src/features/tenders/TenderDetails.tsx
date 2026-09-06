@@ -155,6 +155,52 @@ export default function TenderDetails({ tender, onClose, onApply, currentUserId,
             </div>
           )}
 
+          {/* אפיון ראשוני והמלצת פיתוח - מוצג למועמדים רק אם בעל המכרז בחר לפרסם אותו (SCRUM-291) */}
+          {tender.specification?.status === 'ready' && tender.specification.isPublished && (
+            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <strong>אפיון ראשוני והמלצת פיתוח:</strong>
+
+              {tender.specification.techStackRecommendation && (
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>המלצה טכנולוגית: </span>
+                  <span style={{ color: '#475569' }}>{tender.specification.techStackRecommendation}</span>
+                </div>
+              )}
+
+              {!!tender.specification.openSourceReferences?.length && (
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>פרויקטים דומים בקוד פתוח:</span>
+                  <ul style={{ margin: '6px 0 0', paddingRight: '20px' }}>
+                    {tender.specification.openSourceReferences.map((ref) => (
+                      <li key={ref.url}>
+                        <a href={ref.url} target="_blank" rel="noopener noreferrer">{ref.title}</a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {!!tender.specification.readingSources?.length && (
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>מקורות קריאה מומלצים:</span>
+                  <ul style={{ margin: '6px 0 0', paddingRight: '20px' }}>
+                    {tender.specification.readingSources.map((ref) => (
+                      <li key={ref.url}>
+                        <a href={ref.url} target="_blank" rel="noopener noreferrer">{ref.title}</a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {tender.specification.document && (
+                <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', background: 'var(--secondary-bg)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '12px' }}>
+                  {tender.specification.document}
+                </pre>
+              )}
+            </div>
+          )}
+
           {/* כפתורי פעולה תחתונה */}
           <div className="modal-actions mt-18" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '10px' }}>
             {myApplication ? (
