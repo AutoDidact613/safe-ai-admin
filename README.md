@@ -3,7 +3,7 @@
 Monorepo containing:
 - **apps/client**: React + Vite + TypeScript
 - **apps/server**: Node.js + Express + TypeScript
-- **apps/agent**: Python + FastAPI (agent layer — scaffold, see `apps/agent/README.md`)
+- **apps/agents/inquiry-agent**: Python + FastAPI (agent layer — scaffold, see `apps/agents/inquiry-agent/README.md`)
 
 Deployment, Docker topology, secrets management, and CI/CD are documented in **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)**.
 
@@ -14,7 +14,8 @@ Deployment, Docker topology, secrets management, and CI/CD are documented in **[
 ├─ apps/
 │  ├─ client/
 │  ├─ server/
-│  └─ agent/
+│  └─ agents/
+│     └─ inquiry-agent/
 ├─ infra/
 │  ├─ docker/nginx/
 │  ├─ litellm/
@@ -29,7 +30,7 @@ Deployment, Docker topology, secrets management, and CI/CD are documented in **[
 
 ## Prerequisites
 - Node.js **20+**
-- Python **3.12+** (only needed if working on `apps/agent` outside Docker)
+- Python **3.12+** (only needed if working on `apps/agents/inquiry-agent` outside Docker)
 - Docker + Docker Compose
 
 ## Quickstart (full stack via Docker)
@@ -37,7 +38,7 @@ Deployment, Docker topology, secrets management, and CI/CD are documented in **[
 ```bash
 cp .env.example .env
 cp apps/server/.env.example apps/server/.env
-cp apps/agent/.env.example apps/agent/.env
+cp apps/agents/inquiry-agent/.env.example apps/agents/inquiry-agent/.env
 docker compose up --build
 ```
 
@@ -64,7 +65,7 @@ Each app keeps its own example file; the root `.env.example` is consumed by the 
 - `.env.example`
 - `apps/client/.env.example`
 - `apps/server/.env.example`
-- `apps/agent/.env.example`
+- `apps/agents/inquiry-agent/.env.example`
 
 See `docs/DEPLOYMENT.md` for how secrets are meant to flow through local `.env` files vs. GitHub Environment secrets vs. a managed secret store.
 

@@ -334,7 +334,7 @@
 ```bash
 cp .env.example .env
 cp apps/server/.env.example apps/server/.env
-cp apps/agent/.env.example apps/agent/.env
+cp apps/agents/inquiry-agent/.env.example apps/agents/inquiry-agent/.env
 docker compose up --build
 # client: http://localhost:8080 | server: http://localhost:3001 | litellm: http://localhost:4000
 ```

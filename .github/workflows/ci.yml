@@ -48,11 +48,11 @@ jobs:
       - run: npm run build
 
   agent:
-    name: apps/agent – lint / test
+    name: apps/agents/inquiry-agent – lint / test
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apps/agent
+        working-directory: apps/agents/inquiry-agent
     steps:
       - uses: actions/checkout@v4
 
@@ -60,7 +60,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: "pip"
-          cache-dependency-path: apps/agent/requirements-dev.txt
+          cache-dependency-path: apps/agents/inquiry-agent/requirements-dev.txt
 
       - run: pip install -r requirements-dev.txt
       - run: ruff check .
@@ -84,7 +84,7 @@ jobs:
       - name: Build agent image
         uses: docker/build-push-action@v6
         with:
-          context: ./apps/agent
+          context: ./apps/agents/inquiry-agent
           push: false
 
       - name: Build nginx (client) image

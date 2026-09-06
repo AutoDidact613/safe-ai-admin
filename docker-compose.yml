@@ -86,12 +86,12 @@ services:
 
   agent:
     build:
-      context: ./apps/agent
+      context: ./apps/agents/inquiry-agent
     restart: unless-stopped
     ports:
       - "8000:8000"
     env_file:
-      - ./apps/agent/.env
+      - ./apps/agents/inquiry-agent/.env
 
   nginx:
     build:

@@ -68,7 +68,7 @@ jobs:
       - name: Build & push agent
         uses: docker/build-push-action@v6
         with:
-          context: ./apps/agent
+          context: ./apps/agents/inquiry-agent
           push: true
           tags: |
             ${{ env.IMAGE_BASE }}/agent:${{ steps.tag.outputs.value }}

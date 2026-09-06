@@ -97,7 +97,7 @@ services:
     # inquiry-agent moved here from the repo-root inquiry-agent/ directory (SCRUM-140).
     # It needs SAFEAI_API_BASE_URL, SAFEAI_AGENT_API_TOKEN, GEMINI_API_KEY,
     # MONGODB_ATLAS_URI (and optionally LANGCHAIN_*) in this host's root .env -
-    # see apps/agent/.env.example. Without them the container exits on startup
+    # see apps/agents/inquiry-agent/.env.example. Without them the container exits on startup
     # (ConfigError) - not yet confirmed to be set on the real EC2 hosts.
     image: ${IMAGE_REGISTRY}/agent:${IMAGE_TAG:-latest}
     restart: unless-stopped
