@@ -448,14 +448,14 @@ export default function OrganizationUsersPage() {
                   <span className="status-pill" style={{
                     backgroundColor: user.isActive ? "var(--color-success)" : "var(--color-danger)"
                   }}>
-                    {user.isActive ? "פעיל" : "לא פעיל"}
+                    {user.isActive ? "✓ פעיל" : "✕ לא פעיל"}
                   </span>
                 </td>
                 <td className="status-cell">
                   <span className="status-pill" style={{
                     backgroundColor: user.lastLogin ? "var(--color-success)" : "var(--color-danger)"
                   }}>
-                    {user.lastLogin ? "הצטרף" : "ממתין להתחברות ראשונה"}
+                    {user.lastLogin ? "✓ הצטרף" : "⏳ ממתין להתחברות ראשונה"}
                   </span>
                 </td>
                 <td>{new Date(user.createdAt).toLocaleDateString()}</td>
