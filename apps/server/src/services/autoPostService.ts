@@ -5,8 +5,10 @@ import { resolveOrCreateTagsByNames } from './tagService';
 
 const DEFAULT_AUTO_POST_BOT_HOUR = 10;
 
+type PostFrequency = 'daily' | 'weekly' | 'monthly';
+
 /**
- * שעת ההרצה היומית של הבוט, לפי AUTO_POST_BOT_HOUR ב-.env (0-23).
+ * שעת ההרצה של הבוט, לפי AUTO_POST_BOT_HOUR ב-.env (0-23).
  * אם המשתנה לא מוגדר או לא תקין, נופלים חזרה לשעה 10:00.
  */
 function getAutoPostBotHour(): number {
@@ -25,13 +27,46 @@ function getAutoPostBotHour(): number {
 }
 
 /**
+ * תדירות ההרצה של הבוט, לפי AUTO_POST_FREQUENCY ב-.env (daily, weekly, monthly).
+ * ברירת מחדל: daily (יומי).
+ */
+function getAutoPostFrequency(): PostFrequency {
+  const configured = process.env.AUTO_POST_FREQUENCY?.trim().toLowerCase();
+  if (configured === 'weekly') return 'weekly';
+  if (configured === 'monthly') return 'monthly';
+  return 'daily';
+}
+
+/**
  * פונקציה ראשית המאתחלת את הבוט האוטומטי בשרת
  */
 export const initializeAutoPostBot = () => {
-  // תזמון: בכל יום בשעה עגולה שמוגדרת ב-AUTO_POST_BOT_HOUR (ברירת מחדל: 10:00 בבוקר)
   const hour = getAutoPostBotHour();
-  console.log(`[BOT] הבוט האוטומטי מתוזמן לרוץ מדי יום בשעה ${hour}:00`);
-  cron.schedule(`0 ${hour} * * *`, async () => {
+  const frequency = getAutoPostFrequency();
+
+  // 1. הגדרת ביטוי ה-Cron וסף הימים לבדיקת פעילות לפי התדירות הנבחרת
+  let cronExpression: string;
+  let requiredIntervalDays: number;
+
+  switch (frequency) {
+    case 'monthly':
+      cronExpression = `0 ${hour} 1 * *`; // ריצה ב-1 לכל חודש בשעה שנבחרה
+      requiredIntervalDays = 30;
+      break;
+    case 'weekly':
+      cronExpression = `0 ${hour} * * 0`; // ריצה בכל יום ראשון בשעה שנבחרה
+      requiredIntervalDays = 7;
+      break;
+    case 'daily':
+    default:
+      cronExpression = `0 ${hour} * * *`; // ריצה יומית בכל יום בשעה שנבחרה
+      requiredIntervalDays = 1;
+      break;
+  }
+
+  console.log(`[BOT] הבוט האוטומטי מתוזמן לרוץ בתדירות ${frequency} בשעה ${hour}:00 (ביטוי cron: ${cronExpression})`);
+
+  cron.schedule(cronExpression, async () => {
     try {
       console.log('[BOT] מתעורר ומריץ בדיקות פעילות והלכה...');
 
@@ -46,7 +81,7 @@ export const initializeAutoPostBot = () => {
       try {
         const todayIso = new Date().toISOString().split('T')[0]; // פורמט YYYY-MM-DD
 
-        // פנייה ל-API חינמי של Hebcal המזהה חגים וערבי חגים רשמיים בארץ
+        // פנייה ל-API של Hebcal
         const holidayResponse = await fetch(
           `https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=off&mod=off&nx=off&year=now&month=now&ss=off&mf=off&c=off`
         );
@@ -60,9 +95,9 @@ export const initializeAutoPostBot = () => {
           items?: HebcalItem[];
         }
 
-        const holidayData = await holidayResponse.json() as HebcalResponse;
+        const holidayData = (await holidayResponse.json()) as HebcalResponse;
 
-        // בדיקה האם התאריך הנוכחי מוגדר כ-Yom Tov (יום טוב / אסור במלאכה) או ערב חג
+        // בדיקה האם התאריך הנוכחי מוגדר כ-Yom Tov או ערב חג
         const isRestrictedDay = holidayData.items?.some((item: HebcalItem) => {
           const isSameDate = item.date === todayIso;
           const isYomTov = item.yomtov === true;
@@ -80,34 +115,33 @@ export const initializeAutoPostBot = () => {
         return;
       }
 
-      // 3. הגנה שלישית: חיסכון משאבים ובדיקת פעילות אורגנית בבסיס הנתונים
+      // 3. הגנה שלישית: חיסכון משאבים ובדיקת פעילות אורגנית בבסיס הנתונים בהתאם לתדירות
       const lastPost = await Post.findOne().sort({ createdAt: -1 });
 
       if (lastPost) {
         const timeDifferenceMs = Date.now() - new Date(lastPost.createdAt).getTime();
-        const hoursSinceLastPost = timeDifferenceMs / (1000 * 60 * 60);
+        const daysSinceLastPost = timeDifferenceMs / (1000 * 60 * 60 * 24);
 
-        // אם משתמש אמיתי העלה פוסט ב-24 השעות האחרונות, הבוט עוצר ולא מבזבז טוקנים!
-        if (hoursSinceLastPost < 24) {
-          console.log(`[BOT] האתר פעיל אורגנית. פוסט אחרון עלה לפני ${hoursSinceLastPost.toFixed(1)} שעות. פנייה ל-AI בוטלה.`);
+        if (daysSinceLastPost < requiredIntervalDays) {
+          console.log(
+            `[BOT] האתר פעיל אורגנית. פוסט אחרון עלה לפני ${daysSinceLastPost.toFixed(1)} ימים (הסף הנדרש לתדירות ${frequency}: ${requiredIntervalDays} ימים). פנייה ל-AI בוטלה.`
+          );
           return;
         }
       }
 
-      console.log('[BOT] תנאי הפעלה אושרו: לא נמצאה פעילות ביממה האחרונה. פונה ל-OpenAI...');
+      console.log(`[BOT] תנאי הפעלה אושרו: לא נמצאה פעילות ב-${requiredIntervalDays} הימים האחרונים. פונה ל-OpenAI...`);
 
-      // 4. פנייה חסכונית וממוקדת ל-OpenAI ליצירת תוכן תכנותי בפורמט JSON קשוח
+      // 4. פנייה חסכונית וממוקדת ל-OpenAI ליצירת תוכן תכנותי בפורמט JSON
       const postIdea = await generateDailyPostIdea();
 
-      // 5. הפעלת מנגנון ה-Embedding על הכותרת החדשה לצורך תאימות למנוע החיפוש הסמנטי שלך
+      // 5. הפעלת מנגנון ה-Embedding על הכותרת החדשה לצורך תאימות למנוע החיפוש הסמנטי
       const titleVector = await getEmbedding(postIdea.title).catch((err) => {
         console.error('[BOT] כשל בהפקת embedding לכותרת, ממשיכים בלעדיו:', err);
         return [];
       });
 
       // 6. הפיכת שמות התגיות שה-AI הציע ל-ObjectId-ים אמיתיים במאגר התגיות
-      // (לפני כן: ה-AI התבקש להציע תגיות, אבל הן נוצרו ונזרקו - הפוסט של
-      // הבוט אף פעם לא קיבל תגיות בפועל)
       const tagIds = await resolveOrCreateTagsByNames(postIdea.tags).catch((err) => {
         console.error('[BOT] כשל בפתרון תגיות, הפוסט יפורסם בלי תגיות:', err);
         return [];
