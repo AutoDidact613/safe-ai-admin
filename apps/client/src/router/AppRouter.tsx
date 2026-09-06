@@ -34,6 +34,7 @@ import AiNewsDetailsPage from "../pages/AiNewsDetailsPage";
 import ErrorBoundary from "../components/ErrorBoundary";
 import ForumPage from '../features/forum/ForumPage';
 import { PostThreadPage } from '../features/forum/PostThreadPage';
+import PaymeResultPage from '../features/organizations/PaymeResultPage';
 import SafeAIHubHomePage from "../pages/SafeAIHubHomePage";
 import SafeAIPlatformHomePage from "../pages/SafeAIPlatformHomePage";
 
@@ -233,6 +234,28 @@ export default function AppRouter() {
         />
 
         <Route path="/admin/organizations" element={<Navigate to="/safeai-ui" replace />} />
+
+        {/* PayMe wallet top-up result pages (PayMe redirects the browser here) */}
+        <Route
+          path="/organizations/:id/wallet/payme/success"
+          element={
+            <ProtectedRoute>
+              <ErrorBoundary>
+                <PaymeResultPage />
+              </ErrorBoundary>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/organizations/:id/wallet/payme/fail"
+          element={
+            <ProtectedRoute>
+              <ErrorBoundary>
+                <PaymeResultPage />
+              </ErrorBoundary>
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/admin/articles"
