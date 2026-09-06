@@ -272,7 +272,7 @@ export const PostThreadPage: React.FC = () => {
 
     const isCurrentYear = date.getFullYear() === now.getFullYear();
     const monthFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { month: 'long' });
-    const monthName = monthFormatter.format(date).replace(/[\u0591-\u05C7]/g, "");
+    const monthName = monthFormatter.format(date).replace(/[֑-ׇ]/g, "");
     const dayLetters = convertToGematriaPipe(date.getDate());
     let hebrewDate = `${dayLetters} ב${monthName}`;
 
@@ -553,7 +553,7 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
         </div>
       ) : !currentUser ? (
        <div className="forum-unauthorized-notice">
-        <span>יש <Link to="/login" className=".forum-login-link">להתחבר</Link> כדי להגיב כאן</span>
+        <span>יש <Link to="/login" className="forum-login-link">להתחבר</Link> כדי להגיב כאן</span>
       </div>
       ) : (
         <div className="forum-comment-form-wrap">
