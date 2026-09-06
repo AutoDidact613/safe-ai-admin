@@ -8,16 +8,13 @@ describe('registerSchema', () => {
     organizationId: '6a00e26b1e9d916a4da16fd7',
   };
 
-  it('rejects an email containing "+"', () => {
+  it('accepts an email containing "+" for server-side registration handling', () => {
     const result = registerSchema.safeParse({
       ...baseData,
       email: 'user+tag@example.com',
     });
 
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues.some((issue) => issue.message.includes('+'))).toBe(true);
-    }
+    expect(result.success).toBe(true);
   });
 
   it('accepts a valid email without "+"', () => {

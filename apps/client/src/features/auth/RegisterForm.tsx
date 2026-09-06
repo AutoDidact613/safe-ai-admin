@@ -42,7 +42,6 @@ export default function RegisterForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
-  const [emailError, setEmailError] = useState<string | null>(null);
   const [agreedToPrivacyPolicy, setAgreedToPrivacyPolicy] = useState(false);
   const navigate = useNavigate();
 
@@ -64,13 +63,6 @@ export default function RegisterForm() {
     // };
     // fetchOrganizations();
   }, []);
-
-  const validateEmail = (email: string): string | null => {
-    if (email.includes("+")) {
-      return 'לא ניתן להשתמש בתו "+" בכתובת המייל';
-    }
-    return null;
-  };
 
   const validatePassword = (password: string): string[] => {
     const errors: string[] = [];
@@ -94,12 +86,9 @@ export default function RegisterForm() {
     setLoading(true);
     setError(null);
     setPasswordErrors([]);
-    setEmailError(null);
 
-    // Validate email
-    const emailValidationError = validateEmail(formData.email);
-    if (emailValidationError) {
-      setEmailError(emailValidationError);
+    if (formData.email.includes("+")) {
+      setError("משתמש עם אימייל זה כבר קיים במערכת");
       setLoading(false);
       return;
     }
@@ -178,9 +167,7 @@ export default function RegisterForm() {
       setPasswordErrors([]);
     }
 
-    if (name === "email") {
-      setEmailError(validateEmail(value));
-    }
+
   };
 
   return (
@@ -214,9 +201,6 @@ export default function RegisterForm() {
               placeholder="your@email.com"
               autoComplete="email"
             />
-            {emailError && (
-              <span style={{ color: "#dc3545", fontSize: "12px" }}>{emailError}</span>
-            )}
           </div>
 
           <div className="form-group">

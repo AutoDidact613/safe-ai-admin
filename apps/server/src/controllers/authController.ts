@@ -41,9 +41,11 @@ export async function registerHandler(req: Request, res: Response) {
     });
   } catch (error: any) {
     logger.error("Registration error:", { error: error.message, stack: error.stack });
+    const message = error.message || "ההרשמה נכשלה";
     res.status(400).json({
       success: false,
-      error: error.message || "ההרשמה נכשלה",
+      message,
+      error: message,
     });
   }
 }
