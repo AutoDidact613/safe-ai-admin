@@ -11,3 +11,4 @@ export * from "./evaluationLog";
 export * from "./usageLog";
 export * from "./applicationLog";
 export * from "./organization";
+export * from "./walletTransaction";

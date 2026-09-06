@@ -107,6 +107,13 @@ export const API_ENDPOINTS = {
     all: `${API_BASE_URL}/articles/all`,
     bySlug: (slug: string) => `${API_BASE_URL}/articles/${slug}`,
   },
+  // PayMe wallet top-up endpoints
+  payme: {
+    initiate: (organizationId: string) =>
+      `${API_BASE_URL}/organizations/${organizationId}/wallet/payme/initiate`,
+    status: (organizationId: string, transactionId: string) =>
+      `${API_BASE_URL}/organizations/${organizationId}/wallet/payme/status/${transactionId}`,
+  },
 } as const;
 
 type RefreshedTokens = { accessToken: string; refreshToken: string };

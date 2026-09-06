@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { createOrganizationMember, getMyOrganization } from "../features/organizations/api/organizationApi";
+import { apiCall, API_ENDPOINTS } from "../config/api";
 import "../styles/organization-wallet.css";
 
 interface User {
@@ -126,38 +127,20 @@ export default function OrganizationUsersPage() {
     try {
       setIsSubmitting(true);
 
-      const token = localStorage.getItem("accessToken");
-
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/organizations/${organization._id}/top-up`,
-        { amount: Number(topUpAmount) },
+      const { iframeUrl } = await apiCall<{ iframeUrl: string; requestId: string }>(
+        API_ENDPOINTS.payme.initiate(organization._id),
         {
-          headers: { Authorization: `Bearer ${token}` },
+          method: "POST",
+          body: JSON.stringify({ amount: Number(topUpAmount) }),
         }
       );
 
-      alert(
-        t("orgUsers.topUpSuccessAlert", { balance: response.data.organization.walletBalance })
-      );
-
-      setOrganization(response.data.organization);
-      setTopUpAmount("");
+      // Hand off to PayMe - it redirects back to our success/fail page
+      // (see PaymeResultPage.tsx) once the payment is done.
+      window.location.href = iframeUrl;
     } catch (err: unknown) {
-      console.error("Error topping up wallet:", err);
-
-      if (axios.isAxiosError(err)) {
-        const errorMsg =
-          err.response?.data?.error ||
-          err.response?.data?.message ||
-          t("orgUsers.topUpFailedFallback");
-
-        alert(errorMsg);
-      } else if (err instanceof Error) {
-        alert(err.message);
-      } else {
-        alert(t("orgUsers.topUpFailedFallback"));
-      }
-    } finally {
+      console.error("Error initiating wallet top-up:", err);
+      alert(err instanceof Error ? err.message : "נכשלה יצירת בקשת התשלום");
       setIsSubmitting(false);
     }
   };
@@ -467,14 +450,14 @@ export default function OrganizationUsersPage() {
                   <span className="status-pill" style={{
                     backgroundColor: user.isActive ? "var(--color-success)" : "var(--color-danger)"
                   }}>
-                    {user.isActive ? t("orgUsers.active") : t("orgUsers.inactive")}
+                    {user.isActive ? `✓ ${t("orgUsers.active")}` : `✕ ${t("orgUsers.inactive")}`}
                   </span>
                 </td>
                 <td className="status-cell">
                   <span className="status-pill" style={{
                     backgroundColor: user.lastLogin ? "var(--color-success)" : "var(--color-danger)"
                   }}>
-                    {user.lastLogin ? t("orgUsers.joinedLabel") : t("orgUsers.pendingFirstLoginLabel")}
+                    {user.lastLogin ? `✓ ${t("orgUsers.joinedLabel")}` : `⏳ ${t("orgUsers.pendingFirstLoginLabel")}`}
                   </span>
                 </td>
                 <td>{new Date(user.createdAt).toLocaleDateString()}</td>
