@@ -1,6 +1,21 @@
 import { Response } from 'express';
 import * as contactMessageService from '../services/contactMessageService';
 import { ContactMessage } from '../models/ContactMessage';
+import * as s3Service from '../services/s3Service';
+
+// The bucket is private - the `url` saved on a ContactMessage's attachment is
+// the raw S3 object URL with no signature, so it 403s if used directly as an
+// <img>/<video> src. Sign each one into a temporary download URL right before
+// the response goes out (data-URI fallback attachments pass through signAttachments
+// unchanged - see s3Service.generatePresignedDownloadUrl's catch-all).
+async function withSignedAttachments(doc: any) {
+  const plain = typeof doc?.toObject === "function" ? doc.toObject() : doc;
+  if (Array.isArray(plain?.attachments) && plain.attachments.length > 0) {
+    const signedUrls = await s3Service.signAttachments(plain.attachments.map((a: any) => a.url));
+    plain.attachments = plain.attachments.map((a: any, i: number) => ({ ...a, url: signedUrls[i] }));
+  }
+  return plain;
+}
 
 // פונקציה להחזרת כל הפניות של המשתמש המחובר
 export const getMyRequests = async (req: any, res: Response) => {
@@ -39,7 +54,7 @@ export const getRequestById = async (req: any, res: Response) => {
       return res.status(403).json({ message: "אין לך גישה לפנייה זו" });
     }
 
-    res.status(200).json(request);
+    res.status(200).json(await withSignedAttachments(request));
   } catch (error) {
     res.status(500).json({ message: "שגיאה בטעינת פרטי הפנייה" });
   }

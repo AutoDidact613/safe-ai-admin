@@ -59,7 +59,7 @@ export default function EmailVerification() {
           <div style={{ textAlign: "center", padding: "40px" }}>
             <div className="spinner" style={{ margin: "0 auto 20px" }}></div>
             <h2>מאמת את האימייל שלך...</h2>
-            <p style={{ color: "#666" }}>אנא המתן</p>
+            <p style={{ color: "var(--text-muted)" }}>אנא המתן</p>
           </div>
         )}
 
@@ -73,11 +73,11 @@ export default function EmailVerification() {
             >
               ✅
             </div>
-            <h2 style={{ color: "#28a745", marginBottom: "15px" }}>
+            <h2 style={{ color: "var(--color-success)", marginBottom: "15px" }}>
               האימייל אומת בהצלחה!
             </h2>
-            <p style={{ color: "#666", marginBottom: "20px" }}>{message}</p>
-            <p style={{ color: "#999", fontSize: "14px" }}>
+            <p style={{ color: "var(--text-muted)", marginBottom: "20px" }}>{message}</p>
+            <p style={{ color: "var(--gray-400)", fontSize: "14px" }}>
               מעביר אותך לדף ההתחברות...
             </p>
           </div>
@@ -93,10 +93,10 @@ export default function EmailVerification() {
             >
               ❌
             </div>
-            <h2 style={{ color: "#dc3545", marginBottom: "15px" }}>
+            <h2 style={{ color: "var(--color-danger)", marginBottom: "15px" }}>
               אימות האימייל נכשל
             </h2>
-            <p style={{ color: "#666", marginBottom: "30px" }}>{message}</p>
+            <p style={{ color: "var(--text-muted)", marginBottom: "30px" }}>{message}</p>
             <div
               style={{ display: "flex", gap: "10px", justifyContent: "center" }}
             >

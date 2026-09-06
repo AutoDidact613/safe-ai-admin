@@ -25,6 +25,18 @@ export function getKeyPrefix(value: string, prefixLength = 12): string {
   return value.slice(0, prefixLength);
 }
 
+/**
+ * Constant-time string comparison for bearer secrets (e.g. AGENT_SERVICE_TOKEN).
+ * Hashes both sides to fixed-length SHA-256 digests before crypto.timingSafeEqual,
+ * which requires equal-length buffers and would otherwise throw on a length
+ * mismatch - hashing first also avoids leaking the secret's length via timing.
+ */
+export function constantTimeEqual(a: string, b: string): boolean {
+  const bufA = crypto.createHash("sha256").update(a).digest();
+  const bufB = crypto.createHash("sha256").update(b).digest();
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 export function encryptSecret(plainText: string): string {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv(ALGORITHM, keyBuffer, iv);

@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import LandingPage from "../pages/LandingPage";
+import LandingPageV2 from "../pages/LandingPageV2";
 import SafeAIUIPage from "../pages/SafeAIUIPage";
 import NotFound from "../pages/NotFound";
 import OrganizationUsersPage from "../pages/OrganizationUsersPage";
@@ -12,6 +13,7 @@ import RecommendedGuidesPage from "../pages/RecommendedGuidesPage";
 import CoursesPage from "../pages/CoursesPage";
 import ActivityLogPage from "../pages/ActivityLogPage";
 import AboutPage from "../pages/AboutPage";
+import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
 import TenderBoardPage from "../pages/TenderBoardPage";
 import DownloadAgentsPage from "../pages/AgentDownloadsPage";
 import LoginForm from "../features/auth/LoginForm";
@@ -23,6 +25,7 @@ import ResetPassword from "../features/auth/ResetPassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
+import Footer from "../components/Footer";
 import { PublicOrgOwnerSignup } from "../features/organizations/PublicOrgOwnerSignup";
 import RequestDetails from "../features/safeai-ui/RequestDetails";
 import AdminRequestsList from "../features/safeai-ui/AdminRequestsList";
@@ -31,6 +34,8 @@ import AiNewsDetailsPage from "../pages/AiNewsDetailsPage";
 import ErrorBoundary from "../components/ErrorBoundary";
 import ForumPage from '../features/forum/ForumPage';
 import { PostThreadPage } from '../features/forum/PostThreadPage';
+import SafeAIHubHomePage from "../pages/SafeAIHubHomePage";
+import SafeAIPlatformHomePage from "../pages/SafeAIPlatformHomePage";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -61,18 +66,33 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 const ROUTER_BASE = import.meta.env.VITE_BASE_PATH?.replace(/\/$/, "") || "";
 
+// The SafeAI Hub / SafeAI Platform dashboards (SCRUM-228/229) ship their own
+// complete sidebar navigation — showing the global header/banner above them
+// too just duplicates every link a second time. Hidden only on these two
+// routes; every other page keeps the global chrome unchanged.
+const ROUTES_WITHOUT_GLOBAL_CHROME = ["/safeai-hub", "/safeai-platform"];
+
+function GlobalChrome() {
+  const location = useLocation();
+  if (ROUTES_WITHOUT_GLOBAL_CHROME.includes(location.pathname)) return null;
+  return (
+    <>
+      <TopNavigation />
+      <BetaBanner />
+    </>
+  );
+}
+
 export default function AppRouter() {
   return (
     <BrowserRouter basename={ROUTER_BASE}>
-      {/* Global Top Navigation */}
-      <TopNavigation />
-
-      {/* Beta Banner */}
-      <BetaBanner />
+      <GlobalChrome />
 
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
+        {/* טיוטת דף בית חדש (SCRUM-227) — לתצוגה מקדימה בלבד, טרם מוחלף בנתיב הראשי */}
+        <Route path="/landing-preview" element={<LandingPageV2 />} />
         <Route path="/become-org-owner" element={<PublicOrgOwnerSignup />} />
 
         <Route
@@ -158,8 +178,26 @@ export default function AppRouter() {
         <Route
           path="/forum"
           element={
-            <ProtectedRoute>
               <ForumPage />
+          }
+        />
+
+        {/* Sub-homepages (SCRUM-228 / SCRUM-229) — not yet linked from the
+            main navigation; the SafeAI Hub / SafeAI Platform banners on
+            /landing-preview stay "בעדכון" until that connection is made. */}
+        <Route
+          path="/safeai-hub"
+          element={
+            <ProtectedRoute>
+              <SafeAIHubHomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/safeai-platform"
+          element={
+            <ProtectedRoute>
+              <SafeAIPlatformHomePage />
             </ProtectedRoute>
           }
         />
@@ -211,6 +249,7 @@ export default function AppRouter() {
 
         {/* New Pages Routes */}
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/docs" element={<ArticlesPage />} />
         <Route path="/docs/:slug" element={<ArticlePage />} />
@@ -220,11 +259,13 @@ export default function AppRouter() {
         <Route path="/activity-log" element={<ActivityLogPage />} />
         <Route path="/tender-board" element={<TenderBoardPage />} />
         <Route path="/download-agents" element={<DownloadAgentsPage />} />
-        <Route path="/forum/post/:id" element={<ProtectedRoute><PostThreadPage /></ProtectedRoute>} />
+        <Route path="/forum/post/:id" element={<PostThreadPage />} />
 
         {/* Catch all - 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+
+      <Footer />
     </BrowserRouter>
   );
 }

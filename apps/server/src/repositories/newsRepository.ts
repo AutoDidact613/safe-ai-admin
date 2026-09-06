@@ -19,6 +19,11 @@ export const newsRepository = {
     return await News.findById(id);
   },
 
+  // Get every distinct tag used across all news
+  async findAllTags(): Promise<string[]> {
+    return await News.distinct("tags");
+  },
+
   // Create news
   async create(data: Partial<INews>): Promise<INews> {
     return await News.create(data);

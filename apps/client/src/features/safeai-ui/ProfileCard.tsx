@@ -11,7 +11,7 @@ function PromptSection({ label, prompts }: { label: string; prompts: string[] })
   return (
     <div style={{ marginBottom: "5px", fontSize: "13px" }}>
       <strong>{label}:</strong> {prompts.length} prompt(s)
-      <div style={{ marginTop: "3px", paddingRight: "10px", fontSize: "12px", color: "#666" }}>
+      <div style={{ marginTop: "3px", paddingRight: "10px", fontSize: "12px", color: "var(--text-muted)" }}>
         {prompts.map((p, i) => (
           <div key={i} style={{ marginBottom: "2px" }}>• {p.substring(0, 50)}{p.length > 50 ? "..." : ""}</div>
         ))}
@@ -68,12 +68,12 @@ export default function ProfileCard({ profile, onEdit, onDelete }: Props) {
             <span className="item-detail-value">{profile.blockedCategories!.length}</span>
           </div>
         )}
-        <div style={{ marginTop: "10px", padding: "10px", backgroundColor: "#f8f9fa", borderRadius: "5px" }}>
+        <div style={{ marginTop: "10px", padding: "10px", backgroundColor: "var(--bg-elevated)", borderRadius: "5px" }}>
           <strong style={{ display: "block", marginBottom: "5px" }}>📝 Prompts:</strong>
           <PromptSection label="Content" prompts={profile.contentPrompts ?? []} />
           <PromptSection label="Behavior" prompts={profile.behaviorPrompts ?? []} />
           <PromptSection label="Knowledge" prompts={profile.knowledgePrompts ?? []} />
-          {!hasPrompts && <div style={{ fontSize: "12px", color: "#999" }}>אין prompts מוגדרים</div>}
+          {!hasPrompts && <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>אין prompts מוגדרים</div>}
         </div>
       </div>
       <div className="item-card-footer" style={{ display: "flex", gap: "10px", marginTop: "15px" }}>

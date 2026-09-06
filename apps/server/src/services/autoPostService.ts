@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import Post from '../models/Post';
 import { getEmbedding, generateDailyPostIdea } from './aiService';
 import { resolveOrCreateTagsByNames } from './tagService';
+import logger from '../logger';
 
 const DEFAULT_AUTO_POST_BOT_HOUR = 10;
 
@@ -110,8 +111,15 @@ export const initializeAutoPostBot = () => {
           console.log('[BOT] היום חג או ערב חג בישראל. המנגנון מושבת לטובת קדושת היום.');
           return;
         }
-      } catch (apiError) {
-        console.error('[BOT] שגיאה בתקשורת עם Hebcal, ליתר ביטחון נעצור את הריצה:', apiError);
+      } catch (apiError: any) {
+        // ריצה מתוזמנת (cron) - אין req, ולכן אין userId/organizationId/requestId אמיתיים לצרף
+        logger.error('Failed to check Hebcal holiday calendar', {
+          error: apiError.message,
+          stack: apiError.stack,
+          userId: undefined,
+          organizationId: undefined,
+          requestId: undefined,
+        });
         return;
       }
 
@@ -136,14 +144,28 @@ export const initializeAutoPostBot = () => {
       const postIdea = await generateDailyPostIdea();
 
       // 5. הפעלת מנגנון ה-Embedding על הכותרת החדשה לצורך תאימות למנוע החיפוש הסמנטי
-      const titleVector = await getEmbedding(postIdea.title).catch((err) => {
-        console.error('[BOT] כשל בהפקת embedding לכותרת, ממשיכים בלעדיו:', err);
+      const titleVector = await getEmbedding(postIdea.title).catch((err: any) => {
+        logger.error('Failed to generate title embedding for bot post', {
+          error: err.message,
+          stack: err.stack,
+          userId: undefined,
+          organizationId: undefined,
+          requestId: undefined,
+          title: postIdea.title,
+        });
         return [];
       });
 
       // 6. הפיכת שמות התגיות שה-AI הציע ל-ObjectId-ים אמיתיים במאגר התגיות
-      const tagIds = await resolveOrCreateTagsByNames(postIdea.tags).catch((err) => {
-        console.error('[BOT] כשל בפתרון תגיות, הפוסט יפורסם בלי תגיות:', err);
+      const tagIds = await resolveOrCreateTagsByNames(postIdea.tags).catch((err: any) => {
+        logger.error('Failed to resolve tags for bot post', {
+          error: err.message,
+          stack: err.stack,
+          userId: undefined,
+          organizationId: undefined,
+          requestId: undefined,
+          tags: postIdea.tags,
+        });
         return [];
       });
 
@@ -166,8 +188,14 @@ export const initializeAutoPostBot = () => {
       await newBotPost.save();
       console.log(`[BOT] הפוסט האוטומטי פורסם בהצלחה! כותרת: "${postIdea.title}", תגיות: ${tagIds.length}`);
 
-    } catch (error) {
-      console.error('[BOT] שגיאה כללית בהרצת מנגנון הבוט האוטומטי:', error);
+    } catch (error: any) {
+      logger.error('Failed to run daily auto-post bot', {
+        error: error.message,
+        stack: error.stack,
+        userId: undefined,
+        organizationId: undefined,
+        requestId: undefined,
+      });
     }
   });
 };

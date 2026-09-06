@@ -13,7 +13,7 @@ interface Props {
   onOrganizationChange: (v: string) => void;
 }
 
-const selectStyle = { padding: "5px 10px", borderRadius: "4px", border: "1px solid #ddd" };
+const selectStyle = { padding: "5px 10px", borderRadius: "4px", border: "1px solid var(--border-default)" };
 const labelStyle = { marginLeft: "8px", fontWeight: "bold" as const };
 
 export default function UserFilters({ filterStatus, filterMode, filterProfile, filterOrganization, profiles, organizations, onStatusChange, onModeChange, onProfileChange, onOrganizationChange }: Props) {

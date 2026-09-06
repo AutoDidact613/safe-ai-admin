@@ -5,6 +5,7 @@ export interface INews extends Document {
     content: string;
     source?: string;
     tags?: string[];
+    imageUrl?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -28,6 +29,10 @@ const NewsSchema = new Schema(
     tags:{
         type:[String],
         default:[]
+    },
+    imageUrl:{
+        type:String,
+        trim:true
     }
 },
 {

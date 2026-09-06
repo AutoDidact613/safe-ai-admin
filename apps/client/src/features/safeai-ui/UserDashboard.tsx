@@ -150,7 +150,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
             <div className="form-group">
               <label htmlFor="profile-select">בחר פרופיל:</label>
               <select id="profile-select" value={selectedProfileId} onChange={(e) => setSelectedProfileId(e.target.value)}
-                style={{ width: "100%", padding: "12px", fontSize: "16px", borderRadius: "5px", border: "1px solid #ddd", marginTop: "8px", backgroundColor: "#f8f9fa" }}>
+                style={{ width: "100%", padding: "12px", fontSize: "16px", borderRadius: "5px", border: "1px solid var(--border-default)", marginTop: "8px", backgroundColor: "var(--bg-elevated)" }}>
                 <option value="">-- בחר פרופיל --</option>
                 {allProfiles.map((p) => <option key={p._id} value={p._id}>{p.name}</option>)}
               </select>

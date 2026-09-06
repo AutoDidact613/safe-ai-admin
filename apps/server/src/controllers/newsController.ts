@@ -21,6 +21,18 @@ export const newsController = {
     }
   },
 
+  // GET /api/news/tags
+  async getAllTags(req: Request, res: Response) {
+    try {
+      const tags = await newsService.getAllTags();
+      return res.status(200).json(tags);
+    } catch (error: any) {
+      return res.status(500).json({
+        message: error.message || "Internal server error",
+      });
+    }
+  },
+
   // GET /api/news/:id
   async getNewsById(req: Request<NewsParams>, res: Response) {
     try {

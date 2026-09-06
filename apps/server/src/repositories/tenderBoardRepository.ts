@@ -56,6 +56,37 @@ export async function updateTenderApplicants(id: string, applicants: any[]) {
   ).lean();
 }
 
+export async function markApplicantsViewed(id: string) {
+  const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { id };
+
+  return Tender.findOneAndUpdate(
+    query,
+    { $set: { "applicants.$[].isViewed": true } },
+    { new: true, runValidators: true }
+  ).lean();
+}
+
+/**
+ * Overwrites the `specification` subdocument only, without touching any other
+ * tender field - the agent's write-back must not be able to clobber the
+ * publisher's own tender data (title, budget, applicants, etc.).
+ */
+export async function updateTenderSpecification(id: string, specification: Record<string, any>) {
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    return Tender.findByIdAndUpdate(
+      id,
+      { $set: { specification } },
+      { new: true, runValidators: true }
+    ).lean();
+  }
+
+  return Tender.findOneAndUpdate(
+    { id },
+    { $set: { specification } },
+    { new: true, runValidators: true }
+  ).lean();
+}
+
 export async function deleteTender(id: string) {
   if (mongoose.Types.ObjectId.isValid(id)) {
     return Tender.findByIdAndDelete(id).lean();
