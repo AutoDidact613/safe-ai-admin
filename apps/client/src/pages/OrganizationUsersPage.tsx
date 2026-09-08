@@ -4,9 +4,9 @@ import {
   createOrganizationMember,
   getMyOrganization,
   getOrganizationUsers,
-  topUpOrganizationWallet,
   updateOrganizationDetails,
 } from "../features/organizations/api/organizationApi";
+import { apiCall, API_ENDPOINTS } from "../config/api";
 import "../styles/organization-wallet.css";
 
 interface User {
@@ -95,19 +95,20 @@ export default function OrganizationUsersPage() {
     try {
       setIsSubmitting(true);
 
-      const { organization: updatedOrg } = await topUpOrganizationWallet(
-        organization._id,
-        Number(topUpAmount)
+      const { iframeUrl } = await apiCall<{ iframeUrl: string; requestId: string }>(
+        API_ENDPOINTS.payme.initiate(organization._id),
+        {
+          method: "POST",
+          body: JSON.stringify({ amount: Number(topUpAmount) }),
+        }
       );
 
-      alert(`הארנק נטען בהצלחה! יתרה חדשה: $${updatedOrg.walletBalance}`);
-
-      setOrganization(updatedOrg as unknown as Organization);
-      setTopUpAmount("");
+      // Hand off to PayMe - it redirects back to our success/fail page
+      // (see PaymeResultPage.tsx) once the payment is done.
+      window.location.href = iframeUrl;
     } catch (err: unknown) {
-      console.error("Error topping up wallet:", err);
-      alert(err instanceof Error ? err.message : "נכשל הטעינה לארנק");
-    } finally {
+      console.error("Error initiating wallet top-up:", err);
+      alert(err instanceof Error ? err.message : "נכשלה יצירת בקשת התשלום");
       setIsSubmitting(false);
     }
   };
@@ -396,14 +397,14 @@ export default function OrganizationUsersPage() {
                   <span className="status-pill" style={{
                     backgroundColor: user.isActive ? "var(--color-success)" : "var(--color-danger)"
                   }}>
-                    {user.isActive ? "פעיל" : "לא פעיל"}
+                    {user.isActive ? "✓ פעיל" : "✕ לא פעיל"}
                   </span>
                 </td>
                 <td className="status-cell">
                   <span className="status-pill" style={{
                     backgroundColor: user.lastLogin ? "var(--color-success)" : "var(--color-danger)"
                   }}>
-                    {user.lastLogin ? "הצטרף" : "ממתין להתחברות ראשונה"}
+                    {user.lastLogin ? "✓ הצטרף" : "⏳ ממתין להתחברות ראשונה"}
                   </span>
                 </td>
                 <td>{new Date(user.createdAt).toLocaleDateString()}</td>

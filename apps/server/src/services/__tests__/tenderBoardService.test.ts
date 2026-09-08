@@ -3,6 +3,7 @@ import express from "express";
 import router from "../../routes/tenderBoardRouter"; // נתיב הראוטר שלך
 import * as service from "../tenderBoardService";
 import { AIService, TenderTopicMismatchError } from "../tenderBoardAIService";
+import { triggerTenderSpecAgent, cancelTenderSpecAgent } from "../tenderSpecAgentRunner";
 
 // 1. הגדרת מוקים (Mocks) לכל השירותים והשכבות החיצוניות כדי למנוע קריאות אמיתיות ל-DB או ל-AI
 jest.mock("../tenderBoardService");
@@ -32,17 +33,35 @@ jest.mock("mongoose", () => ({
 jest.mock("../aiService", () => ({
   callAI: jest.fn(),
 }));
+jest.mock("../tenderSpecAgentRunner", () => ({
+  triggerTenderSpecAgent: jest.fn(),
+  cancelTenderSpecAgent: jest.fn(),
+}));
 // 2. עקיפת ה-Middleware של האוונטיקציה לצורך בדיקות יחידה מבודדות.
 // כדי לבדוק את בדיקות ההרשאה/בעלות (isOwnerOrAdmin) על update/close/delete,
 // מאפשרים לכל בקשה להעביר את זהות המשתמש המדומה בכותרת x-test-user (JSON),
 // בלי לשבור טסטים קיימים שלא מגדירים את הכותרת הזו כלל (req.user יישאר undefined).
-jest.mock("../../middleware/auth", () => ({
-  authenticateToken: (req: any, res: any, next: any) => {
+jest.mock("../../middleware/auth", () => {
+  const authenticateToken = (req: any, res: any, next: any) => {
     const testUser = req.headers["x-test-user"];
     if (testUser) req.user = JSON.parse(testUser);
     next();
-  },
-}));
+  };
+  const requireAdmin = (req: any, res: any, next: any) => {
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    next();
+  };
+  // מוקאפ תואם למימוש האמיתי (apps/server/src/middleware/auth.ts) - נדרש כי
+  // הראוטר האמיתי מטיל אותו על agent-context/specification (SCRUM-287/293).
+  // בדיקת ה-AGENT_SERVICE_TOKEN הסטטי לא נבדקת דרך ה-harness הזה (עוקף JWT/secret
+  // check לגמרי) - היא מכוסה בבדיקות אינטגרציה נפרדות מול המימוש האמיתי.
+  const requireAdminOrServiceToken = (req: any, res: any, next: any) => {
+    authenticateToken(req, res, () => requireAdmin(req, res, next));
+  };
+  return { authenticateToken, requireAdmin, requireAdminOrServiceToken };
+});
 
 // אתחול אפליקציית Express פיקטיבית לצורך הבדיקה
 const app = express();
@@ -283,11 +302,11 @@ describe("Tender Board Feature Tests", () => {
   });
 
   describe("GET /tender-board/smart-search", () => {
-    it("should perform smart search using AI mongo query translation", async () => {
-      const mockMongoQuery = { productType: "אפליקציה" };
+    it("should perform smart search using AI candidate-id filtering", async () => {
+      const mockMatchedIds = ["1"];
       const mockTendersResult = [{ _id: "1", title: "מכרז אפליקציה בצפון" }];
 
-      AIService.generateSearchQuery = jest.fn().mockResolvedValue(mockMongoQuery);
+      AIService.generateSearchResultIds = jest.fn().mockResolvedValue(mockMatchedIds);
       (service.smartSearchTenders as jest.Mock).mockResolvedValue(mockTendersResult);
 
       const res = await request(app)
@@ -296,6 +315,229 @@ describe("Tender Board Feature Tests", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockTendersResult);
+    });
+  });
+
+  // ==========================================
+  // ו. אפיון אוטומטי + המלצת פיתוח (SCRUM-287/291/292/293)
+  // ==========================================
+  describe("GET /tender-board/:id/agent-context (agent-facing, admin only)", () => {
+    it("returns the tender context for an admin (service-token) caller", async () => {
+      const mockContext = { id: "123", title: "מכרז קיים" };
+      (service.getTenderAgentContext as jest.Mock).mockResolvedValue(mockContext);
+
+      const res = await request(app)
+        .get("/tender-board/123/agent-context")
+        .set("x-test-user", ADMIN_USER);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual(mockContext);
+    });
+
+    it("denies a regular (non-admin) user with 403", async () => {
+      const res = await request(app)
+        .get("/tender-board/123/agent-context")
+        .set("x-test-user", OWNER_USER);
+
+      expect(res.status).toBe(403);
+      expect(service.getTenderAgentContext).not.toHaveBeenCalled();
+    });
+
+    it("returns 404 when the tender does not exist", async () => {
+      (service.getTenderAgentContext as jest.Mock).mockResolvedValue(null);
+
+      const res = await request(app)
+        .get("/tender-board/999/agent-context")
+        .set("x-test-user", ADMIN_USER);
+
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe("POST /tender-board/:id/specification (agent-facing write-back, admin only)", () => {
+    it("saves a ready specification from an admin (service-token) caller", async () => {
+      const specPayload = {
+        status: "ready",
+        techStackRecommendation: "Node.js + React",
+        openSourceReferences: [{ title: "foo", url: "https://example.com/foo" }],
+        readingSources: [],
+        document: "# foo",
+      };
+      (service.saveTenderSpecification as jest.Mock).mockResolvedValue({
+        _id: "123",
+        specification: specPayload,
+      });
+
+      const res = await request(app)
+        .post("/tender-board/123/specification")
+        .set("x-test-user", ADMIN_USER)
+        .send(specPayload);
+
+      expect(res.status).toBe(200);
+      expect(service.saveTenderSpecification).toHaveBeenCalledWith("123", specPayload);
+    });
+
+    it("denies a regular (non-admin) user with 403", async () => {
+      const res = await request(app)
+        .post("/tender-board/123/specification")
+        .set("x-test-user", OWNER_USER)
+        .send({ status: "ready" });
+
+      expect(res.status).toBe(403);
+      expect(service.saveTenderSpecification).not.toHaveBeenCalled();
+    });
+
+    it("returns 400 when the service rejects an invalid status", async () => {
+      (service.saveTenderSpecification as jest.Mock).mockRejectedValue(
+        new Error("Invalid specification status")
+      );
+
+      const res = await request(app)
+        .post("/tender-board/123/specification")
+        .set("x-test-user", ADMIN_USER)
+        .send({ status: "not-a-real-status" });
+
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("POST /tender-board/:id/generate-specification-request (ownership)", () => {
+    it("allows the publisher to request specification generation and triggers the agent", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+      (service.requestTenderSpecification as jest.Mock).mockResolvedValue({
+        ...existingTender,
+        specification: { status: "pending" },
+      });
+
+      const res = await request(app)
+        .post("/tender-board/123/generate-specification-request")
+        .set("x-test-user", OWNER_USER);
+
+      expect(res.status).toBe(202);
+      expect(service.requestTenderSpecification).toHaveBeenCalledWith("123");
+      expect(triggerTenderSpecAgent).toHaveBeenCalledWith("123");
+    });
+
+    it("allows an admin to request specification generation for someone else's tender", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+      (service.requestTenderSpecification as jest.Mock).mockResolvedValue(existingTender);
+
+      const res = await request(app)
+        .post("/tender-board/123/generate-specification-request")
+        .set("x-test-user", ADMIN_USER);
+
+      expect(res.status).toBe(202);
+    });
+
+    it("denies a non-owner, non-admin user with 403 and does not trigger the agent", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+
+      const res = await request(app)
+        .post("/tender-board/123/generate-specification-request")
+        .set("x-test-user", OTHER_USER);
+
+      expect(res.status).toBe(403);
+      expect(service.requestTenderSpecification).not.toHaveBeenCalled();
+      expect(triggerTenderSpecAgent).not.toHaveBeenCalled();
+    });
+
+    it("returns 404 when the tender does not exist", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(null);
+
+      const res = await request(app)
+        .post("/tender-board/999/generate-specification-request")
+        .set("x-test-user", OWNER_USER);
+
+      expect(res.status).toBe(404);
+      expect(triggerTenderSpecAgent).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("POST /tender-board/:id/cancel-specification-request (ownership)", () => {
+    it("allows the publisher to cancel a running generation", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+      (cancelTenderSpecAgent as jest.Mock).mockReturnValue(true);
+
+      const res = await request(app)
+        .post("/tender-board/123/cancel-specification-request")
+        .set("x-test-user", OWNER_USER);
+
+      expect(res.status).toBe(200);
+      expect(cancelTenderSpecAgent).toHaveBeenCalledWith("123");
+    });
+
+    it("allows an admin to cancel someone else's running generation", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+      (cancelTenderSpecAgent as jest.Mock).mockReturnValue(true);
+
+      const res = await request(app)
+        .post("/tender-board/123/cancel-specification-request")
+        .set("x-test-user", ADMIN_USER);
+
+      expect(res.status).toBe(200);
+    });
+
+    it("returns 409 when nothing is currently running for this tender", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+      (cancelTenderSpecAgent as jest.Mock).mockReturnValue(false);
+
+      const res = await request(app)
+        .post("/tender-board/123/cancel-specification-request")
+        .set("x-test-user", OWNER_USER);
+
+      expect(res.status).toBe(409);
+    });
+
+    it("denies a non-owner, non-admin user with 403 and does not cancel anything", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+
+      const res = await request(app)
+        .post("/tender-board/123/cancel-specification-request")
+        .set("x-test-user", OTHER_USER);
+
+      expect(res.status).toBe(403);
+      expect(cancelTenderSpecAgent).not.toHaveBeenCalled();
+    });
+
+    it("returns 404 when the tender does not exist", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(null);
+
+      const res = await request(app)
+        .post("/tender-board/999/cancel-specification-request")
+        .set("x-test-user", OWNER_USER);
+
+      expect(res.status).toBe(404);
+      expect(cancelTenderSpecAgent).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("PATCH /tender-board/:id/specification/publish (ownership)", () => {
+    it("allows the publisher to publish their tender's specification", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+      (service.setTenderSpecificationPublished as jest.Mock).mockResolvedValue({
+        ...existingTender,
+        specification: { status: "ready", isPublished: true },
+      });
+
+      const res = await request(app)
+        .patch("/tender-board/123/specification/publish")
+        .set("x-test-user", OWNER_USER)
+        .send({ isPublished: true });
+
+      expect(res.status).toBe(200);
+      expect(service.setTenderSpecificationPublished).toHaveBeenCalledWith("123", true);
+    });
+
+    it("denies a non-owner, non-admin user with 403", async () => {
+      (service.getTenderById as jest.Mock).mockResolvedValue(existingTender);
+
+      const res = await request(app)
+        .patch("/tender-board/123/specification/publish")
+        .set("x-test-user", OTHER_USER)
+        .send({ isPublished: true });
+
+      expect(res.status).toBe(403);
+      expect(service.setTenderSpecificationPublished).not.toHaveBeenCalled();
     });
   });
 });

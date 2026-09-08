@@ -129,14 +129,3 @@ export const updateOrganizationDetails = async (
     body: JSON.stringify(data),
   });
 };
-
-// טעינת ארנק הארגון (סימולציה)
-export const topUpOrganizationWallet = async (
-  id: string,
-  amount: number
-): Promise<{ organization: AdminOrganization }> => {
-  return apiCall(API_ENDPOINTS.adminOrganizations.topUp(id), {
-    method: "POST",
-    body: JSON.stringify({ amount }),
-  });
-};
