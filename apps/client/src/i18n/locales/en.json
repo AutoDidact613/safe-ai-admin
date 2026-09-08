@@ -81,6 +81,8 @@
     "addingButton": "Adding...",
     "addMemberButton": "Add user",
     "createdMembersMessage": "{{count}} new users were added in this session. Login details to share with them:",
+    "tempPasswordWarning": "⚠️ These passwords are single-use only — every new user will be required to change it on first login. Share them with the users and delete the Excel file promptly afterward.",
+    "dismissCreatedMembersButton": "Close and clear the list from screen",
     "downloadExcelButton": "Download Excel file",
     "usersInOrg": "Users in Organization",
     "noUsers": "No users found in this organization.",
