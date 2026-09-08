@@ -6,6 +6,7 @@
 import { Request, Response } from "express";
 import * as authService from "../services/authService";
 import { validateRequest } from "../utils/validation";
+import { TokenPayload } from "../utils/jwt";
 import {
   registerSchema,
   loginSchema,
@@ -210,7 +211,7 @@ export async function resetPasswordHandler(req: Request, res: Response) {
  */
 export async function changePasswordHandler(req: Request, res: Response) {
   try {
-    const user = (req as any).user; // From authenticateToken middleware
+    const user = (req as Request & { user: TokenPayload }).user;
     const data = validateRequest(changePasswordSchema, req.body);
     await authService.changePassword(user.userId, data.currentPassword, data.newPassword);
 
