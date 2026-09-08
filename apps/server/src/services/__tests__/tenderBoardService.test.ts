@@ -37,6 +37,11 @@ jest.mock("../tenderSpecAgentRunner", () => ({
   triggerTenderSpecAgent: jest.fn(),
   cancelTenderSpecAgent: jest.fn(),
 }));
+// getActor() (controller) looks up organizationId via this repo - mocked so it
+// resolves instantly instead of attempting a real DB call in these unit tests.
+jest.mock("../../repositories/userRepository", () => ({
+  getUserById: jest.fn().mockResolvedValue(null),
+}));
 // 2. עקיפת ה-Middleware של האוונטיקציה לצורך בדיקות יחידה מבודדות.
 // כדי לבדוק את בדיקות ההרשאה/בעלות (isOwnerOrAdmin) על update/close/delete,
 // מאפשרים לכל בקשה להעביר את זהות המשתמש המדומה בכותרת x-test-user (JSON),
@@ -179,7 +184,7 @@ describe("Tender Board Feature Tests", () => {
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
       expect(res.body.tender).toEqual(mockAiParsedData);
-      expect(AIService.generateTenderData).toHaveBeenCalledWith("בנה לי אפליקציה");
+      expect(AIService.generateTenderData).toHaveBeenCalledWith("בנה לי אפליקציה", {});
     });
 
     it("should return 400 if text parameter is empty", async () => {
@@ -224,7 +229,7 @@ describe("Tender Board Feature Tests", () => {
         .send({ title: "עודכן" });
 
       expect(res.status).toBe(200);
-      expect(service.updateTender).toHaveBeenCalledWith("123", { title: "עודכן" });
+      expect(service.updateTender).toHaveBeenCalledWith("123", { title: "עודכן" }, { userId: "owner-1", organizationId: undefined });
     });
 
     it("allows an admin to update someone else's tender", async () => {
@@ -273,7 +278,7 @@ describe("Tender Board Feature Tests", () => {
         .set("x-test-user", OWNER_USER);
 
       expect(res.status).toBe(200);
-      expect(service.closeTender).toHaveBeenCalledWith("123");
+      expect(service.closeTender).toHaveBeenCalledWith("123", { userId: "owner-1", organizationId: undefined });
     });
   });
 

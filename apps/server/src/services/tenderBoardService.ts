@@ -27,12 +27,22 @@ const AI_ApplicationType_List = [
 ];
 
 /**
+ * Identity of whoever triggered the action, threaded in from the controller
+ * (resolved from the authenticated request) purely for audit logging.
+ */
+export interface LogActor {
+  userId?: string;
+  organizationId?: string;
+}
+
+/**
  * פונקציית עזר פנימית ליצירת לוג בבסיס הנתונים עם חישוב TTL של 60 יום מראש
  */
 async function saveTenderLog(params: {
   action: "CREATE" | "UPDATE" | "DELETE" | "APPLY" | "SMART_CREATE" | "SMART_SEARCH";
   status: "SUCCESS" | "FAILED";
   tenderId?: string | mongoose.Types.ObjectId;
+  userId?: string | undefined;
   metaData?: any;
   errorMessage?: string;
 }) {
@@ -44,10 +54,15 @@ async function saveTenderLog(params: {
       ? new mongoose.Types.ObjectId(params.tenderId.toString())
       : undefined;
 
+    const validUserId = params.userId && mongoose.Types.ObjectId.isValid(params.userId)
+      ? new mongoose.Types.ObjectId(params.userId)
+      : undefined;
+
     await TenderLog.create({
       action: params.action,
       status: params.status,
       tenderId: validTenderId,
+      userId: validUserId,
       metaData: params.metaData,
       errorMessage: params.errorMessage,
       timestamp: new Date(),
@@ -84,26 +99,38 @@ export async function getAIApplicationTypeList() {
   return AI_ApplicationType_List;
 }
 
-export async function createTender(data: any) {
+export async function createTender(data: any, actor: LogActor = {}) {
   try {
     const tender = await repo.createTender(data);
 
-    logger.info("Tender created successfully", { tenderId: tender._id, title: data.title });
+    logger.info("Tender created successfully", {
+      tenderId: tender._id,
+      title: data.title,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "CREATE",
       status: "SUCCESS",
       tenderId: tender._id,
+      userId: actor.userId,
       metaData: { title: data.title }
     });
 
     return tender;
   } catch (error: any) {
-    logger.error("Failed to create tender", { error, title: data?.title });
+    logger.error("Failed to create tender", {
+      error,
+      title: data?.title,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "CREATE",
       status: "FAILED",
+      userId: actor.userId,
       errorMessage: error?.message || String(error),
       metaData: { title: data?.title }
     });
@@ -112,28 +139,49 @@ export async function createTender(data: any) {
   }
 }
 
-export async function listTenders() {
+export async function listTenders(actor: LogActor = {}) {
   try {
     const tenders = await repo.getTenders();
-    logger.info("Fetched tenders list", { count: tenders?.length || 0 });
+    logger.info("Fetched tenders list", {
+      count: tenders?.length || 0,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
     return tenders;
   } catch (error) {
-    logger.error("Failed to list tenders", { error });
+    logger.error("Failed to list tenders", {
+      error,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
     throw error;
   }
 }
 
-export async function getTenderById(id: string) {
+export async function getTenderById(id: string, actor: LogActor = {}) {
   try {
     const tender = await repo.getTenderById(id);
     if (!tender) {
-      logger.warn(`Tender with ID ${id} not found`);
+      logger.warn(`Tender with ID ${id} not found`, {
+        tenderId: id,
+        userId: actor.userId,
+        organizationId: actor.organizationId,
+      });
     } else {
-      logger.info("Fetched tender details", { tenderId: id });
+      logger.info("Fetched tender details", {
+        tenderId: id,
+        userId: actor.userId,
+        organizationId: actor.organizationId,
+      });
     }
     return tender;
   } catch (error) {
-    logger.error("Failed to get tender by ID", { error, tenderId: id });
+    logger.error("Failed to get tender by ID", {
+      error,
+      tenderId: id,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
     throw error;
   }
 }
@@ -177,26 +225,37 @@ export function filterApplicantsForRequester(
   return { ...tender, applicants, applicantsCount, proposalRange };
 }
 
-export async function updateTender(id: string, data: any) {
+export async function updateTender(id: string, data: any, actor: LogActor = {}) {
   try {
     const result = await repo.updateTender(id, data);
-    logger.info("Tender updated successfully", { tenderId: id });
+    logger.info("Tender updated successfully", {
+      tenderId: id,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "UPDATE",
       status: "SUCCESS",
       tenderId: id,
+      userId: actor.userId,
       metaData: { changes: Object.keys(data || {}) }
     });
 
     return result;
   } catch (error: any) {
-    logger.error("Failed to update tender", { error, tenderId: id });
+    logger.error("Failed to update tender", {
+      error,
+      tenderId: id,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "UPDATE",
       status: "FAILED",
       tenderId: id,
+      userId: actor.userId,
       errorMessage: error?.message || String(error)
     });
 
@@ -208,7 +267,7 @@ export async function updateTender(id: string, data: any) {
  * סגירת מכרז - מעדכן isActive=false ושולח מייל למנהל המכרז
  * שולף את המייל של המנהל לפי publisherUserCode השמור במכרז
  */
-export async function closeTender(id: string) {
+export async function closeTender(id: string, actor: LogActor = {}) {
   try {
     // שליפת המכרז לפני הסגירה כדי לקבל את publisherUserCode והכותרת
     const tender = await repo.getTenderById(id);
@@ -219,12 +278,18 @@ export async function closeTender(id: string) {
     // עדכון isActive=false בבסיס הנתונים
     const result = await repo.updateTender(id, { isActive: false });
 
-    logger.info("Tender closed successfully", { tenderId: id, title: tender.title });
+    logger.info("Tender closed successfully", {
+      tenderId: id,
+      title: tender.title,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "UPDATE",
       status: "SUCCESS",
       tenderId: id,
+      userId: actor.userId,
       metaData: { changes: ["isActive"], closedAt: new Date() }
     });
 
@@ -243,12 +308,18 @@ export async function closeTender(id: string) {
 
     return result;
   } catch (error: any) {
-    logger.error("Failed to close tender", { error, tenderId: id });
+    logger.error("Failed to close tender", {
+      error,
+      tenderId: id,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "UPDATE",
       status: "FAILED",
       tenderId: id,
+      userId: actor.userId,
       errorMessage: error?.message || String(error)
     });
 
@@ -259,30 +330,41 @@ export async function closeTender(id: string) {
 /**
  * סימון כל ההצעות (applicants) של מכרז כנצפו - מאפס את חיווי "הצעות חדשות"
  */
-export async function markTenderOffersViewed(id: string) {
+export async function markTenderOffersViewed(id: string, actor: LogActor = {}) {
   try {
     const result = await repo.markApplicantsViewed(id);
     if (!result) {
       throw new Error("Tender not found");
     }
 
-    logger.info("Tender offers marked as viewed", { tenderId: id });
+    logger.info("Tender offers marked as viewed", {
+      tenderId: id,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "UPDATE",
       status: "SUCCESS",
       tenderId: id,
+      userId: actor.userId,
       metaData: { changes: ["applicants.isViewed"] }
     });
 
     return result;
   } catch (error: any) {
-    logger.error("Failed to mark tender offers as viewed", { error, tenderId: id });
+    logger.error("Failed to mark tender offers as viewed", {
+      error,
+      tenderId: id,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "UPDATE",
       status: "FAILED",
       tenderId: id,
+      userId: actor.userId,
       errorMessage: error?.message || String(error)
     });
 
@@ -290,26 +372,37 @@ export async function markTenderOffersViewed(id: string) {
   }
 }
 
-export async function deleteTender(id: string) {
+export async function deleteTender(id: string, actor: LogActor = {}) {
   try {
     const result = await repo.deleteTender(id);
 
-    logger.info("Tender deleted successfully", { tenderId: id });
+    logger.info("Tender deleted successfully", {
+      tenderId: id,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "DELETE",
       status: "SUCCESS",
-      tenderId: id
+      tenderId: id,
+      userId: actor.userId,
     });
 
     return result;
   } catch (error: any) {
-    logger.error("Failed to delete tender", { error, tenderId: id });
+    logger.error("Failed to delete tender", {
+      error,
+      tenderId: id,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "DELETE",
       status: "FAILED",
       tenderId: id,
+      userId: actor.userId,
       errorMessage: error?.message || String(error)
     });
 
@@ -346,9 +439,15 @@ export async function applyToTender(
     resumeFileKey?: string;
     portfolioLink?: string;
     professionalProfileId?: string;
-  }
+  },
+  actor: LogActor = {}
 ) {
-  logger.info("Processing application to tender", { tenderId, applicantEmail: applicant?.email });
+  logger.info("Processing application to tender", {
+    tenderId,
+    applicantEmail: applicant?.email,
+    userId: actor.userId,
+    organizationId: actor.organizationId,
+  });
 
   if (!applicant.name || !applicant.name.trim()) {
     logger.warn("Validation failed: Applicant name is required", { tenderId });
@@ -392,7 +491,11 @@ export async function applyToTender(
 
   if (alreadyApplied) {
     logger.warn("Duplicate application attempt", { tenderId, applicantEmail: normalizedEmail, userId: normalizedUserId });
-    throw new Error("Applicant already exists");
+    // .code lets the client (TenderBoardPage) show a dedicated "already applied"
+    // notice instead of the generic apply-failed error message.
+    const duplicateError = new Error("Applicant already exists") as Error & { code?: string };
+    duplicateError.code = "ALREADY_APPLIED";
+    throw duplicateError;
   }
 
   const normalizedApplicant = {
@@ -415,12 +518,18 @@ export async function applyToTender(
 
   try {
     const result = await repo.updateTenderApplicants(tenderId, updatedApplicants);
-    logger.info("Applicant registered successfully to tender", { tenderId, applicantEmail: normalizedEmail });
+    logger.info("Applicant registered successfully to tender", {
+      tenderId,
+      applicantEmail: normalizedEmail,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "APPLY",
       status: "SUCCESS",
       tenderId: tenderId,
+      userId: actor.userId,
       metaData: { applicantEmail: normalizedEmail }
     });
 
@@ -447,12 +556,19 @@ export async function applyToTender(
 
     return result;
   } catch (error: any) {
-    logger.error("Failed to update tender applicants", { error, tenderId, applicantEmail: normalizedEmail });
+    logger.error("Failed to update tender applicants", {
+      error,
+      tenderId,
+      applicantEmail: normalizedEmail,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     await saveTenderLog({
       action: "APPLY",
       status: "FAILED",
       tenderId: tenderId,
+      userId: actor.userId,
       errorMessage: error?.message || String(error),
       metaData: { applicantEmail: normalizedEmail }
     });
@@ -467,11 +583,15 @@ export async function applyToTender(
  * ========================================================
  */
 
-export async function createSmartTender(text: string) {
+export async function createSmartTender(text: string, actor: LogActor = {}) {
   try {
-    logger.info("Processing createSmartTender requested", { textLength: text?.length });
+    logger.info("Processing createSmartTender requested", {
+      textLength: text?.length,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
-    const aiTenderData = await TBAIService.generateTenderData(text);
+    const aiTenderData = await TBAIService.generateTenderData(text, actor);
 
     const fullTenderData = {
       ...aiTenderData,
@@ -481,7 +601,11 @@ export async function createSmartTender(text: string) {
 
     return fullTenderData;
   } catch (error) {
-    logger.error("Failed to process createSmartTender", { error });
+    logger.error("Failed to process createSmartTender", {
+      error,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
     throw error;
   }
 }
@@ -599,9 +723,13 @@ export async function setTenderSpecificationPublished(id: string, isPublished: b
 // הראשונים לפי סדר ה-DB, ללא מיון מקדים לפי רלוונטיות).
 const SEARCH_CANDIDATE_LIMIT = 100;
 
-export async function smartSearchTenders(searchText: string) {
+export async function smartSearchTenders(searchText: string, actor: LogActor = {}) {
   try {
-    logger.info("Received search text for smart search", { searchText });
+    logger.info("Received search text for smart search", {
+      searchText,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     const allTenders = await repo.getTenders();
     const candidateTenders = allTenders.slice(0, SEARCH_CANDIDATE_LIMIT);
@@ -617,9 +745,14 @@ export async function smartSearchTenders(searchText: string) {
       additionalDetails: t.additionalDetails,
     }));
 
-    const matchedIds = await TBAIService.generateSearchResultIds(searchText, tendersForAI);
+    const matchedIds = await TBAIService.generateSearchResultIds(searchText, tendersForAI, actor);
 
-    logger.info("Smart search matched tender ids", { searchText, count: matchedIds.length });
+    logger.info("Smart search matched tender ids", {
+      searchText,
+      count: matchedIds.length,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
 
     const tenderById = new Map(candidateTenders.map((t: any) => [String(t._id), t]));
     return matchedIds
@@ -630,7 +763,12 @@ export async function smartSearchTenders(searchText: string) {
       logger.warn("Rate limit reached on AI search", { searchText });
       throw Object.assign(new Error("שירות החיפוש החכם עמוס כרגע, נסה שוב בעוד מספר שניות"), { statusCode: 429 });
     }
-    logger.error("Failed to process smartSearchTenders", { error, searchText });
+    logger.error("Failed to process smartSearchTenders", {
+      error,
+      searchText,
+      userId: actor.userId,
+      organizationId: actor.organizationId,
+    });
     throw error;
   }
 }

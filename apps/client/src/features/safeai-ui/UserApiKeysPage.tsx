@@ -151,7 +151,7 @@ export default function UserApiKeysPage() {
     return <div className="loading-state">{t("common.loading")}</div>;
   }
 
-  if (!user) {
+  if (!user || !user._id) {
     return (
       <div className="empty-state">
         <h2>{t("orgUsers.notAuthenticated")}</h2>
