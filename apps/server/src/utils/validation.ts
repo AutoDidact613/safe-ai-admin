@@ -12,7 +12,7 @@ export const registerSchema = z.object({
     .string()
     .email("EMAIL_INVALID")
     .refine((email) => !email.includes("+"), {
-      message: "EMAIL_PLUS_NOT_ALLOWED",
+      message: 'לא ניתן להשתמש בתו "+" בכתובת המייל',
     }),
   password: z
     .string()
