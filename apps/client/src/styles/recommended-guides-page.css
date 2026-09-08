@@ -112,8 +112,7 @@
 }
 
 .curator-details {
-  text-align: right;
-  direction: rtl;
+  text-align: start;
 }
 
 .curator-details strong {
@@ -191,7 +190,6 @@
   border-radius: 10px;
   font-size: 16px;
   transition: all 0.2s ease;
-  direction: rtl;
 }
 
 .search-input:focus {
@@ -228,7 +226,6 @@
   background: var(--bg-surface);
   cursor: pointer;
   transition: all 0.2s ease;
-  direction: rtl;
 }
 
 .filter-select:focus {
@@ -412,7 +409,7 @@
 
 .guides-table th {
   padding: 16px;
-  text-align: right;
+  text-align: start;
   font-weight: 700;
   color: var(--color-info);
   border-bottom: 2px solid var(--color-info);

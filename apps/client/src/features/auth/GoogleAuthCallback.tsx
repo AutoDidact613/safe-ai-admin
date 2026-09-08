@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function GoogleAuthCallback() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const accessToken = searchParams.get("accessToken");
@@ -16,8 +18,8 @@ export default function GoogleAuthCallback() {
     if (error) {
       // Handle error
       console.error("Google auth error:", error);
-      navigate("/login", { 
-        state: { error: "התחברות עם Google נכשלה. אנא נסה שוב." } 
+      navigate("/login", {
+        state: { error: t("googleAuth.errorMessage") }
       });
       return;
     }
@@ -32,7 +34,7 @@ export default function GoogleAuthCallback() {
         navigate("/api-key-display", {
           state: {
             proxyApiKey,
-            message: "חשבון נוצר בהצלחה עם Google!",
+            message: t("googleAuth.accountCreatedMessage"),
           },
         });
       } else if (googleAuth === "true") {
@@ -44,15 +46,15 @@ export default function GoogleAuthCallback() {
     } else {
       navigate("/login");
     }
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, t]);
 
   return (
     <div className="auth-form-container">
       <div className="auth-form-wrapper">
         <div style={{ textAlign: "center", padding: "40px" }}>
           <div className="spinner" style={{ margin: "0 auto 20px" }}></div>
-          <h2>מתחבר עם Google...</h2>
-          <p style={{ color: "var(--text-muted)" }}>אנא המתן</p>
+          <h2>{t("googleAuth.connectingTitle")}</h2>
+          <p style={{ color: "var(--text-muted)" }}>{t("emailVerification.pleaseWait")}</p>
         </div>
       </div>
     </div>

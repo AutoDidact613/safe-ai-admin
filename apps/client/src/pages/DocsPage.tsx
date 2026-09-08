@@ -1,4 +1,5 @@
 // import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import "../styles/docs-page.css";
 
 // interface GuideCard {
@@ -223,6 +224,7 @@ import "../styles/docs-page.css";
 // ];
 
 export default function DocsPage() {
+  const { t } = useTranslation();
   // const [searchQuery] = useState("");
   // const [recommendedSearchQuery] = useState("");
 
@@ -261,20 +263,19 @@ export default function DocsPage() {
     <div className="docs-page">
       <div className="docs-container">
         <div className="docs-header">
-          <h1>📚 מדריכי שימוש</h1>
-          <p className="docs-subtitle">מרכז הידע של SafeAI</p>
+          <h1>📚 {t("docs.title")}</h1>
+          <p className="docs-subtitle">{t("docs.subtitle")}</p>
         </div>
 
         {/* Beta Notice */}
         <div className="beta-notice">
           <div className="beta-notice-icon">🚧</div>
           <div className="beta-notice-content">
-            <h3>המערכת בשלב הקמה</h3>
+            <h3>{t("docs.betaNoticeTitle")}</h3>
             <p>
-              כרגע המדריכים נמצאים בתיקיית Google Drive שלנו בפורמט וידאו.
+              {t("docs.betaNoticeLine1")}
               <br />
-              אנחנו עובדים על שיפור חוויית המשתמש ובקרוב נוסיף מדריכים נוספים
-              ותכנים מתקדמים.
+              {t("docs.betaNoticeLine2")}
             </p>
             <a
               href="https://drive.google.com/drive/folders/1-x8qSkCQRWxfIGyNzjszUW_u3eiggY8b?usp=drive_link"
@@ -282,7 +283,7 @@ export default function DocsPage() {
               rel="noopener noreferrer"
               className="drive-link-button"
             >
-              📂 גישה לתיקיית המדריכים המלאה
+              📂 {t("docs.driveLinkButton")}
             </a>
           </div>
         </div>
@@ -378,11 +379,11 @@ export default function DocsPage() {
 
         {/* Additional Resources */}
         <div className="additional-resources">
-          <h2>משאבים נוספים</h2>
+          <h2>{t("docs.additionalResources")}</h2>
           <div className="resources-list">
-        
+
             <a href="/contact" className="resource-link">
-              💬 צור קשר לתמיכה
+              💬 {t("docs.contactSupportLink")}
             </a>
           </div>
         </div>

@@ -1,59 +1,61 @@
+import { useTranslation } from "react-i18next";
 import "../styles/activity-log-page.css";
 
 export default function ActivityLogPage() {
+  const { t } = useTranslation();
   // Mock data - in the future this will come from the database
   const mockActivities = [
     {
       id: 1,
       type: "user_login",
-      title: "התחברות משתמש",
-      description: "משתמש התחבר למערכת",
-      timestamp: "לפני 5 דקות",
+      title: t("activityLog.mockLoginTitle"),
+      description: t("activityLog.mockLoginDescription"),
+      timestamp: t("activityLog.mockLoginTimestamp"),
       icon: "🔐",
       color: "#4caf50"
     },
     {
       id: 2,
       type: "profile_created",
-      title: "פרופיל חדש נוצר",
-      description: "פרופיל 'בטיחות מתקדמת' נוסף למערכת",
-      timestamp: "לפני 23 דקות",
+      title: t("activityLog.mockNewProfileTitle"),
+      description: t("activityLog.mockNewProfileDescription"),
+      timestamp: t("activityLog.mockNewProfileTimestamp"),
       icon: "✨",
       color: "#2196f3"
     },
     {
       id: 3,
       type: "api_request",
-      title: "בקשת API",
-      description: "1,247 בקשות API בוצעו בשעה האחרונה",
-      timestamp: "לפני שעה",
+      title: t("activityLog.mockApiRequestTitle"),
+      description: t("activityLog.mockApiRequestDescription"),
+      timestamp: t("activityLog.mockApiRequestTimestamp"),
       icon: "📡",
       color: "#ff9800"
     },
     {
       id: 4,
       type: "filter_updated",
-      title: "פילטר עודכן",
-      description: "פילטר 'תוכן רגיש' עודכן בהצלחה",
-      timestamp: "לפני 2 שעות",
+      title: t("activityLog.mockFilterUpdatedTitle"),
+      description: t("activityLog.mockFilterUpdatedDescription"),
+      timestamp: t("activityLog.mockFilterUpdatedTimestamp"),
       icon: "🔧",
       color: "#9c27b0"
     },
     {
       id: 5,
       type: "user_registered",
-      title: "משתמש חדש נרשם",
-      description: "משתמש חדש הצטרף לארגון",
-      timestamp: "לפני 3 שעות",
+      title: t("activityLog.mockNewUserTitle"),
+      description: t("activityLog.mockNewUserDescription"),
+      timestamp: t("activityLog.mockNewUserTimestamp"),
       icon: "👤",
       color: "#00bcd4"
     },
     {
       id: 6,
       type: "system_update",
-      title: "עדכון מערכת",
-      description: "המערכת עודכנה לגרסה 2.1.0",
-      timestamp: "לפני 5 שעות",
+      title: t("activityLog.mockSystemUpdateTitle"),
+      description: t("activityLog.mockSystemUpdateDescription"),
+      timestamp: t("activityLog.mockSystemUpdateTimestamp"),
       icon: "🚀",
       color: "#f44336"
     }
@@ -63,8 +65,8 @@ export default function ActivityLogPage() {
     <div className="activity-log-page">
       <div className="activity-container">
         <div className="activity-header">
-          <h1>📊 לוג פעילות SafeAI</h1>
-          <p className="activity-subtitle">מעקב אחר כל הפעילויות במערכת</p>
+          <h1>📊 {t("nav.activityLog")}</h1>
+          <p className="activity-subtitle">{t("activityLog.subtitle")}</p>
         </div>
 
         <div className="stats-overview">
@@ -72,36 +74,36 @@ export default function ActivityLogPage() {
             <div className="stat-icon">👥</div>
             <div className="stat-info">
               <h3>1,234</h3>
-              <p>משתמשים פעילים</p>
+              <p>{t("nav.users")}</p>
             </div>
           </div>
           <div className="stat-card">
             <div className="stat-icon">📈</div>
             <div className="stat-info">
               <h3>45,678</h3>
-              <p>בקשות היום</p>
+              <p>{t("nav.requestsToday")}</p>
             </div>
           </div>
           <div className="stat-card">
             <div className="stat-icon">⚡</div>
             <div className="stat-info">
               <h3>99.9%</h3>
-              <p>זמינות מערכת</p>
+              <p>{t("activityLog.statUptimeLabel")}</p>
             </div>
           </div>
           <div className="stat-card">
             <div className="stat-icon">🛡️</div>
             <div className="stat-info">
               <h3>156</h3>
-              <p>איומים נחסמו</p>
+              <p>{t("activityLog.statThreatsLabel")}</p>
             </div>
           </div>
         </div>
 
         <div className="activity-content">
           <div className="activity-list-header">
-            <h2>פעילות אחרונה</h2>
-            <p className="note">* הנתונים המוצגים הם לדוגמה ויישאבו מהדאטהבייס בעתיד</p>
+            <h2>{t("activityLog.recentActivityHeading")}</h2>
+            <p className="note">{t("activityLog.mockDataNote")}</p>
           </div>
 
           <div className="activity-list">

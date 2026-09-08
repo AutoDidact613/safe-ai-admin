@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function ApiKeyDisplay() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
 
@@ -60,7 +62,7 @@ export default function ApiKeyDisplay() {
       <div className="auth-form-wrapper" style={{ maxWidth: "700px" }}>
         <div style={{ textAlign: "center", marginBottom: "30px" }}>
           <h1 style={{ fontSize: "32px", marginBottom: "10px" }}>
-            🎉 המפתח שלך נוצר בהצלחה!
+            {t("apiKeyDisplay.successTitle")}
           </h1>
           {message && (
             <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>{message}</p>
@@ -84,9 +86,10 @@ export default function ApiKeyDisplay() {
               fontSize: "16px",
             }}
           >
-            מפתח ה-API שלך:
+            {t("apiKeyDisplay.yourApiKeyLabel")}
           </p>
           <div
+            dir="ltr"
             style={{
               background: "var(--bg-surface)",
               padding: "20px",
@@ -96,6 +99,7 @@ export default function ApiKeyDisplay() {
               wordBreak: "break-all",
               border: "3px solid var(--bg-surface)",
               boxShadow: "var(--shadow-md)",
+              textAlign: "left",
             }}
           >
             {proxyApiKey}
@@ -115,15 +119,15 @@ export default function ApiKeyDisplay() {
           <h3
             style={{ color: "var(--color-warning)", marginBottom: "10px", fontSize: "18px" }}
           >
-            ⚠️ חשוב מאוד!
+            ⚠️ {t("userApiKeys.importantTitle")}
           </h3>
           <ul style={{ margin: 0, paddingRight: "20px", color: "var(--color-warning)" }}>
-            <li>שמור מפתח זה במקום בטוח</li>
+            <li>{t("userApiKeys.saveKeySafely")}</li>
             <li>
-              <strong>זו ההזדמנות האחרונה שלך לראות אותו!</strong>
+              <strong>{t("userApiKeys.lastChanceToSee")}</strong>
             </li>
-            <li>לא תוכל לשחזר את המפתח אחרי סגירת דף זה</li>
-            <li>אל תשתף את המפתח עם אף אחד</li>
+            <li>{t("apiKeyDisplay.cannotRestoreKey")}</li>
+            <li>{t("apiKeyDisplay.noShareWarning")}</li>
           </ul>
         </div>
 
@@ -147,7 +151,7 @@ export default function ApiKeyDisplay() {
               gap: "8px",
             }}
           >
-            {copied ? "✅ הועתק!" : "📋 העתק ללוח"}
+            {copied ? t("apiKeyDisplay.copiedBtn") : `📋 ${t("userApiKeys.copyToClipboardButton")}`}
           </button>
           <button
             onClick={handleDownload}
@@ -161,7 +165,7 @@ export default function ApiKeyDisplay() {
               gap: "8px",
             }}
           >
-            {downloaded ? "✅ הורד!" : "💾 הורד כקובץ"}
+            {downloaded ? t("apiKeyDisplay.downloadedBtn") : `💾 ${t("userApiKeys.downloadAsFileButton")}`}
           </button>
         </div>
 
@@ -175,7 +179,7 @@ export default function ApiKeyDisplay() {
           }}
         >
           <h3 style={{ marginBottom: "15px", fontSize: "18px" }}>
-            📚 איך להשתמש במפתח:
+            {t("apiKeyDisplay.howToUseTitle")}
           </h3>
           <div style={{ fontSize: "14px", color: "var(--text-muted)" }}>
             <p style={{ marginBottom: "10px" }}>
@@ -212,7 +216,7 @@ response = client.chat.completions.create(
           className="btn btn-primary btn-full"
           style={{ fontSize: "16px", padding: "15px" }}
         >
-          המשך לדשבורד →
+          {t("apiKeyDisplay.continueToDashboardBtn")}
         </button>
 
         <p
@@ -223,7 +227,7 @@ response = client.chat.completions.create(
             color: "var(--gray-400)",
           }}
         >
-          לאחר המעבר לדשבורד, לא תוכל לראות את המפתח שוב
+          {t("apiKeyDisplay.afterDashboardWarning")}
         </p>
       </div>
     </div>

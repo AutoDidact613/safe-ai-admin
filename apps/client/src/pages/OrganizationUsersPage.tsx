@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { createOrganizationMember, getMyOrganization } from "../features/organizations/api/organizationApi";
@@ -32,6 +33,7 @@ interface OrganizationOwner {
 }
 
 export default function OrganizationUsersPage() {
+  const { t, i18n } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,7 +69,7 @@ export default function OrganizationUsersPage() {
       const token = localStorage.getItem("accessToken");
 
       if (!token) {
-        setError("לא נמצא טוקן גישה. אנא התחברי מחדש.");
+        setError(t("orgUsers.notAuthenticated"));
         return;
       }
 
@@ -91,7 +93,7 @@ export default function OrganizationUsersPage() {
     } catch (err: unknown) {
       console.error("Error fetching organization users:", err);
 
-      let serverError = "Failed to fetch organization users";
+      let serverError = t("orgUsers.fetchError");
 
       if (axios.isAxiosError(err)) {
         if (err.response?.data) {
@@ -105,7 +107,7 @@ export default function OrganizationUsersPage() {
           serverError = err.message;
         }
 
-        const failedUrl = err.config?.url ? ` (נתיב: ${err.config.url})` : "";
+        const failedUrl = err.config?.url ? t("orgUsers.failedUrlSuffix", { url: err.config.url }) : "";
         setError(`${serverError}${failedUrl}`);
       } else if (err instanceof Error) {
         setError(err.message);
@@ -177,13 +179,13 @@ export default function OrganizationUsersPage() {
         const errorMsg =
           err.response?.data?.error ||
           err.response?.data?.message ||
-          "נכשל עדכון פרטי הארגון";
+          t("orgUsers.updateOrgFailedFallback");
 
         alert(errorMsg);
       } else if (err instanceof Error) {
         alert(err.message);
       } else {
-        alert("נכשל עדכון פרטי הארגון");
+        alert(t("orgUsers.updateOrgFailedFallback"));
       }
     } finally {
       setIsSavingOrg(false);
@@ -203,7 +205,7 @@ export default function OrganizationUsersPage() {
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!organization || !memberName.trim() || !memberEmail.trim()) {
-      setAddMemberError("יש למלא שם וכתובת אימייל");
+      setAddMemberError(t("orgUsers.addMemberFieldsRequired"));
       return;
     }
     try {
@@ -225,7 +227,7 @@ export default function OrganizationUsersPage() {
       setMemberEmail("");
       await reloadUsers();
     } catch (err: unknown) {
-      setAddMemberError(err instanceof Error ? err.message : "הוספת המשתמש נכשלה");
+      setAddMemberError(err instanceof Error ? err.message : t("orgUsers.addMemberFailedFallback"));
     } finally {
       setAddingMember(false);
     }
@@ -234,23 +236,23 @@ export default function OrganizationUsersPage() {
   const handleDownloadExcel = () => {
     const loginUrl = `${window.location.origin}/login`;
     const rows = createdMembers.map((m) => ({
-      "שם": m.name,
-      "אימייל": m.email,
-      "סיסמה זמנית": m.password,
-      "קישור להתחברות": loginUrl,
-      "סטטוס": "ממתין להתחברות ראשונה",
+      [t("orgUsers.excelHeaderName")]: m.name,
+      [t("orgUsers.excelHeaderEmail")]: m.email,
+      [t("orgUsers.excelHeaderPassword")]: m.password,
+      [t("orgUsers.excelHeaderLoginLink")]: loginUrl,
+      [t("orgUsers.excelHeaderStatus")]: t("orgUsers.excelStatusPendingLogin"),
     }));
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "משתמשים חדשים");
-    XLSX.writeFile(workbook, `משתמשי-${organization?.name || "ארגון"}.xlsx`);
+    XLSX.utils.book_append_sheet(workbook, worksheet, t("orgUsers.excelSheetName"));
+    XLSX.writeFile(workbook, `${t("orgUsers.excelFileNamePrefix")}-${organization?.name || t("orgUsers.excelFallbackOrgName")}.xlsx`);
   };
 
   if (loading) {
     return (
       <div className="organization-page">
-        <h1>לוח ארגון</h1>
-        <p>טוען נתונים...</p>
+        <h1>{t("orgUsers.title")}</h1>
+        <p>{t("orgUsers.loading")}</p>
       </div>
     );
   }
@@ -258,11 +260,11 @@ export default function OrganizationUsersPage() {
   if (error) {
     return (
       <div className="organization-page">
-        <h1>לוח ארגון</h1>
-        <p className="error-title">שגיאה בטעינת הנתונים:</p>
+        <h1>{t("orgUsers.title")}</h1>
+        <p className="error-title">{t("orgUsers.errorTitle")}</p>
         <p className="error-text">{error}</p>
         <button className="retry-button" onClick={fetchOrganizationAndUsers}>
-          ניסיון חוזר
+          {t("orgUsers.retryButton")}
         </button>
       </div>
     );
@@ -271,15 +273,15 @@ export default function OrganizationUsersPage() {
   if (noOrganization) {
     return (
       <div className="organization-page">
-        <h1>לוח ארגון</h1>
-        <p>אין לך ארגון משויך לחשבון זה.</p>
+        <h1>{t("orgUsers.title")}</h1>
+        <p>{t("orgUsers.noOrgMessage")}</p>
       </div>
     );
   }
 
   return (
     <div className="organization-page">
-      <h1>לוח ארגון</h1>
+      <h1>{t("orgUsers.title")}</h1>
 
       {organization && (
         <div className="organization-grid">
@@ -288,25 +290,25 @@ export default function OrganizationUsersPage() {
               <form onSubmit={handleSaveOrg} className="org-edit-form">
                 <input
                   type="text"
-                  dir="rtl"
+                  dir={i18n.dir()}
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   required
                   className="org-edit-input"
-                  placeholder="שם הארגון"
+                  placeholder={t("orgUsers.orgNamePlaceholder")}
                 />
                 <textarea
-                  dir="rtl"
+                  dir={i18n.dir()}
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   className="org-edit-input"
-                  placeholder="תיאור הארגון"
+                  placeholder={t("orgUsers.orgDescriptionPlaceholder")}
                   rows={3}
                 />
-                <p><strong>סטטוס:</strong> {organization.isActive ? "פעיל" : "לא פעיל"}</p>
+                <p><strong>{t("orgUsers.status")}</strong> {organization.isActive ? t("orgUsers.active") : t("orgUsers.inactive")}</p>
                 <div className="org-edit-actions">
                   <button type="submit" disabled={isSavingOrg} className="topup-button">
-                    {isSavingOrg ? "שומר..." : "שמירה"}
+                    {isSavingOrg ? t("orgUsers.savingButton") : t("orgUsers.saveButton")}
                   </button>
                   <button
                     type="button"
@@ -314,7 +316,7 @@ export default function OrganizationUsersPage() {
                     disabled={isSavingOrg}
                     onClick={() => setIsEditingOrg(false)}
                   >
-                    ביטול
+                    {t("orgUsers.cancelButton")}
                   </button>
                 </div>
               </form>
@@ -323,77 +325,77 @@ export default function OrganizationUsersPage() {
                 <div className="org-info-header">
                   <h2>{organization.name}</h2>
                   <button className="org-edit-button" onClick={startEditingOrg}>
-                    עריכה
+                    {t("orgUsers.editButton")}
                   </button>
                 </div>
-                <p>{organization.description || "אין תיאור זמין."}</p>
-                <p><strong>סטטוס:</strong> {organization.isActive ? "פעיל" : "לא פעיל"}</p>
+                <p>{organization.description || t("orgUsers.noDescription")}</p>
+                <p><strong>{t("orgUsers.status")}</strong> {organization.isActive ? t("orgUsers.active") : t("orgUsers.inactive")}</p>
               </>
             )}
           </div>
 
           <div className="wallet-card">
-            <h3 className="wallet-title">💳 ארנק ארגון</h3>
+            <h3 className="wallet-title">{t("orgUsers.walletTitle")}</h3>
             <p className="wallet-balance">
-              יתרת חשבון: <strong className="wallet-balance-amount">${organization.walletBalance ?? 0}</strong>
+              {t("orgUsers.walletBalanceLabel")} <strong className="wallet-balance-amount">${organization.walletBalance ?? 0}</strong>
             </p>
 
             <div className="simulation-warning">
-              ⚠️ <strong>סביבת סימולציה:</strong> זהו מערכת מדומה. לא ייגבו חיובים בכרטיס אשראי אמיתי.
+              ⚠️ <strong>{t("orgUsers.simulationWarningLabel")}</strong> {t("orgUsers.simulationWarningText")}
             </div>
 
             <form onSubmit={handleTopUp} className="topup-form">
               <input
                 type="number"
                 min="1"
-                dir="rtl"
-                placeholder="הכנס סכום ($)"
+                dir="ltr"
+                placeholder={t("orgUsers.amountPlaceholder")}
                 value={topUpAmount}
                 onChange={(e) => setTopUpAmount(e.target.value !== "" ? Number(e.target.value) : "")}
                 required
                 className="topup-input"
               />
               <button type="submit" disabled={isSubmitting} className="topup-button">
-                {isSubmitting ? "מעבד..." : "הטען"}
+                {isSubmitting ? t("orgUsers.processingButton") : t("orgUsers.topUpButton")}
               </button>
             </form>
           </div>
         </div>
       )}
 
-      <h3>הוספת משתמש חדש לארגון</h3>
+      <h3>{t("orgUsers.addMemberTitle")}</h3>
       <form onSubmit={handleAddMember} className="org-edit-form">
         <input
           type="text"
-          dir="rtl"
+          dir={i18n.dir()}
           value={memberName}
           onChange={(e) => setMemberName(e.target.value)}
-          placeholder="שם מלא"
+          placeholder={t("orgUsers.fullNamePlaceholder")}
           className="org-edit-input"
         />
         <input
           type="email"
-          dir="rtl"
+          dir="ltr"
           value={memberEmail}
           onChange={(e) => setMemberEmail(e.target.value)}
-          placeholder="כתובת אימייל"
+          placeholder={t("orgUsers.emailPlaceholder")}
           className="org-edit-input"
         />
         {addMemberError && <p className="error-text">{addMemberError}</p>}
         <button type="submit" disabled={addingMember} className="topup-button">
-          {addingMember ? "מוסיף..." : "הוסף משתמש"}
+          {addingMember ? t("orgUsers.addingButton") : t("orgUsers.addMemberButton")}
         </button>
       </form>
 
       {createdMembers.length > 0 && (
         <div className="organization-info-card">
-          <p>נוספו {createdMembers.length} משתמשים חדשים בסשן הזה. פרטי ההתחברות שיש למסור להם:</p>
+          <p>{t("orgUsers.createdMembersMessage", { count: createdMembers.length })}</p>
           <table className="organization-table">
             <thead>
               <tr>
-                <th>שם</th>
-                <th>אימייל</th>
-                <th>סיסמה זמנית</th>
+                <th>{t("orgUsers.tableHeaders.name")}</th>
+                <th>{t("orgUsers.tableHeaders.email")}</th>
+                <th>{t("orgUsers.tableHeaders.password")}</th>
               </tr>
             </thead>
             <tbody>
@@ -407,25 +409,25 @@ export default function OrganizationUsersPage() {
             </tbody>
           </table>
           <button type="button" className="topup-button" onClick={handleDownloadExcel}>
-            הורדת קובץ אקסל
+            {t("orgUsers.downloadExcelButton")}
           </button>
         </div>
       )}
 
-      <h3>משתמשים בארגון ({users.length})</h3>
+      <h3>{t("orgUsers.usersInOrg")} ({users.length})</h3>
 
       {users.length === 0 ? (
-        <p>לא נמצאו משתמשים בארגון זה.</p>
+        <p>{t("orgUsers.noUsers")}</p>
       ) : (
         <table className="organization-table">
           <thead>
             <tr>
-              <th>אימייל</th>
-              <th>שם</th>
-              <th>תפקיד</th>
-              <th>סטטוס</th>
-              <th>סטטוס הצטרפות</th>
-              <th>תאריך הצטרפות</th>
+              <th>{t("orgUsers.tableHeaders.email")}</th>
+              <th>{t("orgUsers.tableHeaders.name")}</th>
+              <th>{t("orgUsers.tableHeaders.role")}</th>
+              <th>{t("orgUsers.tableHeaders.status")}</th>
+              <th>{t("orgUsers.tableHeaders.joinStatus")}</th>
+              <th>{t("orgUsers.tableHeaders.joinedDate")}</th>
             </tr>
           </thead>
           <tbody>
@@ -441,21 +443,21 @@ export default function OrganizationUsersPage() {
                     color: "var(--text-inverse)",
                     fontSize: "12px"
                   }}>
-                    {user.role === "org_owner" ? "בעל ארגון" : user.role === "admin" ? "מנהל מערכת" : "משתמש"}
+                    {user.role === "org_owner" ? t("orgUsers.roleOrgOwner") : user.role === "admin" ? t("orgUsers.roleAdmin") : t("orgUsers.roleUser")}
                   </span>
                 </td>
                 <td className="status-cell">
                   <span className="status-pill" style={{
                     backgroundColor: user.isActive ? "var(--color-success)" : "var(--color-danger)"
                   }}>
-                    {user.isActive ? "✓ פעיל" : "✕ לא פעיל"}
+                    {user.isActive ? `✓ ${t("orgUsers.active")}` : `✕ ${t("orgUsers.inactive")}`}
                   </span>
                 </td>
                 <td className="status-cell">
                   <span className="status-pill" style={{
                     backgroundColor: user.lastLogin ? "var(--color-success)" : "var(--color-danger)"
                   }}>
-                    {user.lastLogin ? "✓ הצטרף" : "⏳ ממתין להתחברות ראשונה"}
+                    {user.lastLogin ? `✓ ${t("orgUsers.joinedLabel")}` : `⏳ ${t("orgUsers.pendingFirstLoginLabel")}`}
                   </span>
                 </td>
                 <td>{new Date(user.createdAt).toLocaleDateString()}</td>

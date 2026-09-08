@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { API_ENDPOINTS, apiCall } from "../../config/api";
 
 type AuthMode = "login" | "register";
@@ -18,6 +19,7 @@ export default function AuthForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +46,7 @@ export default function AuthForm() {
         if (response.success) {
           // Show the API key to the user
           alert(
-            `הרשמה הושלמה בהצלחה!\n\nמפתח ה-API שלך:\n${response.proxyApiKey}\n\n⚠️ שמור מפתח זה במקום בטוח - לא תוכל לראותו שוב!`
+            t("authForm.registrationSuccessAlert", { apiKey: response.proxyApiKey })
           );
           
           // Store user info in localStorage
@@ -69,12 +71,12 @@ export default function AuthForm() {
           
           navigate("/safeai-ui");
         } else {
-          setError("אימייל או סיסמה שגויים. נסה: admin@safeai.com / admin123");
+          setError(t("authForm.invalidCredentialsError"));
         }
       }
     } catch (err: unknown) {
       console.error("Auth error:", err);
-      const errorMessage = err instanceof Error ? err.message : "שגיאה בתהליך ההרשמה/התחברות";
+      const errorMessage = err instanceof Error ? err.message : t("authForm.genericErrorFallback");
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -96,13 +98,13 @@ export default function AuthForm() {
             className={authMode === "login" ? "auth-tab active" : "auth-tab"}
             onClick={() => setAuthMode("login")}
           >
-            התחברות
+            {t("nav.login")}
           </button>
           <button
             className={authMode === "register" ? "auth-tab active" : "auth-tab"}
             onClick={() => setAuthMode("register")}
           >
-            הרשמה
+            {t("nav.register")}
           </button>
         </div>
 
@@ -110,7 +112,7 @@ export default function AuthForm() {
           {authMode === "register" && (
             <>
               <div className="form-group">
-                <label htmlFor="name">שם מלא *</label>
+                <label htmlFor="name">{t("register.fullNameLabel")}</label>
                 <input
                   type="text"
                   id="name"
@@ -118,24 +120,24 @@ export default function AuthForm() {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  placeholder="הזן שם מלא"
+                  placeholder={t("register.fullNamePlaceholder")}
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="organization">ארגון</label>
+                <label htmlFor="organization">{t("authForm.organizationLabel")}</label>
                 <input
                   type="text"
                   id="organization"
                   name="organization"
                   value={formData.organization}
                   onChange={handleChange}
-                  placeholder="שם הארגון (אופציונלי)"
+                  placeholder={t("authForm.organizationPlaceholder")}
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="role">סוג משתמש *</label>
+                <label htmlFor="role">{t("authForm.userTypeLabel")}</label>
                 <select
                   id="role"
                   name="role"
@@ -144,18 +146,18 @@ export default function AuthForm() {
                   required
                   style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid var(--border-default)" }}
                 >
-                  <option value="user">👤 משתמש רגיל</option>
-                  <option value="admin">👑 מנהל</option>
+                  <option value="user">{t("authForm.roleUserOption")}</option>
+                  <option value="admin">{t("authForm.roleAdminOption")}</option>
                 </select>
                 <small style={{ display: "block", marginTop: "5px", color: "var(--text-muted)" }}>
-                  {formData.role === "admin" 
-                    ? "מנהל יכול לנהל משתמשים, פרופילים ומפתחות"
-                    : "משתמש רגיל יכול להשתמש במערכת ולנהל מפתחות API"}
+                  {formData.role === "admin"
+                    ? t("authForm.roleAdminHint")
+                    : t("authForm.roleUserHint")}
                 </small>
               </div>
 
               <div className="form-group">
-                <label htmlFor="mode">מצב שימוש *</label>
+                <label htmlFor="mode">{t("register.modeLabel")}</label>
                 <select
                   id="mode"
                   name="mode"
@@ -164,20 +166,20 @@ export default function AuthForm() {
                   required
                   style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid var(--border-default)" }}
                 >
-                  <option value="BYOK">🔑 BYOK - הבא מפתח משלך</option>
-                  <option value="MANAGED">🏢 MANAGED - שימוש במפתחות המערכת</option>
+                  <option value="BYOK">{t("register.modeOptionByok")}</option>
+                  <option value="MANAGED">{t("register.modeOptionManaged")}</option>
                 </select>
                 <small style={{ display: "block", marginTop: "5px", color: "var(--text-muted)" }}>
                   {formData.mode === "BYOK"
-                    ? "תוכל להוסיף מפתחות API משלך לספקים שונים"
-                    : "המערכת תנהל את המפתחות עבורך"}
+                    ? t("register.modeHintByok")
+                    : t("register.modeHintManaged")}
                 </small>
               </div>
             </>
           )}
 
           <div className="form-group">
-            <label htmlFor="email">אימייל</label>
+            <label htmlFor="email">{t("login.emailLabel")}</label>
             <input
               type="email"
               id="email"
@@ -190,7 +192,7 @@ export default function AuthForm() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">סיסמה</label>
+            <label htmlFor="password">{t("login.passwordLabel")}</label>
             <input
               type="password"
               id="password"
@@ -198,7 +200,7 @@ export default function AuthForm() {
               value={formData.password}
               onChange={handleChange}
               required
-              placeholder="הזן סיסמה"
+              placeholder={t("login.passwordPlaceholder")}
               minLength={6}
             />
           </div>
@@ -211,44 +213,44 @@ export default function AuthForm() {
 
           {authMode === "login" && (
             <div className="alert alert-info" style={{ marginBottom: "15px" }}>
-              <strong>למטרות הדגמה:</strong>
+              <strong>{t("authForm.demoNoticeLabel")}</strong>
               <br />
-              אימייל: admin@safeai.com
+              {t("authForm.demoEmailPrefix")} admin@safeai.com
               <br />
-              סיסמה: admin123
+              {t("authForm.demoPasswordPrefix")} admin123
             </div>
           )}
 
           {authMode === "register" && (
             <div className="form-info">
-              <p>בהרשמה אתם מסכימים לתנאי השימוש ומדיניות הפרטיות שלנו</p>
+              <p>{t("register.termsText")}</p>
             </div>
           )}
 
           <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-            {loading ? "מעבד..." : authMode === "login" ? "התחבר" : "הירשם"}
+            {loading ? t("authForm.processingBtn") : authMode === "login" ? t("resetPassword.loginLink") : t("register.submitButton")}
           </button>
         </form>
 
         <div className="auth-footer">
           {authMode === "login" ? (
             <p>
-              עדיין אין לך חשבון?{" "}
+              {t("login.noAccountText")}{" "}
               <button
                 className="link-button"
                 onClick={() => setAuthMode("register")}
               >
-                הירשם כעת
+                {t("login.registerNow")}
               </button>
             </p>
           ) : (
             <p>
-              כבר יש לך חשבון?{" "}
+              {t("register.haveAccountText")}{" "}
               <button
                 className="link-button"
                 onClick={() => setAuthMode("login")}
               >
-                התחבר
+                {t("resetPassword.loginLink")}
               </button>
             </p>
           )}

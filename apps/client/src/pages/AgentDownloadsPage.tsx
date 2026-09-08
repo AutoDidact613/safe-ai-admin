@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import "../styles/agent-downloads-page.css";
 // import { initialState } from "recharts/types/state/rootPropsSlice";
 
 export default function AgentDownloadsPage() {
+    const { t } = useTranslation();
 
     type Section =
   | "home"
@@ -26,7 +28,7 @@ export default function AgentDownloadsPage() {
                     }
                   onClick={() => setActiveSection("home")}
                 >
-                  דף הבית
+                  {t("nav.homePage")}
                   </button>
                 </a>
                 <a href="#downloads" style={{ textDecoration: "none" }}>
@@ -38,7 +40,7 @@ export default function AgentDownloadsPage() {
                     }
                     onClick={() => setActiveSection("downloads")}
                   >
-                    הורדה
+                    {t("agentDownloads.navDownloads")}
                   </button>
                 </a>
                 <a href="#guide" style={{ textDecoration: "none" }}>
@@ -50,7 +52,7 @@ export default function AgentDownloadsPage() {
                     }
                     onClick={() => setActiveSection("guide")}
                   >
-                    מדריך
+                    {t("agentDownloads.navGuide")}
                   </button>
                 </a>
                 <a href="#pricing" style={{ textDecoration: "none" }}>
@@ -62,135 +64,135 @@ export default function AgentDownloadsPage() {
                     }
                     onClick={() => setActiveSection("pricing")}
                   >
-                    מחירון
+                    {t("agentDownloads.navPricing")}
                   </button>
                 </a>
               </>
-            {/* )} */}            
+            {/* )} */}
             </div>
         </nav>
         <div id="home" className="page-section hero-section">
           <div className="hero-copy">
             <span className="eyebrow">Desktop Agent Suite</span>
-            <h1>הורד את אפליקציית SafeAI לדסקטופ</h1>
-            <p>בחר פרופיל סוכן לפי תחום מומחיות והתחל שיחה ממוקדת בנושאים כמו תוכנה, ארכיטקטורה, ניתוח וכתיבה.</p>
+            <h1>{t("agentDownloads.heroTitle")}</h1>
+            <p>{t("agentDownloads.heroSubtitle")}</p>
             <div className="hero-actions">
-              <a href="#downloads" className="primary-btn">הורדה עכשיו</a>
-              <a href="#guide" className="secondary-btn">למד עוד</a>
+              <a href="#downloads" className="primary-btn">{t("agentDownloads.downloadNowBtn")}</a>
+              <a href="#guide" className="secondary-btn">{t("agentDownloads.learnMoreBtn")}</a>
             </div>
           </div>
           <div className="hero-preview">
             <div className="preview-card">
               <p className="preview-label">Profiles</p>
               <ul className="preview-list">
-                <li>Program — פתרונות קוד וטכנולוגיה</li>
-                <li>Architect — תכנון מערכות וחוויית משתמש</li>
-                <li>Analyst — ניתוח נתונים ודוחות חכמים</li>
-                <li>Writer — תוכן מקצועי ומסרים ממוקדים</li>
+                <li>{t("agentDownloads.profileProgram")}</li>
+                <li>{t("agentDownloads.profileArchitect")}</li>
+                <li>{t("agentDownloads.profileAnalyst")}</li>
+                <li>{t("agentDownloads.profileWriter")}</li>
               </ul>
             </div>
           </div>
         </div>
         <div id="downloads" className="page-section download-section">
           <div className="section-header">
-            <span className="section-label">הורדה</span>
-            <h2>התחל עם פרופיל סוכן מוכן</h2>
-            <p>התקן את האפליקציה על המחשב וקבל חוויה שמכוונת לכל נושא מקצועי.</p>
+            <span className="section-label">{t("agentDownloads.navDownloads")}</span>
+            <h2>{t("agentDownloads.downloadsSectionTitle")}</h2>
+            <p>{t("agentDownloads.downloadsSectionDesc")}</p>
           </div>
           <div className="download-cards">
             <article className="download-card">
               <h3>Program</h3>
-              <p>סוכן תוכנה יעזור לך לכתוב קוד, לתקן באגים ולפתח פרויקטים מהר יותר.</p>
+              <p>{t("agentDownloads.programCardDesc")}</p>
               <ul>
-                <li>בדיקות קוד</li>
-                <li>ניפוי תקלות</li>
-                <li>המלצות פרקטיות</li>
+                <li>{t("agentDownloads.programFeature1")}</li>
+                <li>{t("agentDownloads.programFeature2")}</li>
+                <li>{t("agentDownloads.programFeature3")}</li>
               </ul>
-              <a className="card-btn" href="#download">הורד Desktop</a>
+              <a className="card-btn" href="#download">{t("agentDownloads.downloadDesktopBtn")}</a>
             </article>
             <article className="download-card">
               <h3>Architect</h3>
-              <p>סוכן ארכיטקטורה מתכנן מערכות חכמות ונותן תמיכה בתכנון ארכיטקטוני.</p>
+              <p>{t("agentDownloads.architectCardDesc")}</p>
               <ul>
-                <li>סקירת מערכות</li>
-                <li>בחירת טכנולוגיות</li>
-                <li>תכנון נכון</li>
+                <li>{t("agentDownloads.architectFeature1")}</li>
+                <li>{t("agentDownloads.architectFeature2")}</li>
+                <li>{t("agentDownloads.architectFeature3")}</li>
               </ul>
-              <a className="card-btn" href="#download">הורד Desktop</a>
+              <a className="card-btn" href="#download">{t("agentDownloads.downloadDesktopBtn")}</a>
             </article>
             <article className="download-card">
               <h3>Analyst</h3>
-              <p>סוכן ניתוח נתונים מנתח מגמות, מסכם תוצאות ומייצר דוחות חכמים.</p>
+              <p>{t("agentDownloads.analystCardDesc")}</p>
               <ul>
-                <li>עיבוד נתונים</li>
-                <li>הפקת תובנות</li>
-                <li>הצגת נתונים ברורה</li>
+                <li>{t("agentDownloads.analystFeature1")}</li>
+                <li>{t("agentDownloads.analystFeature2")}</li>
+                <li>{t("agentDownloads.analystFeature3")}</li>
               </ul>
-              <a className="card-btn" href="#download">הורד Desktop</a>
+              <a className="card-btn" href="#download">{t("agentDownloads.downloadDesktopBtn")}</a>
             </article>
           </div>
         </div>
         <div id="guide" className="page-section guide-section">
           <div className="section-header">
-            <span className="section-label">מדריך</span>
-            <h2>איך להשתמש באפליקציה</h2>
-            <p>המסך המרכזי מוביל אותך אל פרופיל סוכן יחודי, כך שכל צ'אט נשאר בתוך התחום הנבחר.</p>
+            <span className="section-label">{t("agentDownloads.navGuide")}</span>
+            <h2>{t("agentDownloads.guideSectionTitle")}</h2>
+            <p>{t("agentDownloads.guideSectionDesc")}</p>
           </div>
           <div className="guide-grid">
             <div className="guide-card">
-              <h3>בחר פרופיל</h3>
-              <p>התחל עם Program, Architect או Analyst כדי לשוחח בתחום הרלוונטי.</p>
+              <h3>{t("agentDownloads.guideStep1Title")}</h3>
+              <p>{t("agentDownloads.guideStep1Desc")}</p>
             </div>
             <div className="guide-card">
-              <h3>שוחח רק בנושא</h3>
-              <p>המערכת שומרת את השיחות בתוך תחום הפרופיל כדי שתוכל לקבל תשובות מדויקות יותר.</p>
+              <h3>{t("agentDownloads.guideStep2Title")}</h3>
+              <p>{t("agentDownloads.guideStep2Desc")}</p>
             </div>
             <div className="guide-card">
-              <h3>דסקטופ מהיר</h3>
-              <p>הגדרות תוכנה, קבצים ושיחות מעודכנות ישירות מתוך המחשב.</p>
+              <h3>{t("agentDownloads.guideStep3Title")}</h3>
+              <p>{t("agentDownloads.guideStep3Desc")}</p>
             </div>
             <div className="guide-card">
-              <h3>תוצאות ממוקדות</h3>
-              <p>כל פרופיל מספק המלצות שמתאימות למשימות מקצועיות.</p>
+              <h3>{t("agentDownloads.guideStep4Title")}</h3>
+              <p>{t("agentDownloads.guideStep4Desc")}</p>
             </div>
           </div>
         </div>
         <div id="pricing" className="page-section pricing-section">
           <div className="section-header">
-            <span className="section-label">מחירון</span>
-            <h2>בחר חבילה שמתאימה לצרכים שלך</h2>
-            <p>קבל גישה לפרופילים, שיחות ודרכי עבודה מקצועיות לפי רמת השימוש שלך.</p>
+            <span className="section-label">{t("agentDownloads.navPricing")}</span>
+            <h2>{t("agentDownloads.pricingSectionTitle")}</h2>
+            <p>{t("agentDownloads.pricingSectionDesc")}</p>
           </div>
           <div className="pricing-grid">
             <article className="pricing-card">
               <h3>Free</h3>
-              <p>מתאים למתחילים שרוצים לבדוק את הסוכנים ולהתחיל לעבוד.</p>
+              <p>{t("agentDownloads.freeCardDesc")}</p>
               <ul>
-                <li>גישה לפרופיל Program</li>
-                <li>עד 3 צ'אטים יומיים</li>
-                <li>עדכוני אפליקציה אוטומטיים</li>
+                <li>{t("agentDownloads.freeFeature1")}</li>
+                <li>{t("agentDownloads.freeFeature2")}</li>
+                <li>{t("agentDownloads.freeFeature3")}</li>
               </ul>
-              <a className="card-btn" href="#download">בחר חינם</a>
+              <a className="card-btn" href="#download">{t("agentDownloads.chooseFreeBtn")}</a>
             </article>
             <article className="pricing-card featured-card">
               <h3>Pro</h3>
-              <p>למקצוענים שזקוקים ליותר פרופילים, מהירות וזמינות.</p>
+              <p>{t("agentDownloads.proCardDesc")}</p>
               <ul>
-                <li>גישה לכל הפרופילים</li>
-                <li>שיחות בלתי מוגבלות</li>
-                <li>תמיכה פרימיום</li>
+                <li>{t("agentDownloads.proFeature1")}</li>
+                <li>{t("agentDownloads.proFeature2")}</li>
+                <li>{t("agentDownloads.proFeature3")}</li>
               </ul>
-              <a className="card-btn" href="#download">בחר מקצועי</a>
+              <a className="card-btn" href="#download">{t("agentDownloads.chooseProBtn")}</a>
             </article>
             <article className="pricing-card">
               <h3>Team</h3>
-              <p>לקבוצות שרוצות לשתף פרופילים, תרחישים ופרויקטים.</p>
+              <p>{t("agentDownloads.teamCardDesc")}</p>
               <ul>
-                <li>הוספת משתמשים</li>
-                <li>ניהול צוותי עבודה</li>
-                <li>גישה עסקית</li>
+                <li>{t("agentDownloads.teamFeature1")}</li>
+                <li>{t("agentDownloads.teamFeature2")}</li>
+                <li>{t("agentDownloads.teamFeature3")}</li>
               </ul>
-              <a className="card-btn" href="#download">בחר צוות</a>
+              <a className="card-btn" href="#download">{t("agentDownloads.chooseTeamBtn")}</a>
             </article>
           </div>
         </div>

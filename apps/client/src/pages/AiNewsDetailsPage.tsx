@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { API_ENDPOINTS, apiCall } from "../config/api";
@@ -16,6 +17,7 @@ interface NewsItem {
 }
 
 export default function AiNewsDetailsPage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const [news, setNews] = useState<NewsItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,7 +32,7 @@ export default function AiNewsDetailsPage() {
         const data = await apiCall<NewsItem>(`${API_ENDPOINTS.news}/${id}`);
         setNews(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "שגיאה בטעינת הכתבה");
+        setError(err instanceof Error ? err.message : t("aiNews.loadArticleErrorMsg"));
       } finally {
         setLoading(false);
       }
@@ -50,7 +52,7 @@ export default function AiNewsDetailsPage() {
       <div className="news-loading-container">
         <div className="news-loading-content">
           <div className="news-spinner" />
-          <div className="news-loading-text">טוען...</div>
+          <div className="news-loading-text">{t("common.loading")}</div>
         </div>
       </div>
     );
@@ -105,6 +107,12 @@ export default function AiNewsDetailsPage() {
 
         <div className="news-article-content">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{news.content}</ReactMarkdown>
+        </div>
+
+        <div className="news-details-footer">
+          <Link to="/ai-news" className="btn-reset">
+            {t("aiNews.backToNewsBtn")}
+          </Link>
         </div>
       </div>
     </div>

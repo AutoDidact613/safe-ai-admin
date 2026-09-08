@@ -179,7 +179,7 @@ textarea:focus {
 }
 
 .table th {
-  text-align: left;
+  text-align: start;
   padding: 10px;
   border-bottom: 1px solid var(--border-default);
   color: var(--text-muted);
@@ -229,13 +229,6 @@ textarea:focus {
   justify-content: space-between;
   align-items: center;
 }
-
-
-*{
-    direction: rtl;
-}
-
-
 
 /* =========================
    Dark Mode
