@@ -13,12 +13,14 @@ interface PendingOrganizationsTableProps {
   organizations: Organization[];
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
+  busyId: string | null;
 }
 
-export const PendingOrganizationsTable: React.FC<PendingOrganizationsTableProps> = ({ 
-  organizations, 
-  onApprove, 
-  onReject 
+export const PendingOrganizationsTable: React.FC<PendingOrganizationsTableProps> = ({
+  organizations,
+  onApprove,
+  onReject,
+  busyId,
 }) => {
   const { t } = useTranslation();
 
@@ -50,16 +52,22 @@ export const PendingOrganizationsTable: React.FC<PendingOrganizationsTableProps>
               <button
                 className="btn-approve"
                 onClick={() => onApprove(org._id)}
+                disabled={busyId === org._id}
                 style={{ marginLeft: '8px', cursor: 'pointer' }}
               >
-                {t("pendingOrganizations.approveButton")}
+                {busyId === org._id
+                  ? t("pendingOrganizations.processingButton")
+                  : t("pendingOrganizations.approveButton")}
               </button>
               <button
                 className="btn-reject"
                 onClick={() => onReject(org._id)}
+                disabled={busyId === org._id}
                 style={{ cursor: 'pointer' }}
               >
-                {t("pendingOrganizations.rejectButton")}
+                {busyId === org._id
+                  ? t("pendingOrganizations.processingButton")
+                  : t("pendingOrganizations.rejectButton")}
               </button>
             </td>
           </tr>

@@ -757,7 +757,8 @@
     "tableHeaderActions": "Actions",
     "pendingStatus": "Pending",
     "approveButton": "Approve",
-    "rejectButton": "Reject"
+    "rejectButton": "Reject",
+    "processingButton": "Processing..."
   },
   "weekDays": {
     "sunday": "Sunday",

@@ -757,7 +757,8 @@
     "tableHeaderActions": "פעולות",
     "pendingStatus": "ממתין",
     "approveButton": "אישור",
-    "rejectButton": "דחייה"
+    "rejectButton": "דחייה",
+    "processingButton": "מעבד..."
   },
   "weekDays": {
     "sunday": "ראשון",
