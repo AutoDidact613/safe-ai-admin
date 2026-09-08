@@ -16,6 +16,11 @@ import AboutPage from "../pages/AboutPage";
 import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
 import TenderBoardPage from "../pages/TenderBoardPage";
 import DownloadAgentsPage from "../pages/AgentDownloadsPage";
+import AgentsIndexPage from "../features/agents/AgentsIndexPage";
+import AgentsMarketplace from "../features/agents/AgentsMarketplace";
+import AgentDetailPage from "../features/agents/AgentDetailPage";
+import AgentSubmitPage from "../features/agents/AgentSubmitPage";
+import AgentStatsPage from "../features/agents/AgentStatsPage";
 import LoginForm from "../features/auth/LoginForm";
 import RegisterForm from "../features/auth/RegisterForm";
 import ApiKeyDisplay from "../features/auth/ApiKeyDisplay";
@@ -292,6 +297,15 @@ export default function AppRouter() {
         <Route path="/activity-log" element={<ActivityLogPage />} />
         <Route path="/tender-board" element={<TenderBoardPage />} />
         <Route path="/download-agents" element={<DownloadAgentsPage />} />
+
+        {/* Agents Marketplace — community-submitted agents, separate from the desktop-app download page above */}
+        <Route path="/agents-marketplace" element={<AgentsIndexPage />}>
+          <Route index element={<AgentsMarketplace />} />
+          <Route path="submit" element={<AgentSubmitPage />} />
+          <Route path="stats" element={<AgentStatsPage />} />
+          <Route path=":id" element={<AgentDetailPage />} />
+        </Route>
+
         <Route path="/forum/post/:id" element={<PostThreadPage />} />
 
         {/* Catch all - 404 */}
