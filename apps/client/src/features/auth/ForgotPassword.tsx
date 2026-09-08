@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { apiCall, API_ENDPOINTS } from "../../config/api";
 
 export default function ForgotPassword() {
@@ -8,6 +9,7 @@ export default function ForgotPassword() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +32,7 @@ export default function ForgotPassword() {
     } catch (err: unknown) {
       console.error("Forgot password error:", err);
       const errorMessage =
-        err instanceof Error ? err.message : "שגיאה בשליחת בקשת איפוס סיסמה";
+        err instanceof Error ? err.message : t("forgotPassword.errorFallback");
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -40,17 +42,17 @@ export default function ForgotPassword() {
   return (
     <div className="auth-form-container">
       <div className="auth-form-wrapper">
-        <h2 className="auth-title">שכחתי סיסמה</h2>
+        <h2 className="auth-title">{t("login.forgotPassword")}</h2>
 
         {!success ? (
           <>
             <p style={{ textAlign: "center", color: "var(--text-muted)", marginBottom: "25px" }}>
-              הזן את כתובת האימייל שלך ונשלח לך קישור לאיפוס הסיסמה
+              {t("forgotPassword.subtitle")}
             </p>
 
             <form className="auth-form" onSubmit={handleSubmit}>
               <div className="form-group">
-                <label htmlFor="email">אימייל</label>
+                <label htmlFor="email">{t("login.emailLabel")}</label>
                 <input
                   type="email"
                   id="email"
@@ -74,18 +76,18 @@ export default function ForgotPassword() {
                 className="btn btn-primary btn-full"
                 disabled={loading}
               >
-                {loading ? "שולח..." : "שלח קישור לאיפוס סיסמה"}
+                {loading ? t("forgotPassword.sendingBtn") : t("forgotPassword.sendLinkBtn")}
               </button>
             </form>
 
             <div className="auth-footer">
               <p>
-                נזכרת בסיסמה?{" "}
+                {t("resetPassword.forgotPasswordLink")}{" "}
                 <button
                   className="link-button"
                   onClick={() => navigate("/login")}
                 >
-                  התחבר
+                  {t("resetPassword.loginLink")}
                 </button>
               </p>
             </div>
@@ -101,18 +103,18 @@ export default function ForgotPassword() {
               ✉️
             </div>
             <h3 style={{ color: "var(--color-success)", marginBottom: "15px" }}>
-              הבקשה נשלחה בהצלחה!
+              {t("forgotPassword.successTitle")}
             </h3>
             <p style={{ color: "var(--text-muted)", marginBottom: "20px" }}>
-              אם האימייל קיים במערכת, נשלח אליו קישור לאיפוס סיסמה.
+              {t("forgotPassword.successMessage")}
               <br />
-              אנא בדוק את תיבת הדואר שלך (כולל תיקיית הספאם).
+              {t("forgotPassword.checkInboxMessage")}
             </p>
             <button
               onClick={() => navigate("/login")}
               className="btn btn-primary"
             >
-              חזור להתחברות
+              {t("emailVerification.backToLoginBtn")}
             </button>
           </div>
         )}

@@ -1,5 +1,6 @@
 import '../../styles/safeai-ui.css';
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import { useState, useEffect } from "react";
 import { apiCall, API_ENDPOINTS } from "../../config/api";
@@ -26,6 +27,7 @@ export default function MyRequestsList({ activeSection }: MyRequestsListProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const fetchRequests = async () => {
     try {
@@ -35,7 +37,7 @@ export default function MyRequestsList({ activeSection }: MyRequestsListProps) {
       setRequests(data || []);
     } catch (err) {
       console.error("Error fetching requests:", err);
-      setError("לא הצלחנו לטעון את הפניות. נסי שוב מאוחר יותר.");
+      setError(t("requests.loadMyRequestsFailedError"));
     } finally {
       setLoading(false);
     }
@@ -54,23 +56,23 @@ export default function MyRequestsList({ activeSection }: MyRequestsListProps) {
     }
   }, [activeSection]);
 
-  if (loading) return <div className="loading">טוען נתונים...</div>;
+  if (loading) return <div className="loading">{t("userDashboard.loadingData")}</div>;
   if (error) return <div className="error">{error}</div>;
 
   return (
     <div className="requests-wrapper">
       <div className="my-requests-list requests-table-container">
-        <h3>הפניות שלי</h3>
+        <h3>{t("requests.myRequestsTitle")}</h3>
         {requests.length === 0 ? (
-          <p>אין לך פניות פעילות כרגע.</p>
+          <p>{t("requests.noActiveRequests")}</p>
         ) : (
           <table className="requests-table">
             <thead>
               <tr>
                 <th></th>
-                <th>נושא</th>
-                <th>סוג הפנייה</th>
-                <th>תאריך</th>
+                <th>{t("requests.subjectColumn")}</th>
+                <th>{t("requests.requestTypeColumn")}</th>
+                <th>{t("requests.dateColumn")}</th>
               </tr>
             </thead>
             <tbody>
@@ -81,11 +83,11 @@ export default function MyRequestsList({ activeSection }: MyRequestsListProps) {
                   style={{ cursor: 'pointer' }}
                 >
                   <td>
-                    {hasNewAdminReply(req) && <span className="request-new-badge request-new-icon">תגובה חדשה</span>}
+                    {hasNewAdminReply(req) && <span className="request-new-badge request-new-icon">{t("requests.newReplyBadge")}</span>}
                   </td>
-                  <td>{req.title || "ללא נושא"}</td>
+                  <td>{req.title || t("requests.noSubject")}</td>
                   <td>
-                    <span className="request-type-badge">{req.requestType || req.status || "לא ידוע"}</span>
+                    <span className="request-type-badge">{req.requestType || req.status || t("requests.unknownValue")}</span>
                   </td>
                   <td>{new Date(req.createdAt).toLocaleDateString("he-IL")}</td>
                 </tr>

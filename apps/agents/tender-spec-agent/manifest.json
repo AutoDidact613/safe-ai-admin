@@ -1,0 +1,21 @@
+{
+  "name": "safeai-tender-spec-agent",
+  "version": "0.1.0",
+  "description": "Lorem ipsum dolor sit amet, placeholder description.",
+  "entry_point": "run_agent.py",
+  "framework": "langgraph",
+  "interfaces": ["cli"],
+  "requires_human_approval": false,
+  "environment_variables": [
+    "SAFEAI_API_BASE_URL",
+    "SAFEAI_AGENT_API_TOKEN",
+    "GEMINI_API_KEY",
+    "LLM_MODEL",
+    "GOOGLE_SEARCH_API_KEY",
+    "GOOGLE_SEARCH_ENGINE_ID",
+    "LANGCHAIN_API_KEY",
+    "LANGCHAIN_PROJECT"
+  ],
+  "author": "foo",
+  "license": "UNLICENSED"
+}

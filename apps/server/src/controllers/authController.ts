@@ -43,7 +43,8 @@ export async function registerHandler(req: Request, res: Response) {
     logger.error("Registration error:", { error: error.message, stack: error.stack });
     res.status(400).json({
       success: false,
-      error: error.message || "ההרשמה נכשלה",
+      error: error.message || "Registration failed",
+      code: error.code || "REGISTRATION_FAILED",
     });
   }
 }
@@ -74,7 +75,7 @@ export async function loginHandler(req: Request, res: Response) {
 
     res.status(statusCode).json({
       success: false,
-      message: error.message || "ההתחברות נכשלה",
+      message: error.message || "Login failed",
       code: error.code || "LOGIN_FAILED",
     });
   

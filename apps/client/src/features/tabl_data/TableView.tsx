@@ -127,6 +127,7 @@
 
 import React, { useState, type ChangeEvent } from "react";
 import { useSelector } from "react-redux";
+import { useTranslation } from "react-i18next";
 
 import * as XLSX from "xlsx";
 
@@ -141,6 +142,7 @@ interface RootState {
 }
 
 const TableView: React.FC = () => {
+  const { t } = useTranslation();
   // ------------------- נתונים מה-slice -------------------
   const userTable = useSelector((state: RootState) => state.table.userTable);
   const groupTable = useSelector((state: RootState) => state.table.groupTable);
@@ -170,13 +172,13 @@ const TableView: React.FC = () => {
 
   // ------------------- רינדור -------------------
   return (
-    <div style={{ width: "500px", margin: "0 auto", direction: "rtl" }}>
+    <div style={{ width: "500px", margin: "0 auto" }}>
       {/* טבלת משתמשים */}
-      <h2>טבלת משתמשים</h2>
-      
+      <h2>{t("tableView.usersTableTitle")}</h2>
+
       <input
         type="text"
-        placeholder="חפש משתמש לפי שם"
+        placeholder={t("tableView.searchUserByNamePlaceholder")}
         value={userSearch}
         onChange={(e: ChangeEvent<HTMLInputElement>) => setUserSearch(e.target.value)}
         style={{ marginBottom: "10px", padding: "5px", width: "100%" }}
@@ -186,8 +188,8 @@ const TableView: React.FC = () => {
         <thead>
           <tr>
             <th>ID</th>
-            <th>שם</th>
-            <th>גיל</th>
+            <th>{t("tableView.nameColumn")}</th>
+            <th>{t("tableView.ageColumn")}</th>
           </tr>
         </thead>
         <tbody>
@@ -205,17 +207,17 @@ const TableView: React.FC = () => {
         onClick={() => exportTable(filteredUsers, "Users")}
         style={{ marginTop: "10px", padding: "8px 15px", cursor: "pointer" }}
       >
-        יצוא משתמשים לאקסל
+        {t("tableView.exportUsersBtn")}
       </button>
 
       <hr style={{ margin: "30px 0" }} />
 
       {/* טבלת קבוצות */}
-      <h2>טבלת קבוצות</h2>
+      <h2>{t("tableView.groupsTableTitle")}</h2>
 
       <input
         type="text"
-        placeholder="חפש קבוצות לפי שם"
+        placeholder={t("tableView.searchGroupByNamePlaceholder")}
         value={groupSearch}
         onChange={(e: ChangeEvent<HTMLInputElement>) => setGroupSearch(e.target.value)}
         style={{ marginBottom: "10px", padding: "5px", width: "100%" }}
@@ -225,7 +227,7 @@ const TableView: React.FC = () => {
         <thead>
           <tr>
             <th>ID</th>
-            <th>שם</th>
+            <th>{t("tableView.nameColumn")}</th>
           </tr>
         </thead>
         <tbody>
@@ -242,7 +244,7 @@ const TableView: React.FC = () => {
         onClick={() => exportTable(filteredGroups, "Groups")}
         style={{ marginTop: "10px", padding: "8px 15px", cursor: "pointer" }}
       >
-        יצוא קבוצות לאקסל
+        {t("tableView.exportGroupsBtn")}
       </button>
 
     </div>

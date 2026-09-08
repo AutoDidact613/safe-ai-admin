@@ -1,23 +1,25 @@
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 
 interface Props {
   weeklyNewUsers: number[];
 }
 
-const days = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+const DAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
 const WeeklyNewUsersAreaChart: React.FC<Props> = ({ weeklyNewUsers }) => {
+  const { t } = useTranslation();
   const data = weeklyNewUsers.map((value, i) => ({
-    day: days[i],
+    day: t(`weekDays.${DAY_KEYS[i]}`),
     users: value
   }));
 
   return (
     <div style={{ width: "100%", height: 350 }}>
       <h3 style={{ textAlign: "center", marginBottom: "10px" }}>
-        משתמשים חדשים שנוספו השבוע
+        {t("dataHistory.weeklyNewUsersChartTitle")}
       </h3>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data}>

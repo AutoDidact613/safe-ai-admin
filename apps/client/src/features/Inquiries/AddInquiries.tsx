@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent,  } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { addInquiry } from "./inquiriesSlice";
 import type { AppDispatch } from "../../app/store";
 
@@ -22,6 +23,7 @@ interface NewInquiry {
 const AddInquiries: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -63,7 +65,7 @@ const AddInquiries: React.FC = () => {
 
   return (
     <div>
-      <h2>הוספת פנייה חדשה</h2>
+      <h2>{t("inquiries.addNew")}</h2>
       <form>
         <input
           type="text"
@@ -111,7 +113,7 @@ const AddInquiries: React.FC = () => {
         </div>
 
         <button type="button" className="btn btn-primary" onClick={add}>
-          הוספת פנייה
+          {t("inquiries.addBtn")}
         </button>
       </form>
     </div>

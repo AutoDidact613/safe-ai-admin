@@ -1,6 +1,5 @@
 .organization-page {
-  direction: rtl;
-  text-align: right;
+  text-align: start;
   padding: 20px;
   font-family: Arial, sans-serif;
   color: var(--text-primary);
@@ -133,14 +132,13 @@
   width: 100%;
   border-collapse: collapse;
   margin-top: 20px;
-  direction: rtl;
 }
 
 .organization-table th,
 .organization-table td {
   padding: 14px 12px;
   border: 1px solid var(--border-default);
-  text-align: right;
+  text-align: start;
   vertical-align: middle;
 }
 
@@ -162,7 +160,7 @@
 }
 
 .status-cell {
-  text-align: right;
+  text-align: start;
 }
 
 .status-pill {
@@ -184,7 +182,6 @@
 .error-text {
   color: var(--color-danger);
   margin-bottom: 16px;
-  direction: ltr;
 }
 
 .retry-button {

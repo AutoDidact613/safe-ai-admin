@@ -1,0 +1,48 @@
+{
+  "name": "Logs Analysis Agent",
+  "version": "1.0.0",
+  "description": "An autonomous LangGraph agent that fetches application logs from MongoDB, analyzes performance bottlenecks and errors (including nested business/context metadata), validates its own findings, and produces a Markdown analysis report.",
+  "creator_name": "Margalit",
+  "contact_information": "developer@example.com",
+  "release_date": "2026-08-25",
+  "repository_url": "https://github.com/SafeAI613/agent-for-forum-logs-margalit",
+  "download_url": "TBD - agent.exe not built yet (PyInstaller packaging pending)",
+
+  "target_audience": "Software Developers, DevOps, Support Engineers",
+  "professional_fields": [
+    "Software Development",
+    "Observability / Log Analysis",
+    "DevOps"
+  ],
+  "tasks_capable_of_performing": [
+    "Fetch application logs from MongoDB by level, user, organization, request, date range, or business/context fields",
+    "Detect slow operations and error patterns",
+    "Surface business context (e.g. orderId, amount) tied to specific errors or slow operations",
+    "Validate its own analysis against the raw logs before reporting (evaluator + retry loop)",
+    "Generate a structured Markdown log analysis report"
+  ],
+  "examples_of_suitable_questions": [
+    "הצג לי את כל השגיאות של היום",
+    "מה קרה להזמנה עם מזהה ORD-12345?",
+    "הצג שגיאות שבהן הסכום גבוה מ-100"
+  ],
+
+  "technical_specifications": {
+    "framework": "LangGraph",
+    "llm_provider": "OpenAI (default) or OpenRouter, selectable via LLM_PROVIDER env var",
+    "supported_models": [
+      "gpt-4o",
+      "gpt-4o-mini"
+    ],
+    "features_enabled": {
+      "rag": false,
+      "web_search": false,
+      "code_execution": false,
+      "mcp_support": false
+    },
+    "required_permissions": [
+      "mongodb_read_access",
+      "openai_api_access"
+    ]
+  }
+}

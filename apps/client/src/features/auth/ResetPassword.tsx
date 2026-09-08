@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { apiCall, API_ENDPOINTS } from "../../config/api";
 
 export default function ResetPassword() {
+  const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -16,23 +18,23 @@ export default function ResetPassword() {
 
   useEffect(() => {
     if (!token) {
-      setError("קישור איפוס סיסמה לא תקין");
+      setError(t("resetPassword.invalidToken"));
     }
-  }, [token]);
+  }, [token, t]);
 
   const validatePassword = (password: string): string[] => {
     const errors: string[] = [];
     if (password.length < 8) {
-      errors.push("הסיסמה חייבת להכיל לפחות 8 תווים");
+      errors.push(t("resetPassword.errorMinLength"));
     }
     if (!/[A-Z]/.test(password)) {
-      errors.push("הסיסמה חייבת להכיל לפחות אות גדולה אחת");
+      errors.push(t("resetPassword.errorUppercase"));
     }
     if (!/[a-z]/.test(password)) {
-      errors.push("הסיסמה חייבת להכיל לפחות אות קטנה אחת");
+      errors.push(t("resetPassword.errorLowercase"));
     }
     if (!/[0-9]/.test(password)) {
-      errors.push("הסיסמה חייבת להכיל לפחות ספרה אחת");
+      errors.push(t("resetPassword.errorDigit"));
     }
     return errors;
   };
@@ -45,7 +47,7 @@ export default function ResetPassword() {
 
     // Validate passwords match
     if (formData.newPassword !== formData.confirmPassword) {
-      setError("הסיסמאות אינן תואמות");
+      setError(t("resetPassword.errorMatch"));
       setLoading(false);
       return;
     }
@@ -59,7 +61,7 @@ export default function ResetPassword() {
     }
 
     if (!token) {
-      setError("קישור איפוס סיסמה לא תקין");
+      setError(t("resetPassword.invalidToken"));
       setLoading(false);
       return;
     }
@@ -86,7 +88,7 @@ export default function ResetPassword() {
     } catch (err: unknown) {
       console.error("Reset password error:", err);
       const errorMessage =
-        err instanceof Error ? err.message : "איפוס הסיסמה נכשל";
+        err instanceof Error ? err.message : t("resetPassword.errorResetFailed");
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -119,13 +121,13 @@ export default function ResetPassword() {
               ✅
             </div>
             <h2 style={{ color: "var(--color-success)", marginBottom: "15px" }}>
-              הסיסמה אופסה בהצלחה!
+              {t("resetPassword.successTitle")}
             </h2>
             <p style={{ color: "var(--text-muted)", marginBottom: "20px" }}>
-              כעת תוכל להתחבר עם הסיסמה החדשה
+              {t("resetPassword.successDesc")}
             </p>
             <p style={{ color: "var(--gray-400)", fontSize: "14px" }}>
-              מעביר אותך לדף ההתחברות...
+              {t("resetPassword.redirectingMsg")}
             </p>
           </div>
         </div>
@@ -136,15 +138,15 @@ export default function ResetPassword() {
   return (
     <div className="auth-form-container">
       <div className="auth-form-wrapper">
-        <h2 className="auth-title">איפוס סיסמה</h2>
+        <h2 className="auth-title">{t("resetPassword.title")}</h2>
 
         <p style={{ textAlign: "center", color: "var(--text-muted)", marginBottom: "25px" }}>
-          הזן סיסמה חדשה לחשבון שלך
+          {t("resetPassword.subtitle")}
         </p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="newPassword">סיסמה חדשה *</label>
+            <label htmlFor="newPassword">{t("resetPassword.newPasswordLabel")}</label>
             <input
               type="password"
               id="newPassword"
@@ -152,7 +154,7 @@ export default function ResetPassword() {
               value={formData.newPassword}
               onChange={handleChange}
               required
-              placeholder="הזן סיסמה חדשה"
+              placeholder={t("resetPassword.newPasswordPlaceholder")}
               autoComplete="new-password"
             />
             {passwordErrors.length > 0 && (
@@ -169,7 +171,7 @@ export default function ResetPassword() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">אימות סיסמה *</label>
+            <label htmlFor="confirmPassword">{t("resetPassword.confirmPasswordLabel")}</label>
             <input
               type="password"
               id="confirmPassword"
@@ -177,7 +179,7 @@ export default function ResetPassword() {
               value={formData.confirmPassword}
               onChange={handleChange}
               required
-              placeholder="הזן סיסמה שוב"
+              placeholder={t("resetPassword.confirmPasswordPlaceholder")}
               autoComplete="new-password"
             />
           </div>
@@ -193,18 +195,18 @@ export default function ResetPassword() {
             className="btn btn-primary btn-full"
             disabled={loading || !token}
           >
-            {loading ? "מאפס סיסמה..." : "אפס סיסמה"}
+            {loading ? t("resetPassword.buttonSubmitting") : t("resetPassword.buttonSubmit")}
           </button>
         </form>
 
         <div className="auth-footer">
           <p>
-            נזכרת בסיסמה?{" "}
+            {t("resetPassword.forgotPasswordLink")}{" "}
             <button
               className="link-button"
               onClick={() => navigate("/login")}
             >
-              התחבר
+              {t("resetPassword.loginLink")}
             </button>
           </p>
         </div>

@@ -1,13 +1,16 @@
 import { useState, useMemo, type FC } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { setCurrentInquiry, type Inquiry} from "./inquiriesSlice";
 import type { RootState } from "../../app/store";
 import type { AppDispatch } from "../../app/store";
 
 import "./inquiries.css";
 
-const timeAgo = (isoDate?: string): string => {
+type TFunc = (key: string, options?: Record<string, unknown>) => string;
+
+const timeAgo = (isoDate: string | undefined, t: TFunc): string => {
   if (!isoDate) return "";
   const then = new Date(isoDate);
   const diff = Date.now() - then.getTime();
@@ -16,12 +19,12 @@ const timeAgo = (isoDate?: string): string => {
   const hr = Math.floor(min / 60);
   const day = Math.floor(hr / 24);
 
-  if (day >= 365) return `לפני ${Math.floor(day / 365)} שנים`;
-  if (day >= 30) return `לפני ${Math.floor(day / 30)} חודשים`;
-  if (day > 0) return `לפני ${day} ימים`;
-  if (hr > 0) return `לפני ${hr} שעות`;
-  if (min > 0) return `לפני ${min} דקות`;
-  return `לפני מספר שניות`;
+  if (day >= 365) return t("inquiries.timeAgo.years", { count: Math.floor(day / 365) });
+  if (day >= 30) return t("inquiries.timeAgo.months", { count: Math.floor(day / 30) });
+  if (day > 0) return t("inquiries.timeAgo.days", { count: day });
+  if (hr > 0) return t("inquiries.timeAgo.hours", { count: hr });
+  if (min > 0) return t("inquiries.timeAgo.minutes", { count: min });
+  return t("inquiries.timeAgo.secondsAgo");
 };
 
 interface CompactItemProps {
@@ -29,7 +32,9 @@ interface CompactItemProps {
   onDetails: (inquiry: Inquiry) => void;
 }
 
-const CompactItem: FC<CompactItemProps> = ({ inquiry, onDetails }) => (
+const CompactItem: FC<CompactItemProps> = ({ inquiry, onDetails }) => {
+  const { t } = useTranslation();
+  return (
     <div className="inquiry-compact">
     <div className="inquiry-compact-main">
       <div className="inquiry-subject">{inquiry.subject}</div>
@@ -37,20 +42,22 @@ const CompactItem: FC<CompactItemProps> = ({ inquiry, onDetails }) => (
         className="inquiry-status"
         style={{ fontWeight: "bold", color: inquiry.status === "open" ? "var(--color-success)" : "var(--color-danger)" }}
       >
-        {inquiry.status === "open" ? "פתוחה" : "סגורה"}
+        {inquiry.status === "open" ? t("inquiries.statusOpen") : t("inquiries.statusClosed")}
       </div>
-      <div className="inquiry-time">{timeAgo(inquiry.createdAt)}</div>
+      <div className="inquiry-time">{timeAgo(inquiry.createdAt, t)}</div>
     </div>
     <div className="inquiry-actions">
-      <button className="btn btn-primary" onClick={() => onDetails(inquiry)}>לפרטים</button>
+      <button className="btn btn-primary" onClick={() => onDetails(inquiry)}>{t("inquiries.details")}</button>
     </div>
   </div>
-);
+  );
+};
 
 const InquiriesList: FC = () => {
   const inquiries = useSelector((state: RootState) => state.inquiries.inquiries) as Inquiry[];
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // סטייט רק עבור ערכי הסינון
   const [fromDate, setFromDate] = useState("");
@@ -104,21 +111,21 @@ const InquiriesList: FC = () => {
 
   return (
     <div>
-      <h2>רשימת פניות</h2>
-      <button className="btn btn-primary inquiry-add-btn" onClick={() => navigate("/inquiry-add")}>הוספת פנייה חדשה</button>
+      <h2>{t("inquiries.title")}</h2>
+      <button className="btn btn-primary inquiry-add-btn" onClick={() => navigate("/inquiry-add")}>{t("inquiries.addNew")}</button>
 
       <div className="filters-card">
         <div className="filters-row">
-          <label>מתאריך</label>
+          <label>{t("inquiries.fromDate")}</label>
           <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} />
 
-          <label>עד תאריך</label>
+          <label>{t("inquiries.toDate")}</label>
           <input type="date" value={toDate} onChange={e => setToDate(e.target.value)} />
 
           <input
             className="filters-search"
             type="text"
-            placeholder="טקסט לחיפוש (שם, נושא או הודעה)"
+            placeholder={t("inquiries.searchPlaceholder")}
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
           />
@@ -129,21 +136,21 @@ const InquiriesList: FC = () => {
               checked={notHandledOnly}
               onChange={e => setNotHandledOnly(e.target.checked)}
             />
-            לא טופלו בלבד
+            {t("inquiries.notHandledOnly")}
           </label>
 
           <div className="filter-buttons">
-            <button className="btn btn-primary" onClick={applyFilter}>סנן</button>
-            <button className="btn btn-secondary" onClick={resetFilters} type="button">איפוס</button>
+            <button className="btn btn-primary" onClick={applyFilter}>{t("inquiries.filterBtn")}</button>
+            <button className="btn btn-secondary" onClick={resetFilters} type="button">{t("inquiries.resetBtn")}</button>
           </div>
         </div>
       </div>
 
-      <div className="results-header">{displayList.length} תוצאות</div>
+      <div className="results-header">{t("inquiries.resultsCount", { count: displayList.length })}</div>
 
       <div className="inquiries-list">
         {displayList.length === 0 ? (
-          <p>לא נמצאו פניות לפי הסינון</p>
+          <p>{t("inquiries.noResults")}</p>
         ) : (
           displayList.map(inq => <CompactItem key={inq.id} inquiry={inq} onDetails={goToDetails} />)
         )}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import "../styles/safeai-ui.css";
 import ProfilesManagement from "../features/safeai-ui/ProfilesManagement";
 import UsersManagement from "../features/safeai-ui/UsersManagement";
@@ -44,6 +45,7 @@ type UserData = {
 };
 
 export default function SafeAIUIPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   // Initialize state from localStorage
@@ -138,7 +140,7 @@ export default function SafeAIUIPage() {
   const renderSection = () => {
     // Org owners whose org is not yet approved only see the pending screen
     if (userRole === "org_owner") {
-      if (orgGate.loading) return <div className="orgs-loading">טוען...</div>;
+      if (orgGate.loading) return <div className="orgs-loading">{t("common.loading")}</div>;
       if (orgGate.pending) return <PendingApprovalScreen orgName={orgGate.orgName} />;
     }
     switch (activeSection) {
@@ -195,7 +197,7 @@ export default function SafeAIUIPage() {
                       strokeLinejoin="round"
                     />
                   </svg>
-                  סטטיסטיקות
+                  {t("safeaiNav.statistics")}
                 </button>
                 <button
                   className={
@@ -213,7 +215,7 @@ export default function SafeAIUIPage() {
                       strokeLinecap="round"
                     />
                   </svg>
-                  ניהול פרופילים
+                  {t("safeaiNav.manageProfiles")}
                 </button>
                 <button
                   className={
@@ -231,7 +233,7 @@ export default function SafeAIUIPage() {
                       strokeLinecap="round"
                     />
                   </svg>
-                  ניהול משתמשים
+                  {t("safeaiNav.manageUsers")}
                 </button>
                 <button
                   className={
@@ -249,7 +251,7 @@ export default function SafeAIUIPage() {
                       strokeLinecap="round"
                     />
                   </svg>
-                  ניהול ארגונים
+                  {t("safeaiNav.manageOrganizations")}
                 </button>
                 <button
                   className={
@@ -268,7 +270,7 @@ export default function SafeAIUIPage() {
                       strokeLinecap="round"
                     />
                   </svg>
-                  כל הפניות
+                  {t("safeaiNav.allRequests")}
                   {newRequestCount > 0 && (
                     <span className="sub-nav-badge">({newRequestCount})</span>
                   )}
@@ -296,7 +298,7 @@ export default function SafeAIUIPage() {
                       strokeLinejoin="round"
                     />
                   </svg>
-                  סטטיסטיקות
+                  {t("safeaiNav.statistics")}
                 </button>
                 <button
                   className={
@@ -341,7 +343,7 @@ export default function SafeAIUIPage() {
                       strokeLinecap="round"
                     />
                   </svg>
-                  מפתחות API
+                  {t("safeaiNav.apiKeys")}
                 </button>
                 <button
                     className={activeSection === "requests" ? "sub-nav-btn active" : "sub-nav-btn"}
@@ -350,7 +352,7 @@ export default function SafeAIUIPage() {
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                       <path d="M2 4h12v8H2zM2 4l6 4 6-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    הפניות שלי
+                    {t("requests.myRequestsTitle")}
                 </button>
                 <button
                   className={activeSection === "billing" ? "sub-nav-btn active" : "sub-nav-btn"}
@@ -361,7 +363,7 @@ export default function SafeAIUIPage() {
                     <path d="M1 7h14" stroke="currentColor" strokeWidth="1.5" />
                     <path d="M4 10.5h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
-                  חיובים
+                  {t("safeaiNav.billing")}
                 </button>
               </>
             )}
@@ -376,7 +378,7 @@ export default function SafeAIUIPage() {
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M2 14V8M8 14V2M14 14V6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  סטטיסטיקות של הארגון
+                  {t("safeaiNav.orgStatistics")}
                 </button>
                 <button
                   className={activeSection === "org-users" ? "sub-nav-btn active" : "sub-nav-btn"}
@@ -385,7 +387,7 @@ export default function SafeAIUIPage() {
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M11 7a2 2 0 100-4 2 2 0 000 4zM13 13c0-1.657-1.343-3-3-3M5 7a2 2 0 100-4 2 2 0 000 4zM1 13c0-1.657 1.343-3 3-3s3 1.343 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
-                  ניהול משתמשים
+                  {t("safeaiNav.manageUsers")}
                 </button>
               </>
             )}

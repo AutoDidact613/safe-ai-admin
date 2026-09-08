@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { apiCall, API_ENDPOINTS } from '../../config/api'
 import AiThinkingLoader from './AiThinkingLoader.tsx'
 
@@ -38,6 +39,7 @@ interface CreateTenderProps {
 }
 
 export default function CreateTender({ onSuccess }: CreateTenderProps) {
+  const { t, i18n } = useTranslation()
   const [formData, setFormData] = useState<TenderFormData>({
     tenderName: '',
     explanation: '',
@@ -121,9 +123,10 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value, type } = event.target
+    const fieldValue: string | boolean = type === 'checkbox' ? (event.target as HTMLInputElement).checked : value
     setFormData((current) => ({
       ...current,
-      [name]: type === 'checkbox' ? (event.target as HTMLInputElement).checked : value,
+      [name]: fieldValue,
     } as TenderFormData))
   }
 
@@ -188,7 +191,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
           additionalDetails: response.tender?.additionalDetails || current.additionalDetails,
           agents: response.tender?.agentsRequired || current.agents,
         }))
-        setFormMessage('הנתונים הופקו בהצלחה מהטקסט!')
+        setFormMessage(t('tenders.smartCreateSuccessMsg'))
         setIsSmartOpen(false)
         setSmartText('')
       }
@@ -198,7 +201,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
       if (code === 'TENDER_TOPIC_MISMATCH') {
         setErrorMessage('הטקסט שהזנת אינו מתאר בקשה ליצירת מכרז. אנא תאר את הפרויקט או השירות שברצונך לפרסם.')
       } else {
-        setErrorMessage('נכשל ניתוח המכרז החכם, אנא נסה שוב או מלא ידנית.')
+        setErrorMessage(t('tenders.smartCreateErrorMsg'))
       }
     } finally {
       setIsSmartLoading(false)
@@ -236,7 +239,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
         body: JSON.stringify(payload),
       })
 
-      setCreateSuccessMessage('המכרז נשלח בהצלחה!')
+      setCreateSuccessMessage(t('tenders.tenderSubmittedSuccessMsg'))
       setFormData({
         tenderName: '',
         explanation: '',
@@ -252,18 +255,18 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
     } catch (error) {
       console.error('Failed to create tender', error)
       const serverMessage = error instanceof Error ? error.message : ''
-      setErrorMessage(serverMessage || 'לא ניתן לשמור את המכרז כעת. אנא נסה שוב מאוחר יותר.')
+      setErrorMessage(serverMessage || t('tenders.tenderSubmitErrorMsg'))
     }
   }
 
   const showAgentsSection = formData.aiApplicationType === 'אייגנט' || formData.aiApplicationType === 'מולטי אייגנט'
 
   return (
-    <div className="page-shell" dir="rtl">
+    <div className="page-shell" dir={i18n.dir()}>
       <form className="tender-form" onSubmit={handleSubmit}>
         <header className="form-header">
           <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '16px' }}>
-            <h1>פתיחת מכרז</h1>
+            <h1>{t('tenders.createTenderTitle')}</h1>
 
             {/* כפתור יצירת מכרז חכמה */}
             <button
@@ -285,19 +288,19 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
               }}
             >
               <span>✨</span>
-              יצירת מכרז חכמה
+              {t('tenders.smartCreateBtn')}
             </button>
           </div>
 
           {/* תיבת הטקסט החכמה שנפתחת בלחיצה */}
           {isSmartOpen && (
             <div className="smart-create-box" style={{ width: '100%', marginTop: '16px', padding: '16px', border: '1px solid var(--border-default)', borderRadius: '8px', backgroundColor: 'var(--bg-elevated)' }}>
-              <label htmlFor="smartText" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>תאר את המכרז שברצונך לפתוח (ה-AI ימלא את השדות עבורך):</label>
+              <label htmlFor="smartText" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>{t('tenders.smartCreateLabel')}</label>
               <textarea
                 id="smartText"
                 value={smartText}
                 onChange={(e) => setSmartText(e.target.value)}
-                placeholder="לדוגמה: מחפש מישהו שיבנה לי אתר למכירת מוצרים עם תקציב של 5000 שקלים למשך חודש..."
+                placeholder={t('tenders.smartCreatePlaceholder')}
                 className="textarea"
                 rows={4}
               />
@@ -310,20 +313,20 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
               >
                 {isSmartLoading
                   ? <AiThinkingLoader color="#ffffff" />
-                  : 'ייצר מכרז באופן אוטומטי'
+                  : t('tenders.smartCreateGenerateBtn')
                 }
               </button>
             </div>
           )}
 
           <div className="form-group" style={{ marginTop: '16px' }}>
-            <label htmlFor="tenderName">שם המכרז</label>
+            <label htmlFor="tenderName">{t('tenders.tenderNameLabel')}</label>
             <input
               id="tenderName"
               name="tenderName"
               value={formData.tenderName}
               onChange={handleInputChange}
-              placeholder="הכנס שם המכרז"
+              placeholder={t('tenders.tenderNamePlaceholder')}
               className="input"
               maxLength={100}
               required
@@ -336,13 +339,13 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
 
           {/* 1. הסבר / תיאור בראש הדף */}
           <div className="form-group">
-            <label htmlFor="explanation">הסבר / תאור</label>
+            <label htmlFor="explanation">{t('tenders.explanationLabel')}</label>
             <textarea
               id="explanation"
               name="explanation"
               value={formData.explanation}
               onChange={handleInputChange}
-              placeholder="תיאור המכרז"
+              placeholder={t('tenders.explanationPlaceholder')}
               className="textarea"
               rows={5}
               maxLength={1000}
@@ -353,8 +356,8 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
           <div className="selection-cards-row" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
             {/* תיבה א': סוג מוצר */}
             <div className="sidebar-card" style={{ flex: '1', minWidth: '280px' }}>
-              <h2>סוג המוצר</h2>
-              <p className="helper-text">בחירת סוג מוצר אחד</p>
+              <h2>{t('tenders.productTypeHeading')}</h2>
+              <p className="helper-text">{t('tenders.productTypeHelperText')}</p>
               <div className="domain-list">
                 {productTypeOptions.map((type) => {
                   const selected = formData.productType === type
@@ -365,7 +368,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
                       className={`domain-chip ${selected ? 'selected' : ''}`}
                       onClick={() => handleProductTypeSelect(type)}
                     >
-                      {type}
+                      {t(`tenders.productTypeOptions.${type}`, { defaultValue: type })}
                     </button>
                   )
                 })}
@@ -374,8 +377,8 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
 
             {/* תיבה ב': צורת שימוש ב-AI */}
             <div className="sidebar-card" style={{ flex: '1', minWidth: '280px' }}>
-              <h2>צורת שימוש ב-AI</h2>
-              <p className="helper-text">בחירת צורת שימוש אחת</p>
+              <h2>{t('tenders.aiApplicationHeading')}</h2>
+              <p className="helper-text">{t('tenders.aiApplicationHelperText')}</p>
               <div className="domain-list">
                 {aiApplicationOptions.map((appType) => {
                   const selected = formData.aiApplicationType === appType
@@ -386,7 +389,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
                       className={`domain-chip ${selected ? 'selected' : ''}`}
                       onClick={() => handleAiApplicationSelect(appType)}
                     >
-                      {appType}
+                      {t(`tenders.aiApplicationOptions.${appType}`, { defaultValue: appType })}
                     </button>
                   )
                 })}
@@ -397,17 +400,17 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
           {/* 3. שדות האג'נטים - מופיעים רק לאחר מכן במידה ונבחרו */}
           {showAgentsSection && (
             <div className="form-section">
-              <div className="section-title">הסבר על אג'נט</div>
+              <div className="section-title">{t('tenders.agentExplanationSectionTitle')}</div>
               <div className="agent-list">
                 {formData.agents.map((agentText, index) => (
                   <div key={index} className="agent-item">
-                    <label htmlFor={`agent-${index}`}>הסבר על אג'נט {index + 1}</label>
+                    <label htmlFor={`agent-${index}`}>{t('tenders.agentExplanationLabel', { index: index + 1 })}</label>
                     <div className="agent-row">
                       <textarea
                         id={`agent-${index}`}
                         value={agentText}
                         onChange={(event) => handleAgentChange(index, event.target.value)}
-                        placeholder={`רשום תיאור לאג'נט ${index + 1}`}
+                        placeholder={t('tenders.agentDescriptionPlaceholder', { index: index + 1 })}
                         className="textarea textarea-small"
                         rows={3}
                         maxLength={300}
@@ -427,7 +430,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
               </div>
               {formData.aiApplicationType === 'מולטי אייגנט' && (
                 <button type="button" className="button-green" onClick={addAgent}>
-                  הוספת אג'נט +
+                  {t('tenders.addAgentBtn')}
                 </button>
               )}
             </div>
@@ -436,7 +439,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
 
         <div className="bottom-row" style={{ marginTop: '24px' }}>
           <div className="bottom-field">
-            <label htmlFor="duration">כמה זמן ניתן לביצוע המשימה</label>
+            <label htmlFor="duration">{t('tenders.durationLabel')}</label>
             <div style={{ display: 'flex', gap: '8px' }}>
               <input
                 id="duration-value"
@@ -452,7 +455,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
                 id="duration-unit"
                 name="duration-unit"
                 value={formData.duration.unit}
-                onChange={(e) => setFormData((c) => ({ ...c, duration: { ...c.duration, unit: e.target.value as 'שעות' | 'ימים' | 'שבועות' | 'חודשים' | 'שנים' } }))}
+                onChange={(e) => setFormData((c) => ({ ...c, duration: { ...c.duration, unit: e.target.value as (typeof timeUnits)[number] } }))}
               >
                 {timeUnits.map((u) => (
                   <option key={u} value={u}>{u}</option>
@@ -462,14 +465,14 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
           </div>
 
           <div className="bottom-field">
-            <label htmlFor="budget">תקציב - בשקלים</label>
+            <label htmlFor="budget">{t('tenders.budgetLabel')}</label>
             <input
               id="budget"
               name="budget"
               value={formData.budget}
               onChange={(e) => setFormData((c) => ({ ...c, budget: Number(e.target.value) }))}
               type="number"
-              placeholder="הזן סכום"
+              placeholder={t('tenders.budgetPlaceholder')}
               className="input"
               min={0}
             />
@@ -478,13 +481,13 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
 
         <div className="footer-row">
           <div className="footer-main">
-            <label htmlFor="additionalDetails">פרטים נוספים</label>
+            <label htmlFor="additionalDetails">{t('tenders.additionalDetailsFieldLabel')}</label>
             <textarea
               id="additionalDetails"
               name="additionalDetails"
               value={formData.additionalDetails}
               onChange={handleInputChange}
-              placeholder="הזן פרטים נוספים"
+              placeholder={t('tenders.additionalDetailsPlaceholder')}
               className="textarea"
               rows={4}
               maxLength={500}
@@ -501,7 +504,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
                 className="toggle-input"
               />
               <span className="toggle-pill" />
-              <span className="toggle-text">מעוניין לקבל מיילים</span>
+              <span className="toggle-text">{t('tenders.wantsEmailsLabel')}</span>
             </label>
           </div>
         </div>
@@ -511,7 +514,7 @@ export default function CreateTender({ onSuccess }: CreateTenderProps) {
 
         <div className="form-actions">
           <button type="submit" className="button-green submit-button">
-            שמור ושולח
+            {t('tenders.saveAndSubmitBtn')}
           </button>
         </div>
       </form>

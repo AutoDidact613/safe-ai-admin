@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface Organization {
   _id: string;
@@ -21,18 +22,20 @@ export const PendingOrganizationsTable: React.FC<PendingOrganizationsTableProps>
   onReject,
   busyId,
 }) => {
+  const { t } = useTranslation();
+
   if (organizations.length === 0) {
-    return <div className="pending-orgs-empty">כעת אין ארגונים ממתינים לאישור</div>;
+    return <div className="pending-orgs-empty">{t("pendingOrganizations.noOrgsPending")}</div>;
   }
 
   return (
     <table className="pending-orgs-table">
       <thead>
         <tr>
-          <th>שם הארגון</th>
-          <th>תאריך הרשמה</th>
-          <th>סטטוס</th>
-          <th>פעולות</th>
+          <th>{t("pendingOrganizations.tableHeaderOrgName")}</th>
+          <th>{t("pendingOrganizations.tableHeaderRegistrationDate")}</th>
+          <th>{t("pendingOrganizations.tableHeaderStatus")}</th>
+          <th>{t("pendingOrganizations.tableHeaderActions")}</th>
         </tr>
       </thead>
       <tbody>
@@ -42,7 +45,7 @@ export const PendingOrganizationsTable: React.FC<PendingOrganizationsTableProps>
             <td>{new Date(org.createdAt).toLocaleDateString("he-IL")}</td>
             <td>
               <span className={`status-badge ${org.status}`}>
-                {org.status === "pending" ? "ממתין" : org.status}
+                {org.status === "pending" ? t("pendingOrganizations.pendingStatus") : org.status}
               </span>
             </td>
             <td>
@@ -52,7 +55,9 @@ export const PendingOrganizationsTable: React.FC<PendingOrganizationsTableProps>
                 disabled={busyId === org._id}
                 style={{ marginLeft: '8px', cursor: 'pointer' }}
               >
-                {busyId === org._id ? "מעבד..." : "אישור"}
+                {busyId === org._id
+                  ? t("pendingOrganizations.processingButton")
+                  : t("pendingOrganizations.approveButton")}
               </button>
               <button
                 className="btn-reject"
@@ -60,7 +65,9 @@ export const PendingOrganizationsTable: React.FC<PendingOrganizationsTableProps>
                 disabled={busyId === org._id}
                 style={{ cursor: 'pointer' }}
               >
-                {busyId === org._id ? "מעבד..." : "דחייה"}
+                {busyId === org._id
+                  ? t("pendingOrganizations.processingButton")
+                  : t("pendingOrganizations.rejectButton")}
               </button>
             </td>
           </tr>

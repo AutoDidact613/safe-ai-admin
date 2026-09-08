@@ -4,6 +4,7 @@ import { updateInquiry, type Attachment, type Inquiry } from "./inquiriesSlice";
 import type { RootState } from "../../app/store";
 import type { AppDispatch } from "../../app/store";
 import { useState, type ChangeEvent } from "react";
+import { useTranslation } from "react-i18next";
 
 const UpdateInquiries: React.FC = () => {
   const currentInquiry = useSelector(
@@ -12,6 +13,7 @@ const UpdateInquiries: React.FC = () => {
 
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [name, setName] = useState<string>(currentInquiry?.name || "");
   const [email, setEmail] = useState<string>(currentInquiry?.email || "");
@@ -29,7 +31,7 @@ const UpdateInquiries: React.FC = () => {
     if (!currentInquiry) return;
 
     if (!name.trim() || !subject.trim() || !message.trim()) {
-      alert("נא למלא את כל השדות החובה");
+      alert(t("inquiries.requiredFieldsAlert"));
       return;
     }
 
@@ -46,11 +48,11 @@ const UpdateInquiries: React.FC = () => {
     navigate("/inquiry-list");
   };
 
-  if (!currentInquiry) return <p>אין פנייה לעריכה</p>;
+  if (!currentInquiry) return <p>{t("inquiries.noInquiryToEdit")}</p>;
 
   return (
     <div>
-      <h2>עריכת פנייה</h2>
+      <h2>{t("inquiries.editTitle")}</h2>
       <form onSubmit={(e) => { e.preventDefault(); update(); }}>
         <input type="text" placeholder="Name" value={name} onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)} />
         <br />
@@ -65,7 +67,7 @@ const UpdateInquiries: React.FC = () => {
         <div>
           {attachments.map((a, i) => <img key={i} src={a.url} width={120} alt={`attachment ${i}`} />)}
         </div>
-        <button type="submit" className="btn btn-primary">עדכן פנייה</button>
+        <button type="submit" className="btn btn-primary">{t("inquiries.updateBtn")}</button>
       </form>
     </div>
   );

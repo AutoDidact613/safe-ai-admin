@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import "../styles/landing-page.css";
 import AboutCompany from "../features/landing/AboutCompany";
@@ -7,6 +8,7 @@ import Products from "../features/landing/Products";
 type Section = "about" | "products";
 
 export default function LandingPage() {
+  const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState<Section>("about");
 
   const renderSection = () => {
@@ -24,12 +26,12 @@ export default function LandingPage() {
     <div className="landing-page">
       {/* Hero Section */}
       <div className="landing-hero">
-        <h1 className="hero-title">פתרונות בטוחים לשימוש ב-AI</h1>
+        <h1 className="hero-title">{t("landing.heroTitle")}</h1>
         <p className="hero-subtitle">
-          SafeAI מספקת פתרונות מתקדמים לניהול ובקרה של מודלים של בינה מלאכותית
+          {t("landing.heroSubtitle")}
         </p>
         <Link to="/become-org-owner" className="hero-org-owner-link">
-          מנהל ארגון? פתחו ארגון חדש במערכת
+          {t("landing.orgOwnerLinkText")}
         </Link>
       </div>
 
@@ -42,8 +44,8 @@ export default function LandingPage() {
         >
           <div className="section-nav-icon">👤</div>
           <div className="section-nav-content">
-            <div className="section-nav-title">לאורח</div>
-            <div className="section-nav-desc">מידע כללי על החברה</div>
+            <div className="section-nav-title">{t("landing.guestNavTitle")}</div>
+            <div className="section-nav-desc">{t("landing.guestNavDesc")}</div>
           </div>
         </button>
         <button
@@ -53,8 +55,8 @@ export default function LandingPage() {
         >
           <div className="section-nav-icon">💻</div>
           <div className="section-nav-content">
-            <div className="section-nav-title">למפתח</div>
-            <div className="section-nav-desc">מוצרים ו-API</div>
+            <div className="section-nav-title">{t("landing.devNavTitle")}</div>
+            <div className="section-nav-desc">{t("landing.devNavDesc")}</div>
           </div>
         </button>
       </nav>

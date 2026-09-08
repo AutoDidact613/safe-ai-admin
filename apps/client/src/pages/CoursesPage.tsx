@@ -1,12 +1,14 @@
+import { useTranslation } from "react-i18next";
 import "../styles/courses-page.css";
 
 export default function CoursesPage() {
+  const { t } = useTranslation();
   return (
     <div className="courses-page">
       <div className="courses-container">
         <div className="courses-header">
-          <h1>🎓 קורסים והדרכות</h1>
-          <p className="courses-subtitle">למד להשתמש ב-SafeAI בצורה המיטבית</p>
+          <h1>🎓 {t("courses.title")}</h1>
+          <p className="courses-subtitle">{t("courses.subtitle")}</p>
         </div>
 
         <div className="courses-content">
@@ -14,46 +16,46 @@ export default function CoursesPage() {
             <div className="icon-wrapper">
               <span className="icon">🚀</span>
             </div>
-            <h2>בקרוב - קורסים מקצועיים!</h2>
+            <h2>{t("courses.comingSoon")}</h2>
             <p className="main-description">
-              אנחנו מכינים עבורכם סדרת קורסים מקיפה שתעזור לכם להפיק את המקסימום מ-SafeAI
+              {t("courses.description")}
             </p>
 
             <div className="future-courses">
               <div className="course-preview">
                 <div className="course-icon">📘</div>
-                <h3>קורס מתחילים</h3>
-                <p>היכרות ראשונית עם המערכת והתחלת עבודה</p>
+                <h3>{t("courses.beginnerTitle")}</h3>
+                <p>{t("courses.beginnerDesc")}</p>
               </div>
 
               <div className="course-preview">
                 <div className="course-icon">📗</div>
-                <h3>קורס מתקדמים</h3>
-                <p>שימוש מתקדם בפילטרים ופרופילים</p>
+                <h3>{t("courses.advancedTitle")}</h3>
+                <p>{t("courses.advancedDesc")}</p>
               </div>
 
               <div className="course-preview">
                 <div className="course-icon">📕</div>
-                <h3>ניהול ארגוני</h3>
-                <p>ניהול משתמשים והרשאות בארגון</p>
+                <h3>{t("courses.managementTitle")}</h3>
+                <p>{t("courses.managementDesc")}</p>
               </div>
 
               <div className="course-preview">
                 <div className="course-icon">📙</div>
-                <h3>אינטגרציה ו-API</h3>
-                <p>חיבור SafeAI למערכות קיימות</p>
+                <h3>{t("courses.apiTitle")}</h3>
+                <p>{t("courses.apiDesc")}</p>
               </div>
             </div>
 
             <div className="notify-section">
-              <p>רוצה לקבל עדכון כשהקורסים יהיו זמינים?</p>
+              <p>{t("courses.notifyText")}</p>
               <div className="notify-form">
                 <input 
                   type="email" 
-                  placeholder="כתובת המייל שלך" 
+                  placeholder={t("courses.emailPlaceholder")} 
                   disabled 
                 />
-                <button disabled>הודע לי</button>
+                <button disabled>{t("courses.notifyButton")}</button>
               </div>
             </div>
           </div>
