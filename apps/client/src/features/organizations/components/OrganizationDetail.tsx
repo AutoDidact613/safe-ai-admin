@@ -96,6 +96,7 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, t("organizations.newUsersSheetName"));
     XLSX.writeFile(workbook, `${t("organizations.usersFilePrefix")}-${org?.name || t("organizations.orgFallbackName")}.xlsx`);
+    setCreatedMembers([]);
   };
 
   useEffect(() => {
@@ -197,6 +198,7 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
       {createdMembers.length > 0 && (
         <div className="org-pending-card">
           <p>{t("orgUsers.createdMembersMessage", { count: createdMembers.length })}</p>
+          <p className="orgs-admin-subtitle">{t("orgUsers.tempPasswordWarning")}</p>
           <table className="orgs-table">
             <thead>
               <tr>
@@ -217,6 +219,9 @@ export const OrganizationDetail = ({ orgId, onBack }: OrganizationDetailProps) =
           </table>
           <button type="button" className="orgs-btn orgs-btn-activate" onClick={handleDownloadExcel}>
             {t("orgUsers.downloadExcelButton")}
+          </button>
+          <button type="button" className="orgs-btn" onClick={() => setCreatedMembers([])}>
+            {t("orgUsers.dismissCreatedMembersButton")}
           </button>
         </div>
       )}

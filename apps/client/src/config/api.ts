@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
       `${API_BASE_URL}/auth/verify-email/${token}`,
     forgotPassword: `${API_BASE_URL}/auth/forgot-password`,
     resetPassword: `${API_BASE_URL}/auth/reset-password`,
+    changePassword: `${API_BASE_URL}/auth/change-password`,
     googleLogin: `${API_BASE_URL}/auth/google`,
     googleCallback: `${API_BASE_URL}/auth/google/callback`,
     me: `${API_BASE_URL}/auth/me`,

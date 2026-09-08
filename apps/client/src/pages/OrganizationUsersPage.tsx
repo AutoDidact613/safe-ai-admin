@@ -195,6 +195,7 @@ export default function OrganizationUsersPage() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, t("orgUsers.excelSheetName"));
     XLSX.writeFile(workbook, `${t("orgUsers.excelFileNamePrefix")}-${organization?.name || t("orgUsers.excelFallbackOrgName")}.xlsx`);
+    setCreatedMembers([]);
   };
 
   if (loading) {
@@ -339,6 +340,7 @@ export default function OrganizationUsersPage() {
       {createdMembers.length > 0 && (
         <div className="organization-info-card">
           <p>{t("orgUsers.createdMembersMessage", { count: createdMembers.length })}</p>
+          <div className="simulation-warning">{t("orgUsers.tempPasswordWarning")}</div>
           <table className="organization-table">
             <thead>
               <tr>
@@ -359,6 +361,9 @@ export default function OrganizationUsersPage() {
           </table>
           <button type="button" className="topup-button" onClick={handleDownloadExcel}>
             {t("orgUsers.downloadExcelButton")}
+          </button>
+          <button type="button" className="retry-button" onClick={() => setCreatedMembers([])}>
+            {t("orgUsers.dismissCreatedMembersButton")}
           </button>
         </div>
       )}

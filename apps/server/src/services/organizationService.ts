@@ -215,6 +215,7 @@ export async function createOrganizationMember(
       organizationId: orgId,
       role: data.role || "user",
       skipEmailVerification: true,
+      mustChangePassword: true,
     });
 
     logger.info("Organization member created", { organizationId: orgId, userId: user._id });

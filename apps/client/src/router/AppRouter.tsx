@@ -22,6 +22,7 @@ import ApiKeyDisplay from "../features/auth/ApiKeyDisplay";
 import EmailVerification from "../features/auth/EmailVerification";
 import ForgotPassword from "../features/auth/ForgotPassword";
 import ResetPassword from "../features/auth/ResetPassword";
+import ChangePassword from "../features/auth/ChangePassword";
 import RegisterFormSuccess from "../features/auth/RegisterFormSuccess";
 import TopNavigation from "../components/TopNavigation";
 import BetaBanner from "../components/BetaBanner";
@@ -134,6 +135,15 @@ export default function AppRouter() {
         />
 
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+        <Route
+          path="/change-password"
+          element={
+            <ProtectedRoute>
+              <ChangePassword />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Protected Routes */}
         <Route
