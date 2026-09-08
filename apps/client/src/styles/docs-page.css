@@ -96,7 +96,6 @@
   border-radius: 8px;
   font-size: 15px;
   transition: all 0.2s ease;
-  direction: rtl;
 }
 
 .search-input:focus {
@@ -269,8 +268,7 @@
 }
 
 .curator-details {
-  text-align: right;
-  direction: rtl;
+  text-align: start;
 }
 
 .curator-details strong {

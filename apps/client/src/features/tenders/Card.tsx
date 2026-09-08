@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { TenderTime } from './types'
 
 const singularUnit = (unit: string): string => {
@@ -65,6 +66,7 @@ export default function Card({
   onView,
   onViewOffers,
 }: TenderCardProps) {
+  const { t } = useTranslation()
   const appliedAtLabel = formatAppliedAt(appliedAt)
 
   return (
@@ -95,15 +97,15 @@ export default function Card({
 
       <div className="tender-card__meta">
         <div>
-          <span>תקציב</span>
+          <span>{t('tenders.budgetLabel')}</span>
           <strong>{formatBudget(budget)} ש"ח </strong>
         </div>
         <div>
-          <span>זמן נדרש</span>
+          <span>{t('tenders.timeRequiredLabel')}</span>
           <strong>{formatTimeRequired(timeRequired)}</strong>
         </div>
         <div>
-          <span> הצעות: </span>
+          <span>{t('tenders.applicantsCountLabel')}</span>
           <strong>{applicantsCount}</strong>
         </div>
         <div>
@@ -116,12 +118,12 @@ export default function Card({
         <div className="tender-card__tags" style={{ marginTop: 'auto', paddingTop: '10px' }}>
           {productType && (
             <span className="domain-pill" style={{ backgroundColor: 'var(--gray-100)', color: 'var(--text-secondary)', borderColor: 'var(--border-strong)' }}>
-              {productType}
+              {t(`tenders.productTypeOptions.${productType}`, { defaultValue: productType })}
             </span>
           )}
           {aiApplicationType && (
             <span className="domain-pill">
-              {aiApplicationType}
+              {t(`tenders.aiApplicationOptions.${aiApplicationType}`, { defaultValue: aiApplicationType })}
             </span>
           )}
         </div>
@@ -129,7 +131,7 @@ export default function Card({
 
       <div className="tender-card__actions" style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
         <button type="button" className="details-button" onClick={onView}>
-          פרטי מכרז
+          {t('tenders.detailsButton')}
         </button>
         {onViewOffers && (
           <button

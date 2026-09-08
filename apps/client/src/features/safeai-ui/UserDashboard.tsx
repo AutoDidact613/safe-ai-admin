@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { API_ENDPOINTS, apiCall } from "../../config/api";
 import { useUsageData } from "../../hooks/useUsageData";
 import { useProfiles, type Profile } from "../../hooks/useProfiles";
@@ -16,10 +17,10 @@ interface UserDashboardProps {
 }
 
 export default function UserDashboard({ user }: UserDashboardProps) {
+  const { t } = useTranslation();
   const { setUser } = useAuth();
   const { usageStats, dailyUsage, modelUsage, limitsStatus, loading: usageLoading } = useUsageData(!!user);
   const { profiles: allProfiles } = useProfiles();
-
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [selectedProfileId, setSelectedProfileId] = useState<string>(user?.profileId ?? "");
@@ -53,7 +54,11 @@ export default function UserDashboard({ user }: UserDashboardProps) {
   }, [allProfiles, user?.profileId]);
 
   const handleSaveProfile = async () => {
-    if (!selectedProfileId || !user?._id) { setProfileError("אנא בחר פרופיל"); return; }
+    if (!selectedProfileId || !user?._id) {
+      setProfileError(t("profileModal.errorSelectProfile"));
+      return;
+    }
+
     setSavingProfile(true);
     setProfileError(null);
     try {
@@ -66,67 +71,86 @@ export default function UserDashboard({ user }: UserDashboardProps) {
       setIsEditingProfile(false);
     } catch (err) {
       console.error("Error saving profile:", err);
-      setProfileError("שגיאה בשמירת הפרופיל");
+      setProfileError(t("profileModal.errorSavingProfile"));
     } finally {
       setSavingProfile(false);
     }
   };
 
+  if (usageLoading) {
+    return <div className="loading-state">{t("userDashboard.loadingData")}</div>;
+  }
+
   const totalRequests = usageStats?.totalRequests ?? 0;
   const successfulRequests = usageStats?.successfulRequests ?? 0;
   const blockedRequests = usageStats?.failedRequests ?? 0;
 
-  if (usageLoading) return <div className="loading-state">טוען נתונים...</div>;
-
   return (
     <div>
       <div className="management-header">
-        <h2>שלום, {user?.name || user?.email}</h2>
-        <span className="badge badge-success">חשבון פעיל</span>
+        <h2>{t("userDashboard.greeting", { name: user?.name || user?.email })}</h2>
+        <span className="badge badge-success">{t("userDashboard.activeAccountBadge")}</span>
       </div>
 
       <div className="dashboard-grid">
         <div className="stat-card">
-          <h3>סה"כ בקשות</h3>
+          <h3>{t("userDashboard.totalRequestsLabel")}</h3>
           <p className="stat-value">{totalRequests}</p>
         </div>
         <div className="stat-card">
-          <h3>בקשות מאושרות</h3>
+          <h3>{t("userDashboard.successfulRequestsLabel")}</h3>
           <p className="stat-value">{successfulRequests}</p>
           <p className="stat-change positive">
-            {(totalRequests > 0 ? (successfulRequests / totalRequests) * 100 : 0).toFixed(1)}% מאושרות
+            {t("userDashboard.successfulPercent", { percent: (totalRequests > 0 ? (successfulRequests / totalRequests) * 100 : 0).toFixed(1) })}
           </p>
         </div>
         <div className="stat-card">
-          <h3>בקשות חסומות</h3>
+          <h3>{t("userDashboard.blockedRequestsLabel")}</h3>
           <p className="stat-value">{blockedRequests}</p>
           <p className="stat-change negative">
-            {(totalRequests > 0 ? (blockedRequests / totalRequests) * 100 : 0).toFixed(1)}% חסימה
+            {t("userDashboard.blockedPercent", { percent: (totalRequests > 0 ? (blockedRequests / totalRequests) * 100 : 0).toFixed(1) })}
           </p>
         </div>
         <div className="stat-card">
-          <h3>סטטוס API Key</h3>
-          <p className="stat-value"><span className="badge badge-success">פעיל</span></p>
+          <h3>{t("userDashboard.apiKeyStatusLabel")}</h3>
+          <p className="stat-value">
+            <span className="badge badge-success">{t("orgUsers.active")}</span>
+          </p>
         </div>
       </div>
 
       {/* Account details */}
       <div className="card" style={{ marginTop: "24px" }}>
-        <h3>פרטי חשבון</h3>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h3>{t("userDashboard.accountDetailsTitle")}</h3>
+        </div>
         <div style={{ marginTop: "16px" }}>
-          <div className="item-detail"><span className="item-detail-label">אימייל:</span><span className="item-detail-value">{user?.email}</span></div>
-          <div className="item-detail"><span className="item-detail-label">שם:</span><span className="item-detail-value">{user?.name}</span></div>
-          <div className="item-detail"><span className="item-detail-label">מזהה משתמש:</span><span className="item-detail-value">{user?._id || "N/A"}</span></div>
+          <div className="item-detail">
+            <span className="item-detail-label">{t("profileModal.labelEmail")}</span>
+            <span className="item-detail-value" dir="ltr">{user?.email}</span>
+          </div>
+          <div className="item-detail">
+            <span className="item-detail-label">{t("profileModal.labelName")}</span>
+            <span className="item-detail-value">{user?.name}</span>
+          </div>
+          <div className="item-detail">
+            <span className="item-detail-label">{t("userDashboard.userIdLabel")}</span>
+            <span className="item-detail-value" dir="ltr">{user?._id || "N/A"}</span>
+          </div>
         </div>
       </div>
 
       {/* AI Profile */}
       <div className="card" style={{ marginTop: "24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <h3>פרופיל AI</h3>
+          <h3>{t("userDashboard.aiProfileTitle")}</h3>
           {!isEditingProfile && (
-            <button onClick={() => setIsEditingProfile(true)} className="btn btn-secondary" style={{ padding: "8px 16px", fontSize: "14px" }}>
-              ערוך פרופיל
+            <button
+              onClick={() => setIsEditingProfile(true)}
+              className="btn btn-secondary"
+              style={{ padding: "8px 16px", fontSize: "14px" }}
+            >
+              {t("userDashboard.editProfileButton")}
             </button>
           )}
         </div>
@@ -135,33 +159,72 @@ export default function UserDashboard({ user }: UserDashboardProps) {
           <div style={{ marginTop: "16px" }}>
             {currentProfile ? (
               <>
-                <div className="item-detail"><span className="item-detail-label">פרופיל נוכחי:</span><span className="item-detail-value"><span className="badge badge-primary">{currentProfile.name}</span></span></div>
-                <div className="item-detail"><span className="item-detail-label">נוצר על ידי:</span><span className="item-detail-value">{currentProfile.creatorEmail}</span></div>
+                <div className="item-detail">
+                  <span className="item-detail-label">{t("userDashboard.currentProfileLabel")}</span>
+                  <span className="item-detail-value">
+                    <span className="badge badge-primary">{currentProfile.name}</span>
+                  </span>
+                </div>
+                <div className="item-detail">
+                  <span className="item-detail-label">{t("profileModal.labelCreatedBy")}</span>
+                  <span className="item-detail-value">{currentProfile.creatorEmail}</span>
+                </div>
               </>
             ) : (
               <div className="alert alert-warning">
-                <strong>⚠️ לא נבחר פרופיל</strong>
-                <p style={{ marginTop: "8px", marginBottom: 0 }}>אנא בחר פרופיל AI כדי להתחיל להשתמש במערכת.</p>
+                <strong>⚠️ {t("userDashboard.noProfileSelectedWarning")}</strong>
+                <p style={{ marginTop: "8px", marginBottom: 0 }}>
+                  {t("userDashboard.selectProfilePrompt")}
+                </p>
               </div>
             )}
           </div>
         ) : (
           <div style={{ marginTop: "16px" }}>
             <div className="form-group">
-              <label htmlFor="profile-select">בחר פרופיל:</label>
-              <select id="profile-select" value={selectedProfileId} onChange={(e) => setSelectedProfileId(e.target.value)}
-                style={{ width: "100%", padding: "12px", fontSize: "16px", borderRadius: "5px", border: "1px solid var(--border-default)", marginTop: "8px", backgroundColor: "var(--bg-elevated)" }}>
-                <option value="">-- בחר פרופיל --</option>
-                {allProfiles.map((p) => <option key={p._id} value={p._id}>{p.name}</option>)}
+              <label htmlFor="profile-select">{t("profileModal.selectLabel")}</label>
+              <select
+                id="profile-select"
+                value={selectedProfileId}
+                onChange={(e) => setSelectedProfileId(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  fontSize: "16px",
+                  borderRadius: "5px",
+                  border: "1px solid var(--border-default)",
+                  marginTop: "8px",
+                  backgroundColor: "var(--bg-elevated)",
+                }}
+              >
+                <option value="">{t("profileModal.selectPlaceholder")}</option>
+                {allProfiles.map((profile) => (
+                  <option key={profile._id} value={profile._id}>
+                    {profile.name}
+                  </option>
+                ))}
               </select>
             </div>
             {profileError && <div className="alert alert-error" style={{ marginTop: "12px" }}>{profileError}</div>}
             <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
-              <button onClick={handleSaveProfile} disabled={!selectedProfileId || savingProfile} className="btn btn-primary" style={{ flex: 1 }}>
-                {savingProfile ? "שומר..." : "שמור"}
+              <button
+                onClick={handleSaveProfile}
+                disabled={!selectedProfileId || savingProfile}
+                className="btn btn-primary"
+                style={{ flex: 1 }}
+              >
+                {savingProfile ? t("profileModal.buttonSaving") : t("common.save")}
               </button>
-              <button onClick={() => { setIsEditingProfile(false); setSelectedProfileId(user?.profileId ?? ""); setProfileError(null); }} className="btn btn-secondary" style={{ flex: 1 }}>
-                ביטול
+              <button
+                onClick={() => {
+                  setIsEditingProfile(false);
+                  setSelectedProfileId(user?.profileId || "");
+                  setProfileError(null);
+                }}
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+              >
+                {t("common.cancel")}
               </button>
             </div>
           </div>
@@ -172,7 +235,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
       {limitsStatus && <BudgetCard limitsStatus={limitsStatus} />}
 
       <div className="alert alert-info" style={{ marginTop: "24px" }}>
-        <strong>💡 טיפ:</strong> הסטטיסטיקות מתעדכנות בזמן אמת ומציגות את השימוש שלך ב-7-30 הימים האחרונים.
+        <strong>💡 {t("userDashboard.tipLabel")}</strong> {t("userDashboard.tipText")}
       </div>
     </div>
   );

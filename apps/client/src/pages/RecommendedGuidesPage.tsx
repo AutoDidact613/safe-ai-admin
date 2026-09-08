@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import "../styles/recommended-guides-page.css";
 
 interface Guide {
@@ -22,6 +23,55 @@ interface SheetInfo {
   gid: string;
 }
 
+// Parses CSV text into rows of fields, respecting quoted fields that may
+// contain commas, escaped quotes ("") and embedded newlines.
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const next = text[i + 1];
+
+    if (inQuotes) {
+      if (char === '"' && next === '"') {
+        field += '"';
+        i++;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        field += char;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = true;
+    } else if (char === ",") {
+      row.push(field);
+      field = "";
+    } else if (char === "\r") {
+      // ignore, handled by the following \n
+    } else if (char === "\n") {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+    } else {
+      field += char;
+    }
+  }
+
+  if (field.length > 0 || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+
+  return rows;
+}
+
 const SHEETS: SheetInfo[] = [
   { name: "AI Engineering (פיתוח סוכנים-Workflows)", gid: "593094152" },
   { name: "Data Science (AI & ML)", gid: "0" },
@@ -33,6 +83,7 @@ const SHEETS: SheetInfo[] = [
 ];
 
 export default function RecommendedGuidesPage() {
+  const { t } = useTranslation();
   const [guides, setGuides] = useState<Guide[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,34 +112,33 @@ export default function RecommendedGuidesPage() {
             }
             const text = await response.text();
 
-            // Skip if Google returned an HTML error page instead of CSV
-            if (text.trimStart().startsWith("<!") || text.trimStart().startsWith("<html")) {
-              console.warn(`Sheet ${sheet.name} (gid=${sheet.gid}) returned HTML — invalid GID`);
+            // Google occasionally returns an HTML error/consent page instead
+            // of the CSV export (e.g. rate limiting) - skip it rather than
+            // parsing garbage rows out of the markup.
+            if (text.trim().toLowerCase().startsWith("<")) {
+              console.error(`Sheet ${sheet.name} did not return CSV data`);
               continue;
             }
 
-            // Parse CSV
-            const lines = text.split("\n");
+            const rows = parseCsv(text);
 
             // Skip header row
-            for (let i = 1; i < lines.length; i++) {
-              const line = lines[i].trim();
-              if (!line) continue;
+            for (let i = 1; i < rows.length; i++) {
+              const values = rows[i];
+              if (!values || values.every((value) => !value.trim())) continue;
 
-              // Simple CSV parsing (handles basic cases)
-              const values = line.split(",");
               if (values.length >= 6) {
                 allGuides.push({
                   id: `${sheet.gid}-${i}`,
                   link: values[0]?.trim() || "",
                   description: values[1]?.trim() || "",
-                  duration: values[3]?.trim() || "לא צוין",
-                  language: values[4]?.trim() || "לא צוין",
-                  technologies: values[5]?.trim() || "לא צוין",
+                  duration: values[3]?.trim() || t("recommendedGuides.notSpecified"),
+                  language: values[4]?.trim() || t("recommendedGuides.notSpecified"),
+                  technologies: values[5]?.trim() || t("recommendedGuides.notSpecified"),
                   creator: values[7]?.trim() || "",
                   feedback: values[8]?.trim() || "",
                   rating: values[9]?.trim() || "⭐⭐⭐",
-                  title: values[1]?.substring(0, 60) || "מדריך",
+                  title: values[1]?.substring(0, 60) || t("recommendedGuides.fallbackTitle"),
                   sheet: sheet.name,
                 });
               }
@@ -102,7 +152,7 @@ export default function RecommendedGuidesPage() {
         setError(null);
       } catch (err) {
         console.error("Error loading guides:", err);
-        setError("שגיאה בטעינת המדריכים. אנא נסה שוב מאוחר יותר.");
+        setError(t("recommendedGuides.loadErrorMessage"));
       } finally {
         setLoading(false);
       }
@@ -177,7 +227,7 @@ export default function RecommendedGuidesPage() {
       <div className="recommended-guides-page">
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <p>טוען מדריכים מהאקסל...</p>
+          <p>{t("recommendedGuides.loadingGuides")}</p>
         </div>
       </div>
     );
@@ -188,7 +238,7 @@ export default function RecommendedGuidesPage() {
       <div className="recommended-guides-page">
         <div className="error-container">
           <span className="error-icon">⚠️</span>
-          <h2>שגיאה בטעינת המדריכים</h2>
+          <h2>{t("recommendedGuides.errorTitle")}</h2>
           <p>{error}</p>
           <a
             href="https://docs.google.com/spreadsheets/d/1I8y1bH400KnpkcD1q-gGYjy-uM__i3Xs-MFqc9uJakY/edit?gid=593094152#gid=593094152"
@@ -196,7 +246,7 @@ export default function RecommendedGuidesPage() {
             rel="noopener noreferrer"
             className="excel-link-button"
           >
-            📊 פתח את קובץ האקסל ישירות
+            📊 {t("recommendedGuides.openExcelLink")}
           </a>
         </div>
       </div>
@@ -208,16 +258,16 @@ export default function RecommendedGuidesPage() {
       <div className="recommended-guides-container">
         {/* Header */}
         <div className="page-header">
-          <h1>🎓 כל המדריכים המומלצים</h1>
+          <h1>🎓 {t("recommendedGuides.pageTitle")}</h1>
           <p className="page-subtitle">
-            מדריכים איכותיים שנבחרו בקפידה לפיתוח, הטמעה ולמידה של AI למפתחים
+            {t("recommendedGuides.pageSubtitle")}
           </p>
           <div className="curator-info">
 
             <div className="curator-details">
-              <strong>נערך על ידי: מרים ק.</strong>
+              <strong>{t("recommendedGuides.curatedByLabel")}</strong>
               <p className="curator-tagline">
-                צרו קשר לפיתוח, הטמעה והנחיית AI בארגון שלכם
+                {t("recommendedGuides.curatorTagline")}
               </p>
 
               <a href="mailto:m0534147159@gmail.com" className="curator-email">
@@ -233,19 +283,19 @@ export default function RecommendedGuidesPage() {
         <div className="statistics-bar">
           <div className="stat-item">
             <span className="stat-number">{stats.total}</span>
-            <span className="stat-label">סך הכל מדריכים</span>
+            <span className="stat-label">{t("recommendedGuides.statTotalLabel")}</span>
           </div>
           <div className="stat-item">
             <span className="stat-number">{stats.hebrew}</span>
-            <span className="stat-label">מדריכים בעברית</span>
+            <span className="stat-label">{t("recommendedGuides.statHebrewLabel")}</span>
           </div>
           <div className="stat-item">
             <span className="stat-number">{stats.english}</span>
-            <span className="stat-label">מדריכים באנגלית</span>
+            <span className="stat-label">{t("recommendedGuides.statEnglishLabel")}</span>
           </div>
           <div className="stat-item">
             <span className="stat-number">{stats.highRated}</span>
-            <span className="stat-label">דירוג גבוה (4+ כוכבים)</span>
+            <span className="stat-label">{t("recommendedGuides.statHighRatedLabel")}</span>
           </div>
         </div>
 
@@ -254,7 +304,7 @@ export default function RecommendedGuidesPage() {
           <div className="search-bar">
             <input
               type="text"
-              placeholder="🔍 חיפוש לפי כותרת, תיאור, טכנולוגיה או שפה..."
+              placeholder={t("recommendedGuides.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="search-input"
@@ -263,13 +313,13 @@ export default function RecommendedGuidesPage() {
 
           <div className="filters-row">
             <div className="filter-group">
-              <label>קטגוריה:</label>
+              <label>{t("recommendedGuides.categoryLabel")}</label>
               <select
                 value={sheetFilter}
                 onChange={(e) => setSheetFilter(e.target.value)}
                 className="filter-select sheet-filter"
               >
-                <option value="all">כל הקטגוריות</option>
+                <option value="all">{t("recommendedGuides.allCategories")}</option>
                 {SHEETS.map((sheet) => (
                   <option key={sheet.gid} value={sheet.name}>
                     {sheet.name}
@@ -279,29 +329,29 @@ export default function RecommendedGuidesPage() {
             </div>
 
             <div className="filter-group">
-              <label>שפה:</label>
+              <label>{t("recommendedGuides.languageLabel")}</label>
               <select
                 value={languageFilter}
                 onChange={(e) => setLanguageFilter(e.target.value)}
                 className="filter-select"
               >
-                <option value="all">הכל</option>
-                <option value="עברית">עברית</option>
-                <option value="אנגלית">אנגלית</option>
+                <option value="all">{t("recommendedGuides.allOption")}</option>
+                <option value="עברית">{t("recommendedGuides.languageHebrewOption")}</option>
+                <option value="אנגלית">{t("recommendedGuides.languageEnglishOption")}</option>
               </select>
             </div>
 
             <div className="filter-group">
-              <label>דירוג מינימלי:</label>
+              <label>{t("recommendedGuides.minRatingLabel")}</label>
               <select
                 value={ratingFilter}
                 onChange={(e) => setRatingFilter(e.target.value)}
                 className="filter-select"
               >
-                <option value="all">הכל</option>
-                <option value="5">⭐⭐⭐⭐⭐ (5 כוכבים)</option>
-                <option value="4">⭐⭐⭐⭐ (4+ כוכבים)</option>
-                <option value="3">⭐⭐⭐ (3+ כוכבים)</option>
+                <option value="all">{t("recommendedGuides.allOption")}</option>
+                <option value="5">{t("recommendedGuides.rating5Option")}</option>
+                <option value="4">{t("recommendedGuides.rating4Option")}</option>
+                <option value="3">{t("recommendedGuides.rating3Option")}</option>
               </select>
             </div>
 
@@ -309,16 +359,16 @@ export default function RecommendedGuidesPage() {
               <button
                 className={`view-button ${viewMode === "cards" ? "active" : ""}`}
                 onClick={() => setViewMode("cards")}
-                title="תצוגת כרטיסים"
+                title={t("recommendedGuides.cardsViewTitle")}
               >
-                🎴 כרטיסים
+                🎴 {t("recommendedGuides.cardsViewLabel")}
               </button>
               <button
                 className={`view-button ${viewMode === "table" ? "active" : ""}`}
                 onClick={() => setViewMode("table")}
-                title="תצוגת טבלה"
+                title={t("recommendedGuides.tableViewTitle")}
               >
-                📋 טבלה
+                📋 {t("recommendedGuides.tableViewLabel")}
               </button>
             </div>
           </div>
@@ -327,8 +377,8 @@ export default function RecommendedGuidesPage() {
         {/* Results count */}
         <div className="results-info">
           <p>
-            מציג <strong>{filteredGuides.length}</strong> מדריכים
-            {filteredGuides.length !== stats.total && ` מתוך ${stats.total}`}
+            {t("recommendedGuides.resultsShowingPrefix")} <strong>{filteredGuides.length}</strong> {t("recommendedGuides.resultsShowingSuffix")}
+            {filteredGuides.length !== stats.total && ` ${t("recommendedGuides.resultsShowingOutOf", { total: stats.total })}`}
           </p>
         </div>
 
@@ -360,7 +410,7 @@ export default function RecommendedGuidesPage() {
                     <div className="guide-feedback">💬 {guide.feedback}</div>
                   )}
                   <div className="guide-card-footer">
-                    <span className="guide-link-text">למד עכשיו →</span>
+                    <span className="guide-link-text">{t("recommendedGuides.learnNowLink")}</span>
                   </div>
                 </a>
               ))}
@@ -370,12 +420,12 @@ export default function RecommendedGuidesPage() {
               <table className="guides-table">
                 <thead>
                   <tr>
-                    <th>דירוג</th>
-                    <th>כותרת</th>
-                    <th>שפה</th>
-                    <th>משך</th>
-                    <th>טכנולוגיות</th>
-                    <th>פעולה</th>
+                    <th>{t("recommendedGuides.tableHeaderRating")}</th>
+                    <th>{t("recommendedGuides.tableHeaderTitle")}</th>
+                    <th>{t("recommendedGuides.tableHeaderLanguage")}</th>
+                    <th>{t("recommendedGuides.tableHeaderDuration")}</th>
+                    <th>{t("recommendedGuides.tableHeaderTechnologies")}</th>
+                    <th>{t("recommendedGuides.tableHeaderAction")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -396,7 +446,7 @@ export default function RecommendedGuidesPage() {
                           rel="noopener noreferrer"
                           className="table-link-button"
                         >
-                          צפה →
+                          {t("recommendedGuides.viewGuideLink")}
                         </a>
                       </td>
                     </tr>
@@ -408,7 +458,7 @@ export default function RecommendedGuidesPage() {
         ) : (
           <div className="no-results">
             <span className="no-results-icon">🔍</span>
-            <p>לא נמצאו מדריכים התואמים את החיפוש</p>
+            <p>{t("recommendedGuides.noResultsText")}</p>
             <button
               onClick={() => {
                 setSearchQuery("");
@@ -417,7 +467,7 @@ export default function RecommendedGuidesPage() {
               }}
               className="clear-filters-button"
             >
-              נקה את כל הפילטרים
+              {t("recommendedGuides.clearFiltersButton")}
             </button>
           </div>
         )}
@@ -430,7 +480,7 @@ export default function RecommendedGuidesPage() {
             rel="noopener noreferrer"
             className="excel-link-button"
           >
-            📊 פתח את קובץ האקסל המלא
+            📊 {t("recommendedGuides.openFullExcelLink")}
           </a>
         </div>
       </div>

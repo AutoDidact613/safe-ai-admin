@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { apiCall, API_ENDPOINTS } from '../../config/api'
 import { normalizeProfile } from '../professionalProfile/normalize'
 import type { ProfessionalProfile, RawProfessionalProfile } from '../professionalProfile/types'
@@ -27,6 +28,7 @@ const RESUME_MAX_SIZE_BYTES = 5 * 1024 * 1024
 const RESUME_ALLOWED_TYPE = 'application/pdf'
 
 export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
+  const { t } = useTranslation()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [details, setDetails] = useState('')
@@ -179,7 +181,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <header className="modal-header">
           <div>
-            <h2>הרשמה למכרז</h2>
+            <h2>{t('tenders.applyToTenderLabel')}</h2>
             <p>{tender.title}</p>
           </div>
           <div>
@@ -192,7 +194,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
         <form className="modal-section apply-form" onSubmit={handleSubmit}>
           <div className="form-grid">
             <label className="form-field">
-              <span className="form-label">שם</span>
+              <span className="form-label">{t('tenders.nameLabel')}</span>
               <input
                 className="form-input"
                 type="text"
@@ -203,7 +205,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                     setErrors((prev) => ({ ...prev, name: undefined }))
                   }
                 }}
-                placeholder="שם מלא"
+                placeholder={t('tenders.namePlaceholder')}
                 maxLength={INPUT_LIMITS.name}
                 required
               />
@@ -211,7 +213,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
             </label>
 
             <label className="form-field">
-              <span className="form-label">אימייל</span>
+              <span className="form-label">{t('tenders.emailLabel')}</span>
               <input
                 className="form-input"
                 type="email"
@@ -230,7 +232,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
             </label>
 
             <label className="form-field form-full">
-              <span className="form-label">פרטים</span>
+              <span className="form-label">{t('tenders.detailsLabel')}</span>
               <textarea
                 className="form-textarea"
                 value={details}
@@ -240,7 +242,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                     setErrors((prev) => ({ ...prev, details: undefined }))
                   }
                 }}
-                placeholder="ספר לנו על עצמך וההצעה שלך"
+                placeholder={t('tenders.detailsPlaceholder')}
                 maxLength={INPUT_LIMITS.details}
                 required
                 rows={5}
@@ -249,7 +251,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
             </label>
 
             <label className="form-field">
-              <span className="form-label">הצעה - בשקלים</span>
+              <span className="form-label">{t('tenders.proposalLabel')}</span>
               <input
                 className="form-input"
                 type="number"
@@ -261,7 +263,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                     setErrors((prev) => ({ ...prev, proposal: undefined }))
                   }
                 }}
-                placeholder="כמה תרצה לגבות עבור העבודה"
+                placeholder={t('tenders.proposalPlaceholder')}
                 min="0"
                 max="999999999"
                 inputMode="numeric"
@@ -270,7 +272,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
             </label>
 
             <label className="form-field">
-              <span className="form-label">אמצעי תקשורת</span>
+              <span className="form-label">{t('tenders.contactMethodLabel')}</span>
               <input
                 className="form-input"
                 type="text"
@@ -281,7 +283,7 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
                     setErrors((prev) => ({ ...prev, contactMethod: undefined }))
                   }
                 }}
-                placeholder="טלפון / אימייל"
+                placeholder={t('tenders.contactMethodPlaceholder')}
                 maxLength={INPUT_LIMITS.contactMethod}
               />
               {errors.contactMethod && <span className="form-error">{errors.contactMethod}</span>}
@@ -354,10 +356,10 @@ export default function ApplyForTender({ tender, onSubmit, onCancel }: Props) {
 
           <div className="modal-actions mt-18 actions-row">
             <button type="submit" className="primary-button" disabled={isSubmitting}>
-              {isSubmitting ? 'שולח...' : 'הגש מועמדות'}
+              {isSubmitting ? 'שולח...' : t('tenders.submitApplicationBtn')}
             </button>
             <button type="button" className="secondary-button" onClick={onCancel} disabled={isSubmitting}>
-              ביטול
+              {t('common.cancel')}
             </button>
           </div>
         </form>

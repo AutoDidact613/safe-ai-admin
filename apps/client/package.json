@@ -25,8 +25,11 @@
     "axios": "^1.16.0",
     "date-fns": "^4.1.0",
     "file-saver": "^2.0.5",
+    "i18next": "^26.3.4",
+    "i18next-browser-languagedetector": "^8.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.0",
+    "react-i18next": "^17.0.8",
     "react-markdown": "^10.1.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.13.0",
@@ -34,6 +37,10 @@
     "recharts": "^3.8.0",
     "remark-gfm": "^4.0.1",
     "xlsx": "^0.18.5"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "4.57.1",
+    "@swc/core-linux-x64-gnu": "1.15.11"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

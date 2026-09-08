@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { promptUpdated } from "./FilterManagementSlice";
 
@@ -13,6 +14,7 @@ type Prompt = {
 };
 
 const EditPromptPage = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -23,7 +25,7 @@ const EditPromptPage = () => {
     )
   ) as Prompt | undefined;
 
-  if (!prompt) return <div>הפרומפט לא נמצא!</div>;
+  if (!prompt) return <div>{t("filterManagement.promptNotFound")}</div>;
 
   const handleSave = (updated: Prompt) => {
     dispatch(promptUpdated(updated));
@@ -49,6 +51,7 @@ function EditPromptForm({
   onSave: (p: Prompt) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   const [groupId, setGroupId] = useState<string>(prompt.groupId);
   const [content, setContent] = useState<string>(prompt.content);
   const [status, setStatus] = useState<PromptStatus>(prompt.Status);
@@ -66,7 +69,7 @@ function EditPromptForm({
 
   return (
     <div className="prompt-container" style={{ padding: "20px" }}>
-      <h2>עריכת פרומפט</h2>
+      <h2>{t("filterManagement.editPromptTitle")}</h2>
 
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: "10px" }}>
@@ -99,18 +102,18 @@ function EditPromptForm({
               setStatus(e.target.value as PromptStatus)
             }
           >
-            <option value="active">פעיל</option>
-            <option value="not active">לא פעיל</option>
+            <option value="active">{t("filterManagement.activeOption")}</option>
+            <option value="not active">{t("filterManagement.notActiveOption")}</option>
           </select>
         </div>
 
-        <button type="submit">שמור שינויים</button>
+        <button type="submit">{t("usersManagement.saveChangesButton")}</button>
         <button
           type="button"
           onClick={onCancel}
           style={{ marginLeft: "10px" }}
         >
-          ביטול
+          {t("common.cancel")}
         </button>
       </form>
     </div>
