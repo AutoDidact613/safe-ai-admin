@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { approvePrompt } from "./FilterManagementSlice";
 import { useNavigate } from "react-router-dom";
@@ -13,6 +14,7 @@ type Prompt = {
 };
 
 const AddPromptPage = () => {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -26,7 +28,7 @@ const AddPromptPage = () => {
     e.preventDefault();
 
     if (type === "free") {
-      if (!freeText.trim()) return alert("אנא כתוב תוכן");
+      if (!freeText.trim()) return alert(t("filterManagement.enterContentAlert"));
 
       const newPrompt: Prompt = {
         id: Date.now(),
@@ -36,7 +38,7 @@ const AddPromptPage = () => {
       };
 
       dispatch(approvePrompt(newPrompt));
-      alert("הפרומפט נוסף בהצלחה");
+      alert(t("filterManagement.promptAddedSuccessAlert"));
       navigate(-1);
       return;
     }
@@ -46,16 +48,16 @@ const AddPromptPage = () => {
 
     if (promptToAdd) {
       dispatch(approvePrompt(promptToAdd));
-      alert("הפרומפט נוסף בהצלחה");
+      alert(t("filterManagement.promptAddedSuccessAlert"));
       navigate(-1);
     } else {
-      alert("בחר פרומפט תקין מהרשימה");
+      alert(t("filterManagement.selectValidPromptAlert"));
     }
   };
 
   return (
     <div className="prompt-container" style={{ padding: "20px" }}>
-      <h2>הוספת פרומפט חדש</h2>
+      <h2>{t("filterManagement.addNewPromptTitle")}</h2>
 
       <div style={{ marginBottom: "20px" }}>
         <button
@@ -63,17 +65,17 @@ const AddPromptPage = () => {
           onClick={() => setType("free")}
           style={{ marginLeft: "10px" }}
         >
-          הקלד חופשי
+          {t("filterManagement.freeTypeBtn")}
         </button>
         <button type="button" onClick={() => setType("list")}>
-          חפש מרשימה
+          {t("filterManagement.searchFromListBtn")}
         </button>
       </div>
 
       {type === "free" && (
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: "10px" }}>
-            <label>תוכן הפרומפט: </label>
+            <label>{t("filterManagement.promptContentLabel")} </label>
             <input
               type="text"
               value={freeText}
@@ -82,21 +84,21 @@ const AddPromptPage = () => {
               }
             />
           </div>
-          <button type="submit">הוסף</button>
+          <button type="submit">{t("common.addButton")}</button>
         </form>
       )}
 
       {type === "list" && (
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: "10px" }}>
-            <label>בחר פרומפט: </label>
+            <label>{t("filterManagement.selectPromptLabel")} </label>
             <select
               value={selectedPromptId}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                 setSelectedPromptId(e.target.value)
               }
             >
-              <option value="">-- בחר --</option>
+              <option value="">{t("filterManagement.selectPlaceholderOption")}</option>
               {addPromptsList.map((prompt) => (
                 <option key={prompt.id} value={String(prompt.id)}>
                   {prompt.content}
@@ -104,12 +106,12 @@ const AddPromptPage = () => {
               ))}
             </select>
           </div>
-          <button type="submit">הוסף</button>
+          <button type="submit">{t("common.addButton")}</button>
         </form>
       )}
 
       <button onClick={() => navigate(-1)} style={{ marginTop: "20px" }}>
-        ביטול וחזרה
+        {t("filterManagement.cancelAndBackBtn")}
       </button>
     </div>
   );

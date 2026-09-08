@@ -1,14 +1,17 @@
+import { useTranslation } from "react-i18next";
+
 export default function AboutCompany() {
+  const { t } = useTranslation();
   const guestVideoUrl = import.meta.env.VITE_GUEST_VIDEO_URL;
-  
+
   return (
     <div className="about-company">
-      <h2> זה לא עוד מערכת. &nbsp;זה פתרון מערכתי.</h2>
-      
+      <h2>{t("aboutCompany.heading")}</h2>
+
       {/* Video Section */}
       {guestVideoUrl && (
         <div className="about-section video-section">
-          <h3>🎥 סרטון הסבר</h3>
+          <h3>🎥 {t("aboutCompany.videoSectionTitle")}</h3>
           <div className="video-container">
             <iframe
               src={guestVideoUrl.replace('/view?usp=drive_link', '/preview')}
@@ -22,47 +25,40 @@ export default function AboutCompany() {
       )}
       
       <div className="about-section">
-        <h3>🚀 קהילת קוד פתוח בהקמה</h3>
+        <h3>🚀 {t("aboutCompany.communityTitle")}</h3>
         <p>
-          SafeAI 613 היא קהילת קוד פתוח בהקמה המתמקדת בפיתוח כלים וטכנולוגיות
-          לסינון ושימוש בטוח בבינה מלאכותית. אנחנו מאמינים בשקיפות, שיתוף פעולה,
-          וגישה פתוחה לטכנולוגיה שמאפשרת לכולם להשתמש ב-AI בצורה אחראית ובטוחה.
+          {t("aboutCompany.communityP")}
         </p>
       </div>
 
       <div className="about-section">
-        <h3>💡 החזון שלנו</h3>
+        <h3>💡 {t("aboutCompany.visionTitle")}</h3>
         <p>
-          ליצור תשתית  של כלי קוד פתוח המאפשרים לכל ארגון, מוסד חינוכי
-          או מפתח לשלב בינה מלאכותית בצורה בטוחה, מסוננת ומותאמת לערכים שלהם.
-          אנחנו בונים את הכלים שיאפשרו שימוש נגיש ב-AI תוך שמירה על בטיחות,
-          פרטיות ואתיקה.
+          {t("aboutCompany.visionP")}
         </p>
       </div>
 
       <div className="about-section">
-        <h3>🛠️ הפרויקטים שלנו</h3>
+        <h3>🛠️ {t("aboutCompany.projectsTitle")}</h3>
         <p>
-          הקהילה שלנו מפתחת מגוון פרויקטים בקוד פתוח - מפרוקסי סינון ושרתים, דרך
-          SDK- לשפות תכנות שונות, ועד תוספים לסביבות פיתוח.<br/> כל הפרויקטים
-          זמינים ב-GitHub ובעתיד יתועדו וייבנו בהתאמה כדי לאפשר לכל מפתח להצטרף ולתרום.
+          {t("aboutCompany.projectsPLine1")}<br/> {t("aboutCompany.projectsPLine2")}
         </p>
       </div>
 
       <div className="about-section">
-        <h3>🤝 הצטרפו אלינו</h3>
+        <h3>🤝 {t("aboutCompany.joinTitle")}</h3>
         <ul className="features-list">
-          <li>🌟 קוד פתוח ושקוף - כל הפרויקטים זמינים ב-GitHub</li>
+          <li>🌟 {t("aboutCompany.joinFeature1")}</li>
           {/* <li>📚 תיעוד מקיף ודוגמאות קוד מעשיות</li> */}
-          <li>🔧 כלים מודולריים שניתן לשלב בקלות</li>
-          <li>🌐 קהילה פעילה ותומכת של מפתחים</li>
-          <li>🚀 פיתוח מתמיד ושיפורים קבועים</li>
+          <li>🔧 {t("aboutCompany.joinFeature2")}</li>
+          <li>🌐 {t("aboutCompany.joinFeature3")}</li>
+          <li>🚀 {t("aboutCompany.joinFeature4")}</li>
         </ul>
       </div>
 
       <div className="about-section github-section">
-        <h3>🔗 GitHub Organization</h3>
-        <p>כל הפרויקטים שלנו זמינים בארגון שלנו ב-GitHub:</p>
+        <h3>🔗 {t("aboutCompany.githubSectionTitle")}</h3>
+        <p>{t("aboutCompany.githubSectionP")}</p>
         <div className="github-link">
           <a
             href="https://github.com/SafeAI613"

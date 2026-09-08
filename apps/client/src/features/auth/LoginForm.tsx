@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiCall, API_ENDPOINTS } from "../../config/api";
 import { startActivityTracking } from "../../utils/tokenManager";
 import ProfileSelectionModal from "../../components/ProfileSelectionModal";
+import { AUTH_ERROR_CODE_KEYS } from "../../i18n/authErrorCodes";
 import { useAuth } from "../../context/authStore";
 
 interface LoginFormData {
@@ -21,6 +23,7 @@ interface User {
 }
 
 export default function LoginForm() {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<LoginFormData>({
     email: "",
     password: "",
@@ -49,9 +52,9 @@ export default function LoginForm() {
 
     if (errorParam) {
       if (errorParam === "user_not_found") {
-        setError("המשתמש לא נמצא במערכת. אנא הירשם תחילה.");
+        setError(t("login.errorUserNotFound"));
       } else {
-        setError("שגיאה בהתחברות עם Google. נסה שוב.");
+        setError(t("login.errorGoogleLogin"));
       }
       return;
     }
@@ -86,7 +89,7 @@ export default function LoginForm() {
         })
         .catch((err) => {
           console.error("Error fetching user info:", err);
-          setError("שגיאה בטעינת פרטי המשתמש");
+          setError(t("login.errorLoadingUser"));
         });
     }
   }, [searchParams, navigate]);
@@ -130,9 +133,9 @@ export default function LoginForm() {
       }
     } catch (err: unknown) {
       console.error("Login error:", err);
-      const errorMessage =
-        err instanceof Error ? err.message : "שגיאה בהתחברות";
-      setError(errorMessage);
+      const code = (err as { code?: string })?.code;
+      const key = code ? AUTH_ERROR_CODE_KEYS[code] : undefined;
+      setError(key ? t(key) : t("login.errorGeneric"));
     } finally {
       setLoading(false);
     }
@@ -166,7 +169,7 @@ export default function LoginForm() {
       
       <div className="auth-form-container">
       <div className="auth-form-wrapper">
-        <h2 className="auth-title">התחברות</h2>
+        <h2 className="auth-title">{t("nav.login")}</h2>
 
         {/* Google OAuth Button */}
         <button
@@ -206,7 +209,7 @@ export default function LoginForm() {
               d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"
             />
           </svg>
-          התחבר עם Google
+          {t("login.googleButton")}
         </button>
 
         <div style={{ 
@@ -216,13 +219,13 @@ export default function LoginForm() {
           gap: "10px"
         }}>
           <div style={{ flex: 1, height: "1px", backgroundColor: "var(--border-default)" }}></div>
-          <span style={{ color: "var(--text-muted)", fontSize: "14px" }}>או</span>
+          <span style={{ color: "var(--text-muted)", fontSize: "14px" }}>{t("login.orDivider")}</span>
           <div style={{ flex: 1, height: "1px", backgroundColor: "var(--border-default)" }}></div>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="email">אימייל</label>
+            <label htmlFor="email">{t("login.emailLabel")}</label>
             <input
               type="email"
               id="email"
@@ -236,7 +239,7 @@ export default function LoginForm() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">סיסמה</label>
+            <label htmlFor="password">{t("login.passwordLabel")}</label>
             <input
               type="password"
               id="password"
@@ -244,7 +247,7 @@ export default function LoginForm() {
               value={formData.password}
               onChange={handleChange}
               required
-              placeholder="הזן סיסמה"
+              placeholder={t("login.passwordPlaceholder")}
               autoComplete="current-password"
             />
           </div>
@@ -261,7 +264,7 @@ export default function LoginForm() {
               className="link-button"
               onClick={() => navigate("/forgot-password")}
             >
-              שכחתי סיסמה
+              {t("login.forgotPassword")}
             </button>
           </div>
 
@@ -270,18 +273,18 @@ export default function LoginForm() {
             className="btn btn-primary btn-full"
             disabled={loading}
           >
-            {loading ? "מתחבר..." : "התחבר"}
+            {loading ? t("login.submitLoading") : t("contact.loginButton")}
           </button>
         </form>
 
         <div className="auth-footer">
           <p>
-            עדיין אין לך חשבון?{" "}
+            {t("login.noAccountText")}{" "}
             <button
               className="link-button"
               onClick={() => navigate("/register")}
             >
-              הירשם כעת
+              {t("login.registerNow")}
             </button>
           </p>
         </div>

@@ -39,7 +39,11 @@
   --gray-900: #0f172a;
   --gray-950: #020617;
 
-  --color-success: #16a34a;
+  /* Darkened from #16a34a/#0284c7 - those were ~3.3:1/~4.1:1 with white
+     text, below WCAG AA (4.5:1). These pass (~5:1+) so every solid-fill
+     badge using --color-success/--color-info + --text-inverse across the
+     app is AA-compliant, not just call sites that opt in individually. */
+  --color-success: #2e7d32;
   --color-success-bg: #f0fdf4;
   --color-success-border: #bbf7d0;
 
@@ -51,7 +55,7 @@
   --color-warning-bg: #fef3c7;
   --color-warning-border: #fde68a;
 
-  --color-info: #0284c7;
+  --color-info: #1565c0;
   --color-info-bg: #f0f9ff;
   --color-info-border: #bae6fd;
 
@@ -175,7 +179,7 @@ textarea:focus {
 }
 
 .table th {
-  text-align: left;
+  text-align: start;
   padding: 10px;
   border-bottom: 1px solid var(--border-default);
   color: var(--text-muted);
@@ -225,13 +229,6 @@ textarea:focus {
   justify-content: space-between;
   align-items: center;
 }
-
-
-*{
-    direction: rtl;
-}
-
-
 
 /* =========================
    Dark Mode

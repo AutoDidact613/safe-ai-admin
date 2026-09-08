@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { API_ENDPOINTS, apiCall } from "../../config/api";
 import ProviderKeysManagement from "./ProviderKeysManagement";
 import UserCard from "./UserCard";
@@ -55,6 +56,7 @@ const EMPTY_CREATE = { email: "", name: "", profileId: "", mode: "MANAGED" as "B
 const EMPTY_EDIT = { name: "", profileId: "", organizationId: "", mode: "MANAGED" as "BYOK" | "MANAGED", isActive: true, canCreatePosts: true, canComment: true };
 
 export default function UsersManagement() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -81,7 +83,7 @@ export default function UsersManagement() {
       setUsers(await apiCall<User[]>(API_ENDPOINTS.users));
     } catch (err) {
       console.error("Failed to fetch users:", err);
-      alert("שגיאה בטעינת משתמשים");
+      alert(t("usersManagement.errorLoadingUsers"));
     } finally {
       setLoading(false);
     }
@@ -137,7 +139,7 @@ export default function UsersManagement() {
       setCreateFormData(EMPTY_CREATE);
       await fetchUsers();
     } catch (err) {
-      alert(`שגיאה ביצירת משתמש: ${err instanceof Error ? err.message : "שגיאה לא ידועה"}`);
+      alert(t("usersManagement.createUserErrorPrefix", { message: err instanceof Error ? err.message : t("usersManagement.errorUnknown") }));
     } finally {
       setSaving(false);
     }
@@ -163,22 +165,22 @@ export default function UsersManagement() {
       setModal(null);
       setEditingUser(null);
       await fetchUsers();
-      alert("המשתמש עודכן בהצלחה");
+      alert(t("usersManagement.userUpdatedSuccess"));
     } catch (err) {
-      alert(`שגיאה בעדכון משתמש: ${err instanceof Error ? err.message : "שגיאה לא ידועה"}`);
+      alert(t("usersManagement.updateUserErrorPrefix", { message: err instanceof Error ? err.message : t("usersManagement.errorUnknown") }));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string, email: string) => {
-    if (!confirm(`האם אתה בטוח שברצונך למחוק את המשתמש ${email}?\n\nאזהרה: מחיקת משתמש תמחק גם את המפתחות שלו ב-LiteLLM`)) return;
+    if (!confirm(t("usersManagement.deleteConfirm", { email }))) return;
     try {
       await apiCall(`${API_ENDPOINTS.users}/${id}`, { method: "DELETE" });
       await fetchUsers();
-      alert("המשתמש נמחק בהצלחה");
+      alert(t("usersManagement.userDeletedSuccess"));
     } catch (err) {
-      alert(`שגיאה במחיקת משתמש: ${err instanceof Error ? err.message : "שגיאה לא ידועה"}`);
+      alert(t("usersManagement.deleteUserErrorPrefix", { message: err instanceof Error ? err.message : t("usersManagement.errorUnknown") }));
     }
   };
 
@@ -188,8 +190,8 @@ export default function UsersManagement() {
     setModal("edit");
   };
 
-  const getProfileName = (id?: string) => id ? (profiles.find(p => p._id === id)?.name ?? "פרופיל לא נמצא") : "ללא פרופיל";
-  const getOrgName = (id?: string) => id ? (organizations.find(o => o._id === id)?.name ?? "ארגון לא נמצא") : "ללא ארגון";
+  const getProfileName = (id?: string) => id ? (profiles.find(p => p._id === id)?.name ?? t("usersManagement.profileNotFound")) : t("usersManagement.noProfile");
+  const getOrgName = (id?: string) => id ? (organizations.find(o => o._id === id)?.name ?? t("usersManagement.organizationNotFound")) : t("usersManagement.noOrganization");
   const getOrgDescription = (id?: string) => id ? (organizations.find(o => o._id === id)?.description ?? "") : "";
 
   const filteredUsers = useMemo(() => users.filter((u) => {
@@ -201,20 +203,20 @@ export default function UsersManagement() {
     return matchSearch && matchStatus && matchMode && matchProfile && matchOrg;
   }), [users, searchTerm, filterStatus, filterMode, filterProfile, filterOrganization]);
 
-  if (loading) return <div className="loading-state">טוען משתמשים...</div>;
+  if (loading) return <div className="loading-state">{t("usersManagement.loadingUsers")}</div>;
 
   return (
     <div>
       <div className="management-header">
-        <h2>ניהול משתמשים</h2>
+        <h2>{t("safeaiNav.manageUsers")}</h2>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <div className="badge badge-info">סה"כ משתמשים: {users.length}</div>
-          <button className="btn btn-primary" onClick={() => setModal("create")}>+ משתמש חדש</button>
+          <div className="badge badge-info">{t("usersManagement.totalUsersCount", { count: users.length })}</div>
+          <button className="btn btn-primary" onClick={() => setModal("create")}>+ {t("usersManagement.newUserTitle")}</button>
         </div>
       </div>
 
       <div className="search-bar">
-        <input type="text" placeholder="חפש משתמש..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <input type="text" placeholder={t("usersManagement.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       </div>
 
       <UserFilters
@@ -229,8 +231,8 @@ export default function UsersManagement() {
 
       {filteredUsers.length === 0 ? (
         <div className="empty-state">
-          <p>לא נמצאו משתמשים</p>
-          {users.length === 0 && <button className="btn btn-primary" onClick={() => setModal("create")}>צור משתמש ראשון</button>}
+          <p>{t("usersManagement.noUsersFound")}</p>
+          {users.length === 0 && <button className="btn btn-primary" onClick={() => setModal("create")}>{t("usersManagement.createFirstUserButton")}</button>}
         </div>
       ) : (
         <div className="items-grid">
@@ -245,23 +247,23 @@ export default function UsersManagement() {
         <div className="modal-overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>משתמש חדש</h2>
+              <h2>{t("usersManagement.newUserTitle")}</h2>
               <button className="modal-close" onClick={() => setModal(null)}>×</button>
             </div>
             <form onSubmit={handleCreate}>
-              <div className="form-group"><label>אימייל *</label>
+              <div className="form-group"><label>{t("register.emailLabel")}</label>
                 <input type="email" value={createFormData.email} onChange={(e) => setCreateFormData({ ...createFormData, email: e.target.value })} required placeholder="user@example.com" />
               </div>
-              <div className="form-group"><label>שם (אופציונלי)</label>
-                <input type="text" value={createFormData.name} onChange={(e) => setCreateFormData({ ...createFormData, name: e.target.value })} placeholder="שם המשתמש" />
+              <div className="form-group"><label>{t("usersManagement.nameOptionalLabel")}</label>
+                <input type="text" value={createFormData.name} onChange={(e) => setCreateFormData({ ...createFormData, name: e.target.value })} placeholder={t("usersManagement.userNamePlaceholder")} />
               </div>
-              <div className="form-group"><label>פרופיל (אופציונלי)</label>
+              <div className="form-group"><label>{t("usersManagement.profileOptionalLabel")}</label>
                 <select value={createFormData.profileId} onChange={(e) => setCreateFormData({ ...createFormData, profileId: e.target.value })}>
-                  <option value="">ללא פרופיל</option>
+                  <option value="">{t("usersManagement.noProfile")}</option>
                   {profiles.map((p) => <option key={p._id} value={p._id}>{p.name}</option>)}
                 </select>
               </div>
-              <div className="form-group"><label>מצב *</label>
+              <div className="form-group"><label>{t("usersManagement.modeRequiredLabel")}</label>
                 <select value={createFormData.mode} onChange={(e) => setCreateFormData({ ...createFormData, mode: e.target.value as "BYOK" | "MANAGED" })} required>
                   <option value="MANAGED">MANAGED</option>
                   <option value="BYOK">BYOK</option>
@@ -270,12 +272,12 @@ export default function UsersManagement() {
               <div className="form-group">
                 <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <input type="checkbox" checked={createFormData.isActive} onChange={(e) => setCreateFormData({ ...createFormData, isActive: e.target.checked })} />
-                  משתמש פעיל
+                  {t("usersManagement.activeUserCheckbox")}
                 </label>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setModal(null)} disabled={saving}>ביטול</button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "יוצר..." : "צור משתמש"}</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setModal(null)} disabled={saving}>{t("common.cancel")}</button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? t("usersManagement.creatingButton") : t("usersManagement.createUserButton")}</button>
               </div>
             </form>
           </div>
@@ -287,29 +289,29 @@ export default function UsersManagement() {
         <div className="modal-overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>עריכת משתמש: {editingUser.email}</h2>
+              <h2>{t("usersManagement.editUserTitle", { email: editingUser.email })}</h2>
               <button className="modal-close" onClick={() => setModal(null)}>×</button>
             </div>
             <form onSubmit={handleEdit}>
-              <div className="form-group"><label>אימייל (לא ניתן לשינוי)</label>
+              <div className="form-group"><label>{t("usersManagement.emailNoChangeLabel")}</label>
                 <input type="email" value={editingUser.email} disabled style={{ backgroundColor: "var(--bg-elevated)", cursor: "not-allowed" }} />
               </div>
-              <div className="form-group"><label>שם</label>
-                <input type="text" value={editFormData.name} onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })} placeholder="שם המשתמש" />
+              <div className="form-group"><label>{t("usersManagement.nameLabel")}</label>
+                <input type="text" value={editFormData.name} onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })} placeholder={t("usersManagement.userNamePlaceholder")} />
               </div>
-              <div className="form-group"><label>פרופיל</label>
+              <div className="form-group"><label>{t("usersManagement.profileLabelNoColon")}</label>
                 <select value={editFormData.profileId} onChange={(e) => setEditFormData({ ...editFormData, profileId: e.target.value })}>
-                  <option value="">ללא פרופיל</option>
+                  <option value="">{t("usersManagement.noProfile")}</option>
                   {profiles.map((p) => <option key={p._id} value={p._id}>{p.name}</option>)}
                 </select>
               </div>
-              <div className="form-group"><label>ארגון</label>
+              <div className="form-group"><label>{t("usersManagement.organizationLabelNoColon")}</label>
                 <select value={editFormData.organizationId} onChange={(e) => setEditFormData({ ...editFormData, organizationId: e.target.value })}>
-                  <option value="">ללא ארגון</option>
+                  <option value="">{t("usersManagement.noOrganization")}</option>
                   {organizations.map((o) => <option key={o._id} value={o._id}>{o.name}</option>)}
                 </select>
               </div>
-              <div className="form-group"><label>מצב</label>
+              <div className="form-group"><label>{t("usersManagement.modeLabelNoColon")}</label>
                 <select value={editFormData.mode} onChange={(e) => setEditFormData({ ...editFormData, mode: e.target.value as "BYOK" | "MANAGED" })}>
                   <option value="MANAGED">MANAGED</option>
                   <option value="BYOK">BYOK</option>
@@ -318,7 +320,7 @@ export default function UsersManagement() {
               <div className="form-group">
                 <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <input type="checkbox" checked={editFormData.isActive} onChange={(e) => setEditFormData({ ...editFormData, isActive: e.target.checked })} />
-                  משתמש פעיל
+                  {t("usersManagement.activeUserCheckbox")}
                 </label>
               </div>
               <div className="form-group">
@@ -334,8 +336,8 @@ export default function UsersManagement() {
                 </label>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setModal(null)} disabled={saving}>ביטול</button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "שומר..." : "שמור שינויים"}</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setModal(null)} disabled={saving}>{t("common.cancel")}</button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? t("profileModal.buttonSaving") : t("usersManagement.saveChangesButton")}</button>
               </div>
             </form>
           </div>

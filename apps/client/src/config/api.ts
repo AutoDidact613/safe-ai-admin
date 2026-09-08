@@ -83,11 +83,15 @@ export const API_ENDPOINTS = {
     smartSearch: `${API_BASE_URL}/tender-board/smart-search`,
     getAIApplicationTypes: `${API_BASE_URL}/tender-board/ai-application-types`,
     getProductTypes: `${API_BASE_URL}/tender-board/product-types`,
+    getOne: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
     update: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
     close:  (id: string) => `${API_BASE_URL}/tender-board/${id}/close`,
     viewOffers: (id: string) => `${API_BASE_URL}/tender-board/${id}/view-offers`,
     delete: (id: string) => `${API_BASE_URL}/tender-board/${id}`,
     apply: (id: string) => `${API_BASE_URL}/tender-board/${id}/apply`,
+    generateSpecification: (id: string) => `${API_BASE_URL}/tender-board/${id}/generate-specification-request`,
+    cancelSpecification: (id: string) => `${API_BASE_URL}/tender-board/${id}/cancel-specification-request`,
+    publishSpecification: (id: string) => `${API_BASE_URL}/tender-board/${id}/specification/publish`,
   },
   // Professional profile endpoints (tender board)
   professionalProfile: {
@@ -103,6 +107,13 @@ export const API_ENDPOINTS = {
     list: `${API_BASE_URL}/articles`,
     all: `${API_BASE_URL}/articles/all`,
     bySlug: (slug: string) => `${API_BASE_URL}/articles/${slug}`,
+  },
+  // PayMe wallet top-up endpoints
+  payme: {
+    initiate: (organizationId: string) =>
+      `${API_BASE_URL}/organizations/${organizationId}/wallet/payme/initiate`,
+    status: (organizationId: string, transactionId: string) =>
+      `${API_BASE_URL}/organizations/${organizationId}/wallet/payme/status/${transactionId}`,
   },
 } as const;
 
