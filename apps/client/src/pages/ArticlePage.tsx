@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { apiCall, API_ENDPOINTS } from "../config/api";
+import { SEO } from "../components/SEO";
 import "./article-page.css";
 
 interface Article {
@@ -60,6 +61,12 @@ export default function ArticlePage() {
 
   return (
     <div className="article-page" dir="rtl">
+      <SEO
+        title={article.title}
+        description={article.description || article.title}
+        keywords={article.category}
+        canonicalUrl={`https://safeai613.com/docs/${article.slug}`}
+      />
       <div className="article-container">
         <Link to="/docs" className="article-back-link">← חזרה ל-Docs</Link>
 

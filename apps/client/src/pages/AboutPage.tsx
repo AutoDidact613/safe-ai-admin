@@ -1,10 +1,16 @@
 import { useTranslation } from "react-i18next";
 import "../styles/about-page.css";
+import { SEO } from "../components/SEO";
 
 export default function AboutPage() {
   const { t } = useTranslation();
   return (
     <div className="about-page">
+      <SEO
+        title={t("about.seoTitle")}
+        description={t("about.seoDescription")}
+        canonicalUrl="https://safeai613.com/about"
+      />
       <div className="about-container">
         <h1>AI 2026</h1>
 

@@ -19,7 +19,17 @@ import {
   ratePost,
 } from './api';
 import type { Post, Comment } from './types';
+import { SEO } from '../../components/SEO';
 import '../../styles/forum.css';
+
+// Builds a meta description of roughly 160 characters, without cutting a
+// word in half - post.content is plain text (rendered unescaped as a React
+// child elsewhere on this page), so no HTML stripping is needed here.
+const buildMetaDescription = (content: string): string => {
+  const trimmed = content.trim();
+  if (trimmed.length <= 160) return trimmed;
+  return trimmed.slice(0, 160).replace(/\s+\S*$/, '') + '...';
+};
 
 export const PostThreadPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -396,8 +406,25 @@ const renderFileAttachment = (fileUrl: string, index: number) => {
   if (loading) return <div className="forum-thread-loading">טוען שרשור...</div>;
   if (!post) return <div className="forum-thread-not-found">הפוסט לא נמצא.</div>;
 
+  const firstImageAttachment = post.attachments?.find((url) =>
+    ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(
+      url.split('?')[0].split('.').pop()?.toLowerCase() || ''
+    )
+  );
+  const postKeywords = post.tags
+    ?.map((tag) => (typeof tag === 'string' ? tag : tag.name))
+    .join(', ');
+
   return (
     <div className="forum-thread-page">
+      <SEO
+        title={post.title}
+        description={buildMetaDescription(post.content)}
+        keywords={postKeywords}
+        canonicalUrl={`https://safeai613.com/forum/post/${post._id}`}
+        ogImage={firstImageAttachment}
+        noIndex={!!post.isLocked}
+      />
 
       <button
         onClick={() => navigate('/forum')}

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiCall, API_ENDPOINTS } from "../config/api";
+import { SEO } from "../components/SEO";
 import "./articles-page.css";
 
 interface Article {
@@ -55,6 +56,12 @@ export default function ArticlesPage() {
 
   return (
     <div className="articles-page">
+      <SEO
+        title={t("docs.seoTitle")}
+        description={t("docs.seoDescription")}
+        keywords={t("docs.seoKeywords")}
+        canonicalUrl="https://safeai613.com/docs"
+      />
       <div className="articles-header">
         <h1>📚 {t("docs.title")}</h1>
         <p className="articles-subtitle">{t("docs.subtitle")}</p>

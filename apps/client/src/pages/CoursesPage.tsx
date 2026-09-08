@@ -1,10 +1,17 @@
 import { useTranslation } from "react-i18next";
 import "../styles/courses-page.css";
+import { SEO } from "../components/SEO";
 
 export default function CoursesPage() {
   const { t } = useTranslation();
   return (
     <div className="courses-page">
+      <SEO
+        title={t("courses.seoTitle")}
+        description={t("courses.seoDescription")}
+        keywords={t("courses.seoKeywords")}
+        canonicalUrl="https://safeai613.com/courses"
+      />
       <div className="courses-container">
         <div className="courses-header">
           <h1>🎓 {t("courses.title")}</h1>
