@@ -30,7 +30,8 @@ import { errorHandler } from "./middleware/errorHandler";
 import { connectDatabase } from "./config/db";
 import { authenticateToken, requireAdmin } from "./middleware/auth";
 import postRoutes from './routes/postRoutes';
-import logger from "./logger";
+import logger, { requestContext } from "./logger";
+import { randomUUID } from "node:crypto";
 import path from 'path';
 import tagRoutes from './routes/tagRoutes';
 import uploadRouter from "./routes/uploadRoutes";
@@ -61,6 +62,10 @@ app.use(compression());
 app.use(express.json({ limit: "50mb" }));
 // PayMe's Sale Callback (webhook) is posted as x-www-form-urlencoded.
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+app.use((req, _res, next) => {
+  requestContext.run({ requestId: randomUUID() }, next);
+});
 
 app.use(requestLogger);
 

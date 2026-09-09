@@ -13,6 +13,7 @@ export interface ApplicationLogDoc extends mongoose.Document {
   message: string;
   context?: Record<string, any>;
   userId?: mongoose.Types.ObjectId;
+  organizationId?: mongoose.Types.ObjectId;
   requestId?: string;
   stack?: string;
   timestamp: Date;
@@ -37,6 +38,11 @@ const ApplicationLogSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      index: true,
+    },
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Organization",
       index: true,
     },
     requestId: {

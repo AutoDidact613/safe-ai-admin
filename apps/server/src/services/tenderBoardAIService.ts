@@ -3,6 +3,9 @@ import mongoose from "mongoose";
 import logger from "../logger";
 import { TenderLog } from "../models/tendersBoardLog";
 import { callAI } from "./aiService"; // ← הפונקציה הגנרית
+// Type-only import: erased at compile time, so this doesn't create a runtime
+// circular dependency with tenderBoardService.ts (which imports TBAIService from here).
+import type { LogActor } from "./tenderBoardService";
 
 // ==========================================
 // פונקציית עזר — נרמול ערכי enum
@@ -160,6 +163,7 @@ async function saveTenderLog(params: {
   action: "CREATE" | "UPDATE" | "DELETE" | "APPLY" | "SMART_CREATE" | "SMART_SEARCH" | "GUARDRAIL_CHECK";
   status: "SUCCESS" | "FAILED";
   tenderId?: string | mongoose.Types.ObjectId;
+  userId?: string | undefined;
   metaData?: any;
   errorMessage?: string;
 }) {
@@ -169,10 +173,14 @@ async function saveTenderLog(params: {
     const validTenderId = params.tenderId && mongoose.Types.ObjectId.isValid(params.tenderId)
       ? new mongoose.Types.ObjectId(params.tenderId.toString())
       : undefined;
+    const validUserId = params.userId && mongoose.Types.ObjectId.isValid(params.userId)
+      ? new mongoose.Types.ObjectId(params.userId)
+      : undefined;
     await TenderLog.create({
       action: params.action,
       status: params.status,
       tenderId: validTenderId,
+      userId: validUserId,
       metaData: params.metaData,
       errorMessage: params.errorMessage,
       timestamp: new Date(),
@@ -188,11 +196,13 @@ async function saveTenderLog(params: {
 // ==========================================
 export class TBAIService {
 
-  static async generateTenderData(userDescription: string) {
+  static async generateTenderData(userDescription: string, actor: LogActor = {}) {
     const startTime = Date.now();
     try {
       logger.info("Starting AI tender data generation", {
         descriptionLength: userDescription?.length,
+        userId: actor.userId,
+        organizationId: actor.organizationId,
       });
 
       // ← גארדרייל נושאי: בודק שהטקסט אכן מתאר בקשה ליצירת מכרז לפני שממשיכים לפירסור
@@ -221,11 +231,14 @@ export class TBAIService {
       logger.info("AI tender data generation completed", {
         title: parsedData.title,
         productType: parsedData.productType,
+        userId: actor.userId,
+        organizationId: actor.organizationId,
       });
 
       await saveTenderLog({
         action: "SMART_CREATE",
         status: "SUCCESS",
+        userId: actor.userId,
         metaData: {
           textLength: userDescription?.length,
           responseTime: Date.now() - startTime,
@@ -244,11 +257,14 @@ export class TBAIService {
         {
           err: error,
           descriptionLength: userDescription?.length,
+          userId: actor.userId,
+          organizationId: actor.organizationId,
         },
       );
       await saveTenderLog({
         action: "SMART_CREATE",
         status: "FAILED",
+        userId: actor.userId,
         errorMessage: isTopicMismatch
           ? (error.aiReason || error.message)
           : (error?.message || String(error)),
@@ -271,13 +287,16 @@ export class TBAIService {
    */
   static async generateSearchResultIds(
     userSearchText: string,
-    tenders: Array<{ id: string; [key: string]: any }>
+    tenders: Array<{ id: string; [key: string]: any }>,
+    actor: LogActor = {}
   ): Promise<string[]> {
     const startTime = Date.now();
     try {
       logger.info("Starting AI search-by-id generation", {
         searchText: userSearchText,
         candidateCount: tenders.length,
+        userId: actor.userId,
+        organizationId: actor.organizationId,
       });
 
       const raw = await callAI({
@@ -294,11 +313,14 @@ export class TBAIService {
         searchText: userSearchText,
         matchedCount: ids.length,
         responseTime: Date.now() - startTime,
+        userId: actor.userId,
+        organizationId: actor.organizationId,
       });
 
       await saveTenderLog({
         action: "SMART_SEARCH",
         status: "SUCCESS",
+        userId: actor.userId,
         metaData: {
           searchText: userSearchText,
           candidateCount: tenders.length,
@@ -313,10 +335,13 @@ export class TBAIService {
       logger.error("Error in AIService.generateSearchResultIds", {
         error,
         searchText: userSearchText,
+        userId: actor.userId,
+        organizationId: actor.organizationId,
       });
       await saveTenderLog({
         action: "SMART_SEARCH",
         status: "FAILED",
+        userId: actor.userId,
         errorMessage: error?.message || String(error),
         metaData: { searchText: userSearchText, responseTime: Date.now() - startTime },
       });

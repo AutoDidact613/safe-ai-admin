@@ -25,8 +25,8 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import time
 import os
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
@@ -34,8 +34,13 @@ from typing import Any, Optional
 from agent.graph import build_graph
 from agent.nodes.analyze import analyze_records
 
-MODEL_COST_PER_1K_TOKENS = os.getenv("MODEL_COST_PER_1K_TOKENS" , " ")
-LIVE_MODEL = os.getenv("LIVE_MODEL" , "gpt-4o-mini" )
+# Rough per-1K-token $ rates, used only for --live cost estimation. Fixed, not
+# env-configurable: an env var can only ever be a string, so this can't
+# actually hold a dict - see agent/llm.py's _TRUTHY_VALUES for the same trap.
+MODEL_COST_PER_1K_TOKENS = {
+    "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
+}
+LIVE_MODEL = os.getenv("LIVE_MODEL", "gpt-4o-mini")
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 RESULTS_DIR = Path(__file__).parent / "results"

@@ -21,8 +21,15 @@ from __future__ import annotations
 import os
 
 from langchain_openai import ChatOpenAI
+
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gpt-4o-mini")
-_TRUTHY_VALUES = os.getenv("_TRUTHY_VALUES", {"1", "true", "yes"})
+
+# Fixed, not env-configurable: unlike DEFAULT_MODEL (a plain string), an env
+# var can only ever produce a string here too, so exposing this as
+# os.getenv(..., {"1", "true", "yes"}) silently breaks membership checks the
+# moment someone actually sets it - `in` starts doing substring matching on a
+# string instead of a real set lookup.
+_TRUTHY_VALUES = {"1", "true", "yes"}
 
 def _ssl_verification_disabled() -> bool:
     return os.environ.get("OPENAI_DISABLE_SSL_VERIFY", "").strip().lower() in _TRUTHY_VALUES

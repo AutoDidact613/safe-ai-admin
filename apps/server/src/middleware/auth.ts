@@ -35,7 +35,11 @@ export function authenticateToken(
     (req as any).user = decoded; // { userId, email, role }
     next();
   } catch (error) {
-    return res.status(403).json({ error: "Invalid or expired token" });
+    // 401 (not 403): the client's apiCall() only clears stored tokens and
+    // redirects to /login on a 401 from an authenticated request - an
+    // expired/invalid token must produce that, not silently surface as a
+    // generic 403 error.
+    return res.status(401).json({ error: "Invalid or expired token" });
   }
 }
 
