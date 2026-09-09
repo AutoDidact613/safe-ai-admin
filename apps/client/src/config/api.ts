@@ -93,6 +93,17 @@ export const API_ENDPOINTS = {
     cancelSpecification: (id: string) => `${API_BASE_URL}/tender-board/${id}/cancel-specification-request`,
     publishSpecification: (id: string) => `${API_BASE_URL}/tender-board/${id}/specification/publish`,
   },
+  // Agents Marketplace endpoints
+  agents: {
+    list:                `${API_BASE_URL}/agents`,
+    byId:                (id: string) => `${API_BASE_URL}/agents/${id}`,
+    create:              `${API_BASE_URL}/agents`,
+    fetchManifest:       `${API_BASE_URL}/agents/fetch-manifest`,
+    validateDownloadUrl: `${API_BASE_URL}/agents/validate-download-url`,
+    generateIcon:        `${API_BASE_URL}/agents/generate-icon`,
+    recordDownload:      (id: string) => `${API_BASE_URL}/agents/${id}/download`,
+    stats:               `${API_BASE_URL}/agents/stats`,
+  },
   // Professional profile endpoints (tender board)
   professionalProfile: {
     me: `${API_BASE_URL}/professional-profile/me`,

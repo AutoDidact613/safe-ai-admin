@@ -19,6 +19,7 @@ import organizationRouter from "./routes/organizationRouter";
 import paymeRouter, { paymeWebhookRouter } from "./routes/paymeRouter";
 import contactRouter from "./routes/contactRouter";
 import tenderBoardRouter from "./routes/tenderBoardRouter";
+import agentRouter from "./routes/agentRouter";
 import contactTypeRoutes from "./routes/contactTypeRoutes"; // הייבוא של הקובץ שיצרת
 
 import newsRouter from "./routes/newsRouter";
@@ -104,6 +105,9 @@ app.use("/articles", articlesRouter);
 // ===== Public routes for filter evaluation =====
 app.use("/filter", filterRouter);
 app.use("/tender-board", tenderBoardRouter);
+
+// ===== Agents Marketplace (reads public, writes require auth — see agentRouter.ts) =====
+app.use("/agents", agentRouter);
 
 // ===== Public AI News Routes =====
 app.use("/api/news", newsRouter); // News routes are public
