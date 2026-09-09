@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AddPostModal } from './AddPostModal';
 import { fetchPosts as fetchPostsFromApi, fetchSimilarPosts, moderatePost as moderatePostApi } from './api';
 import type { Post } from './types';
+import { SEO } from '../../components/SEO';
 import '../../styles/forum.css';
 
 export const ForumPage: React.FC = () => {
@@ -221,6 +222,12 @@ export const ForumPage: React.FC = () => {
 
   return (
     <div className="forum-page">
+      <SEO
+        title="פורום טכנולוגי מקצועי"
+        description="הצטרפו לקהילת המפתחים והמשתמשים של SafeAI613 בפורום הרשמי. מקום לדיונים מקצועיים, שאלות ותשובות, טיפים, ושיתוף מוצרים איכותיים בעולם ה-AI המסונן."
+        keywords="פורום SafeAI613, קהילת AI חרדית, שאלות ותשובות בינה מלאכותית, פורום מפתחים נטפרי"
+        canonicalUrl="https://safeai613.com/forum"
+      />
 
       <div className="forum-toolbar">
         <div className="forum-add-btn-wrapper">

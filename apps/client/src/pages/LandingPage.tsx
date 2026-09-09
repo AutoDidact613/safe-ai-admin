@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import "../styles/landing-page.css";
 import AboutCompany from "../features/landing/AboutCompany";
 import Products from "../features/landing/Products";
+import { SEO } from "../components/SEO";
 
 type Section = "about" | "products";
 
@@ -24,6 +25,11 @@ export default function LandingPage() {
 
   return (
     <div className="landing-page">
+      <SEO
+        title={t("landing.seoTitle")}
+        description={t("landing.seoDescription")}
+        canonicalUrl="https://safeai613.com/"
+      />
       {/* Hero Section */}
       <div className="landing-hero">
         <h1 className="hero-title">{t("landing.heroTitle")}</h1>

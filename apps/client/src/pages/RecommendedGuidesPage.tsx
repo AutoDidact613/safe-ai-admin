@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import "../styles/recommended-guides-page.css";
+import { SEO } from "../components/SEO";
 
 interface Guide {
   id: string;
@@ -255,6 +256,11 @@ export default function RecommendedGuidesPage() {
 
   return (
     <div className="recommended-guides-page">
+      <SEO
+        title={t("recommendedGuides.seoTitle")}
+        description={t("recommendedGuides.seoDescription")}
+        canonicalUrl="https://safeai613.com/recommended-guides"
+      />
       <div className="recommended-guides-container">
         {/* Header */}
         <div className="page-header">

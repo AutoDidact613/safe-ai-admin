@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { API_ENDPOINTS, apiCall } from "../config/api";
 import { useScreenCapture } from "../hooks/useScreenCapture";
 import "../styles/contact-page.css";
+import { SEO } from "../components/SEO";
+
+const CONTACT_SEO_DESCRIPTION =
+  "צריכים עזרה או תמיכה טכנית? מעוניינים להצטרף לצוות הפיתוח או לנהל קהילה? כתבו לנו ונשמח לעמוד לרשותכם בהקדם.";
 
 const MAX_ATTACHMENTS = 5;
 
@@ -319,6 +323,11 @@ useEffect(() => {
   if (!isLoggedIn) {
     return (
       <div className="contact-page">
+        <SEO
+          title="צור קשר ותמיכה"
+          description={CONTACT_SEO_DESCRIPTION}
+          canonicalUrl="https://safeai613.com/contact"
+        />
         <div className="contact-container">
           <h1>צור קשר</h1>
           <div className="login-required">
@@ -337,6 +346,11 @@ useEffect(() => {
 
   return (
     <div className="contact-page">
+      <SEO
+        title="צור קשר ותמיכה"
+        description={CONTACT_SEO_DESCRIPTION}
+        canonicalUrl="https://safeai613.com/contact"
+      />
       <div className="contact-container">
         <h1>צור קשר</h1>
         <p className="contact-subtitle">שלח לנו הודעה ונחזור אליך בהקדם</p>

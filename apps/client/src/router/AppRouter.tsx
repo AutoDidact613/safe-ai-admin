@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import LandingPage from "../pages/LandingPage";
 import LandingPageV2 from "../pages/LandingPageV2";
 import SafeAIUIPage from "../pages/SafeAIUIPage";
@@ -92,6 +93,7 @@ function GlobalChrome() {
 
 export default function AppRouter() {
   return (
+    <HelmetProvider>
     <BrowserRouter basename={ROUTER_BASE}>
       <GlobalChrome />
 
@@ -314,5 +316,6 @@ export default function AppRouter() {
 
       <Footer />
     </BrowserRouter>
+    </HelmetProvider>
   );
 }

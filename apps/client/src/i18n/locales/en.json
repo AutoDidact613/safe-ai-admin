@@ -173,6 +173,9 @@
     }
   },
   "courses": {
+    "seoTitle": "AI Courses & Training",
+    "seoDescription": "Learn to get the most out of SafeAI613. A range of training tracks: a beginner course, advanced filter usage, organizational user management, and system integration via API.",
+    "seoKeywords": "AI course, artificial intelligence training, SafeAI guides, SafeAI organization management, API course",
     "title": "Courses and Training",
     "subtitle": "Learn how to use SafeAI optimally",
     "comingSoon": "Coming soon - Professional courses!",
@@ -255,6 +258,8 @@
     "accountInactive": "Your account is inactive. Please contact support"
   },
   "about": {
+    "seoTitle": "User Guide & Strategy",
+    "seoDescription": "Why did we build this platform? Read about the strategy for safe, controlled use of language models (LLMs), local chat installation, and how SafeAI613's filtering system works.",
     "backgroundHeading": "Background:",
     "backgroundP1": "The AI tool that has shaken the world and is driving it toward a real revolution is the LLM \u2013 a large language model that makes it possible to simulate a conversation with a real human being.",
     "backgroundP2Line1": "Following this invention, many chat tools were developed that let any internet user open a conversation and talk as they please.",
@@ -329,9 +334,12 @@
     "knowledgePLine4": "Email us at support@safeai613.com"
   },
   "notFound": {
+    "seoTitle": "Page Not Found",
     "message": "404 \u2013 Page not found"
   },
   "landing": {
+    "seoTitle": "Welcome",
+    "seoDescription": "SafeAI613 provides a protected AI environment including a filtered AI chat, professional courses, and a community technology forum.",
     "heroTitle": "Safe solutions for using AI",
     "heroSubtitle": "SafeAI provides advanced solutions for managing and controlling artificial intelligence models",
     "orgOwnerLinkText": "Organization admin? Open a new organization in the system",
@@ -399,6 +407,9 @@
     "ctaButton": "Visit the GitHub Organization"
   },
   "docs": {
+    "seoTitle": "Documentation & User Guides",
+    "seoDescription": "The complete guide to integrating with the SafeAI613 API and the system's knowledge center. Learn how to securely and efficiently connect your development systems to a protected, filtered provider.",
+    "seoKeywords": "SafeAI API, developer documentation, AI integration, developer guide",
     "title": "User Guides",
     "subtitle": "SafeAI Knowledge Center",
     "searchArticlesPlaceholder": "Search articles...",
@@ -440,6 +451,8 @@
     "mockSystemUpdateTimestamp": "5 hours ago"
   },
   "recommendedGuides": {
+    "seoTitle": "Guides & Recommendations",
+    "seoDescription": "A collection of recommended guides, practical tips, and quality tools to help you work safely, efficiently, and professionally with AI tools in a clean environment.",
     "notSpecified": "Not specified",
     "fallbackTitle": "Guide",
     "loadErrorMessage": "Error loading guides. Please try again later.",
